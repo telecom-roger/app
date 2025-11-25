@@ -31,18 +31,15 @@ export async function initializeWhatsAppSession(sessionId: string): Promise<stri
 
         // If QR is generated, capture it as image
         if (qr) {
-          console.log("📱 QR Code recebido (valor) para sessão:", sessionId);
+          console.log("📱 QR Code recebido para sessão:", sessionId, "valor:", qr.substring(0, 50));
           try {
-            // Use o próprio QR do Baileys - é um string que pode ser renderizado
+            // Usar configurações padrão do QRCode para máxima compatibilidade
             const qrDataUrl = await QRCode.toDataURL(qr, {
-              errorCorrectionLevel: "L", // Usar L para compatibilidade máxima
-              type: "image/png",
               width: 320,
-              margin: 1,
-              color: { dark: "#000000", light: "#FFFFFF" }, // Cores padrão para melhor leitura
+              margin: 2,
             });
             qrCodes.set(sessionId, qrDataUrl);
-            console.log("✅ QR code Baileys convertido para image para sessão:", sessionId, "tamanho:", qr.length);
+            console.log("✅ QR code gerado com sucesso para sessão:", sessionId);
           } catch (err) {
             console.error("❌ Erro ao gerar QR code image:", err);
             reject(new Error("Falha ao gerar QR code"));
@@ -73,14 +70,14 @@ export async function initializeWhatsAppSession(sessionId: string): Promise<stri
       // Handle credentials
       sock.ev.on("creds.update", saveCreds);
 
-      // Set timeout for QR code
+      // Set timeout for QR code (120 seconds = 2 minutes)
       setTimeout(() => {
         if (!activeSessions.has(sessionId) && qrCodes.has(sessionId)) {
           console.warn("⏱️ QR code timeout para sessão:", sessionId);
           sock?.end();
           resolve(qrCodes.get(sessionId) || null);
         }
-      }, 30000); // 30 seconds timeout
+      }, 120000);
     } catch (error) {
       console.error("❌ Erro ao inicializar sessão WhatsApp:", error);
       reject(error);
