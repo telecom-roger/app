@@ -534,7 +534,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = (req.user as any);
       // Admin sees all sessions, non-admin sees only their own
-      const userIdFilter = user.dbUser.role === 'admin' ? undefined : user.id;
+      const userIdFilter = user.role === 'admin' ? undefined : user.id;
       const sessions = await storage.getAllWhatsappSessions(userIdFilter);
       
       // Sync status from memory to database (non-blocking)
