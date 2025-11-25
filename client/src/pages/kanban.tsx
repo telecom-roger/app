@@ -81,7 +81,7 @@ export default function Kanban() {
     enabled: isAuthenticated,
   });
 
-  const { data: clientesData } = useQuery({
+  const { data: clientesData } = useQuery<{ clientes: any[]; total: number }>({
     queryKey: ["/api/clients"],
     enabled: isAuthenticated,
   });
@@ -374,7 +374,6 @@ function NovaOportunidadeDialog({
   const [searchCliente, setSearchCliente] = useState("");
   
   const clientesFiltrados = clientes.filter((client: any) =>
-    client.nome.toLowerCase().includes(searchCliente.toLowerCase()) ||
     client.razaoSocial?.toLowerCase().includes(searchCliente.toLowerCase()) ||
     client.cpfCnpj?.includes(searchCliente)
   );
@@ -440,7 +439,7 @@ function NovaOportunidadeDialog({
                   <FormControl>
                     <div className="space-y-2">
                       <Input
-                        placeholder="Buscar cliente por nome, razão social ou CNPJ..."
+                        placeholder="Buscar por razão social ou CNPJ..."
                         value={searchCliente}
                         onChange={(e) => setSearchCliente(e.target.value)}
                         data-testid="input-search-cliente"
