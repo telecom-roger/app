@@ -70,6 +70,23 @@ export const clients = pgTable("clients", {
   valorContrato: integer("valor_contrato"), // in cents
   dataUltimoContato: timestamp("data_ultimo_contato"),
   observacoes: text("observacoes"),
+  // New telecom fields (UPPERCASE names in schema)
+  APARELHO_LIBERADO: varchar("aparelho_liberado", { length: 255 }),
+  PEDIDO_MOVEL: varchar("pedido_movel", { length: 255 }),
+  M_FIXA: varchar("m_fixa", { length: 255 }),
+  PEDIDO_FIXA: varchar("pedido_fixa", { length: 255 }),
+  NOME_CONTATO: varchar("nome_contato", { length: 255 }),
+  EMAIL_PRINCIPAL: varchar("email_principal", { length: 255 }),
+  CELULAR_PRINCIPAL: varchar("celular_principal", { length: 20 }),
+  TIPO_GESTOR: varchar("tipo_gestor", { length: 100 }),
+  FLG_DOMINIO_PUBLICO_SFA: boolean("flg_dominio_publico_sfa"),
+  TELEFONE_COMERCIAL: varchar("telefone_comercial", { length: 20 }),
+  CELULAR: varchar("celular", { length: 20 }),
+  TELEFONE_RESIDENCIAL: varchar("telefone_residencial", { length: 20 }),
+  EMAIL_SIBEL: varchar("email_sibel", { length: 255 }),
+  PROP_MOVEL_AVANCADA: varchar("prop_movel_avancada", { length: 255 }),
+  SERASA: varchar("serasa", { length: 255 }),
+  MENSAGEM_SERASA: text("mensagem_serasa"),
   tags: text("tags").array().default(sql`ARRAY[]::text[]`),
   camposCustom: jsonb("campos_custom").default(sql`'{}'::jsonb`), // flexible custom fields
   createdAt: timestamp("created_at").defaultNow(),

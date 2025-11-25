@@ -61,6 +61,22 @@ export default function ClienteForm() {
       valorContrato: 0,
       dataUltimoContato: undefined,
       observacoes: "",
+      APARELHO_LIBERADO: "",
+      PEDIDO_MOVEL: "",
+      M_FIXA: "",
+      PEDIDO_FIXA: "",
+      NOME_CONTATO: "",
+      EMAIL_PRINCIPAL: "",
+      CELULAR_PRINCIPAL: "",
+      TIPO_GESTOR: "",
+      FLG_DOMINIO_PUBLICO_SFA: false,
+      TELEFONE_COMERCIAL: "",
+      CELULAR: "",
+      TELEFONE_RESIDENCIAL: "",
+      EMAIL_SIBEL: "",
+      PROP_MOVEL_AVANCADA: "",
+      SERASA: "",
+      MENSAGEM_SERASA: "",
       tags: [],
     },
   });
@@ -98,6 +114,22 @@ export default function ClienteForm() {
         valorContrato: cliente.valorContrato || 0,
         dataUltimoContato: cliente.dataUltimoContato || undefined,
         observacoes: cliente.observacoes || "",
+        APARELHO_LIBERADO: cliente.APARELHO_LIBERADO || "",
+        PEDIDO_MOVEL: cliente.PEDIDO_MOVEL || "",
+        M_FIXA: cliente.M_FIXA || "",
+        PEDIDO_FIXA: cliente.PEDIDO_FIXA || "",
+        NOME_CONTATO: cliente.NOME_CONTATO || "",
+        EMAIL_PRINCIPAL: cliente.EMAIL_PRINCIPAL || "",
+        CELULAR_PRINCIPAL: cliente.CELULAR_PRINCIPAL || "",
+        TIPO_GESTOR: cliente.TIPO_GESTOR || "",
+        FLG_DOMINIO_PUBLICO_SFA: cliente.FLG_DOMINIO_PUBLICO_SFA || false,
+        TELEFONE_COMERCIAL: cliente.TELEFONE_COMERCIAL || "",
+        CELULAR: cliente.CELULAR || "",
+        TELEFONE_RESIDENCIAL: cliente.TELEFONE_RESIDENCIAL || "",
+        EMAIL_SIBEL: cliente.EMAIL_SIBEL || "",
+        PROP_MOVEL_AVANCADA: cliente.PROP_MOVEL_AVANCADA || "",
+        SERASA: cliente.SERASA || "",
+        MENSAGEM_SERASA: cliente.MENSAGEM_SERASA || "",
         tags: cliente.tags || [],
       });
     }
@@ -613,6 +645,213 @@ export default function ClienteForm() {
                     </FormItem>
                   )}
                 />
+
+                {/* Telecom Fields */}
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-semibold mb-4">Dados Telecom</h3>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="APARELHO_LIBERADO"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Aparelho Liberado</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Aparelho" {...field} data-testid="input-aparelho" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="PEDIDO_MOVEL"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Pedido Móvel</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Pedido" {...field} data-testid="input-pedido-movel" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="M_FIXA"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>M Fixa</FormLabel>
+                        <FormControl>
+                          <Input placeholder="M Fixa" {...field} data-testid="input-m-fixa" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="PEDIDO_FIXA"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Pedido Fixa</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Pedido" {...field} data-testid="input-pedido-fixa" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="EMAIL_PRINCIPAL"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email Principal</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="email@example.com" {...field} data-testid="input-email-principal" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="CELULAR_PRINCIPAL"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Celular Principal</FormLabel>
+                        <FormControl>
+                          <Input placeholder="(11) 99999-9999" {...field} data-testid="input-celular-principal" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="TIPO_GESTOR"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo Gestor</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Gestor" {...field} data-testid="input-tipo-gestor" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="TELEFONE_COMERCIAL"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Telefone Comercial</FormLabel>
+                        <FormControl>
+                          <Input placeholder="(11) 3333-3333" {...field} data-testid="input-telefone-comercial" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="CELULAR"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Celular</FormLabel>
+                        <FormControl>
+                          <Input placeholder="(11) 99999-9999" {...field} data-testid="input-celular" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="TELEFONE_RESIDENCIAL"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Telefone Residencial</FormLabel>
+                        <FormControl>
+                          <Input placeholder="(11) 3333-3333" {...field} data-testid="input-telefone-residencial" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="EMAIL_SIBEL"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email Sibel</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="sibel@example.com" {...field} data-testid="input-email-sibel" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="PROP_MOVEL_AVANCADA"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Prop. Móvel/Avançada</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Proposta" {...field} data-testid="input-prop-movel" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="SERASA"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Serasa</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Serasa" {...field} data-testid="input-serasa" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="MENSAGEM_SERASA"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Mensagem Serasa</FormLabel>
+                        <FormControl>
+                          <textarea
+                            placeholder="Mensagem"
+                            {...field}
+                            className="min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            data-testid="textarea-mensagem-serasa"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 {/* Buttons */}
                 <div className="flex gap-3 pt-4">

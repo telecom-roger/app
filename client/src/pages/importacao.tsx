@@ -56,6 +56,22 @@ interface ColumnMapping {
   valorContrato: number;
   dataUltimoContato: number;
   observacoes: number;
+  APARELHO_LIBERADO: number;
+  PEDIDO_MOVEL: number;
+  M_FIXA: number;
+  PEDIDO_FIXA: number;
+  NOME_CONTATO: number;
+  EMAIL_PRINCIPAL: number;
+  CELULAR_PRINCIPAL: number;
+  TIPO_GESTOR: number;
+  FLG_DOMINIO_PUBLICO_SFA: number;
+  TELEFONE_COMERCIAL: number;
+  CELULAR: number;
+  TELEFONE_RESIDENCIAL: number;
+  EMAIL_SIBEL: number;
+  PROP_MOVEL_AVANCADA: number;
+  SERASA: number;
+  MENSAGEM_SERASA: number;
 }
 
 export default function Importacao() {
@@ -88,6 +104,22 @@ export default function Importacao() {
     valorContrato: -1,
     dataUltimoContato: -1,
     observacoes: -1,
+    APARELHO_LIBERADO: -1,
+    PEDIDO_MOVEL: -1,
+    M_FIXA: -1,
+    PEDIDO_FIXA: -1,
+    NOME_CONTATO: -1,
+    EMAIL_PRINCIPAL: -1,
+    CELULAR_PRINCIPAL: -1,
+    TIPO_GESTOR: -1,
+    FLG_DOMINIO_PUBLICO_SFA: -1,
+    TELEFONE_COMERCIAL: -1,
+    CELULAR: -1,
+    TELEFONE_RESIDENCIAL: -1,
+    EMAIL_SIBEL: -1,
+    PROP_MOVEL_AVANCADA: -1,
+    SERASA: -1,
+    MENSAGEM_SERASA: -1,
   });
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{
@@ -302,25 +334,30 @@ export default function Importacao() {
             </div>
 
             {/* Mapping selects */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-4 gap-2">
               {[
                 { key: "nome", label: "Nome *" },
+                { key: "cpfCnpj", label: "CNPJ" },
                 { key: "razaoSocial", label: "Razão Social" },
-                { key: "cpfCnpj", label: "CPF/CNPJ" },
-                { key: "telefone", label: "Telefone" },
-                { key: "email", label: "Email" },
-                { key: "contato", label: "Contato" },
-                { key: "status", label: "Status" },
-                { key: "carteira", label: "Carteira" },
-                { key: "categoria", label: "Categoria" },
+                { key: "PEDIDO_MOVEL", label: "PEDIDO MOVEL" },
+                { key: "M_FIXA", label: "M FIXA" },
+                { key: "PEDIDO_FIXA", label: "PEDIDO FIXA" },
                 { key: "endereco", label: "Endereço" },
-                { key: "numero", label: "Número" },
-                { key: "complemento", label: "Complemento" },
-                { key: "cep", label: "CEP" },
                 { key: "cidade", label: "Cidade" },
-                { key: "uf", label: "UF" },
-                { key: "valorContrato", label: "Valor Contrato" },
-                { key: "observacoes", label: "Observações" },
+                { key: "cep", label: "CEP" },
+                { key: "numero", label: "Número" },
+                { key: "NOME_CONTATO", label: "Nome Contato" },
+                { key: "EMAIL_PRINCIPAL", label: "Email Principal" },
+                { key: "CELULAR_PRINCIPAL", label: "Celular Principal" },
+                { key: "TIPO_GESTOR", label: "Tipo Gestor" },
+                { key: "FLG_DOMINIO_PUBLICO_SFA", label: "FLG_DOMINIO_SFA" },
+                { key: "TELEFONE_COMERCIAL", label: "Telefone Comercial" },
+                { key: "CELULAR", label: "Celular" },
+                { key: "TELEFONE_RESIDENCIAL", label: "Telefone Residencial" },
+                { key: "EMAIL_SIBEL", label: "Email Sibel" },
+                { key: "PROP_MOVEL_AVANCADA", label: "Prop. Movel/Avançada" },
+                { key: "SERASA", label: "Serasa" },
+                { key: "MENSAGEM_SERASA", label: "Mensagem Serasa" },
               ].map((field) => (
                 <div key={field.key}>
                   <label className="text-sm font-medium">{field.label}</label>

@@ -340,22 +340,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
             score: mapping.score >= 0 ? parseInt(getRowValue(row, mapping.score) || "0") || 0 : 0,
             planoAtual: getRowValue(row, mapping.planoAtual),
             produtoAtual: getRowValue(row, mapping.produtoAtual),
-            // New contact fields
+            // Contact fields
             telefone: getRowValue(row, mapping.telefone),
             email: getRowValue(row, mapping.email),
             contato: getRowValue(row, mapping.contato),
-            // New address fields
+            // Address fields
             endereco: getRowValue(row, mapping.endereco),
             numero: getRowValue(row, mapping.numero),
             complemento: getRowValue(row, mapping.complemento),
             cep: getRowValue(row, mapping.cep),
             cidade: getRowValue(row, mapping.cidade),
             uf: getRowValue(row, mapping.uf),
-            // New contract fields
+            // Contract fields
             dataContrato: mapping.dataContrato >= 0 ? new Date(getRowValue(row, mapping.dataContrato) || "") : null,
             valorContrato: mapping.valorContrato >= 0 ? parseInt(getRowValue(row, mapping.valorContrato) || "0") || 0 : null,
             dataUltimoContato: mapping.dataUltimoContato >= 0 ? new Date(getRowValue(row, mapping.dataUltimoContato) || "") : null,
             observacoes: getRowValue(row, mapping.observacoes),
+            // Telecom fields (UPPERCASE)
+            APARELHO_LIBERADO: getRowValue(row, mapping.APARELHO_LIBERADO),
+            PEDIDO_MOVEL: getRowValue(row, mapping.PEDIDO_MOVEL),
+            M_FIXA: getRowValue(row, mapping.M_FIXA),
+            PEDIDO_FIXA: getRowValue(row, mapping.PEDIDO_FIXA),
+            NOME_CONTATO: getRowValue(row, mapping.NOME_CONTATO),
+            EMAIL_PRINCIPAL: getRowValue(row, mapping.EMAIL_PRINCIPAL),
+            CELULAR_PRINCIPAL: getRowValue(row, mapping.CELULAR_PRINCIPAL),
+            TIPO_GESTOR: getRowValue(row, mapping.TIPO_GESTOR),
+            FLG_DOMINIO_PUBLICO_SFA: getRowValue(row, mapping.FLG_DOMINIO_PUBLICO_SFA) === "1" || getRowValue(row, mapping.FLG_DOMINIO_PUBLICO_SFA) === "true",
+            TELEFONE_COMERCIAL: getRowValue(row, mapping.TELEFONE_COMERCIAL),
+            CELULAR: getRowValue(row, mapping.CELULAR),
+            TELEFONE_RESIDENCIAL: getRowValue(row, mapping.TELEFONE_RESIDENCIAL),
+            EMAIL_SIBEL: getRowValue(row, mapping.EMAIL_SIBEL),
+            PROP_MOVEL_AVANCADA: getRowValue(row, mapping.PROP_MOVEL_AVANCADA),
+            SERASA: getRowValue(row, mapping.SERASA),
+            MENSAGEM_SERASA: getRowValue(row, mapping.MENSAGEM_SERASA),
           };
 
           const validated = insertClientSchema.parse(clientData);
