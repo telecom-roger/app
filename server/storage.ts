@@ -460,3 +460,48 @@ export async function getAllWhatsappSessions(userId?: string) {
   
   return await query.orderBy(desc(whatsappSessions.createdAt));
 }
+
+// ==================== WHATSAPP BROADCAST STORAGE ====================
+export async function getBroadcastStats(filtros?: { status?: string; carteira?: string }) {
+  let conditions = [];
+  
+  if (filtros?.status && filtros.status !== "") {
+    conditions.push(eq(clients.status, filtros.status));
+  }
+  if (filtros?.carteira && filtros.carteira !== "") {
+    conditions.push(ilike(clients.carteira, `%${filtros.carteira}%`));
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const allClientes = await db.select().from(clients);
+  const filteredClientes = whereClause 
+    ? await db.select().from(clients).where(whereClause)
+    : allClientes;
+
+  const comTelefone = filteredClientes.filter(
+    (c) => c.CELULAR_PRINCIPAL || c.telefone
+  ).length;
+
+  return {
+    totalClientes: allClientes.length,
+    filtrados: filteredClientes.length,
+    comTelefone,
+    pronto: comTelefone > 0,
+  };
+}
+
+export async function getClientsForBroadcast(filtros?: { status?: string; carteira?: string }) {
+  let conditions = [];
+  
+  if (filtros?.status && filtros.status !== "") {
+    conditions.push(eq(clients.status, filtros.status));
+  }
+  if (filtros?.carteira && filtros.carteira !== "") {
+    conditions.push(ilike(clients.carteira, `%${filtros.carteira}%`));
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  return await db.select().from(clients).where(whereClause);
+}

@@ -24,6 +24,7 @@ import Importacao from "@/pages/importacao";
 import AdminUsuarios from "@/pages/admin-usuarios";
 import AdminTemplates from "@/pages/admin-templates";
 import WhatsApp from "@/pages/whatsapp";
+import WhatsAppBroadcast from "@/pages/whatsapp-broadcast";
 import NotFound from "@/pages/not-found";
 
 function Router({ isAuthenticated }: { isAuthenticated: boolean }) {
@@ -41,6 +42,7 @@ function Router({ isAuthenticated }: { isAuthenticated: boolean }) {
       <Route path="/campanhas" component={Campanhas} />
       <Route path="/campanhas/nova" component={CampanhaNova} />
       <Route path="/whatsapp" component={WhatsApp} />
+      <Route path="/whatsapp/broadcast" component={WhatsAppBroadcast} />
       <Route path="/importacao" component={Importacao} />
       <Route path="/admin/usuarios" component={AdminUsuarios} />
       <Route path="/admin/templates" component={AdminTemplates} />

@@ -176,3 +176,31 @@ export async function isSessionAlive(sessionId: string): Promise<boolean> {
     return false;
   }
 }
+
+export async function sendMessage(sessionId: string, telefone: string, mensagem: string): Promise<boolean> {
+  try {
+    const sock = activeSessions.get(sessionId);
+    if (!sock) {
+      console.error(`❌ Sessão ${sessionId} não encontrada para enviar mensagem`);
+      return false;
+    }
+
+    // Normalize phone number (add country code if needed)
+    let jid = telefone.replace(/\D/g, ""); // Remove non-digits
+    if (!jid.startsWith("55")) {
+      jid = "55" + jid;
+    }
+    jid = jid + "@s.whatsapp.net";
+
+    console.log(`📤 Enviando mensagem para ${jid}...`);
+    
+    // Send message
+    await sock.sendMessage(jid, { text: mensagem });
+    
+    console.log(`✅ Mensagem enviada com sucesso para ${jid}`);
+    return true;
+  } catch (error) {
+    console.error(`❌ Erro ao enviar mensagem para ${telefone}:`, error);
+    return false;
+  }
+}

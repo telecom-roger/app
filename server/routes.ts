@@ -715,6 +715,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== WHATSAPP BROADCAST ROUTES ====================
+  app.post("/api/whatsapp/broadcast/preview", isAuthenticated, async (req, res) => {
+    try {
+      const { sessionId, filtros } = req.body;
+      
+      if (!sessionId) {
+        return res.status(400).json({ error: "sessionId é obrigatório" });
+      }
+
+      // Verify session ownership
+      const session = await storage.getWhatsappSessionById(sessionId);
+      if (!session) {
+        return res.status(404).json({ error: "Sessão não encontrada" });
+      }
+
+      if (session.userId !== (req.user as any).id && (req.user as any).role !== "admin") {
+        return res.status(403).json({ error: "Não autorizado" });
+      }
+
+      // Get stats
+      const stats = await storage.getBroadcastStats(filtros);
+      
+      res.json(stats);
+    } catch (error: any) {
+      console.error("Error getting broadcast preview:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/whatsapp/broadcast/send", isAuthenticated, async (req, res) => {
+    try {
+      const { sessionId, mensagem, filtros } = req.body;
+      
+      if (!sessionId || !mensagem) {
+        return res.status(400).json({ error: "sessionId e mensagem são obrigatórios" });
+      }
+
+      // Verify session ownership
+      const session = await storage.getWhatsappSessionById(sessionId);
+      if (!session) {
+        return res.status(404).json({ error: "Sessão não encontrada" });
+      }
+
+      if (session.userId !== (req.user as any).id && (req.user as any).role !== "admin") {
+        return res.status(403).json({ error: "Não autorizado" });
+      }
+
+      // Verify session is connected
+      const isAlive = await whatsappService.isSessionAlive(session.sessionId);
+      if (!isAlive) {
+        return res.status(400).json({ error: "Sessão WhatsApp não está conectada" });
+      }
+
+      // Get clients to send to
+      const clientes = await storage.getClientsForBroadcast(filtros);
+      
+      // Queue messages for sending (async, non-blocking)
+      let enfileiradas = 0;
+      for (const cliente of clientes) {
+        const telefone = cliente.CELULAR_PRINCIPAL || cliente.telefone;
+        if (telefone) {
+          // Queue message asynchronously (don't wait)
+          whatsappService.sendMessage(session.sessionId, telefone, mensagem).catch(err => {
+            console.error(`Erro ao enviar para ${telefone}:`, err);
+          });
+          enfileiradas++;
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        enfileiradas,
+        total: clientes.length 
+      });
+    } catch (error: any) {
+      console.error("Error sending broadcast:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // ==================== ADMIN ROUTES ====================
   app.get("/api/admin/users", isAuthenticated, requireAdmin, async (req, res) => {
     try {

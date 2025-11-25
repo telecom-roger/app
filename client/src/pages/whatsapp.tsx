@@ -25,9 +25,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MessageSquare, Plus, Trash2, RotateCw, CheckCircle, AlertCircle } from "lucide-react";
+import { MessageSquare, Plus, Trash2, RotateCw, CheckCircle, AlertCircle, Send } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function WhatsApp() {
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
   const [sessionName, setSessionName] = useState("");
@@ -220,14 +222,24 @@ export default function WhatsApp() {
 
       <Card className="bg-white border-2 border-[#776BFF]">
         <div className="p-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-xl font-semibold">Sessões Conectadas</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 {sessions?.length || 0} sessão(ões) criada(s)
               </p>
             </div>
-            <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setLocation("/whatsapp/broadcast")}
+                disabled={!sessions?.some((s: any) => s.status === "conectada")}
+                data-testid="button-broadcast"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Enviar em Massa
+              </Button>
+              <Dialog open={openDialog} onOpenChange={setOpenDialog}>
               <DialogTrigger asChild>
                 <Button
                   className="bg-[#776BFF] text-white hover:bg-[#6658DD]"
@@ -307,7 +319,8 @@ export default function WhatsApp() {
                   )}
                 </div>
               </DialogContent>
-            </Dialog>
+              </Dialog>
+            </div>
           </div>
         </div>
       </Card>
