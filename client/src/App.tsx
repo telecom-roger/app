@@ -3,26 +3,80 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { AppSidebar } from "@/components/app-sidebar";
+import { useAuth } from "@/hooks/useAuth";
+
+// Pages
+import Landing from "@/pages/landing";
+import Dashboard from "@/pages/dashboard";
+import Clientes from "@/pages/clientes";
+import ClienteProfile from "@/pages/cliente-profile";
+import Kanban from "@/pages/kanban";
+import Campanhas from "@/pages/campanhas";
+import Importacao from "@/pages/importacao";
+import AdminUsuarios from "@/pages/admin-usuarios";
 import NotFound from "@/pages/not-found";
 
 function Router() {
+  const { isAuthenticated, isLoading } = useAuth();
+
   return (
     <Switch>
-      {/* Add pages below */}
-      {/* <Route path="/" component={Home}/> */}
-      {/* Fallback to 404 */}
+      {isLoading || !isAuthenticated ? (
+        <Route path="/" component={Landing} />
+      ) : (
+        <>
+          <Route path="/" component={Dashboard} />
+          <Route path="/clientes" component={Clientes} />
+          <Route path="/clientes/:id" component={ClienteProfile} />
+          <Route path="/oportunidades" component={Kanban} />
+          <Route path="/campanhas" component={Campanhas} />
+          <Route path="/importacao" component={Importacao} />
+          <Route path="/admin/usuarios" component={AdminUsuarios} />
+        </>
+      )}
       <Route component={NotFound} />
     </Switch>
   );
 }
 
 function App() {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  // Sidebar width configuration
+  const style = {
+    "--sidebar-width": "16rem",
+    "--sidebar-width-icon": "3rem",
+  } as React.CSSProperties;
+
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <ThemeProvider defaultTheme="light">
+        <TooltipProvider>
+          {isLoading || !isAuthenticated ? (
+            <Router />
+          ) : (
+            <SidebarProvider style={style}>
+              <div className="flex h-screen w-full">
+                <AppSidebar />
+                <div className="flex flex-col flex-1 overflow-hidden">
+                  <header className="flex items-center justify-between px-6 py-3 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                    <SidebarTrigger data-testid="button-sidebar-toggle" />
+                    <ThemeToggle />
+                  </header>
+                  <main className="flex-1 overflow-auto">
+                    <Router />
+                  </main>
+                </div>
+              </div>
+            </SidebarProvider>
+          )}
+          <Toaster />
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
