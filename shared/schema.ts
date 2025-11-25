@@ -105,6 +105,23 @@ export const insertClientSchema = createInsertSchema(clients)
     cep: z.string().regex(/^\d{5}-?\d{3}$|^$/, "CEP inválido").optional().nullable(),
     email: z.string().email("Email inválido").optional().nullable(),
     telefone: z.string().min(10, "Telefone inválido").optional().nullable(),
+    // Telecom fields - make all optional
+    APARELHO_LIBERADO: z.string().optional().nullable(),
+    PEDIDO_MOVEL: z.string().optional().nullable(),
+    M_FIXA: z.string().optional().nullable(),
+    PEDIDO_FIXA: z.string().optional().nullable(),
+    NOME_CONTATO: z.string().optional().nullable(),
+    EMAIL_PRINCIPAL: z.string().optional().nullable(),
+    CELULAR_PRINCIPAL: z.string().optional().nullable(),
+    TIPO_GESTOR: z.string().optional().nullable(),
+    FLG_DOMINIO_PUBLICO_SFA: z.boolean().optional().nullable(),
+    TELEFONE_COMERCIAL: z.string().optional().nullable(),
+    CELULAR: z.string().optional().nullable(),
+    TELEFONE_RESIDENCIAL: z.string().optional().nullable(),
+    EMAIL_SIBEL: z.string().optional().nullable(),
+    PROP_MOVEL_AVANCADA: z.string().optional().nullable(),
+    SERASA: z.string().optional().nullable(),
+    MENSAGEM_SERASA: z.string().optional().nullable(),
   });
 
 export type InsertClient = z.infer<typeof insertClientSchema>;
