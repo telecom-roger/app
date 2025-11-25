@@ -7,6 +7,8 @@ import path from "path";
 const activeSessions = new Map<string, any>();
 const qrCodes = new Map<string, string>();
 
+let reconnectAttempts = new Map<string, number>();
+
 export async function initializeWhatsAppSession(sessionId: string): Promise<void> {
   try {
     // Create auth directory for this session
@@ -22,6 +24,9 @@ export async function initializeWhatsAppSession(sessionId: string): Promise<void
       browser: Browsers.ubuntu("Chrome"),
       qrTimeout: 5 * 60_000, // 5 minutes
       defaultQueryTimeoutMs: undefined,
+      // Adicionar retry automático
+      retryRequestDelayMs: 10_000,
+      shouldIgnoreJid: () => false,
     });
 
     // Handle QR code
@@ -48,19 +53,37 @@ export async function initializeWhatsAppSession(sessionId: string): Promise<void
         console.log("✅ Conexão estabelecida para sessão:", sessionId);
         activeSessions.set(sessionId, sock);
         qrCodes.delete(sessionId);
+        reconnectAttempts.delete(sessionId); // Reset tentativas após sucesso
       }
 
       if (connection === "close") {
         const shouldReconnect =
           (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
-        console.log(`Conexão fechada para sessão ${sessionId}, reconectar: ${shouldReconnect}`);
+        const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
+        
+        console.log(`❌ Conexão fechada para sessão ${sessionId}, código: ${statusCode}, reconectar: ${shouldReconnect}`);
 
         if (shouldReconnect) {
-          // Try to reconnect
-          console.log("Tentando reconectar...");
+          const attempts = (reconnectAttempts.get(sessionId) || 0) + 1;
+          reconnectAttempts.set(sessionId, attempts);
+          
+          if (attempts <= 3) {
+            console.log(`🔄 Tentativa de reconexão ${attempts}/3 para sessão ${sessionId}...`);
+            // Reconectar após delay progressivo
+            setTimeout(() => {
+              console.log(`⚡ Reiniciando conexão para sessão ${sessionId}...`);
+              initializeWhatsAppSession(sessionId);
+            }, 3000 * attempts);
+          } else {
+            console.warn(`⚠️ Máximo de tentativas atingido para sessão ${sessionId}`);
+            reconnectAttempts.delete(sessionId);
+          }
         } else {
           console.log("Sessão finalizada pelo usuário");
+          reconnectAttempts.delete(sessionId);
         }
+        
+        activeSessions.delete(sessionId);
       }
     });
 
