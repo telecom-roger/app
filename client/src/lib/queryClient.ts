@@ -12,24 +12,15 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const controller = new AbortController();
-  const timeout = url.includes("/whatsapp/") ? 20000 : 30000; // 20s for WhatsApp (needs time for Baileys QR generation), 30s for others
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  const res = await fetch(url, {
+    method,
+    headers: data ? { "Content-Type": "application/json" } : {},
+    body: data ? JSON.stringify(data) : undefined,
+    credentials: "include",
+  });
 
-  try {
-    const res = await fetch(url, {
-      method,
-      headers: data ? { "Content-Type": "application/json" } : {},
-      body: data ? JSON.stringify(data) : undefined,
-      credentials: "include",
-      signal: controller.signal,
-    });
-
-    await throwIfResNotOk(res);
-    return res;
-  } finally {
-    clearTimeout(timeoutId);
-  }
+  await throwIfResNotOk(res);
+  return res;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
