@@ -41,8 +41,8 @@ export default function Landing() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-            <Button size="lg" asChild data-testid="button-get-started">
-              <a href="/api/login">Começar agora</a>
+            <Button size="lg" onClick={() => window.location.href = '/api/login'} data-testid="button-get-started">
+              Começar agora
             </Button>
             <Button size="lg" variant="outline" asChild>
               <a href="#recursos">Ver recursos</a>
