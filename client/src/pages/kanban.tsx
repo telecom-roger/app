@@ -519,20 +519,37 @@ function NovaOportunidadeDialog({
             <FormField
               control={form.control}
               name="valorEstimado"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Valor Estimado (R$)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="1000.00"
-                      {...field}
-                      onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : 0)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const formatCurrency = (value: number) => {
+                  return new Intl.NumberFormat("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  }).format(value / 100);
+                };
+
+                const parseCurrency = (text: string) => {
+                  const cleaned = text.replace(/\D/g, "");
+                  return cleaned ? parseInt(cleaned) : 0;
+                };
+
+                return (
+                  <FormItem>
+                    <FormLabel>Valor Estimado</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="R$ 0,00"
+                        value={field.value ? formatCurrency(field.value) : ""}
+                        onChange={(e) => {
+                          const parsed = parseCurrency(e.target.value);
+                          field.onChange(parsed);
+                        }}
+                        data-testid="input-valor-estimado"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             <div className="flex gap-2 justify-end pt-4">
