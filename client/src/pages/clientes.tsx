@@ -182,174 +182,167 @@ export default function Clientes() {
         </div>
       </Card>
 
-      {/* Grid de Clientes */}
-      <div>
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Card key={i} className="p-4 space-y-3">
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-20 w-full" />
-              </Card>
-            ))}
-          </div>
-        ) : data?.clientes && data.clientes.length > 0 ? (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {data.clientes.map((cliente) => (
-                <Link key={cliente.id} href={`/clientes/${cliente.id}`}>
-                  <Card 
-                    className="p-4 hover-elevate cursor-pointer transition-all border-border h-full"
-                    data-testid={`card-cliente-${cliente.id}`}
-                  >
-                    <div className="space-y-3">
-                      {/* Header com Avatar */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3 flex-1 min-w-0">
-                          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                            <span className="text-sm font-bold text-primary">
-                              {cliente.razaoSocial?.charAt(0).toUpperCase() || cliente.nome?.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-foreground truncate">
-                              {cliente.razaoSocial || cliente.nome}
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {cliente.cpfCnpj || '-'}
-                            </div>
-                          </div>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-7 w-7 flex-shrink-0"
-                              data-testid={`button-actions-${cliente.id}`}
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                              <Link href={`/clientes/${cliente.id}/editar`}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => setDeleteClientId(cliente.id)}
-                              className="text-destructive"
-                              data-testid={`button-delete-${cliente.id}`}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Deletar
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-
-                      {/* Divider */}
-                      <div className="h-px bg-border" />
-
-                      {/* Informações */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">Status</span>
-                          <Badge 
-                            variant="secondary" 
-                            className={`${statusColors[cliente.status] || ''} text-xs`}
-                          >
-                            {cliente.status}
-                          </Badge>
-                        </div>
-                        
-                        {cliente.carteira && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground">Carteira</span>
-                            <span className="text-sm font-medium">{cliente.carteira}</span>
+      {/* Table */}
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome / Razão Social</TableHead>
+              <TableHead>CPF/CNPJ</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Carteira</TableHead>
+              <TableHead>Score</TableHead>
+              <TableHead>Tags</TableHead>
+              <TableHead className="w-12"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-8" /></TableCell>
+                </TableRow>
+              ))
+            ) : data?.clientes && data.clientes.length > 0 ? (
+              data.clientes.map((cliente) => (
+                <TableRow 
+                  key={cliente.id} 
+                  className="cursor-pointer hover-elevate"
+                  data-testid={`row-cliente-${cliente.id}`}
+                >
+                  <TableCell>
+                    <Link href={`/clientes/${cliente.id}`}>
+                      <div>
+                        <div className="font-medium">{cliente.nome}</div>
+                        {cliente.razaoSocial && (
+                          <div className="text-sm text-muted-foreground">
+                            {cliente.razaoSocial}
                           </div>
                         )}
-
-                        {/* Score */}
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs text-muted-foreground">Lead Score</span>
-                            <span className="text-sm font-semibold text-primary">{cliente.score || 0}%</span>
-                          </div>
-                          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                            <div 
-                              className="h-full bg-gradient-to-r from-primary to-primary/80"
-                              style={{ width: `${cliente.score || 0}%` }}
-                            />
-                          </div>
-                        </div>
                       </div>
-
-                      {/* Tags */}
-                      {cliente.tags && cliente.tags.length > 0 && (
-                        <div className="flex gap-1 flex-wrap">
-                          {cliente.tags.slice(0, 3).map((tag, i) => (
-                            <Badge key={i} variant="outline" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                          {cliente.tags.length > 3 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{cliente.tags.length - 3}
-                            </Badge>
-                          )}
-                        </div>
+                    </Link>
+                  </TableCell>
+                  <TableCell className="font-mono text-sm">
+                    {cliente.cpfCnpj || '-'}
+                  </TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant="secondary" 
+                      className={statusColors[cliente.status] || ''}
+                    >
+                      {cliente.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {cliente.carteira || '-'}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="text-sm font-medium">{cliente.score || 0}</div>
+                      <div className="h-1.5 w-16 rounded-full bg-muted overflow-hidden">
+                        <div 
+                          className="h-full bg-primary"
+                          style={{ width: `${cliente.score || 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1 flex-wrap">
+                      {cliente.tags && cliente.tags.length > 0 ? (
+                        cliente.tags.slice(0, 2).map((tag, i) => (
+                          <Badge key={i} variant="outline" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-sm text-muted-foreground">-</span>
+                      )}
+                      {cliente.tags && cliente.tags.length > 2 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{cliente.tags.length - 2}
+                        </Badge>
                       )}
                     </div>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-
-            {/* Pagination */}
-            {data.total > limit && (
-              <div className="flex items-center justify-between p-4 mt-6">
-                <div className="text-sm text-muted-foreground">
-                  Mostrando {(page - 1) * limit + 1} a {Math.min(page * limit, data.total)} de {data.total} clientes
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page === 1}
-                    onClick={() => setPage(p => p - 1)}
-                    data-testid="button-prev-page"
-                  >
-                    Anterior
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page * limit >= data.total}
-                    onClick={() => setPage(p => p + 1)}
-                    data-testid="button-next-page"
-                  >
-                    Próxima
-                  </Button>
-                </div>
-              </div>
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" data-testid="button-actions">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link href={`/clientes/${cliente.id}/editar`}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Editar
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setDeleteClientId(cliente.id)}
+                          className="text-destructive"
+                          data-testid={`button-delete-${cliente.id}`}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Deletar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-12">
+                  <div className="text-muted-foreground">
+                    <Users className="h-12 w-12 mx-auto mb-3 opacity-40" />
+                    <p>Nenhum cliente encontrado</p>
+                    <p className="text-sm mt-1">
+                      Importe seus clientes ou crie um novo cadastro
+                    </p>
+                  </div>
+                </TableCell>
+              </TableRow>
             )}
-          </>
-        ) : (
-          <Card className="p-12 text-center">
-            <div className="text-muted-foreground">
-              <Users className="h-12 w-12 mx-auto mb-3 opacity-40" />
-              <p className="font-medium">Nenhum cliente encontrado</p>
-              <p className="text-sm mt-1">
-                Importe seus clientes ou crie um novo cadastro
-              </p>
+          </TableBody>
+        </Table>
+
+        {/* Pagination */}
+        {data && data.total > limit && (
+          <div className="flex items-center justify-between p-4 border-t">
+            <div className="text-sm text-muted-foreground">
+              Mostrando {(page - 1) * limit + 1} a {Math.min(page * limit, data.total)} de {data.total} clientes
             </div>
-          </Card>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === 1}
+                onClick={() => setPage(p => p - 1)}
+                data-testid="button-prev-page"
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page * limit >= data.total}
+                onClick={() => setPage(p => p + 1)}
+                data-testid="button-next-page"
+              >
+                Próxima
+              </Button>
+            </div>
+          </div>
         )}
-      </div>
+      </Card>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteClientId} onOpenChange={() => setDeleteClientId(null)}>
