@@ -43,17 +43,22 @@ export default function WhatsApp() {
 
   const connectMutation = useMutation({
     mutationFn: async (nome: string) => {
+      console.log("📤 Enviando requisição para conectar WhatsApp:", nome);
       const response = await apiRequest("POST", "/api/whatsapp/connect", { nome });
       const result = await response.json();
+      console.log("📥 Resposta recebida:", result);
       return result;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/sessions"] });
       
-      console.log("Resposta da conexão:", data);
+      console.log("✅ Resposta da conexão processada:", data);
+      console.log("✅ QR Code disponível?", !!data?.qrCode, "Length:", data?.qrCode?.length);
+      
       if (data?.qrCode && data.qrCode.length > 0) {
+        console.log("🎯 Exibindo QR code na tela");
         setQrCode(data.qrCode);
-        console.log("QR Code (imagem) recebido do servidor");
+        console.log("✓ QR Code (imagem) recebido do servidor");
         toast({
           title: "Sucesso",
           description: "Sessão criada! Escaneie o QR code com seu WhatsApp",
@@ -61,7 +66,7 @@ export default function WhatsApp() {
       } else if (data?.sessionId) {
         // Fallback: mostrar ID se QR code não foi gerado
         setQrCode("fallback:" + data.sessionId);
-        console.log("QR Code não disponível, usando fallback com ID:", data.sessionId);
+        console.log("⚠️ QR Code não disponível, usando fallback com ID:", data.sessionId);
         toast({
           title: "Atenção",
           description: "Sessão criada, mas QR code não pôde ser gerado. Tente novamente.",
@@ -69,6 +74,7 @@ export default function WhatsApp() {
         });
       } else {
         setQrCode("error");
+        console.log("❌ Erro: sem qrCode e sem sessionId");
         toast({
           title: "Erro",
           description: "Falha ao criar sessão",
@@ -78,6 +84,7 @@ export default function WhatsApp() {
       setSessionName("");
     },
     onError: (error: any) => {
+      console.error("❌ Erro na mutation:", error.message);
       toast({
         title: "Erro",
         description: error.message || "Falha ao conectar WhatsApp",
