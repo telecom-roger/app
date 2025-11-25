@@ -215,6 +215,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/opportunities/:id", isAuthenticated, async (req, res) => {
+    try {
+      const opportunity = await storage.getOpportunityById(req.params.id);
+      if (!opportunity) {
+        return res.status(404).json({ error: "Opportunity not found" });
+      }
+
+      await storage.deleteOpportunity(req.params.id);
+
+      // Create audit log
+      await storage.createAuditLog({
+        userId: (req.user as any).id,
+        acao: "excluir",
+        entidade: "opportunity",
+        entidadeId: req.params.id,
+        dadosAntigos: opportunity as any,
+        ipAddress: req.ip,
+        userAgent: req.get("user-agent"),
+      });
+
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting opportunity:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // ==================== CAMPAIGN ROUTES ====================
   app.get("/api/campaigns", isAuthenticated, async (req, res) => {
     try {
@@ -266,6 +293,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/templates/:id", isAuthenticated, async (req, res) => {
+    try {
+      const template = await storage.getTemplateById(req.params.id);
+      if (!template) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      res.json(template);
+    } catch (error: any) {
+      console.error("Error fetching template:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.post("/api/templates", isAuthenticated, async (req, res) => {
     try {
       const validatedData = insertTemplateSchema.parse({
@@ -291,6 +331,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Validation error", details: error.errors });
       }
       console.error("Error creating template:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/templates/:id", isAuthenticated, async (req, res) => {
+    try {
+      const template = await storage.getTemplateById(req.params.id);
+      if (!template) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+
+      await storage.deleteTemplate(req.params.id);
+
+      // Create audit log
+      await storage.createAuditLog({
+        userId: (req.user as any).id,
+        acao: "excluir",
+        entidade: "template",
+        entidadeId: req.params.id,
+        dadosAntigos: template as any,
+        ipAddress: req.ip,
+        userAgent: req.get("user-agent"),
+      });
+
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting template:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });

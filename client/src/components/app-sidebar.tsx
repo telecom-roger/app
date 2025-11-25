@@ -70,9 +70,9 @@ const adminItems = [
     icon: Users,
   },
   {
-    title: "Campos Dinâmicos",
-    url: "/admin/campos",
-    icon: Database,
+    title: "Templates",
+    url: "/admin/templates",
+    icon: Mail,
   },
   {
     title: "Configurações",

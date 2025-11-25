@@ -16,8 +16,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, GripVertical, User, DollarSign } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Select as SelectComponent,
+  SelectContent as SelectComponentContent,
+  SelectItem as SelectComponentItem,
+  SelectTrigger as SelectComponentTrigger,
+  SelectValue as SelectComponentValue,
+} from "@/components/ui/select";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Plus, GripVertical, User, DollarSign, Trash2 } from "lucide-react";
 import type { Opportunity } from "@shared/schema";
+import { insertOpportunitySchema } from "@shared/schema";
 
 const colunas = [
   { id: "lead", titulo: "Lead", cor: "bg-blue-500" },
@@ -31,6 +57,8 @@ export default function Kanban() {
   const { toast } = useToast();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [filtroResponsavel, setFiltroResponsavel] = useState<string>("todos");
+  const [showNovaOportunidade, setShowNovaOportunidade] = useState(false);
+  const [draggedCard, setDraggedCard] = useState<{ id: string; fromEtapa: string } | null>(null);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -50,6 +78,11 @@ export default function Kanban() {
       "/api/opportunities",
       filtroResponsavel !== "todos" ? { responsavel: filtroResponsavel } : null,
     ].filter(Boolean),
+    enabled: isAuthenticated,
+  });
+
+  const { data: clientes } = useQuery({
+    queryKey: ["/api/clients"],
     enabled: isAuthenticated,
   });
 
@@ -84,6 +117,26 @@ export default function Kanban() {
     },
   });
 
+  const deleteCardMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/opportunities/${id}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      toast({
+        title: "Sucesso",
+        description: "Oportunidade excluída",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir a oportunidade",
+        variant: "destructive",
+      });
+    },
+  });
+
   const oportunidadesPorEtapa = colunas.map(coluna => ({
     ...coluna,
     oportunidades: (oportunidades || []).filter(op => op.etapa === coluna.id),
@@ -113,7 +166,7 @@ export default function Kanban() {
               <SelectItem value={user?.id ? String(user.id) : ""}>Minhas oportunidades</SelectItem>
             </SelectContent>
           </Select>
-          <Button data-testid="button-nova-oportunidade">
+          <Button data-testid="button-nova-oportunidade" onClick={() => setShowNovaOportunidade(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Nova Oportunidade
           </Button>
@@ -128,27 +181,71 @@ export default function Kanban() {
               key={coluna.id}
               coluna={coluna}
               isLoading={isLoading}
-              onMoveCard={moveCardMutation.mutate}
+              onMoveCard={(id, etapa) => {
+                setDraggedCard(null);
+                moveCardMutation.mutate({ id, etapa });
+              }}
+              onDeleteCard={(id) => deleteCardMutation.mutate(id)}
+              draggedCard={draggedCard}
+              setDraggedCard={setDraggedCard}
             />
           ))}
         </div>
       </div>
+
+      {/* Modal Criar Oportunidade */}
+      <NovaOportunidadeDialog
+        open={showNovaOportunidade}
+        onOpenChange={setShowNovaOportunidade}
+        clientes={clientes || []}
+      />
     </div>
   );
 }
 
-function KanbanColumn({ 
-  coluna, 
+function KanbanColumn({
+  coluna,
   isLoading,
   onMoveCard,
-}: { 
+  onDeleteCard,
+  draggedCard,
+  setDraggedCard,
+}: {
   coluna: { id: string; titulo: string; cor: string; oportunidades: Opportunity[] };
   isLoading: boolean;
-  onMoveCard: (data: { id: string; etapa: string }) => void;
+  onMoveCard: (id: string, etapa: string) => void;
+  onDeleteCard: (id: string) => void;
+  draggedCard: { id: string; fromEtapa: string } | null;
+  setDraggedCard: (card: { id: string; fromEtapa: string } | null) => void;
 }) {
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+
+    if (draggedCard && draggedCard.id) {
+      onMoveCard(draggedCard.id, coluna.id);
+    }
+  };
+
   return (
-    <div className="flex-shrink-0 w-80">
-      <Card className="h-full flex flex-col">
+    <div
+      className="flex-shrink-0 w-80"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      <Card className={`h-full flex flex-col transition-colors ${isDragOver ? "bg-muted/50" : ""}`}>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -167,10 +264,12 @@ function KanbanColumn({
             ))
           ) : coluna.oportunidades.length > 0 ? (
             coluna.oportunidades.map((oportunidade) => (
-              <OpportunityCard 
-                key={oportunidade.id} 
+              <OpportunityCard
+                key={oportunidade.id}
                 oportunidade={oportunidade}
-                onMove={onMoveCard}
+                onDelete={onDeleteCard}
+                draggedCard={draggedCard}
+                setDraggedCard={setDraggedCard}
               />
             ))
           ) : (
@@ -184,38 +283,67 @@ function KanbanColumn({
   );
 }
 
-function OpportunityCard({ 
+function OpportunityCard({
   oportunidade,
-  onMove,
-}: { 
+  onDelete,
+  draggedCard,
+  setDraggedCard,
+}: {
   oportunidade: Opportunity;
-  onMove: (data: { id: string; etapa: string }) => void;
+  onDelete: (id: string) => void;
+  draggedCard: { id: string; fromEtapa: string } | null;
+  setDraggedCard: (card: { id: string; fromEtapa: string } | null) => void;
 }) {
+  const handleDragStart = () => {
+    setDraggedCard({ id: oportunidade.id, fromEtapa: oportunidade.etapa });
+  };
+
+  const handleDragEnd = () => {
+    setDraggedCard(null);
+  };
+
+  const isDragging = draggedCard?.id === oportunidade.id;
+
   return (
-    <Card 
-      className="cursor-move hover-elevate active-elevate-2"
+    <Card
+      className={`cursor-move hover-elevate active-elevate-2 transition-opacity ${
+        isDragging ? "opacity-50" : "opacity-100"
+      }`}
       data-testid={`card-oportunidade-${oportunidade.id}`}
       draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
     >
       <CardContent className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
-          <h4 className="font-medium leading-snug flex-1">{oportunidade.titulo}</h4>
-          <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          <h4 className="font-medium leading-snug flex-1 break-words">{oportunidade.titulo}</h4>
+          <div className="flex gap-1 flex-shrink-0">
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+            <button
+              onClick={() => onDelete(oportunidade.id)}
+              className="text-muted-foreground hover:text-destructive transition-colors"
+              data-testid={`button-delete-${oportunidade.id}`}
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {oportunidade.valorEstimado && (
           <div className="flex items-center gap-2 text-sm">
             <DollarSign className="h-4 w-4 text-muted-foreground" />
             <span className="font-semibold text-primary">
-              R$ {(oportunidade.valorEstimado / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {(oportunidade.valorEstimado / 100).toLocaleString("pt-BR", {
+                minimumFractionDigits: 2,
+              })}
             </span>
           </div>
         )}
 
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <div className="flex items-center justify-between text-xs text-muted-foreground gap-2">
           {oportunidade.prazo && (
             <span>
-              Prazo: {new Date(oportunidade.prazo).toLocaleDateString('pt-BR')}
+              {new Date(oportunidade.prazo).toLocaleDateString("pt-BR")}
             </span>
           )}
           {oportunidade.responsavelId && (
@@ -227,6 +355,147 @@ function OpportunityCard({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function NovaOportunidadeDialog({
+  open,
+  onOpenChange,
+  clientes,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  clientes: any[];
+}) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const form = useForm({
+    resolver: zodResolver(insertOpportunitySchema),
+    defaultValues: {
+      titulo: "",
+      clientId: "",
+      etapa: "lead",
+      valorEstimado: 0,
+      responsavelId: user?.id,
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await apiRequest("POST", "/api/opportunities", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      toast({
+        title: "Sucesso",
+        description: "Oportunidade criada com sucesso",
+      });
+      form.reset();
+      onOpenChange(false);
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível criar a oportunidade",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: any) => {
+    createMutation.mutate({
+      ...data,
+      valorEstimado: data.valorEstimado ? parseInt(data.valorEstimado) * 100 : 0,
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Nova Oportunidade</DialogTitle>
+          <DialogDescription>
+            Crie uma nova oportunidade para rastrear no funil de vendas
+          </DialogDescription>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="clientId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cliente</FormLabel>
+                  <FormControl>
+                    <SelectComponent value={field.value} onValueChange={field.onChange}>
+                      <SelectComponentTrigger>
+                        <SelectComponentValue placeholder="Selecione um cliente" />
+                      </SelectComponentTrigger>
+                      <SelectComponentContent>
+                        {clientes?.map((client: any) => (
+                          <SelectComponentItem key={client.id} value={client.id}>
+                            {client.nome}
+                          </SelectComponentItem>
+                        ))}
+                      </SelectComponentContent>
+                    </SelectComponent>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="titulo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Título</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: Proposta de plano móvel" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="valorEstimado"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Valor Estimado (R$)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="1000.00"
+                      {...field}
+                      onChange={(e) => field.onChange(e.target.value)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex gap-2 justify-end pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={createMutation.isPending}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={createMutation.isPending}>
+                {createMutation.isPending ? "Criando..." : "Criar"}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

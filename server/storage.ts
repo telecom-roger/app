@@ -257,6 +257,10 @@ export async function getTemplateById(id: string): Promise<Template | undefined>
   return result;
 }
 
+export async function deleteTemplate(id: string): Promise<void> {
+  await db.delete(templates).where(eq(templates.id, id));
+}
+
 // ==================== INTERACTION/TIMELINE STORAGE ====================
 export async function createInteraction(data: InsertInteraction): Promise<Interaction> {
   const [result] = await db.insert(interactions).values(data).returning();
