@@ -177,6 +177,7 @@ export default function Kanban() {
               key={coluna.id}
               coluna={coluna}
               isLoading={isLoading}
+              clientes={clientes}
               onMoveCard={(id, etapa) => {
                 setDraggedCard(null);
                 moveCardMutation.mutate({ id, etapa });
@@ -210,6 +211,7 @@ export default function Kanban() {
 function KanbanColumn({
   coluna,
   isLoading,
+  clientes,
   onMoveCard,
   onDeleteCard,
   onEditCard,
@@ -218,6 +220,7 @@ function KanbanColumn({
 }: {
   coluna: { id: string; titulo: string; cor: string; oportunidades: Opportunity[] };
   isLoading: boolean;
+  clientes: any[];
   onMoveCard: (id: string, etapa: string) => void;
   onDeleteCard: (id: string) => void;
   onEditCard: (oportunidade: Opportunity) => void;
@@ -273,6 +276,7 @@ function KanbanColumn({
               <OpportunityCard
                 key={oportunidade.id}
                 oportunidade={oportunidade}
+                cliente={clientes.find(c => c.id === oportunidade.clientId)}
                 onDelete={onDeleteCard}
                 onEdit={onEditCard}
                 draggedCard={draggedCard}
@@ -292,12 +296,14 @@ function KanbanColumn({
 
 function OpportunityCard({
   oportunidade,
+  cliente,
   onDelete,
   onEdit,
   draggedCard,
   setDraggedCard,
 }: {
   oportunidade: Opportunity;
+  cliente?: any;
   onDelete: (id: string) => void;
   onEdit: (oportunidade: Opportunity) => void;
   draggedCard: { id: string; fromEtapa: string } | null;
@@ -325,9 +331,15 @@ function OpportunityCard({
     >
       <CardContent className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
-          <h4 className="font-medium leading-snug flex-1 break-words">{oportunidade.titulo}</h4>
+          <div className="flex-1 min-w-0">
+            {cliente?.razaoSocial && (
+              <p className="text-xs font-semibold text-muted-foreground uppercase truncate">
+                {cliente.razaoSocial}
+              </p>
+            )}
+            <h4 className="font-medium leading-snug break-words">{oportunidade.titulo}</h4>
+          </div>
           <div className="flex gap-1 flex-shrink-0">
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
             <button
               onClick={() => onEdit(oportunidade)}
               className="text-muted-foreground hover:text-primary transition-colors"
@@ -346,9 +358,9 @@ function OpportunityCard({
         </div>
 
         {oportunidade.valorEstimado && (
-          <div className="flex items-center gap-2 text-sm">
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-            <span className="font-semibold text-primary">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <DollarSign className="h-4 w-4 text-primary" />
+            <span className="text-primary">
               R$ {(oportunidade.valorEstimado / 100).toLocaleString("pt-BR", {
                 minimumFractionDigits: 2,
               })}
@@ -458,7 +470,7 @@ function NovaOportunidadeDialog({
               control={form.control}
               name="clientId"
               render={({ field }) => {
-                const selectedClient = clientes.find((c: any) => c.id === field.value);
+                const fieldSelectedClient = clientes.find((c: any) => c.id === field.value);
                 return (
                   <FormItem>
                     <FormLabel>Cliente</FormLabel>
@@ -509,10 +521,10 @@ function NovaOportunidadeDialog({
                             )}
                           </div>
                         )}
-                        {selectedClient && (
+                        {fieldSelectedClient && (
                           <div className="p-2 bg-muted rounded text-sm">
-                            <div className="font-medium">{selectedClient.razaoSocial || selectedClient.nome}</div>
-                            <div className="text-xs text-muted-foreground">{selectedClient.cpfCnpj}</div>
+                            <div className="font-medium">{fieldSelectedClient.razaoSocial || fieldSelectedClient.nome}</div>
+                            <div className="text-xs text-muted-foreground">{fieldSelectedClient.cpfCnpj}</div>
                           </div>
                         )}
                       </div>
@@ -623,6 +635,8 @@ function EditarOportunidadeDialog({
                (client.cpfCnpj?.includes(searchCliente));
       });
 
+  const selectedClient = clientes.find((c: any) => c.id === oportunidade?.clientId);
+
   const form = useForm({
     resolver: zodResolver(insertOpportunitySchema),
     defaultValues: {
@@ -633,6 +647,19 @@ function EditarOportunidadeDialog({
       responsavelId: oportunidade?.responsavelId || user?.id,
     },
   });
+
+  useEffect(() => {
+    if (oportunidade) {
+      form.reset({
+        titulo: oportunidade.titulo,
+        clientId: oportunidade.clientId,
+        etapa: oportunidade.etapa,
+        valorEstimado: oportunidade.valorEstimado || 0,
+        responsavelId: oportunidade.responsavelId || user?.id,
+      });
+      setSearchCliente("");
+    }
+  }, [oportunidade, open]);
 
   const editMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -682,7 +709,7 @@ function EditarOportunidadeDialog({
               control={form.control}
               name="clientId"
               render={({ field }) => {
-                const selectedClient = clientes.find((c: any) => c.id === field.value);
+                const fieldSelectedClient = clientes.find((c: any) => c.id === field.value);
                 return (
                   <FormItem>
                     <FormLabel>Cliente</FormLabel>
@@ -733,10 +760,10 @@ function EditarOportunidadeDialog({
                             )}
                           </div>
                         )}
-                        {selectedClient && (
+                        {fieldSelectedClient && (
                           <div className="p-2 bg-muted rounded text-sm">
-                            <div className="font-medium">{selectedClient.razaoSocial || selectedClient.nome}</div>
-                            <div className="text-xs text-muted-foreground">{selectedClient.cpfCnpj}</div>
+                            <div className="font-medium">{fieldSelectedClient.razaoSocial || fieldSelectedClient.nome}</div>
+                            <div className="text-xs text-muted-foreground">{fieldSelectedClient.cpfCnpj}</div>
                           </div>
                         )}
                       </div>
