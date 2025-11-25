@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MessageSquare, Plus, Trash2, RotateCw } from "lucide-react";
+import { MessageSquare, Plus, Trash2, RotateCw, CheckCircle, AlertCircle } from "lucide-react";
 
 export default function WhatsApp() {
   const { toast } = useToast();
@@ -35,12 +35,45 @@ export default function WhatsApp() {
   const [openDialog, setOpenDialog] = useState(false);
   const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
   const [reconnectSessionId, setReconnectSessionId] = useState<string | null>(null);
+  const previousSessionsRef = useRef<any[]>([]);
 
   const { data: sessions, isLoading } = useQuery<any[]>({
     queryKey: ["/api/whatsapp/sessions"],
     enabled: isAuthenticated,
     refetchInterval: 1000, // Poll every 1 second for real-time status updates
   });
+
+  // Monitor session status changes and show alerts
+  useEffect(() => {
+    if (sessions && sessions.length > 0) {
+      // Compare current sessions with previous ones to detect status changes
+      sessions.forEach((currentSession) => {
+        const previousSession = previousSessionsRef.current.find(
+          (s) => s.id === currentSession.id
+        );
+        
+        // Detect connection
+        if (previousSession && previousSession.status !== "conectada" && currentSession.status === "conectada") {
+          toast({
+            title: "Conectado!",
+            description: `WhatsApp ${currentSession.nome} conectado com sucesso ✓`,
+          });
+        }
+        
+        // Detect disconnection
+        if (previousSession && previousSession.status === "conectada" && currentSession.status !== "conectada") {
+          toast({
+            title: "Desconectado",
+            description: `WhatsApp ${currentSession.nome} foi desconectado`,
+            variant: "destructive",
+          });
+        }
+      });
+
+      // Update ref with current sessions
+      previousSessionsRef.current = sessions;
+    }
+  }, [sessions, toast]);
 
   // Auto-close modal when any session connects
   useEffect(() => {
@@ -50,10 +83,6 @@ export default function WhatsApp() {
         console.log("✅ Sessão conectada! Fechando modal...");
         setOpenDialog(false);
         setQrCode(null);
-        toast({
-          title: "Conectado!",
-          description: `Sessão ${connectedSession.nome} conectada com sucesso`,
-        });
       }
     }
   }, [sessions, openDialog]);
