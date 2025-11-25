@@ -370,7 +370,7 @@ export async function getDashboardStats(userId?: string) {
 }
 
 export async function getFunnelData() {
-  const [results] = await db
+  const results = await db
     .select({
       etapa: opportunities.etapa,
       count: sql<number>`count(*)::int`,
@@ -395,7 +395,7 @@ export async function getFunnelData() {
 }
 
 export async function getStatusDistribution() {
-  const [results] = await db
+  const results = await db
     .select({
       status: clients.status,
       count: sql<number>`count(*)::int`,

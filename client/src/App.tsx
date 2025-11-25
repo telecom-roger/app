@@ -23,10 +23,10 @@ import Importacao from "@/pages/importacao";
 import AdminUsuarios from "@/pages/admin-usuarios";
 import NotFound from "@/pages/not-found";
 
-function Router() {
+function Router({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
     <Switch>
-      <Route path="/" component={Landing} />
+      <Route path="/" component={isAuthenticated ? Dashboard : Landing} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/dashboard" component={Dashboard} />
@@ -66,7 +66,7 @@ function AppContent() {
   if (!isAuthenticated) {
     return (
       <>
-        <Router />
+        <Router isAuthenticated={isAuthenticated} />
       </>
     );
   }
@@ -81,7 +81,7 @@ function AppContent() {
             <ThemeToggle />
           </header>
           <main className="flex-1 overflow-auto">
-            <Router />
+            <Router isAuthenticated={isAuthenticated} />
           </main>
         </div>
       </div>
