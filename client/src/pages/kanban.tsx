@@ -458,12 +458,14 @@ function NovaOportunidadeDialog({
                                 </SelectComponentItem>
                               ))
                             ) : (
-                              <SelectComponentItem value="" disabled>
+                              <div className="p-2 text-sm text-muted-foreground text-center">
                                 Nenhum cliente encontrado
-                              </SelectComponentItem>
+                              </div>
                             )
                           ) : (
-                            <SelectComponentItem value="">Carregando clientes...</SelectComponentItem>
+                            <div className="p-2 text-sm text-muted-foreground text-center">
+                              Carregando clientes...
+                            </div>
                           )}
                         </SelectComponentContent>
                       </SelectComponent>
