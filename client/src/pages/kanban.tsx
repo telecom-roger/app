@@ -259,7 +259,18 @@ function KanbanColumn({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className={`h-2 w-2 rounded-full ${coluna.cor}`} />
-              <h3 className="font-semibold">{coluna.titulo}</h3>
+              <div className="flex flex-col">
+                <h3 className="font-semibold">{coluna.titulo}</h3>
+                {coluna.oportunidades.length > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    Total: R$ {(
+                      coluna.oportunidades.reduce((sum, op) => sum + (op.valorEstimado || 0), 0) / 100
+                    ).toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </span>
+                )}
+              </div>
             </div>
             <Badge variant="secondary" className="ml-auto">
               {coluna.oportunidades.length}
