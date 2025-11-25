@@ -549,12 +549,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
           
-          // If memory shows "desconectada" but credentials are saved, it means the connection
-          // was lost but the session can be restored - mark it as "conectada"
-          if (liveStatus === "desconectada" && whatsappService.isSessionCredentialsSaved(session.sessionId)) {
-            liveStatus = "conectada";
-            console.log(`📚 Sessão ${session.sessionId} tem credenciais salvas - marcando como conectada`);
-          }
+          // Status from memory is the source of truth
+          // Don't automatically mark as "conectada" just because credentials exist
+          // That would hide real disconnections from the user
           
           if (liveStatus !== session.status) {
             console.log(`🔄 Sincronizando status da sessão ${session.sessionId}: ${session.status} → ${liveStatus}`);
