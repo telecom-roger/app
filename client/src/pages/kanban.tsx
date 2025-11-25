@@ -264,7 +264,7 @@ function KanbanColumn({
                 {coluna.oportunidades.length > 0 && (
                   <span className="text-xs text-muted-foreground">
                     Total: R$ {(
-                      coluna.oportunidades.reduce((sum, op) => sum + (op.valorEstimado || 0), 0) / 100
+                      coluna.oportunidades.reduce((sum, op) => sum + (op.valorEstimado || 0), 0)
                     ).toLocaleString("pt-BR", {
                       minimumFractionDigits: 2,
                     })}
@@ -372,7 +372,7 @@ function OpportunityCard({
           <div className="flex items-center gap-2 text-sm font-semibold">
             <DollarSign className="h-4 w-4 text-primary" />
             <span className="text-primary">
-              R$ {(oportunidade.valorEstimado / 100).toLocaleString("pt-BR", {
+              R$ {oportunidade.valorEstimado.toLocaleString("pt-BR", {
                 minimumFractionDigits: 2,
               })}
             </span>
@@ -568,13 +568,12 @@ function NovaOportunidadeDialog({
                   return new Intl.NumberFormat("pt-BR", {
                     style: "currency",
                     currency: "BRL",
-                  }).format(value / 100);
+                  }).format(value);
                 };
 
                 const parseCurrency = (text: string) => {
                   const cleaned = text.replace(/\D/g, "");
-                  // Converte para centavos (multiplica por 100)
-                  return cleaned ? parseInt(cleaned) * 100 : 0;
+                  return cleaned ? parseInt(cleaned) : 0;
                 };
 
                 return (
