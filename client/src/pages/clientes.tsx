@@ -59,7 +59,7 @@ export default function Clientes() {
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [page, setPage] = useState(1);
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
-  const limit = 10;
+  const limit = 5;
 
   // Delete mutation
   const deleteMutation = useMutation({
@@ -182,97 +182,79 @@ export default function Clientes() {
         </div>
       </Card>
 
-      {/* Cards List */}
-      <div className="space-y-4">
-        {isLoading ? (
-          <>
-            {Array.from({ length: 10 }).map((_, i) => (
-              <Card key={i} className="p-4 bg-white border border-[#776BFF]">
-                <Skeleton className="h-8 w-1/3 mb-2" />
-                <Skeleton className="h-6 w-1/4" />
-              </Card>
-            ))}
-          </>
-        ) : data?.clientes && data.clientes.length > 0 ? (
-          <>
-            {data.clientes.map((cliente) => (
-              <Link key={cliente.id} href={`/clientes/${cliente.id}`}>
-                <Card 
-                  className="p-5 hover-elevate cursor-pointer transition-all bg-white border-2 border-[#776BFF] hover:shadow-lg"
-                  data-testid={`card-cliente-${cliente.id}`}
+      {/* Table */}
+      <Card className="bg-white border-2 border-[#776BFF] overflow-hidden">
+        <Table>
+          <TableHeader className="bg-[#776BFF]/5">
+            <TableRow className="border-b border-[#776BFF]/20 hover:bg-transparent">
+              <TableHead className="text-foreground font-bold">Nome / Razão Social</TableHead>
+              <TableHead className="text-foreground font-bold">CPF/CNPJ</TableHead>
+              <TableHead className="text-foreground font-bold">Status</TableHead>
+              <TableHead className="text-foreground font-bold">Score</TableHead>
+              <TableHead className="text-foreground font-bold">Carteira</TableHead>
+              <TableHead className="w-12"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i} className="border-b border-[#776BFF]/10 hover:bg-[#776BFF]/5">
+                  <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-8" /></TableCell>
+                </TableRow>
+              ))
+            ) : data?.clientes && data.clientes.length > 0 ? (
+              data.clientes.map((cliente) => (
+                <TableRow 
+                  key={cliente.id} 
+                  className="border-b border-[#776BFF]/10 hover:bg-[#776BFF]/5 cursor-pointer transition-colors"
+                  data-testid={`row-cliente-${cliente.id}`}
                 >
-                  <div className="flex items-center justify-between gap-4">
-                    {/* Left Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-foreground">
-                        {cliente.razaoSocial || cliente.nome}
+                  <TableCell>
+                    <Link href={`/clientes/${cliente.id}`}>
+                      <div>
+                        <div className="font-medium">{cliente.nome}</div>
+                        {cliente.razaoSocial && (
+                          <div className="text-sm text-muted-foreground">
+                            {cliente.razaoSocial}
+                          </div>
+                        )}
                       </div>
-                      <div className="text-sm text-muted-foreground mt-1">
-                        {cliente.cpfCnpj}
-                      </div>
-                    </div>
-
-                    {/* Status */}
-                    <div>
-                      <Badge 
-                        variant="secondary" 
-                        className={`${statusColors[cliente.status] || ''} text-xs`}
-                      >
-                        {cliente.status}
-                      </Badge>
-                    </div>
-
-                    {/* Score */}
-                    <div className="w-32">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-muted-foreground">Score</span>
-                        <span className="text-sm font-semibold text-primary">{cliente.score || 0}%</span>
-                      </div>
-                      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                    </Link>
+                  </TableCell>
+                  <TableCell className="font-mono text-sm">
+                    {cliente.cpfCnpj || '-'}
+                  </TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant="secondary" 
+                      className={statusColors[cliente.status] || ''}
+                    >
+                      {cliente.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="text-sm font-medium">{cliente.score || 0}%</div>
+                      <div className="h-1.5 w-12 rounded-full bg-muted overflow-hidden">
                         <div 
-                          className="h-full bg-primary"
+                          className="h-full bg-[#776BFF]"
                           style={{ width: `${cliente.score || 0}%` }}
                         />
                       </div>
                     </div>
-
-                    {/* Carteira */}
-                    {cliente.carteira && (
-                      <div className="text-sm text-center min-w-24">
-                        <div className="text-xs text-muted-foreground">Carteira</div>
-                        <div className="font-medium">{cliente.carteira}</div>
-                      </div>
-                    )}
-
-                    {/* Tags */}
-                    <div className="flex gap-1">
-                      {cliente.tags && cliente.tags.length > 0 ? (
-                        <>
-                          {cliente.tags.slice(0, 1).map((tag, i) => (
-                            <Badge key={i} variant="outline" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                          {cliente.tags.length > 1 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{cliente.tags.length - 1}
-                            </Badge>
-                          )}
-                        </>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">-</span>
-                      )}
-                    </div>
-
-                    {/* Actions */}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {cliente.carteira || '-'}
+                  </TableCell>
+                  <TableCell>
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-9 w-9"
-                          data-testid={`button-actions-${cliente.id}`}
-                        >
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" data-testid="button-actions">
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -293,52 +275,56 @@ export default function Clientes() {
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-12">
+                  <div className="text-muted-foreground">
+                    <Users className="h-12 w-12 mx-auto mb-3 opacity-40" />
+                    <p>Nenhum cliente encontrado</p>
+                    <p className="text-sm mt-1">
+                      Importe seus clientes ou crie um novo cadastro
+                    </p>
                   </div>
-                </Card>
-              </Link>
-            ))}
-
-            {/* Pagination */}
-            {data.total > limit && (
-              <div className="flex items-center justify-between mt-8 p-4 border-t">
-                <div className="text-sm text-muted-foreground">
-                  Página {page} de {Math.ceil(data.total / limit)} • {data.total} clientes
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page === 1}
-                    onClick={() => setPage(p => p - 1)}
-                    data-testid="button-prev-page"
-                  >
-                    Anterior
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page * limit >= data.total}
-                    onClick={() => setPage(p => p + 1)}
-                    data-testid="button-next-page"
-                  >
-                    Próxima
-                  </Button>
-                </div>
-              </div>
+                </TableCell>
+              </TableRow>
             )}
-          </>
-        ) : (
-          <Card className="p-12 text-center">
-            <div className="text-muted-foreground">
-              <Users className="h-12 w-12 mx-auto mb-3 opacity-40" />
-              <p className="font-medium">Nenhum cliente encontrado</p>
-              <p className="text-sm mt-1">
-                Importe seus clientes ou crie um novo cadastro
-              </p>
+          </TableBody>
+        </Table>
+
+        {/* Pagination */}
+        {data && data.total > limit && (
+          <div className="flex items-center justify-between p-4 border-t border-[#776BFF]/20 bg-[#776BFF]/2">
+            <div className="text-sm text-muted-foreground font-medium">
+              Página {page} de {Math.ceil(data.total / limit)} • {data.total} clientes
             </div>
-          </Card>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === 1}
+                onClick={() => setPage(p => p - 1)}
+                data-testid="button-prev-page"
+                className="border-[#776BFF] text-[#776BFF] hover:bg-[#776BFF] hover:text-white"
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page * limit >= data.total}
+                onClick={() => setPage(p => p + 1)}
+                data-testid="button-next-page"
+                className="border-[#776BFF] text-[#776BFF] hover:bg-[#776BFF] hover:text-white"
+              >
+                Próxima
+              </Button>
+            </div>
+          </div>
         )}
-      </div>
+      </Card>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteClientId} onOpenChange={() => setDeleteClientId(null)}>
