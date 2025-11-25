@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
-import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, whatsappSessions } from "@shared/schema";
+import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, whatsappSessions, clients } from "@shared/schema";
 import * as storage from "./storage";
 import * as whatsappService from "./whatsappService";
 import { setupAuth, isAuthenticated } from "./localAuth";
@@ -798,7 +798,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // New endpoint for single message sending from campaigns page
   app.post("/api/whatsapp/enviar-broadcast", isAuthenticated, async (req, res) => {
     try {
-      const { telefone, mensagem } = req.body;
+      const { telefone, mensagem, clientId } = req.body;
       
       if (!telefone || !mensagem) {
         return res.status(400).json({ error: "telefone e mensagem são obrigatórios" });
@@ -822,6 +822,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send the message
       try {
         await whatsappService.sendMessage(sessaoConectada.sessionId, telefone, mensagem);
+        
+        // Record interaction in timeline if clientId is provided
+        if (clientId) {
+          try {
+            await storage.createInteraction({
+              clientId,
+              tipo: "whatsapp_enviado",
+              origem: "system",
+              titulo: "Mensagem WhatsApp enviada",
+              texto: mensagem.substring(0, 200),
+              meta: {
+                telefone,
+                sessionId: sessaoConectada.sessionId,
+                timestamp: new Date().toISOString(),
+              } as any,
+              createdBy: user.id,
+            });
+          } catch (err) {
+            console.warn("Erro ao registrar interação:", err);
+            // Don't fail the whole request if interaction logging fails
+          }
+        }
+        
         res.json({ 
           success: true,
           mensagem: "Mensagem enviada com sucesso"
@@ -834,6 +857,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error: any) {
       console.error("Error in whatsapp broadcast:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Endpoint para listar clientes com WhatsApp
+  app.get("/api/clients/whatsapp-list", isAuthenticated, async (req, res) => {
+    try {
+      const { status = "todos" } = req.query;
+      
+      let whereClause: any = undefined;
+      if (status && status !== "todos") {
+        whereClause = eq(clients.status, status as string);
+      }
+
+      const result = await db
+        .select({
+          id: clients.id,
+          nome: clients.nome,
+          telefone: clients.CELULAR_PRINCIPAL,
+          email: clients.EMAIL_PRINCIPAL,
+        })
+        .from(clients)
+        .where(whereClause)
+        .limit(10000);
+
+      // Filter clients with valid phones
+      const clientsWithPhones = result.filter((c) => c.telefone && c.telefone.trim());
+
+      res.json(clientsWithPhones);
+    } catch (error: any) {
+      console.error("Error fetching WhatsApp client list:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });

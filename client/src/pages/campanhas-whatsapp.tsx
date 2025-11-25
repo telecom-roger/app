@@ -11,6 +11,14 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -26,6 +34,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   Send, 
   Upload, 
@@ -37,8 +52,10 @@ import {
   Loader,
   Copy,
   Trash2,
+  Download,
+  X,
 } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import Papa from "papaparse";
 
 type ContactEntry = {
@@ -50,6 +67,14 @@ type SendingStatus = {
   status: "pendente" | "enviando" | "sucesso" | "erro";
   erro?: string;
   timestamp?: string;
+  clientId?: string;
+};
+
+type ClientForImport = {
+  id: string;
+  nome: string;
+  telefone: string;
+  email?: string;
 };
 
 export default function CampanhasWhatsApp() {
@@ -69,6 +94,14 @@ export default function CampanhasWhatsApp() {
   const [statusEnvio, setStatusEnvio] = useState<SendingStatus[]>([]);
   const [mostrarPreview, setMostrarPreview] = useState(false);
   const [confirmarEnvio, setConfirmarEnvio] = useState(false);
+  const [mostrarSeletorBD, setMostrarSeletorBD] = useState(false);
+  const [filtroStatus, setFiltroStatus] = useState("todos");
+
+  // Fetch clients
+  const { data: clientesDisponiveis = [] } = useQuery<ClientForImport[]>({
+    queryKey: ["/api/clients/whatsapp-list"],
+    enabled: isAuthenticated && mostrarSeletorBD,
+  });
 
   // Parse CSV when text changes
   useEffect(() => {
@@ -82,7 +115,7 @@ export default function CampanhasWhatsApp() {
       header: true,
       dynamicTyping: false,
       skipEmptyLines: true,
-      complete: (results) => {
+      complete: (results: any) => {
         if (results.data && Array.isArray(results.data)) {
           // Remove duplicates and blank phones
           const contatosProcessados: ContactEntry[] = [];
@@ -124,7 +157,7 @@ export default function CampanhasWhatsApp() {
           }
         }
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error("Erro ao parsear CSV:", error);
         toast({
           title: "Erro",
@@ -146,6 +179,26 @@ export default function CampanhasWhatsApp() {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  // Import clients from database
+  const importarDosBD = () => {
+    const contatosFromDB: ContactEntry[] = clientesDisponiveis
+      .filter((c) => c.telefone)
+      .map((c, idx) => ({
+        id: (idx + 1).toString(),
+        whatsapp: c.telefone,
+        empresa: c.nome || "N/A",
+      }));
+
+    setContatos(contatosFromDB);
+    setVariaveisDisponiveis(["id", "whatsapp", "empresa"]);
+    setMostrarSeletorBD(false);
+
+    toast({
+      title: "Sucesso",
+      description: `${contatosFromDB.length} contatos carregados da base`,
+    });
   };
 
   // Replace variables in template
@@ -196,7 +249,8 @@ export default function CampanhasWhatsApp() {
     setEnviando(true);
     setStatusEnvio(
       contatos.map((c) => ({
-        telefone: c.numeroTelefone || c.whatsapp || c.telefone || c.celular || "???",
+        telefone: c.whatsapp || c.numeroTelefone || c.telefone || c.celular || "???",
+        clientId: c.id || "",
         status: "pendente" as const,
       }))
     );
@@ -206,8 +260,8 @@ export default function CampanhasWhatsApp() {
       for (let i = 0; i < contatos.length; i++) {
         const contato = contatos[i];
         const telefone =
-          contato.numeroTelefone ||
           contato.whatsapp ||
+          contato.numeroTelefone ||
           contato.telefone ||
           contato.celular ||
           "";
@@ -227,6 +281,7 @@ export default function CampanhasWhatsApp() {
           const formData = new FormData();
           formData.append("telefone", telefone);
           formData.append("mensagem", mensagem);
+          formData.append("clientId", contato.id || "");
           if (imagemSelecionada) {
             formData.append("imagem", imagemSelecionada);
           }
@@ -332,26 +387,58 @@ export default function CampanhasWhatsApp() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Contatos</CardTitle>
-                  <CardDescription>Cole sua planilha aqui (Ctrl+C/Ctrl+V)</CardDescription>
+                  <CardDescription>Cole planilha ou importe da base</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Textarea for pasting */}
                   <Textarea
-                    placeholder="Cole seus contatos aqui...&#10;Exemplo:&#10;numeroTelefone&#9;empresa&#10;5511999999999&#9;Empresa A&#10;5511988888888&#9;Empresa B"
+                    placeholder="Cole seus contatos aqui (Ctrl+C/Ctrl+V)..."
                     value={textoPlanilha}
                     onChange={(e) => setTextoPlanilha(e.target.value)}
-                    className="font-mono text-sm h-64"
+                    className="font-mono text-sm h-48"
                     data-testid="textarea-contatos"
                   />
-                  
+
+                  {/* Import from DB button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setMostrarSeletorBD(true)}
+                    className="w-full"
+                    data-testid="button-importar-db"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Carregar da Base
+                  </Button>
+
+                  {/* Clear button */}
+                  {contatos.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setContatos([]);
+                        setTextoPlanilha("");
+                        setVariaveisDisponiveis([]);
+                      }}
+                      className="w-full"
+                      data-testid="button-limpar-contatos"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Limpar
+                    </Button>
+                  )}
+
                   {contatosProcessados > 0 && (
                     <div className="space-y-2">
                       <Badge className="w-full justify-center py-2 text-sm" variant="outline">
-                        {contatosProcessados} contato{contatosProcessados !== 1 ? "s" : ""} válido
+                        {contatosProcessados} contato
+                        {contatosProcessados !== 1 ? "s" : ""} válido
                         {contatosProcessados !== 1 ? "s" : ""}
                       </Badge>
                       <div className="text-xs text-muted-foreground space-y-1">
                         <div>
-                          <strong>Variáveis disponíveis:</strong>
+                          <strong>Variáveis:</strong>
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {variaveisDisponiveis.map((v) => (
@@ -369,7 +456,54 @@ export default function CampanhasWhatsApp() {
               </Card>
             </div>
 
-            {/* Center: Template */}
+            {/* Center: Tabela de Contatos */}
+            <div className="lg:col-span-1 space-y-4">
+              <Card className="flex flex-col h-full">
+                <CardHeader>
+                  <CardTitle className="text-base">Planilha</CardTitle>
+                  <CardDescription>Visualização dos contatos</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 overflow-hidden flex flex-col">
+                  {contatos.length > 0 ? (
+                    <div className="flex-1 overflow-auto border rounded-md">
+                      <Table className="text-xs">
+                        <TableHeader className="sticky top-0 bg-muted">
+                          <TableRow>
+                            {variaveisDisponiveis.slice(0, 3).map((v) => (
+                              <TableHead key={v} className="py-2 px-3">
+                                {v}
+                              </TableHead>
+                            ))}
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {contatos.slice(0, 10).map((contato, idx) => (
+                            <TableRow key={idx}>
+                              {variaveisDisponiveis.slice(0, 3).map((v) => (
+                                <TableCell key={`${idx}-${v}`} className="py-2 px-3 font-mono text-xs">
+                                  {contato[v] || "-"}
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                      {contatos.length > 10 && (
+                        <div className="text-xs text-muted-foreground p-3 border-t">
+                          ... e mais {contatos.length - 10}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center flex-1 text-muted-foreground">
+                      Nenhum contato
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right: Template */}
             <div className="lg:col-span-1 space-y-4">
               <Card className="flex flex-col h-full">
                 <CardHeader>
@@ -396,89 +530,97 @@ export default function CampanhasWhatsApp() {
                   </Button>
 
                   {mostrarPreview && contatos.length > 0 && (
-                    <div className="bg-muted p-3 rounded-md text-sm border-l-2 border-primary">
-                      <div className="font-semibold mb-2">Preview (1º contato):</div>
-                      <div className="whitespace-pre-wrap break-words">{obterPreview()}</div>
+                    <div className="bg-muted p-3 rounded-md text-sm border-l-2 border-primary max-h-40 overflow-y-auto">
+                      <div className="font-semibold mb-2 text-xs">Preview (1º contato):</div>
+                      <div className="whitespace-pre-wrap break-words text-xs">{obterPreview()}</div>
                     </div>
                   )}
                 </CardContent>
               </Card>
             </div>
+          </div>
 
-            {/* Right: Status em tempo real */}
-            <div className="lg:col-span-1 space-y-4">
-              <Card className="flex flex-col h-full">
-                <CardHeader>
-                  <CardTitle className="text-base">Status</CardTitle>
-                  <CardDescription>Acompanhe os envios</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4 flex-1 flex flex-col">
-                  {statusEnvio.length > 0 ? (
-                    <>
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center text-sm">
-                          <span>Enviados:</span>
-                          <Badge variant="default">{sucessos}</Badge>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                          <span>Erros:</span>
-                          <Badge variant="destructive">{erros}</Badge>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                          <span>Pendentes:</span>
-                          <Badge variant="secondary">
-                            {statusEnvio.filter((s) => s.status === "pendente" || s.status === "enviando")
-                              .length}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      <Progress
-                        value={
-                          statusEnvio.length > 0
-                            ? (sucessos / statusEnvio.length) * 100
-                            : 0
-                        }
-                        className="h-2"
-                      />
-
-                      {/* Status list */}
-                      <div className="space-y-2 flex-1 overflow-y-auto max-h-64">
-                        {statusEnvio.map((s, idx) => (
-                          <div key={idx} className="flex items-start gap-2 text-sm p-2 bg-muted rounded">
-                            <div className="flex-1">
-                              <div className="font-mono text-xs">{s.telefone}</div>
-                              {s.erro && (
-                                <div className="text-xs text-destructive">{s.erro}</div>
-                              )}
-                              {s.timestamp && (
-                                <div className="text-xs text-muted-foreground">{s.timestamp}</div>
-                              )}
-                            </div>
-                            {s.status === "sucesso" && (
-                              <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-1" />
-                            )}
-                            {s.status === "erro" && (
-                              <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0 mt-1" />
-                            )}
-                            {s.status === "enviando" && (
-                              <Loader className="h-4 w-4 text-blue-500 flex-shrink-0 mt-1 animate-spin" />
-                            )}
-                            {s.status === "pendente" && (
-                              <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-1" />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                      Aguardando envio...
+          {/* Status Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Status Summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Resumo</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {statusEnvio.length > 0 ? (
+                  <>
+                    <div className="flex justify-between items-center text-sm">
+                      <span>Enviados:</span>
+                      <Badge variant="default">{sucessos}</Badge>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span>Erros:</span>
+                      <Badge variant="destructive">{erros}</Badge>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span>Pendentes:</span>
+                      <Badge variant="secondary">
+                        {statusEnvio.filter((s) => s.status === "pendente" || s.status === "enviando")
+                          .length}
+                      </Badge>
+                    </div>
+                    <Progress
+                      value={
+                        statusEnvio.length > 0
+                          ? (sucessos / statusEnvio.length) * 100
+                          : 0
+                      }
+                      className="h-2"
+                    />
+                  </>
+                ) : (
+                  <div className="text-muted-foreground text-sm">Aguardando envio...</div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Status list */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="text-sm">Status de Envio</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {statusEnvio.length > 0 ? (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {statusEnvio.map((s, idx) => (
+                      <div key={idx} className="flex items-start gap-2 text-sm p-2 bg-muted rounded">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-mono text-xs truncate">{s.telefone}</div>
+                          {s.erro && (
+                            <div className="text-xs text-destructive truncate">{s.erro}</div>
+                          )}
+                          {s.timestamp && (
+                            <div className="text-xs text-muted-foreground">{s.timestamp}</div>
+                          )}
+                        </div>
+                        {s.status === "sucesso" && (
+                          <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-1" />
+                        )}
+                        {s.status === "erro" && (
+                          <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0 mt-1" />
+                        )}
+                        {s.status === "enviando" && (
+                          <Loader className="h-4 w-4 text-blue-500 flex-shrink-0 mt-1 animate-spin" />
+                        )}
+                        {s.status === "pendente" && (
+                          <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-1" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-muted-foreground text-sm text-center py-4">
+                    Nenhum envio realizado
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {/* Action Buttons */}
@@ -545,7 +687,8 @@ export default function CampanhasWhatsApp() {
               {/* Imagem */}
               <div className="space-y-3">
                 <Label>Imagem (opcional)</Label>
-                <div className="border-2 border-dashed rounded-lg p-6 text-center hover-elevate cursor-pointer transition-colors"
+                <div
+                  className="border-2 border-dashed rounded-lg p-6 text-center hover-elevate cursor-pointer transition-colors"
                   onClick={() => document.getElementById("upload-imagem")?.click()}
                 >
                   {imagemPreview ? (
@@ -591,6 +734,54 @@ export default function CampanhasWhatsApp() {
         </TabsContent>
       </Tabs>
 
+      {/* Dialog: Import from DB */}
+      <Dialog open={mostrarSeletorBD} onOpenChange={setMostrarSeletorBD}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Carregar Contatos da Base</DialogTitle>
+            <DialogDescription>
+              Selecione um status para filtrar os contatos
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="lead">Lead</SelectItem>
+                <SelectItem value="ativo">Ativo</SelectItem>
+                <SelectItem value="proposta">Proposta</SelectItem>
+                <SelectItem value="fechado">Fechado</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div className="text-sm text-muted-foreground">
+              Total de contatos com telefone: <strong>{clientesDisponiveis.length}</strong>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setMostrarSeletorBD(false)}
+                data-testid="button-cancelar-seletor"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={importarDosBD}
+                disabled={clientesDisponiveis.length === 0}
+                data-testid="button-confirmar-importar"
+              >
+                Importar {clientesDisponiveis.length} Contatos
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Confirmation Dialog */}
       <AlertDialog open={confirmarEnvio} onOpenChange={setConfirmarEnvio}>
         <AlertDialogContent>
@@ -604,7 +795,7 @@ export default function CampanhasWhatsApp() {
           </AlertDialogHeader>
           <div className="my-4 p-3 bg-muted rounded text-sm">
             <strong>Preview:</strong>
-            <div className="mt-2 text-xs whitespace-pre-wrap">{obterPreview()}</div>
+            <div className="mt-2 text-xs whitespace-pre-wrap max-h-40 overflow-y-auto">{obterPreview()}</div>
           </div>
           <div className="flex gap-3">
             <AlertDialogCancel data-testid="button-cancelar-envio">Cancelar</AlertDialogCancel>
