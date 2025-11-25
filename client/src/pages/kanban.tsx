@@ -563,37 +563,21 @@ function NovaOportunidadeDialog({
             <FormField
               control={form.control}
               name="valorEstimado"
-              render={({ field }) => {
-                const formatCurrency = (value: number) => {
-                  return new Intl.NumberFormat("pt-BR", {
-                    style: "currency",
-                    currency: "BRL",
-                  }).format(value);
-                };
-
-                const parseCurrency = (text: string) => {
-                  const cleaned = text.replace(/\D/g, "");
-                  return cleaned ? parseInt(cleaned) : 0;
-                };
-
-                return (
-                  <FormItem>
-                    <FormLabel>Valor Estimado</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="R$ 0,00"
-                        value={field.value ? formatCurrency(field.value) : ""}
-                        onChange={(e) => {
-                          const parsed = parseCurrency(e.target.value);
-                          field.onChange(parsed);
-                        }}
-                        data-testid="input-valor-estimado"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                );
-              }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Valor Estimado</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Digite o valor em números"
+                      type="number"
+                      value={field.value || ""}
+                      onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : 0)}
+                      data-testid="input-valor-estimado"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
 
             <div className="flex gap-2 justify-end pt-4">
@@ -802,38 +786,21 @@ function EditarOportunidadeDialog({
             <FormField
               control={form.control}
               name="valorEstimado"
-              render={({ field }) => {
-                const formatCurrency = (value: number) => {
-                  return new Intl.NumberFormat("pt-BR", {
-                    style: "currency",
-                    currency: "BRL",
-                  }).format(value / 100);
-                };
-
-                const parseCurrency = (text: string) => {
-                  const cleaned = text.replace(/\D/g, "");
-                  // Converte para centavos (multiplica por 100)
-                  return cleaned ? parseInt(cleaned) * 100 : 0;
-                };
-
-                return (
-                  <FormItem>
-                    <FormLabel>Valor Estimado</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="R$ 0,00"
-                        value={field.value ? formatCurrency(field.value) : ""}
-                        onChange={(e) => {
-                          const parsed = parseCurrency(e.target.value);
-                          field.onChange(parsed);
-                        }}
-                        data-testid="input-valor-estimado-edit"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                );
-              }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Valor Estimado</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Digite o valor em números"
+                      type="number"
+                      value={field.value || ""}
+                      onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : 0)}
+                      data-testid="input-valor-estimado-edit"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
 
             <div className="flex gap-2 justify-end pt-4">
