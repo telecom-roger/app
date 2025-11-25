@@ -59,7 +59,7 @@ export default function Clientes() {
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [page, setPage] = useState(1);
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
-  const limit = 9;
+  const limit = 10;
 
   // Delete mutation
   const deleteMutation = useMutation({
@@ -182,124 +182,125 @@ export default function Clientes() {
         </div>
       </Card>
 
-      {/* Cards Grid */}
-      <div>
+      {/* Cards List */}
+      <div className="space-y-3">
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 9 }).map((_, i) => (
+          <>
+            {Array.from({ length: 10 }).map((_, i) => (
               <Card key={i} className="p-4">
-                <Skeleton className="h-12 w-full mb-3" />
-                <Skeleton className="h-8 w-3/4 mb-2" />
-                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-8 w-1/3 mb-2" />
+                <Skeleton className="h-6 w-1/4" />
               </Card>
             ))}
-          </div>
+          </>
         ) : data?.clientes && data.clientes.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {data.clientes.map((cliente) => (
-                <Link key={cliente.id} href={`/clientes/${cliente.id}`}>
-                  <Card 
-                    className="p-4 hover-elevate cursor-pointer transition-all border border-border h-full hover:shadow-lg"
-                    data-testid={`card-cliente-${cliente.id}`}
-                  >
-                    <div className="space-y-3">
-                      {/* Header */}
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-foreground truncate text-sm">
-                            {cliente.razaoSocial || cliente.nome}
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {cliente.cpfCnpj}
-                          </div>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-7 w-7"
-                              data-testid={`button-actions-${cliente.id}`}
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                              <Link href={`/clientes/${cliente.id}/editar`}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => setDeleteClientId(cliente.id)}
-                              className="text-destructive"
-                              data-testid={`button-delete-${cliente.id}`}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Deletar
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+            {data.clientes.map((cliente) => (
+              <Link key={cliente.id} href={`/clientes/${cliente.id}`}>
+                <Card 
+                  className="p-4 hover-elevate cursor-pointer transition-all border border-border hover:shadow-md"
+                  data-testid={`card-cliente-${cliente.id}`}
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    {/* Left Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-foreground">
+                        {cliente.razaoSocial || cliente.nome}
                       </div>
-
-                      {/* Status Badge */}
-                      <div>
-                        <Badge 
-                          variant="secondary" 
-                          className={`${statusColors[cliente.status] || ''} text-xs`}
-                        >
-                          {cliente.status}
-                        </Badge>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        {cliente.cpfCnpj}
                       </div>
+                    </div>
 
-                      {/* Score */}
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs text-muted-foreground">Score</span>
-                          <span className="text-sm font-semibold text-primary">{cliente.score || 0}%</span>
-                        </div>
-                        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                          <div 
-                            className="h-full bg-primary"
-                            style={{ width: `${cliente.score || 0}%` }}
-                          />
-                        </div>
+                    {/* Status */}
+                    <div>
+                      <Badge 
+                        variant="secondary" 
+                        className={`${statusColors[cliente.status] || ''} text-xs`}
+                      >
+                        {cliente.status}
+                      </Badge>
+                    </div>
+
+                    {/* Score */}
+                    <div className="w-32">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-muted-foreground">Score</span>
+                        <span className="text-sm font-semibold text-primary">{cliente.score || 0}%</span>
                       </div>
+                      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                        <div 
+                          className="h-full bg-primary"
+                          style={{ width: `${cliente.score || 0}%` }}
+                        />
+                      </div>
+                    </div>
 
-                      {/* Info Row */}
-                      {cliente.carteira && (
-                        <div className="text-xs">
-                          <span className="text-muted-foreground">Carteira: </span>
-                          <span className="font-medium">{cliente.carteira}</span>
-                        </div>
-                      )}
+                    {/* Carteira */}
+                    {cliente.carteira && (
+                      <div className="text-sm text-center min-w-24">
+                        <div className="text-xs text-muted-foreground">Carteira</div>
+                        <div className="font-medium">{cliente.carteira}</div>
+                      </div>
+                    )}
 
-                      {/* Tags */}
-                      {cliente.tags && cliente.tags.length > 0 && (
-                        <div className="flex gap-1 flex-wrap pt-1">
-                          {cliente.tags.slice(0, 2).map((tag, i) => (
+                    {/* Tags */}
+                    <div className="flex gap-1">
+                      {cliente.tags && cliente.tags.length > 0 ? (
+                        <>
+                          {cliente.tags.slice(0, 1).map((tag, i) => (
                             <Badge key={i} variant="outline" className="text-xs">
                               {tag}
                             </Badge>
                           ))}
-                          {cliente.tags.length > 2 && (
+                          {cliente.tags.length > 1 && (
                             <Badge variant="outline" className="text-xs">
-                              +{cliente.tags.length - 2}
+                              +{cliente.tags.length - 1}
                             </Badge>
                           )}
-                        </div>
+                        </>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">-</span>
                       )}
                     </div>
-                  </Card>
-                </Link>
-              ))}
-            </div>
+
+                    {/* Actions */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-9 w-9"
+                          data-testid={`button-actions-${cliente.id}`}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link href={`/clientes/${cliente.id}/editar`}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Editar
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setDeleteClientId(cliente.id)}
+                          className="text-destructive"
+                          data-testid={`button-delete-${cliente.id}`}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Deletar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </Card>
+              </Link>
+            ))}
 
             {/* Pagination */}
             {data.total > limit && (
-              <div className="flex items-center justify-between mt-8 p-4">
+              <div className="flex items-center justify-between mt-8 p-4 border-t">
                 <div className="text-sm text-muted-foreground">
                   Página {page} de {Math.ceil(data.total / limit)} • {data.total} clientes
                 </div>
