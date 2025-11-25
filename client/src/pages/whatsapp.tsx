@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -41,6 +41,22 @@ export default function WhatsApp() {
     enabled: isAuthenticated,
     refetchInterval: 2000, // Poll every 2 seconds for real-time status updates
   });
+
+  // Auto-close modal when any session connects
+  useEffect(() => {
+    if (sessions && sessions.length > 0 && openDialog) {
+      const connectedSession = sessions.find((s) => s.status === "conectada");
+      if (connectedSession) {
+        console.log("✅ Sessão conectada! Fechando modal...");
+        setOpenDialog(false);
+        setQrCode(null);
+        toast({
+          title: "Conectado!",
+          description: `Sessão ${connectedSession.nome} conectada com sucesso`,
+        });
+      }
+    }
+  }, [sessions, openDialog]);
 
   const connectMutation = useMutation({
     mutationFn: async (nome: string) => {
