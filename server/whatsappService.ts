@@ -6,6 +6,7 @@ import path from "path";
 // Map to store active connections and QR codes
 const activeSessions = new Map<string, any>();
 const qrCodes = new Map<string, string>();
+const sessionStatus = new Map<string, string>(); // Track session status: conectada/desconectada
 
 let reconnectAttempts = new Map<string, number>();
 
@@ -52,6 +53,7 @@ export async function initializeWhatsAppSession(sessionId: string): Promise<void
       if (connection === "open") {
         console.log("✅ Conexão estabelecida para sessão:", sessionId);
         activeSessions.set(sessionId, sock);
+        sessionStatus.set(sessionId, "conectada");
         qrCodes.delete(sessionId);
         reconnectAttempts.delete(sessionId); // Reset tentativas após sucesso
       }
@@ -62,6 +64,7 @@ export async function initializeWhatsAppSession(sessionId: string): Promise<void
         const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
         
         console.log(`❌ Conexão fechada para sessão ${sessionId}, código: ${statusCode}, reconectar: ${shouldReconnect}`);
+        sessionStatus.set(sessionId, "desconectada");
 
         if (shouldReconnect) {
           const attempts = (reconnectAttempts.get(sessionId) || 0) + 1;
@@ -122,4 +125,8 @@ export function closeSession(sessionId: string): void {
 
 export function isSessionConnected(sessionId: string): boolean {
   return activeSessions.has(sessionId);
+}
+
+export function getSessionStatus(sessionId: string): string {
+  return sessionStatus.get(sessionId) || "desconectada";
 }

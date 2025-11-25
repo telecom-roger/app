@@ -533,7 +533,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/whatsapp/sessions", isAuthenticated, async (req, res) => {
     try {
       const sessions = await storage.getAllWhatsappSessions();
-      res.json(sessions);
+      
+      // Sync status from memory to database
+      for (const session of sessions) {
+        const liveStatus = whatsappService.getSessionStatus(session.sessionId);
+        if (liveStatus !== session.status) {
+          console.log(`🔄 Sincronizando status da sessão ${session.sessionId}: ${session.status} → ${liveStatus}`);
+          await storage.updateWhatsappSession(session.id, { status: liveStatus });
+        }
+      }
+      
+      // Fetch updated sessions
+      const updatedSessions = await storage.getAllWhatsappSessions();
+      res.json(updatedSessions);
     } catch (error: any) {
       console.error("Error fetching WhatsApp sessions:", error);
       res.status(500).json({ error: "Internal server error" });
