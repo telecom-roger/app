@@ -467,16 +467,13 @@ function NovaOportunidadeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nova Oportunidade</DialogTitle>
-          <DialogDescription>
-            Crie uma nova oportunidade para rastrear no funil de vendas
-          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
             <FormField
               control={form.control}
               name="clientId"
@@ -495,7 +492,7 @@ function NovaOportunidadeDialog({
                           data-testid="input-search-cliente"
                         />
                         {showDropdown && (
-                          <div className="border rounded-md max-h-96 overflow-y-auto bg-background z-50 shadow-lg">
+                          <div className="border rounded-md max-h-48 overflow-y-auto bg-background z-50 shadow-lg">
                             {Array.isArray(clientes) && clientes.length > 0 ? (
                               clientesFiltrados.length > 0 ? (
                                 <>
@@ -580,7 +577,7 @@ function NovaOportunidadeDialog({
               )}
             />
 
-            <div className="flex gap-2 justify-end pt-4">
+            <div className="flex gap-2 justify-end pt-6 border-t mt-6">
               <Button
                 type="button"
                 variant="outline"
@@ -690,16 +687,13 @@ function EditarOportunidadeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Oportunidade</DialogTitle>
-          <DialogDescription>
-            Atualize os detalhes da oportunidade
-          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
             <FormField
               control={form.control}
               name="clientId"
@@ -718,7 +712,7 @@ function EditarOportunidadeDialog({
                           data-testid="input-search-cliente-edit"
                         />
                         {showDropdown && (
-                          <div className="border rounded-md max-h-96 overflow-y-auto bg-background z-50 shadow-lg">
+                          <div className="border rounded-md max-h-48 overflow-y-auto bg-background z-50 shadow-lg">
                             {Array.isArray(clientes) && clientes.length > 0 ? (
                               clientesFiltrados.length > 0 ? (
                                 <>
@@ -803,7 +797,7 @@ function EditarOportunidadeDialog({
               )}
             />
 
-            <div className="flex gap-2 justify-end pt-4">
+            <div className="flex gap-2 justify-end pt-6 border-t mt-6">
               <Button
                 type="button"
                 variant="outline"
