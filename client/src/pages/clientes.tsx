@@ -183,7 +183,7 @@ export default function Clientes() {
       {/* Table */}
       <Card className="bg-white border-2 border-[#776BFF] overflow-hidden">
         <Table>
-          <TableHeader className="bg-[#776BFF]/5">
+          <TableHeader className="bg-[#776BFF]/5 sticky top-0 z-10">
             <TableRow className="border-b border-[#776BFF]/20 hover:bg-transparent">
               <TableHead className="text-foreground font-bold">Nome / Razão Social</TableHead>
               <TableHead className="text-foreground font-bold">CPF/CNPJ</TableHead>
