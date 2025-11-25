@@ -561,13 +561,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("🔄 Iniciando conexão Baileys para sessão:", sessionId);
         await whatsappService.initializeWhatsAppSession(sessionId);
         
-        // Get QR code (wait a bit for it to be generated)
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        qrCodeUrl = whatsappService.getQRCode(sessionId) || "";
+        // Wait for QR code to be generated (Baileys needs time)
+        for (let i = 0; i < 10; i++) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          qrCodeUrl = whatsappService.getQRCode(sessionId) || "";
+          if (qrCodeUrl) {
+            console.log("✅ QR code obtido com sucesso para sessão:", sessionId, "após", i * 500, "ms");
+            break;
+          }
+        }
         
-        if (qrCodeUrl) {
-          console.log("✅ QR code obtido com sucesso para sessão:", sessionId);
-        } else {
+        if (!qrCodeUrl) {
           console.warn("⚠️ QR code não foi gerado para sessão:", sessionId);
         }
       } catch (err) {
@@ -612,13 +616,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("🔄 Reconectando sessão com novo ID:", newSessionId);
         await whatsappService.initializeWhatsAppSession(newSessionId);
         
-        // Get QR code (wait a bit for it to be generated)
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        qrCodeUrl = whatsappService.getQRCode(newSessionId) || "";
+        // Wait for QR code to be generated (Baileys needs time)
+        for (let i = 0; i < 10; i++) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          qrCodeUrl = whatsappService.getQRCode(newSessionId) || "";
+          if (qrCodeUrl) {
+            console.log("✅ QR code reconectado com sucesso para sessão:", newSessionId, "após", i * 500, "ms");
+            break;
+          }
+        }
         
-        if (qrCodeUrl) {
-          console.log("✅ QR code reconectado com sucesso para sessão:", newSessionId);
-        } else {
+        if (!qrCodeUrl) {
           console.warn("⚠️ QR code não foi gerado para reconectar:", newSessionId);
         }
       } catch (err) {
