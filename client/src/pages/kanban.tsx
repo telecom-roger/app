@@ -34,7 +34,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, GripVertical, User, DollarSign, Trash2 } from "lucide-react";
+import { Plus, GripVertical, User, DollarSign, Trash2, Edit2 } from "lucide-react";
 import type { Opportunity } from "@shared/schema";
 import { insertOpportunitySchema } from "@shared/schema";
 
@@ -51,6 +51,7 @@ export default function Kanban() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [filtroResponsavel, setFiltroResponsavel] = useState<string>("todos");
   const [showNovaOportunidade, setShowNovaOportunidade] = useState(false);
+  const [editingOportunidade, setEditingOportunidade] = useState<Opportunity | null>(null);
   const [draggedCard, setDraggedCard] = useState<{ id: string; fromEtapa: string } | null>(null);
 
   useEffect(() => {
@@ -181,6 +182,7 @@ export default function Kanban() {
                 moveCardMutation.mutate({ id, etapa });
               }}
               onDeleteCard={(id) => deleteCardMutation.mutate(id)}
+              onEditCard={setEditingOportunidade}
               draggedCard={draggedCard}
               setDraggedCard={setDraggedCard}
             />
@@ -194,6 +196,13 @@ export default function Kanban() {
         onOpenChange={setShowNovaOportunidade}
         clientes={clientes || []}
       />
+      {/* Modal Editar Oportunidade */}
+      <EditarOportunidadeDialog
+        open={!!editingOportunidade}
+        onOpenChange={(open) => !open && setEditingOportunidade(null)}
+        oportunidade={editingOportunidade}
+        clientes={clientes || []}
+      />
     </div>
   );
 }
@@ -203,6 +212,7 @@ function KanbanColumn({
   isLoading,
   onMoveCard,
   onDeleteCard,
+  onEditCard,
   draggedCard,
   setDraggedCard,
 }: {
@@ -210,6 +220,7 @@ function KanbanColumn({
   isLoading: boolean;
   onMoveCard: (id: string, etapa: string) => void;
   onDeleteCard: (id: string) => void;
+  onEditCard: (oportunidade: Opportunity) => void;
   draggedCard: { id: string; fromEtapa: string } | null;
   setDraggedCard: (card: { id: string; fromEtapa: string } | null) => void;
 }) {
@@ -263,6 +274,7 @@ function KanbanColumn({
                 key={oportunidade.id}
                 oportunidade={oportunidade}
                 onDelete={onDeleteCard}
+                onEdit={onEditCard}
                 draggedCard={draggedCard}
                 setDraggedCard={setDraggedCard}
               />
@@ -281,11 +293,13 @@ function KanbanColumn({
 function OpportunityCard({
   oportunidade,
   onDelete,
+  onEdit,
   draggedCard,
   setDraggedCard,
 }: {
   oportunidade: Opportunity;
   onDelete: (id: string) => void;
+  onEdit: (oportunidade: Opportunity) => void;
   draggedCard: { id: string; fromEtapa: string } | null;
   setDraggedCard: (card: { id: string; fromEtapa: string } | null) => void;
 }) {
@@ -314,6 +328,13 @@ function OpportunityCard({
           <h4 className="font-medium leading-snug flex-1 break-words">{oportunidade.titulo}</h4>
           <div className="flex gap-1 flex-shrink-0">
             <GripVertical className="h-4 w-4 text-muted-foreground" />
+            <button
+              onClick={() => onEdit(oportunidade)}
+              className="text-muted-foreground hover:text-primary transition-colors"
+              data-testid={`button-edit-${oportunidade.id}`}
+            >
+              <Edit2 className="h-4 w-4" />
+            </button>
             <button
               onClick={() => onDelete(oportunidade.id)}
               className="text-muted-foreground hover:text-destructive transition-colors"
@@ -563,6 +584,230 @@ function NovaOportunidadeDialog({
               </Button>
               <Button type="submit" disabled={createMutation.isPending}>
                 {createMutation.isPending ? "Criando..." : "Criar"}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditarOportunidadeDialog({
+  open,
+  onOpenChange,
+  oportunidade,
+  clientes,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  oportunidade: Opportunity | null;
+  clientes: any[];
+}) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [searchCliente, setSearchCliente] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setSearchCliente("");
+      setShowDropdown(false);
+    }
+  }, [open]);
+
+  const clientesFiltrados = searchCliente.trim() === ""
+    ? clientes
+    : clientes.filter((client: any) => {
+        return (client.razaoSocial?.toLowerCase().includes(searchCliente.toLowerCase())) ||
+               (client.cpfCnpj?.includes(searchCliente));
+      });
+
+  const form = useForm({
+    resolver: zodResolver(insertOpportunitySchema),
+    defaultValues: {
+      titulo: oportunidade?.titulo || "",
+      clientId: oportunidade?.clientId || "",
+      etapa: oportunidade?.etapa || "lead",
+      valorEstimado: oportunidade?.valorEstimado || 0,
+      responsavelId: oportunidade?.responsavelId || user?.id,
+    },
+  });
+
+  const editMutation = useMutation({
+    mutationFn: async (data: any) => {
+      if (!oportunidade) return;
+      await apiRequest("PATCH", `/api/opportunities/${oportunidade.id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      toast({
+        title: "Sucesso",
+        description: "Oportunidade atualizada com sucesso",
+      });
+      form.reset();
+      onOpenChange(false);
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar a oportunidade",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: any) => {
+    editMutation.mutate({
+      ...data,
+      valorEstimado: data.valorEstimado ? parseInt(data.valorEstimado) * 100 : 0,
+    });
+  };
+
+  if (!oportunidade) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar Oportunidade</DialogTitle>
+          <DialogDescription>
+            Atualize os detalhes da oportunidade
+          </DialogDescription>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="clientId"
+              render={({ field }) => {
+                const selectedClient = clientes.find((c: any) => c.id === field.value);
+                return (
+                  <FormItem>
+                    <FormLabel>Cliente</FormLabel>
+                    <FormControl>
+                      <div className="space-y-2">
+                        <Input
+                          placeholder="Buscar por razão social ou CNPJ..."
+                          value={searchCliente}
+                          onChange={(e) => setSearchCliente(e.target.value)}
+                          onFocus={() => setShowDropdown(true)}
+                          data-testid="input-search-cliente-edit"
+                        />
+                        {showDropdown && (
+                          <div className="border rounded-md max-h-96 overflow-y-auto bg-background z-50 shadow-lg">
+                            {Array.isArray(clientes) && clientes.length > 0 ? (
+                              clientesFiltrados.length > 0 ? (
+                                <>
+                                  <div className="sticky top-0 p-2 bg-background border-b text-xs text-muted-foreground">
+                                    {clientesFiltrados.length} de {clientes.length} clientes
+                                  </div>
+                                  {clientesFiltrados.map((client: any) => (
+                                    <div
+                                      key={client.id}
+                                      onClick={() => {
+                                        field.onChange(client.id);
+                                        setSearchCliente("");
+                                        setShowDropdown(false);
+                                      }}
+                                      className="p-3 border-b hover:bg-muted cursor-pointer last:border-b-0"
+                                      data-testid={`option-client-edit-${client.id}`}
+                                    >
+                                      <div className="font-medium">{client.razaoSocial || client.nome}</div>
+                                      {client.cpfCnpj && (
+                                        <div className="text-xs text-muted-foreground">{client.cpfCnpj}</div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </>
+                              ) : (
+                                <div className="p-3 text-sm text-muted-foreground text-center">
+                                  Nenhum cliente encontrado
+                                </div>
+                              )
+                            ) : (
+                              <div className="p-3 text-sm text-muted-foreground text-center">
+                                Carregando clientes...
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {selectedClient && (
+                          <div className="p-2 bg-muted rounded text-sm">
+                            <div className="font-medium">{selectedClient.razaoSocial || selectedClient.nome}</div>
+                            <div className="text-xs text-muted-foreground">{selectedClient.cpfCnpj}</div>
+                          </div>
+                        )}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+
+            <FormField
+              control={form.control}
+              name="titulo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Título</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: Proposta de plano móvel" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="valorEstimado"
+              render={({ field }) => {
+                const formatCurrency = (value: number) => {
+                  return new Intl.NumberFormat("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  }).format(value / 100);
+                };
+
+                const parseCurrency = (text: string) => {
+                  const cleaned = text.replace(/\D/g, "");
+                  return cleaned ? parseInt(cleaned) : 0;
+                };
+
+                return (
+                  <FormItem>
+                    <FormLabel>Valor Estimado</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="R$ 0,00"
+                        value={field.value ? formatCurrency(field.value) : ""}
+                        onChange={(e) => {
+                          const parsed = parseCurrency(e.target.value);
+                          field.onChange(parsed);
+                        }}
+                        data-testid="input-valor-estimado-edit"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+
+            <div className="flex gap-2 justify-end pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={editMutation.isPending}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={editMutation.isPending}>
+                {editMutation.isPending ? "Atualizando..." : "Atualizar"}
               </Button>
             </div>
           </form>

@@ -215,6 +215,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/opportunities/:id", isAuthenticated, async (req, res) => {
+    try {
+      const oldOpportunity = await storage.getOpportunityById(req.params.id);
+      if (!oldOpportunity) {
+        return res.status(404).json({ error: "Opportunity not found" });
+      }
+
+      const validatedData = insertOpportunitySchema.partial().parse(req.body);
+      const opportunity = await storage.updateOpportunity(req.params.id, validatedData);
+
+      // Create audit log
+      await storage.createAuditLog({
+        userId: (req.user as any).id,
+        acao: "editar",
+        entidade: "opportunity",
+        entidadeId: req.params.id,
+        dadosAntigos: oldOpportunity as any,
+        dadosNovos: opportunity as any,
+        ipAddress: req.ip,
+        userAgent: req.get("user-agent"),
+      });
+
+      res.json(opportunity);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      console.error("Error updating opportunity:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.delete("/api/opportunities/:id", isAuthenticated, async (req, res) => {
     try {
       const opportunity = await storage.getOpportunityById(req.params.id);
