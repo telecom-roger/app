@@ -373,10 +373,12 @@ function NovaOportunidadeDialog({
   const { toast } = useToast();
   const [searchCliente, setSearchCliente] = useState("");
   
-  const clientesFiltrados = clientes.filter((client: any) =>
-    client.razaoSocial?.toLowerCase().includes(searchCliente.toLowerCase()) ||
-    client.cpfCnpj?.includes(searchCliente)
-  );
+  const clientesFiltrados = searchCliente.trim() === "" 
+    ? clientes 
+    : clientes.filter((client: any) =>
+        (client.razaoSocial?.toLowerCase().includes(searchCliente.toLowerCase())) ||
+        (client.cpfCnpj?.includes(searchCliente))
+      );
   
   const form = useForm({
     resolver: zodResolver(insertOpportunitySchema),
