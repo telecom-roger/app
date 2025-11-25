@@ -376,15 +376,21 @@ function NovaOportunidadeDialog({
   useEffect(() => {
     if (open) {
       setSearchCliente("");
+      console.log("Clientes disponíveis:", clientes);
+      if (clientes.length > 0) {
+        console.log("Primeiro cliente:", clientes[0]);
+      }
     }
-  }, [open]);
+  }, [open, clientes]);
   
   const clientesFiltrados = searchCliente.trim() === "" 
     ? clientes 
-    : clientes.filter((client: any) =>
-        (client.razaoSocial?.toLowerCase().includes(searchCliente.toLowerCase())) ||
-        (client.cpfCnpj?.includes(searchCliente))
-      );
+    : clientes.filter((client: any) => {
+        const match = (client.razaoSocial?.toLowerCase().includes(searchCliente.toLowerCase())) ||
+                      (client.cpfCnpj?.includes(searchCliente));
+        console.log(`Filtrando "${searchCliente}" - ${client.razaoSocial || client.nome}: ${match}`);
+        return match;
+      });
   
   const form = useForm({
     resolver: zodResolver(insertOpportunitySchema),
