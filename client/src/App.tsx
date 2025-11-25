@@ -15,6 +15,7 @@ import Login from "@/pages/login";
 import Register from "@/pages/register";
 import Dashboard from "@/pages/dashboard";
 import Clientes from "@/pages/clientes";
+import ClienteForm from "@/pages/cliente-form";
 import ClienteProfile from "@/pages/cliente-profile";
 import Kanban from "@/pages/kanban";
 import Campanhas from "@/pages/campanhas";
@@ -30,6 +31,8 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/clientes" component={Clientes} />
+      <Route path="/clientes/novo" component={ClienteForm} />
+      <Route path="/clientes/:id/editar" component={ClienteForm} />
       <Route path="/clientes/:id" component={ClienteProfile} />
       <Route path="/oportunidades" component={Kanban} />
       <Route path="/campanhas" component={Campanhas} />
