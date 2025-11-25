@@ -306,6 +306,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== IMPORT ROUTES ====================
+  app.post("/api/import/clients", isAuthenticated, async (req, res) => {
+    try {
+      const { data, mapping } = req.body; // data = array of rows, mapping = column mapping
+      
+      if (!Array.isArray(data) || data.length === 0) {
+        return res.status(400).json({ error: "No data provided" });
+      }
+
+      let successCount = 0;
+      let errorCount = 0;
+      const errors: string[] = [];
+
+      // Process each row
+      for (let i = 0; i < data.length; i++) {
+        try {
+          const row = data[i];
+          const clientData = {
+            nome: row[mapping.nome] || `Cliente ${i + 1}`,
+            razaoSocial: row[mapping.razaoSocial] || null,
+            cpfCnpj: row[mapping.cpfCnpj] || null,
+            status: row[mapping.status] || "lead",
+            carteira: row[mapping.carteira] || null,
+            categoria: row[mapping.categoria] || null,
+            score: parseInt(row[mapping.score]) || 0,
+            planoAtual: row[mapping.planoAtual] || null,
+            produtoAtual: row[mapping.produtoAtual] || null,
+          };
+
+          const validated = insertClientSchema.parse(clientData);
+          await storage.createClient(validated);
+          successCount++;
+        } catch (error: any) {
+          errorCount++;
+          errors.push(`Linha ${i + 1}: ${error.message}`);
+        }
+      }
+
+      res.json({
+        success: true,
+        successCount,
+        errorCount,
+        errors: errors.slice(0, 10), // Return first 10 errors only
+      });
+    } catch (error: any) {
+      console.error("Error importing clients:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // ==================== STATS ROUTES ====================
   app.get("/api/stats/dashboard", isAuthenticated, async (req, res) => {
     try {

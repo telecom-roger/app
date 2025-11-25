@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,25 +14,61 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  Upload, 
-  FileSpreadsheet, 
+import {
+  Upload,
+  FileSpreadsheet,
   ArrowRight,
   CheckCircle2,
   AlertCircle,
   FileText,
   Users,
+  Loader2,
 } from "lucide-react";
+import Papa from "papaparse";
 
 type Step = 1 | 2 | 3 | 4;
+
+interface FileData {
+  headers: string[];
+  rows: string[][];
+}
+
+interface ColumnMapping {
+  nome: number;
+  razaoSocial: number;
+  cpfCnpj: number;
+  status: number;
+  carteira: number;
+  categoria: number;
+  score: number;
+  planoAtual: number;
+  produtoAtual: number;
+}
 
 export default function Importacao() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [currentStep, setCurrentStep] = useState<Step>(1);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileData, setFileData] = useState<FileData | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [mapping, setMapping] = useState<ColumnMapping>({
+    nome: 0,
+    razaoSocial: 1,
+    cpfCnpj: 2,
+    status: 3,
+    carteira: 4,
+    categoria: 5,
+    score: 6,
+    planoAtual: 7,
+    produtoAtual: 8,
+  });
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    successCount: number;
+    errorCount: number;
+    errors: string[];
+  } | null>(null);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -48,43 +85,82 @@ export default function Importacao() {
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      const validTypes = [
-        'text/csv',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      ];
-      
-      if (validTypes.includes(file.type) || file.name.endsWith('.csv') || file.name.endsWith('.xlsx')) {
-        setSelectedFile(file);
-      } else {
-        toast({
-          title: "Arquivo inválido",
-          description: "Por favor, selecione um arquivo CSV ou XLSX",
-          variant: "destructive",
-        });
-      }
+    if (!file) return;
+
+    const validTypes = [
+      "text/csv",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ];
+
+    if (!validTypes.includes(file.type) && !file.name.match(/\.(csv|xlsx?)$/i)) {
+      toast({
+        title: "Arquivo inválido",
+        description: "Por favor, selecione um arquivo CSV ou XLSX",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (file.type === "text/csv" || file.name.endsWith(".csv")) {
+      Papa.parse(file, {
+        complete: (results: any) => {
+          if (results.data && results.data.length > 0) {
+            const headers = results.data[0];
+            const rows = results.data.slice(1).filter((row: any) => row.some((cell: any) => cell));
+            setFileData({ headers, rows });
+            setCurrentStep(2);
+            toast({
+              title: "Sucesso",
+              description: `${rows.length} linhas detectadas`,
+            });
+          }
+        },
+        error: () => {
+          toast({
+            title: "Erro",
+            description: "Falha ao ler o arquivo CSV",
+            variant: "destructive",
+          });
+        },
+      });
+    } else {
+      // For XLSX, just show a message for now (would need xlsx library)
+      toast({
+        title: "Atenção",
+        description: "Converta seu arquivo XLSX para CSV primeiro",
+      });
     }
   };
 
-  const handleUpload = async () => {
-    if (!selectedFile) return;
-    
-    setUploading(true);
-    setUploadProgress(0);
-    
-    // Simulate upload progress
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setUploading(false);
-          setCurrentStep(2);
-          return 100;
-        }
-        return prev + 10;
+  const handleImport = async () => {
+    if (!fileData || !fileData.rows.length) return;
+
+    setImporting(true);
+    try {
+      const response = await apiRequest("POST", "/api/import/clients", {
+        data: fileData.rows,
+        mapping,
       });
-    }, 200);
+
+      const result = await response.json();
+      setImportResult(result);
+      setCurrentStep(4);
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+
+      toast({
+        title: "Importação Concluída",
+        description: `${result.successCount} clientes importados com sucesso`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Falha ao importar clientes",
+        variant: "destructive",
+      });
+    } finally {
+      setImporting(false);
+    }
   };
 
   if (authLoading || !isAuthenticated) {
@@ -95,7 +171,9 @@ export default function Importacao() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Importação de Clientes</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">
+          Importação de Clientes
+        </h1>
         <p className="text-muted-foreground mt-1">
           Importe sua base de clientes via CSV ou XLSX
         </p>
@@ -106,244 +184,297 @@ export default function Importacao() {
         {[
           { step: 1, label: "Upload" },
           { step: 2, label: "Mapeamento" },
-          { step: 3, label: "Validação" },
+          { step: 3, label: "Importação" },
           { step: 4, label: "Concluído" },
         ].map((item, index) => (
           <div key={item.step} className="flex items-center flex-1">
             <div className="flex flex-col items-center flex-1">
-              <div className={`
+              <div
+                className={`
                 flex h-10 w-10 items-center justify-center rounded-full border-2 font-medium text-sm
-                ${currentStep >= item.step 
-                  ? 'border-primary bg-primary text-primary-foreground' 
-                  : 'border-border bg-background text-muted-foreground'
+                ${
+                  currentStep >= item.step
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background text-muted-foreground"
                 }
-              `}>
+              `}
+              >
                 {currentStep > item.step ? (
                   <CheckCircle2 className="h-5 w-5" />
                 ) : (
                   item.step
                 )}
               </div>
-              <span className={`
-                text-xs mt-2 font-medium
-                ${currentStep >= item.step ? 'text-foreground' : 'text-muted-foreground'}
-              `}>
-                {item.label}
-              </span>
+              <span className="text-xs mt-2 text-center">{item.label}</span>
             </div>
             {index < 3 && (
-              <div className={`
-                h-0.5 w-full -mt-6
-                ${currentStep > item.step ? 'bg-primary' : 'bg-border'}
-              `} />
+              <ArrowRight
+                className={`h-5 w-5 mx-2 ${
+                  currentStep > item.step
+                    ? "text-primary"
+                    : "text-muted-foreground"
+                }`}
+              />
             )}
           </div>
         ))}
       </div>
 
-      {/* Content */}
-      <div className="max-w-3xl mx-auto">
-        {currentStep === 1 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Selecione o arquivo para importar</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="border-2 border-dashed rounded-lg p-12 text-center hover-elevate transition-colors">
-                <input
-                  type="file"
-                  id="file-upload"
-                  className="hidden"
-                  accept=".csv,.xlsx"
-                  onChange={handleFileSelect}
-                  data-testid="input-file-upload"
-                />
-                <label 
-                  htmlFor="file-upload" 
-                  className="cursor-pointer flex flex-col items-center gap-4"
-                >
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                    <Upload className="h-8 w-8 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-lg font-medium">
-                      {selectedFile ? selectedFile.name : "Clique para selecionar ou arraste o arquivo"}
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Formatos suportados: CSV, XLSX (até 10GB)
-                    </p>
-                  </div>
-                </label>
-              </div>
-
-              {selectedFile && (
-                <div className="flex items-center justify-between p-4 rounded-lg bg-muted">
-                  <div className="flex items-center gap-3">
-                    <FileSpreadsheet className="h-8 w-8 text-primary" />
-                    <div>
-                      <p className="font-medium">{selectedFile.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-                  </div>
-                  <Badge>Pronto</Badge>
-                </div>
-              )}
-
-              {uploading && (
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Fazendo upload...</span>
-                    <span>{uploadProgress}%</span>
-                  </div>
-                  <Progress value={uploadProgress} />
-                </div>
-              )}
-
-              <Button 
-                className="w-full" 
-                disabled={!selectedFile || uploading}
-                onClick={handleUpload}
-                data-testid="button-upload"
+      {/* Step 1: Upload */}
+      {currentStep === 1 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Selecione seu arquivo</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="border-2 border-dashed rounded-lg p-8 text-center hover:bg-muted/50 transition cursor-pointer">
+              <Input
+                type="file"
+                accept=".csv,.xlsx"
+                onChange={handleFileSelect}
+                className="hidden"
+                id="file-input"
+                data-testid="input-file-import"
+              />
+              <label
+                htmlFor="file-input"
+                className="cursor-pointer space-y-2 flex flex-col items-center"
               >
-                {uploading ? "Enviando..." : "Continuar"}
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+                <Upload className="h-12 w-12 text-muted-foreground mx-auto" />
+                <div>
+                  <p className="font-medium">Clique ou arraste seu arquivo aqui</p>
+                  <p className="text-sm text-muted-foreground">
+                    CSV ou XLSX (máx. 10MB)
+                  </p>
+                </div>
+              </label>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-        {currentStep === 2 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Mapeamento de Colunas</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Associe as colunas do seu arquivo aos campos do sistema
-              </p>
+      {/* Step 2: Mapping */}
+      {currentStep === 2 && fileData && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Mapeie as colunas</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Associe as colunas do seu arquivo aos campos do sistema
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Preview */}
+            <div className="bg-muted rounded-lg p-4 mb-6">
+              <p className="text-sm font-medium mb-2">Primeira linha (prévia):</p>
+              <div className="flex gap-2 flex-wrap">
+                {fileData.headers.map((header, idx) => (
+                  <Badge key={idx} variant="outline">
+                    {header}
+                  </Badge>
+                ))}
+              </div>
+            </div>
 
+            {/* Mapping selects */}
+            <div className="grid grid-cols-2 gap-4">
               {[
-                { col: "A", sample: "João Silva", field: "nome" },
-                { col: "B", sample: "Silva & Cia Ltda", field: "razaoSocial" },
-                { col: "C", sample: "12.345.678/0001-99", field: "cpfCnpj" },
-                { col: "D", sample: "joao@email.com", field: "email" },
-                { col: "E", sample: "(11) 99999-9999", field: "telefone" },
-              ].map((item) => (
-                <div key={item.col} className="flex items-center gap-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded bg-muted font-mono font-medium">
-                    {item.col}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-mono">{item.sample}</p>
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                  <Select defaultValue={item.field}>
-                    <SelectTrigger className="w-48">
+                { key: "nome", label: "Nome *" },
+                { key: "razaoSocial", label: "Razão Social" },
+                { key: "cpfCnpj", label: "CPF/CNPJ" },
+                { key: "status", label: "Status" },
+                { key: "carteira", label: "Carteira" },
+                { key: "categoria", label: "Categoria" },
+              ].map((field) => (
+                <div key={field.key}>
+                  <label className="text-sm font-medium">{field.label}</label>
+                  <Select
+                    value={mapping[field.key as keyof ColumnMapping].toString()}
+                    onValueChange={(val) =>
+                      setMapping({
+                        ...mapping,
+                        [field.key]: parseInt(val),
+                      })
+                    }
+                  >
+                    <SelectTrigger className="mt-1" data-testid={`select-map-${field.key}`}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="nome">Nome</SelectItem>
-                      <SelectItem value="razaoSocial">Razão Social</SelectItem>
-                      <SelectItem value="cpfCnpj">CPF/CNPJ</SelectItem>
-                      <SelectItem value="email">Email</SelectItem>
-                      <SelectItem value="telefone">Telefone</SelectItem>
-                      <SelectItem value="carteira">Carteira</SelectItem>
-                      <SelectItem value="planoAtual">Plano Atual</SelectItem>
-                      <SelectItem value="ignorar">Ignorar</SelectItem>
+                      <SelectItem value="-1">Ignorar</SelectItem>
+                      {fileData.headers.map((header, idx) => (
+                        <SelectItem key={idx} value={idx.toString()}>
+                          {header}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
               ))}
+            </div>
 
-              <Button 
-                className="w-full mt-6" 
+            {/* Actions */}
+            <div className="flex gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setCurrentStep(1);
+                  setFileData(null);
+                }}
+                data-testid="button-back-upload"
+              >
+                Voltar
+              </Button>
+              <Button
                 onClick={() => setCurrentStep(3)}
-                data-testid="button-validar"
+                data-testid="button-continue-validation"
               >
-                Validar e Importar
-                <ArrowRight className="h-4 w-4 ml-2" />
+                Continuar
               </Button>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-        {currentStep === 3 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Validação e Importação</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Processando registros...</span>
-                  <span>75%</span>
-                </div>
-                <Progress value={75} />
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="p-4 rounded-lg border bg-card">
-                  <div className="flex items-center gap-2 mb-2">
-                    <FileText className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">Total de Linhas</span>
-                  </div>
-                  <p className="text-2xl font-semibold">1,250</p>
-                </div>
-                <div className="p-4 rounded-lg border bg-card">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    <span className="text-sm font-medium">Válidos</span>
-                  </div>
-                  <p className="text-2xl font-semibold text-green-600">1,180</p>
-                </div>
-                <div className="p-4 rounded-lg border bg-card">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertCircle className="h-4 w-4 text-red-500" />
-                    <span className="text-sm font-medium">Erros</span>
-                  </div>
-                  <p className="text-2xl font-semibold text-red-600">70</p>
-                </div>
-              </div>
-
-              <Button 
-                className="w-full" 
-                onClick={() => setCurrentStep(4)}
-              >
-                Concluir Importação
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {currentStep === 4 && (
-          <Card>
-            <CardContent className="py-12 text-center space-y-6">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900 mx-auto">
-                <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-semibold mb-2">Importação Concluída!</h3>
-                <p className="text-muted-foreground">
-                  1,180 clientes foram importados com sucesso
+      {/* Step 3: Import */}
+      {currentStep === 3 && fileData && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Revisar e Importar</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-4 flex gap-2">
+              <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium text-blue-900 dark:text-blue-100">
+                  {fileData.rows.length} clientes serão importados
+                </p>
+                <p className="text-blue-800 dark:text-blue-200 mt-1">
+                  Certifique-se de que o mapeamento está correto antes de prosseguir
                 </p>
               </div>
-              <div className="flex gap-3 justify-center">
-                <Button variant="outline" onClick={() => setCurrentStep(1)}>
-                  Nova Importação
-                </Button>
-                <Button asChild>
-                  <a href="/clientes">
-                    <Users className="h-4 w-4 mr-2" />
-                    Ver Clientes
-                  </a>
-                </Button>
+            </div>
+
+            {/* Preview table */}
+            <div className="border rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="px-4 py-2 text-left font-medium">#</th>
+                      <th className="px-4 py-2 text-left font-medium">Nome</th>
+                      <th className="px-4 py-2 text-left font-medium">CPF/CNPJ</th>
+                      <th className="px-4 py-2 text-left font-medium">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {fileData.rows.slice(0, 5).map((row, idx) => (
+                      <tr key={idx} className="border-t">
+                        <td className="px-4 py-2">{idx + 1}</td>
+                        <td className="px-4 py-2">
+                          {row[mapping.nome] || "-"}
+                        </td>
+                        <td className="px-4 py-2">
+                          {row[mapping.cpfCnpj] || "-"}
+                        </td>
+                        <td className="px-4 py-2">
+                          {row[mapping.status] || "lead"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+            </div>
+
+            {fileData.rows.length > 5 && (
+              <p className="text-sm text-muted-foreground">
+                ... e mais {fileData.rows.length - 5} registros
+              </p>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentStep(2)}
+                disabled={importing}
+                data-testid="button-back-mapping"
+              >
+                Voltar
+              </Button>
+              <Button
+                onClick={handleImport}
+                disabled={importing}
+                data-testid="button-confirm-import"
+              >
+                {importing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {importing ? "Importando..." : "Importar Agora"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 4: Result */}
+      {currentStep === 4 && importResult && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-6 w-6 text-green-600" />
+              Importação Concluída
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-green-50 dark:bg-green-950 rounded-lg p-4">
+                <p className="text-sm text-muted-foreground">Sucessos</p>
+                <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+                  {importResult.successCount}
+                </p>
+              </div>
+              <div className="bg-red-50 dark:bg-red-950 rounded-lg p-4">
+                <p className="text-sm text-muted-foreground">Erros</p>
+                <p className="text-3xl font-bold text-red-600 dark:text-red-400">
+                  {importResult.errorCount}
+                </p>
+              </div>
+            </div>
+
+            {/* Errors */}
+            {importResult.errors.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Erros encontrados:</p>
+                <div className="bg-muted rounded-lg p-4 space-y-1 max-h-48 overflow-y-auto">
+                  {importResult.errors.map((error, idx) => (
+                    <p key={idx} className="text-sm text-destructive">
+                      {error}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setCurrentStep(1);
+                  setFileData(null);
+                  setImportResult(null);
+                }}
+                data-testid="button-import-another"
+              >
+                Importar outro arquivo
+              </Button>
+              <Button asChild data-testid="button-view-clientes">
+                <a href="/clientes">Ver clientes importados</a>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
