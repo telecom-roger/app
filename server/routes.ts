@@ -864,14 +864,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint para listar clientes com WhatsApp e histórico de campanhas
   app.get("/api/clients/whatsapp-list", isAuthenticated, async (req, res) => {
     try {
-      const { status = "todos" } = req.query;
-      
-      let whereClause: any = undefined;
-      if (status && status !== "todos") {
-        whereClause = eq(clients.status, status as string);
-      }
-
-      const result = await db
+      const allClients = await db
         .select({
           id: clients.id,
           nome: clients.nome,
@@ -879,55 +872,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: clients.EMAIL_PRINCIPAL,
         })
         .from(clients)
-        .where(whereClause)
         .limit(10000);
 
       // Filter clients with valid phones
-      const clientsWithPhones = result.filter((c) => c.telefone && c.telefone.trim());
+      const clientsWithPhones = allClients.filter((c) => c.telefone && c.telefone.trim());
 
-      // Fetch last campaign for each client
-      const clientsComHistorico = await Promise.all(
-        clientsWithPhones.map(async (client) => {
-          try {
-            // Get last whatsapp_enviado interaction
-            const lastCampaign = await db
-              .select()
-              .from(interactions)
-              .where(eq(interactions.clientId, client.id))
-              .orderBy((t) => t.createdAt)
-              .limit(1);
+      // Return all clients with basic info (histogram can be lazy-loaded if needed)
+      const result = clientsWithPhones.map((client) => ({
+        ...client,
+        ultimaCampanha: undefined,
+      }));
 
-            let ultimaCampanha = undefined;
-            if (lastCampaign && lastCampaign.length > 0) {
-              const data = lastCampaign[0].createdAt;
-              const agora = new Date();
-              const minutosPara = Math.floor((agora.getTime() - data.getTime()) / 1000 / 60);
-              const recente = minutosPara < 120; // Recente = menos de 2 horas
-
-              ultimaCampanha = {
-                data: data.toLocaleString("pt-BR", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }),
-                minutosPara,
-                recente,
-              };
-            }
-
-            return {
-              ...client,
-              ultimaCampanha,
-            };
-          } catch (err) {
-            console.warn("Erro ao buscar histórico do cliente:", err);
-            return client;
-          }
-        })
-      );
-
-      res.json(clientsComHistorico);
+      res.json(result);
     } catch (error: any) {
       console.error("Error fetching WhatsApp client list:", error);
       res.status(500).json({ error: "Internal server error" });
@@ -948,9 +904,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           meta: interactions.meta,
         })
         .from(interactions)
-        .where(eq(interactions.clientId, clientId))
-        .orderBy((t) => t.createdAt)
-        .limit(100);
+        .where(eq(interactions.clientId, clientId));
 
       res.json(history);
     } catch (error: any) {
