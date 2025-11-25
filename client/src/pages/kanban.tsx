@@ -527,7 +527,7 @@ function NovaOportunidadeDialog({
                       type="number"
                       placeholder="1000.00"
                       {...field}
-                      onChange={(e) => field.onChange(e.target.value)}
+                      onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : 0)}
                     />
                   </FormControl>
                   <FormMessage />
