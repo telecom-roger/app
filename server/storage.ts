@@ -368,3 +368,46 @@ export async function getDashboardStats(userId?: string) {
     tendenciaClientes: 12.5,
   };
 }
+
+export async function getFunnelData() {
+  const [results] = await db
+    .select({
+      etapa: opportunities.etapa,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(opportunities)
+    .groupBy(opportunities.etapa);
+
+  const funnelMap: Record<string, number> = {
+    lead: 0,
+    contato: 0,
+    proposta: 0,
+    fechado: 0,
+  };
+
+  results?.forEach((row: any) => {
+    if (funnelMap.hasOwnProperty(row.etapa)) {
+      funnelMap[row.etapa] = row.count;
+    }
+  });
+
+  return funnelMap;
+}
+
+export async function getStatusDistribution() {
+  const [results] = await db
+    .select({
+      status: clients.status,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(clients)
+    .groupBy(clients.status)
+    .orderBy(sql<number>`count(*) DESC`);
+
+  return (
+    results?.map((row: any) => ({
+      name: row.status.charAt(0).toUpperCase() + row.status.slice(1),
+      value: row.count,
+    })) || []
+  );
+}

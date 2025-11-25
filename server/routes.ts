@@ -317,6 +317,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/stats/funnel", isAuthenticated, async (req, res) => {
+    try {
+      const funnelData = await storage.getFunnelData();
+      res.json(funnelData);
+    } catch (error: any) {
+      console.error("Error fetching funnel data:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/stats/status-distribution", isAuthenticated, async (req, res) => {
+    try {
+      const distribution = await storage.getStatusDistribution();
+      res.json(distribution);
+    } catch (error: any) {
+      console.error("Error fetching status distribution:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // ==================== ADMIN ROUTES ====================
   app.get("/api/admin/users", isAuthenticated, requireAdmin, async (req, res) => {
     try {
