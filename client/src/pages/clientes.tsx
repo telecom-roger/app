@@ -56,7 +56,17 @@ export default function Clientes() {
   }, [isAuthenticated, authLoading, toast]);
 
   const { data, isLoading } = useQuery<{ clientes: Client[]; total: number }>({
-    queryKey: ["/api/clients", { search: searchTerm, status: statusFilter, page, limit }],
+    queryKey: [
+      "/api/clients",
+      (searchTerm || statusFilter !== "todos" || page !== 1) 
+        ? { 
+            ...(searchTerm && { search: searchTerm }),
+            ...(statusFilter !== "todos" && { status: statusFilter }),
+            page,
+            limit,
+          }
+        : null,
+    ].filter(Boolean),
     enabled: isAuthenticated,
   });
 

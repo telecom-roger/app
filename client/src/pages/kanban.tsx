@@ -46,7 +46,10 @@ export default function Kanban() {
   }, [isAuthenticated, authLoading, toast]);
 
   const { data: oportunidades, isLoading } = useQuery<Opportunity[]>({
-    queryKey: ["/api/opportunities", { responsavel: filtroResponsavel }],
+    queryKey: [
+      "/api/opportunities",
+      filtroResponsavel !== "todos" ? { responsavel: filtroResponsavel } : null,
+    ].filter(Boolean),
     enabled: isAuthenticated,
   });
 
@@ -107,7 +110,7 @@ export default function Kanban() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos</SelectItem>
-              <SelectItem value={user?.id || ""}>Minhas oportunidades</SelectItem>
+              <SelectItem value={user?.id ? String(user.id) : ""}>Minhas oportunidades</SelectItem>
             </SelectContent>
           </Select>
           <Button data-testid="button-nova-oportunidade">
