@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -16,7 +16,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { MessageSquare, Plus } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { MessageSquare, Plus, Trash2, Copy } from "lucide-react";
+import QRCode from "qrcode";
 
 export default function WhatsApp() {
   const { toast } = useToast();
@@ -24,6 +34,7 @@ export default function WhatsApp() {
   const [sessionName, setSessionName] = useState("");
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
 
   const { data: sessions, isLoading } = useQuery<any[]>({
     queryKey: ["/api/whatsapp/sessions"],
@@ -35,14 +46,29 @@ export default function WhatsApp() {
       const result: any = await apiRequest("POST", "/api/whatsapp/connect", { nome });
       return result;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/sessions"] });
+      
+      // Gerar QR code como imagem
+      try {
+        const qrDataUrl = await QRCode.toDataURL(data.sessionId, {
+          errorCorrectionLevel: "H",
+          type: "image/png",
+          width: 300,
+          margin: 1,
+          color: { dark: "#1A0B41", light: "#ffffff" },
+        });
+        setQrCode(qrDataUrl);
+      } catch (err) {
+        console.error("Erro gerando QR code:", err);
+        setQrCode(data.sessionId);
+      }
+
       toast({
         title: "Sucesso",
         description: "Sessão criada! Escaneie o QR code com seu WhatsApp",
       });
       setSessionName("");
-      setQrCode(data.sessionId);
     },
     onError: (error: any) => {
       toast({
@@ -53,10 +79,35 @@ export default function WhatsApp() {
     },
   });
 
-  const statusColors: Record<string, string> = {
-    conectada: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-    desconectada: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
-    erro: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  const deleteMutation = useMutation({
+    mutationFn: async (sessionId: string) => {
+      return await apiRequest("DELETE", `/api/whatsapp/sessions/${sessionId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/sessions"] });
+      toast({
+        title: "Sucesso",
+        description: "Sessão deletada",
+      });
+      setDeleteSessionId(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Falha ao deletar sessão",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const getStatusDot = (status: string) => {
+    if (status === "conectada") {
+      return "bg-green-500";
+    } else if (status === "erro") {
+      return "bg-red-500";
+    } else {
+      return "bg-gray-400";
+    }
   };
 
   return (
@@ -77,7 +128,7 @@ export default function WhatsApp() {
             <div>
               <h2 className="text-xl font-semibold">Sessões Conectadas</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                {sessions?.length || 0} sessão(ões) ativa(s)
+                {sessions?.length || 0} sessão(ões) criada(s)
               </p>
             </div>
             <Dialog open={openDialog} onOpenChange={setOpenDialog}>
@@ -94,7 +145,7 @@ export default function WhatsApp() {
                 <DialogHeader>
                   <DialogTitle>Conectar WhatsApp</DialogTitle>
                   <DialogDescription>
-                    Digite um nome para a sessão e escaneie o QR code
+                    Digite um nome para a sessão e escaneie o QR code com seu celular
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -102,24 +153,36 @@ export default function WhatsApp() {
                     placeholder="Nome da sessão (ex: Vendas)"
                     value={sessionName}
                     onChange={(e) => setSessionName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && sessionName && !connectMutation.isPending) {
+                        connectMutation.mutate(sessionName);
+                      }
+                    }}
                     data-testid="input-session-name"
                   />
                   <Button
                     onClick={() => connectMutation.mutate(sessionName)}
                     disabled={!sessionName || connectMutation.isPending}
-                    className="w-full bg-[#776BFF] text-white"
+                    className="w-full bg-[#776BFF] text-white hover:bg-[#6658DD]"
                     data-testid="button-connect"
                   >
-                    {connectMutation.isPending ? "Conectando..." : "Conectar"}
+                    {connectMutation.isPending ? "Gerando QR Code..." : "Conectar"}
                   </Button>
                   {qrCode && (
-                    <div className="text-center p-4 bg-gray-50 rounded-lg">
-                      <p className="text-sm text-muted-foreground mb-2">
-                        QR Code: {qrCode}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Escaneie com seu WhatsApp para conectar
-                      </p>
+                    <div className="text-center p-4 bg-gray-50 rounded-lg dark:bg-gray-900 space-y-3">
+                      <img
+                        src={qrCode}
+                        alt="QR Code WhatsApp"
+                        className="mx-auto border-2 border-gray-200 dark:border-gray-700 rounded-lg p-2"
+                      />
+                      <div>
+                        <p className="text-sm font-medium text-foreground mb-1">
+                          Escaneie o código com seu WhatsApp
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Abra WhatsApp → Configurações → Dispositivos vinculados
+                        </p>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -140,27 +203,58 @@ export default function WhatsApp() {
           sessions.map((session: any) => (
             <Card
               key={session.id}
-              className="p-4 bg-white border-2 border-[#776BFF] hover:shadow-md transition-shadow"
+              className="p-4 bg-white border-2 border-[#776BFF] hover:shadow-md transition-shadow dark:bg-gray-950"
               data-testid={`card-session-${session.id}`}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <h3 className="font-semibold">{session.nome}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {session.telefone ? `📱 ${session.telefone}` : "Não conectado"}
-                  </p>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div
+                    className={`h-3 w-3 rounded-full flex-shrink-0 ${getStatusDot(
+                      session.status
+                    )}`}
+                    data-testid={`status-dot-${session.id}`}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-semibold truncate">{session.nome}</h3>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {session.telefone ? `📱 ${session.telefone}` : "Não conectado"}
+                    </p>
+                  </div>
                 </div>
-                <Badge
-                  className={statusColors[session.status] || ""}
-                  variant="secondary"
-                >
-                  {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
-                </Badge>
+
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Badge
+                    variant="secondary"
+                    className={`${
+                      session.status === "conectada"
+                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                        : session.status === "erro"
+                        ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                        : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+                    }`}
+                    data-testid={`badge-status-${session.id}`}
+                  >
+                    {session.status === "conectada"
+                      ? "Online"
+                      : session.status === "desconectada"
+                      ? "Offline"
+                      : "Erro"}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDeleteSessionId(session.id)}
+                    data-testid={`button-delete-${session.id}`}
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </Card>
           ))
         ) : (
-          <Card className="p-12 text-center bg-white border-2 border-[#776BFF]">
+          <Card className="p-12 text-center bg-white border-2 border-[#776BFF] dark:bg-gray-950">
             <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-40" />
             <p className="font-medium">Nenhuma sessão conectada</p>
             <p className="text-sm text-muted-foreground mt-1">
@@ -169,6 +263,34 @@ export default function WhatsApp() {
           </Card>
         )}
       </div>
+
+      <AlertDialog open={!!deleteSessionId} onOpenChange={(open) => !open && setDeleteSessionId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deletar Sessão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja deletar esta sessão? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-3 justify-end">
+            <AlertDialogCancel data-testid="button-cancel-delete">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteSessionId) {
+                  deleteMutation.mutate(deleteSessionId);
+                }
+              }}
+              disabled={deleteMutation.isPending}
+              className="bg-red-500 hover:bg-red-600"
+              data-testid="button-confirm-delete"
+            >
+              {deleteMutation.isPending ? "Deletando..." : "Deletar"}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

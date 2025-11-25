@@ -1,9 +1,11 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
-import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, whatsappSessions } from "@shared/schema";
 import * as storage from "./storage";
 import { setupAuth, isAuthenticated } from "./localAuth";
+import { db } from "./db";
 
 // Admin middleware
 function requireAdmin(req: Request, res: Response, next: Function) {
@@ -555,6 +557,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ session, sessionId });
     } catch (error: any) {
       console.error("Error creating WhatsApp session:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/whatsapp/sessions/:id", isAuthenticated, async (req, res) => {
+    try {
+      const session = await storage.getWhatsappSessionById(req.params.id);
+      if (!session) {
+        return res.status(404).json({ error: "Sessão não encontrada" });
+      }
+
+      // Verify ownership
+      if (session.userId !== (req.user as any).id && (req.user as any).role !== "admin") {
+        return res.status(403).json({ error: "Não autorizado" });
+      }
+
+      const [deleted] = await db
+        .delete(whatsappSessions)
+        .where(eq(whatsappSessions.id, req.params.id))
+        .returning();
+
+      res.json({ success: true, deleted });
+    } catch (error: any) {
+      console.error("Error deleting WhatsApp session:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
