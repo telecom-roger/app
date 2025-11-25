@@ -1,0 +1,280 @@
+Plataforma de Atendimento Inteligente para carteira de 500k clientes
+
+Visão geral rápida
+
+Plataforma para gerenciar 500.000 clientes (importados por planilhas) focada em vendas e retenção para operadoras (Vivo, Claro, Tim).
+
+Canais de prospecção: E-mail (envios em massa com templates e personalização) e WhatsApp (envio via sessões internas / WPPConnect ou API oficial).
+
+CRM com CRUD completo, já populado a partir das planilhas.
+
+Interface principal: Timeline central com histórico do cliente, ações, notas e mensagens. Laterais: menus que abrem modais para ações/edições.
+
+Kanban de oportunidades (drag & drop) com filtros por usuário, data e etapa.
+
+Painel Admin para gerenciar campos dinâmicos, usuários, perfis, permissões e configurações de envio.
+
+Plataforma multiusuário, com isolamento de dados por conta/tenant (opcional) e logs completos de auditoria.
+
+Requisitos funcionais (priorizados)
+1. Importação / Ingestão de 500k clientes
+
+Upload de arquivos CSV/XLSX (chunked + background jobs). Suportar arquivos grandes (até 10GB) e múltiplos arquivos.
+
+Mapeamento de colunas no upload (interface onde o usuário escolhe qual coluna vira: nome, telefone, e-mail, CNPJ, produto atual, status, carteira, tags etc).
+
+Validação por número com normalização automática (inserir DDI/DDD: ex: +55). Remoção de duplicados por telefone e e-mail (opções: manter primeiro/último/mesclar).
+
+Logs e relatório pós-import: total lidos, válidos, inválidos, duplicados e amostras de linhas com erro.
+
+Import incremental: marcar origem (arquivo X) e permitir re-importação atualizando registros.
+
+2. Modelo de dados / CRM
+
+Entidades principais: Cliente, Contato (telefone/email), Usuário (atendente), Conta/Carteira, Oportunidade, Conversa (WhatsApp/e-mail), Interação/Nota (timeline items), Agendamento, Tag, CampoDinâmico, Template (e-mail/whatsapp), Log.
+
+CRUD para clientes e contatos com edição em modal.
+
+Histórico (timeline) por cliente com todas as interações (chamadas, e-mails, envios de WhatsApp, notas, mudanças de status).
+
+3. Timeline central
+
+Visualização cronológica das interações do cliente: mensagens enviadas/recebidas, notas do atendente, mudanças de etapa, envios de campanhas.
+
+Messages preview + botão para abrir conversa completa em painel lateral.
+
+Ações rápidas em cada item (responder, agendar follow-up, transformar em oportunidade, marcar como resolvido).
+
+4. Kanban de Vendas
+
+Quadro com colunas configuráveis (ex: Lead, Contato Realizado, Proposta Enviada, Fechado/Perdido).
+
+Cartões representando oportunidades ou clientes arrastáveis entre colunas.
+
+Ações no cartão: abrir perfil do cliente, adicionar nota, criar tarefa, transferir responsável.
+
+Drag & drop com backend que registra mudanças e gera histórico.
+
+5. Comunicação: WhatsApp e E-mail
+
+WhatsApp: integração via WPPConnect (self-hosted) ou API oficial (Meta). Múltiplas sessões por usuário/admin. Gestão de tokens e status da sessão.
+
+Envio em massa com controle de velocidade (throttle), filas e retry.
+
+Variáveis para personalizar mensagens (ex: {{razao_social}}, {{plano_atual}}).
+
+Templates aprovados (para API oficial) e fallback para mensagens template-free via WPPConnect.
+
+Armazenamento do histórico e anexos (imagens, PDFs).
+
+E-mail: integração com SendGrid/SES/Mailgun + fallback SMTP. Envio programado e em massa com templates dinâmicos.
+
+Gestão de bounces, unsubscribes e reputação. Dashboard de entregabilidade.
+
+6. Agendamentos e Filas
+
+Agendamento por data/hora (com timezone configurável). Jobs responsáveis por executar envios e criar eventos na timeline.
+
+Filas (RabbitMQ / BullMQ) para processar envios em lote com escalabilidade e workers configuráveis.
+
+7. Painel Admin (Configurações avançadas)
+
+Gerenciar campos personalizados (CRUD de campos) — tipo texto, número, seleção, data, booleano.
+
+Gerenciar usuários, perfis e permissões (roles: admin, manager, agent).
+
+Configurar templates, limites de envio, horários de envio (ex.: não enviar mensagens fora do horário comercial).
+
+Monitoramento: filas, workers, status das sessões WhatsApp, taxa de entrega de e-mail.
+
+Configurações de importação: regras de merge/duplication.
+
+8. IA / Automação (inteligente)
+
+Classificação automática de leads (score) com base em regras e comportamento.
+
+Respostas automáticas via GPT (OpenAI) para triagem inicial; sistema deve permitir treinar frases e bloquear respostas automáticas para determinados casos.
+
+Sugestões de próximos passos no card do Kanban (ex: ligar, enviar proposta, oferta X).
+
+9. Segurança e conformidade
+
+Autenticação JWT + refresh tokens; OAuth2 para integrações.
+
+RBAC (controle por função) e logs de auditoria por ação de usuário.
+
+Encriptação de dados sensíveis em repouso (ex: tokens) e em trânsito (HTTPS).
+
+Mecanismo de opt-out para e-mail e WhatsApp (respeitar leis LGPD/CAN-SPAM).
+
+10. Relatórios e dashboards
+
+Painel com KPIs: envios/dia, taxa de abertura e clique de e-mail, respostas WhatsApp, taxa de conversão por etapa, volume por carteira, performance por atendente.
+
+Relatórios exportáveis (CSV/PDF) e segmentação dinâmica.
+
+Requisitos não funcionais
+
+Escalabilidade: projetado para suportar 500k+ registros e envios massivos. Uso de filas, workers e particionamento (sharding/indexing).
+
+Performance: buscas paginadas, índices em campos críticos (telefone, email, status). Endpoint de pesquisa com ElasticSearch/Meili/Algolia para buscas rápidas.
+
+Disponibilidade: arquitetura com redundância; backups diários do banco.
+
+Observability: logs estruturados (ELK), métricas (Prometheus + Grafana), tracing (Jaeger).
+
+Arquitetura proposta
+
+Frontend: Vue 3 + Vite (or React se preferir). TailwindCSS com base roxa (#660098) + design system. Componentes: Timeline, Kanban, Modal, DataTable, Editor de Templates.
+
+Backend: Node.js (NestJS ou Express + TypeScript). Arquitetura modular (auth, crm, messaging, import, admin, ai).
+
+Banco de dados: MongoDB (flexibilidade para campos dinâmicos) + PostgreSQL para dados relacionais (usuários, roles) — opcional usar só MongoDB.
+
+Search: ElasticSearch ou Meili para pesquisa full-text e filtros.
+
+Filas: Redis + BullMQ (ou RabbitMQ) para jobs e envio em massa.
+
+Workers: containers (Docker) escaláveis para processamento de envio, parsing de arquivos e IA.
+
+Storage: S3 (MinIO ou AWS S3) para anexos e arquivos importados.
+
+Infra/Deployment: Kubernetes ou Docker Compose para MVP; CI/CD com GitHub Actions.
+
+Modelo de dados (resumo)
+
+Cliente
+
+_id, nome, razao_social, cpf_cnpj, status, carteira, categoria, score, createdAt, updatedAt, tags[], campos_custom: {key: value}
+
+Contato
+
+_id, cliente_id, tipo (telefone/email), valor, preferencial (bool), verified, last_contacted
+
+Usuario
+
+_id, nome, email, role, last_login, active
+
+Oportunidade
+
+_id, cliente_id, titulo, valor_estimado, etapa, responsavel_id, data_criacao, prazo, notas[]
+
+Conversa
+
+_id, cliente_id, contato_id, canal, mensagens[{direction, texto, attachments, timestamp, status}], session_id
+
+Interacao (TimelineItem)
+
+_id, cliente_id, tipo, origem (user/system), texto, meta, createdAt, createdBy
+
+CampoDinâmico
+
+id, nome, tipo, opcoes, obrigatorio, visivel_no_front
+
+Template
+
+id, nome, tipo (email/whatsapp), conteudo, variaveis[]
+
+Endpoints principais (exemplos)
+
+POST /api/imports — inicia importação (multipart upload + mapping)
+
+GET /api/imports/:id/status — status do job
+
+GET /api/clientes — listar/pesquisar clientes (filtros, pagination)
+
+GET /api/clientes/:id — detalhe + timeline
+
+POST /api/clientes — criar cliente
+
+PUT /api/clientes/:id — atualizar cliente
+
+POST /api/clientes/:id/acoes/send-whatsapp — enviar mensagem via sessão escolhida
+
+POST /api/campanhas/email — criar campanha de e-mail
+
+POST /api/kanban/cards/:id/move — mover cartão
+
+POST /api/templates — criar template
+
+POST /api/auth/login — autenticação
+
+Detalhar input/output em OpenAPI é recomendado como próximo passo.
+
+UI/UX — fluxo e telas
+
+Login (SSO opcional)
+
+Dashboard (KPIs + alertas)
+
+Importação (wizard: upload → mapping → validação → confirmar)
+
+Lista de clientes (tabela com filtros avançados, bulk actions)
+
+Perfil do cliente (Timeline central, contatos, oportunidades, ações rápidas)
+
+Conversa (chat-like UI para WhatsApp + histórico de e-mail)
+
+Kanban (drag & drop)
+
+Campanhas (criar, agendar, segmentar por filtro)
+
+Admin (campos dinâmicos, usuários, sessões WhatsApp, templates)
+
+Design: modo escuro opcional; use roxo #660098 como cor principal com contrastes neutros.
+
+Processos técnicos críticos e recomendações
+
+Import em massa: dividir upload em chunks; usar processamento assíncrono com workers; aplicar rate-limit e circuit-breaker.
+
+Normalização de telefone: usar lib libphonenumber para validar e formatar números brasileiros.
+
+De-dupe: implementar estratégia transacional/por lote para evitar race conditions durante import.
+
+Envio de WhatsApp em massa: respeitar limites da API (se usar Meta) e usar filas e pools de sessões para distribuir envios.
+
+Monitoramento de entregas: webhook endpoints para receber status de entrega/abertura/erro do provedor de e-mail e WhatsApp.
+
+Backup & Recovery: snapshots diários e scripts para restauração incremental.
+
+Plano mínimo viável (MVP) — entrega em 3 fases
+
+Fase 1 (MVP)
+
+Import básico CSV/XLSX com mapeamento e validação.
+
+CRUD de clientes e timeline básica.
+
+Envio de e-mail em massa com templates (integração SMTP/SendGrid).
+
+Painel Admin mínimo (usuários, roles, campos dinâmicos simples).
+
+Fase 2
+
+Integração WhatsApp via WPPConnect; histórico e envios individuais.
+
+Kanban e drag&drop.
+
+Filas para envio em massa e agendamento.
+
+Fase 3
+
+Escalabilidade/observability, IA para triagem/respostas, integrações oficiais Meta, métricas avançadas.
+
+Lista de tarefas pronta para o Replit Agent (exemplo simplificado)
+
+Criar projeto base (monorepo) com frontend (Vue 3) e backend (NestJS / Express TS).
+
+Implementar auth JWT + RBAC.
+
+Criar modelo de dados em MongoDB e migrations/seeders.
+
+Implementar endpoint POST /api/imports com upload chunk e job de processamento.
+
+CRUD de clientes + endpoint de timeline.
+
+Implementar filas com BullMQ + worker básico para import/processing.
+
+Implementar envio de e-mail via SendGrid e templates dinâmicos.
+
+Criar UI: Dashboard, Import Wizard, Lista de Clientes,
