@@ -291,7 +291,11 @@ export default function WhatsApp() {
                   <div className="min-w-0 flex-1">
                     <h3 className="font-semibold truncate">{session.nome}</h3>
                     <p className="text-sm text-muted-foreground truncate">
-                      {session.telefone ? `📱 ${session.telefone}` : "Não conectado"}
+                      {session.status === "conectada"
+                        ? `✓ Conectada`
+                        : session.telefone 
+                        ? `📱 ${session.telefone}` 
+                        : "Não conectado"}
                     </p>
                   </div>
                 </div>
