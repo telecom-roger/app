@@ -32,13 +32,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select as SelectComponent,
-  SelectContent as SelectComponentContent,
-  SelectItem as SelectComponentItem,
-  SelectTrigger as SelectComponentTrigger,
-  SelectValue as SelectComponentValue,
-} from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, GripVertical, User, DollarSign, Trash2 } from "lucide-react";
@@ -372,24 +365,20 @@ function NovaOportunidadeDialog({
   const { user } = useAuth();
   const { toast } = useToast();
   const [searchCliente, setSearchCliente] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
   
   useEffect(() => {
     if (open) {
       setSearchCliente("");
-      console.log("Clientes disponíveis:", clientes);
-      if (clientes.length > 0) {
-        console.log("Primeiro cliente:", clientes[0]);
-      }
+      setShowDropdown(false);
     }
-  }, [open, clientes]);
+  }, [open]);
   
   const clientesFiltrados = searchCliente.trim() === "" 
     ? clientes 
     : clientes.filter((client: any) => {
-        const match = (client.razaoSocial?.toLowerCase().includes(searchCliente.toLowerCase())) ||
-                      (client.cpfCnpj?.includes(searchCliente));
-        console.log(`Filtrando "${searchCliente}" - ${client.razaoSocial || client.nome}: ${match}`);
-        return match;
+        return (client.razaoSocial?.toLowerCase().includes(searchCliente.toLowerCase())) ||
+               (client.cpfCnpj?.includes(searchCliente));
       });
   
   const form = useForm({
@@ -447,58 +436,65 @@ function NovaOportunidadeDialog({
             <FormField
               control={form.control}
               name="clientId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cliente</FormLabel>
-                  <FormControl>
-                    <div className="space-y-2">
-                      <Input
-                        placeholder="Buscar por razão social ou CNPJ..."
-                        value={searchCliente}
-                        onChange={(e) => setSearchCliente(e.target.value)}
-                        data-testid="input-search-cliente"
-                      />
-                      <SelectComponent value={field.value} onValueChange={field.onChange}>
-                        <SelectComponentTrigger>
-                          <SelectComponentValue placeholder="Selecione um cliente" />
-                        </SelectComponentTrigger>
-                        <SelectComponentContent>
-                          {Array.isArray(clientes) && clientes.length > 0 ? (
-                            clientesFiltrados.length > 0 ? (
-                              clientesFiltrados.map((client: any) => (
-                                <SelectComponentItem key={client.id} value={client.id}>
-                                  <div className="flex flex-col">
-                                    <span>{client.nome}</span>
-                                    {client.razaoSocial && (
-                                      <span className="text-xs text-muted-foreground">
-                                        {client.razaoSocial}
-                                      </span>
-                                    )}
+              render={({ field }) => {
+                const selectedClient = clientes.find((c: any) => c.id === field.value);
+                return (
+                  <FormItem>
+                    <FormLabel>Cliente</FormLabel>
+                    <FormControl>
+                      <div className="space-y-2">
+                        <Input
+                          placeholder="Buscar por razão social ou CNPJ..."
+                          value={searchCliente}
+                          onChange={(e) => setSearchCliente(e.target.value)}
+                          onFocus={() => setShowDropdown(true)}
+                          data-testid="input-search-cliente"
+                        />
+                        {showDropdown && (
+                          <div className="border rounded-md max-h-64 overflow-y-auto bg-background z-50">
+                            {Array.isArray(clientes) && clientes.length > 0 ? (
+                              clientesFiltrados.length > 0 ? (
+                                clientesFiltrados.map((client: any) => (
+                                  <div
+                                    key={client.id}
+                                    onClick={() => {
+                                      field.onChange(client.id);
+                                      setSearchCliente("");
+                                      setShowDropdown(false);
+                                    }}
+                                    className="p-3 border-b hover:bg-muted cursor-pointer last:border-b-0"
+                                    data-testid={`option-client-${client.id}`}
+                                  >
+                                    <div className="font-medium">{client.razaoSocial || client.nome}</div>
                                     {client.cpfCnpj && (
-                                      <span className="text-xs text-muted-foreground">
-                                        {client.cpfCnpj}
-                                      </span>
+                                      <div className="text-xs text-muted-foreground">{client.cpfCnpj}</div>
                                     )}
                                   </div>
-                                </SelectComponentItem>
-                              ))
+                                ))
+                              ) : (
+                                <div className="p-3 text-sm text-muted-foreground text-center">
+                                  Nenhum cliente encontrado
+                                </div>
+                              )
                             ) : (
-                              <div className="p-2 text-sm text-muted-foreground text-center">
-                                Nenhum cliente encontrado
+                              <div className="p-3 text-sm text-muted-foreground text-center">
+                                Carregando clientes...
                               </div>
-                            )
-                          ) : (
-                            <div className="p-2 text-sm text-muted-foreground text-center">
-                              Carregando clientes...
-                            </div>
-                          )}
-                        </SelectComponentContent>
-                      </SelectComponent>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+                            )}
+                          </div>
+                        )}
+                        {selectedClient && (
+                          <div className="p-2 bg-muted rounded text-sm">
+                            <div className="font-medium">{selectedClient.razaoSocial || selectedClient.nome}</div>
+                            <div className="text-xs text-muted-foreground">{selectedClient.cpfCnpj}</div>
+                          </div>
+                        )}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             <FormField
