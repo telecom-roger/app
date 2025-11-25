@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { z } from "zod";
 import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema } from "@shared/schema";
 import * as storage from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated } from "./localAuth";
 
 // Admin middleware
 function requireAdmin(req: Request, res: Response, next: Function) {
@@ -20,21 +20,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== AUTH ROUTES ====================
   app.get("/api/auth/user", isAuthenticated, async (req, res) => {
-    try {
-      const userId = (req.user as any).claims.sub;
-      const dbUser = await storage.getUserById(userId);
-      if (!dbUser) {
-        return res.status(404).json({ error: "User not found" });
-      }
-      
-      // Cache db user in session for role checks
-      (req.user as any).dbUser = dbUser;
-      
-      res.json(dbUser);
-    } catch (error: any) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
+    res.json(req.user);
   });
 
   // ==================== CLIENT ROUTES ====================

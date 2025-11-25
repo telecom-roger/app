@@ -11,6 +11,8 @@ import { useAuth } from "@/hooks/useAuth";
 
 // Pages
 import Landing from "@/pages/landing";
+import Login from "@/pages/login";
+import Register from "@/pages/register";
 import Dashboard from "@/pages/dashboard";
 import Clientes from "@/pages/clientes";
 import ClienteProfile from "@/pages/cliente-profile";
@@ -24,6 +26,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Landing} />
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/clientes" component={Clientes} />
       <Route path="/clientes/:id" component={ClienteProfile} />
@@ -57,7 +61,11 @@ function AppContent() {
   }
 
   if (!isAuthenticated) {
-    return <Landing />;
+    return (
+      <>
+        <Router />
+      </>
+    );
   }
 
   return (

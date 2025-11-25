@@ -17,7 +17,7 @@ export default function Landing() {
             </div>
           </div>
           <Button asChild data-testid="button-login">
-            <a href="/api/login">Entrar</a>
+            <a href="/login">Entrar</a>
           </Button>
         </div>
       </header>
@@ -41,8 +41,8 @@ export default function Landing() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-            <Button size="lg" onClick={() => window.location.href = '/api/login'} data-testid="button-get-started">
-              Começar agora
+            <Button size="lg" asChild data-testid="button-get-started">
+              <a href="/register">Começar agora</a>
             </Button>
             <Button size="lg" variant="outline" asChild>
               <a href="#recursos">Ver recursos</a>
@@ -103,7 +103,7 @@ export default function Landing() {
             Comece agora e gerencie milhares de clientes com eficiência.
           </p>
           <Button size="lg" asChild data-testid="button-cta">
-            <a href="/api/login">Acessar plataforma</a>
+            <a href="/register">Acessar plataforma</a>
           </Button>
         </div>
       </section>
