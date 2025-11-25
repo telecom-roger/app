@@ -534,13 +534,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const sessions = await storage.getAllWhatsappSessions();
       
-      // Sync status from memory to database
-      for (const session of sessions) {
-        const liveStatus = whatsappService.getSessionStatus(session.sessionId);
-        if (liveStatus !== session.status) {
-          console.log(`🔄 Sincronizando status da sessão ${session.sessionId}: ${session.status} → ${liveStatus}`);
-          await storage.updateWhatsappSession(session.id, { status: liveStatus });
+      // Sync status from memory to database (non-blocking)
+      try {
+        for (const session of sessions) {
+          const liveStatus = whatsappService.getSessionStatus(session.sessionId);
+          if (liveStatus !== session.status) {
+            console.log(`🔄 Sincronizando status da sessão ${session.sessionId}: ${session.status} → ${liveStatus}`);
+            await storage.updateWhatsappSession(session.id, { status: liveStatus });
+          }
         }
+      } catch (syncError: any) {
+        console.warn("⚠️ Erro ao sincronizar status (continuando anyway):", syncError.message);
       }
       
       // Fetch updated sessions
