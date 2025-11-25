@@ -451,26 +451,31 @@ function NovaOportunidadeDialog({
                           data-testid="input-search-cliente"
                         />
                         {showDropdown && (
-                          <div className="border rounded-md max-h-64 overflow-y-auto bg-background z-50">
+                          <div className="border rounded-md max-h-96 overflow-y-auto bg-background z-50 shadow-lg">
                             {Array.isArray(clientes) && clientes.length > 0 ? (
                               clientesFiltrados.length > 0 ? (
-                                clientesFiltrados.map((client: any) => (
-                                  <div
-                                    key={client.id}
-                                    onClick={() => {
-                                      field.onChange(client.id);
-                                      setSearchCliente("");
-                                      setShowDropdown(false);
-                                    }}
-                                    className="p-3 border-b hover:bg-muted cursor-pointer last:border-b-0"
-                                    data-testid={`option-client-${client.id}`}
-                                  >
-                                    <div className="font-medium">{client.razaoSocial || client.nome}</div>
-                                    {client.cpfCnpj && (
-                                      <div className="text-xs text-muted-foreground">{client.cpfCnpj}</div>
-                                    )}
+                                <>
+                                  <div className="sticky top-0 p-2 bg-background border-b text-xs text-muted-foreground">
+                                    {clientesFiltrados.length} de {clientes.length} clientes
                                   </div>
-                                ))
+                                  {clientesFiltrados.map((client: any) => (
+                                    <div
+                                      key={client.id}
+                                      onClick={() => {
+                                        field.onChange(client.id);
+                                        setSearchCliente("");
+                                        setShowDropdown(false);
+                                      }}
+                                      className="p-3 border-b hover:bg-muted cursor-pointer last:border-b-0"
+                                      data-testid={`option-client-${client.id}`}
+                                    >
+                                      <div className="font-medium">{client.razaoSocial || client.nome}</div>
+                                      {client.cpfCnpj && (
+                                        <div className="text-xs text-muted-foreground">{client.cpfCnpj}</div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </>
                               ) : (
                                 <div className="p-3 text-sm text-muted-foreground text-center">
                                   Nenhum cliente encontrado
