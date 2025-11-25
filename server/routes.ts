@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
+import QRCode from "qrcode";
 import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, whatsappSessions } from "@shared/schema";
 import * as storage from "./storage";
 import { setupAuth, isAuthenticated } from "./localAuth";
@@ -554,7 +555,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: (req.user as any).id,
       });
 
-      res.json({ session, sessionId });
+      // Gerar QR code
+      let qrCodeUrl = "";
+      try {
+        qrCodeUrl = await QRCode.toDataURL(sessionId, {
+          errorCorrectionLevel: "H",
+          type: "image/png",
+          width: 350,
+          margin: 2,
+          color: { dark: "#1A0B41", light: "#ffffff" },
+        });
+      } catch (err) {
+        console.error("Erro gerando QR code:", err);
+      }
+
+      res.json({ session, sessionId, qrCode: qrCodeUrl });
     } catch (error: any) {
       console.error("Error creating WhatsApp session:", error);
       res.status(500).json({ error: "Internal server error" });

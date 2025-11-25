@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -25,8 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MessageSquare, Plus, Trash2, Copy } from "lucide-react";
-import QRCode from "qrcode";
+import { MessageSquare, Plus, Trash2 } from "lucide-react";
 
 export default function WhatsApp() {
   const { toast } = useToast();
@@ -46,22 +45,14 @@ export default function WhatsApp() {
       const result: any = await apiRequest("POST", "/api/whatsapp/connect", { nome });
       return result;
     },
-    onSuccess: async (data) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/sessions"] });
       
-      // Gerar QR code como imagem
-      try {
-        const qrDataUrl = await QRCode.toDataURL(data.sessionId, {
-          errorCorrectionLevel: "H",
-          type: "image/png",
-          width: 300,
-          margin: 1,
-          color: { dark: "#1A0B41", light: "#ffffff" },
-        });
-        setQrCode(qrDataUrl);
-      } catch (err) {
-        console.error("Erro gerando QR code:", err);
-        setQrCode(data.sessionId);
+      if (data.qrCode) {
+        setQrCode(data.qrCode);
+        console.log("QR Code recebido do servidor");
+      } else {
+        setQrCode("error");
       }
 
       toast({
@@ -102,11 +93,11 @@ export default function WhatsApp() {
 
   const getStatusDot = (status: string) => {
     if (status === "conectada") {
-      return "bg-green-500";
+      return "bg-green-400";
     } else if (status === "erro") {
       return "bg-red-500";
     } else {
-      return "bg-gray-400";
+      return "bg-red-500";
     }
   };
 
@@ -168,21 +159,28 @@ export default function WhatsApp() {
                   >
                     {connectMutation.isPending ? "Gerando QR Code..." : "Conectar"}
                   </Button>
-                  {qrCode && (
-                    <div className="text-center p-4 bg-gray-50 rounded-lg dark:bg-gray-900 space-y-3">
+                  {qrCode && qrCode !== "error" && (
+                    <div className="text-center p-4 bg-gray-50 rounded-lg dark:bg-gray-900 space-y-3 border-2 border-[#776BFF]">
                       <img
                         src={qrCode}
                         alt="QR Code WhatsApp"
-                        className="mx-auto border-2 border-gray-200 dark:border-gray-700 rounded-lg p-2"
+                        className="mx-auto w-full max-w-xs rounded-lg p-1 bg-white"
                       />
                       <div>
-                        <p className="text-sm font-medium text-foreground mb-1">
-                          Escaneie o código com seu WhatsApp
+                        <p className="text-sm font-semibold text-foreground mb-1">
+                          📱 Escaneie com seu WhatsApp
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Abra WhatsApp → Configurações → Dispositivos vinculados
+                          Configurações → Dispositivos vinculados → Vincular um dispositivo
                         </p>
                       </div>
+                    </div>
+                  )}
+                  {qrCode === "error" && (
+                    <div className="text-center p-3 bg-red-50 rounded-lg dark:bg-red-950 border border-red-200 dark:border-red-800">
+                      <p className="text-sm text-red-700 dark:text-red-200">
+                        Erro ao gerar QR code. Tente novamente.
+                      </p>
                     </div>
                   )}
                 </div>
