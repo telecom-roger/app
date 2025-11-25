@@ -370,7 +370,8 @@ function NovaOportunidadeDialog({
   useEffect(() => {
     if (open) {
       setSearchCliente("");
-      setShowDropdown(false);
+      setShowDropdown(true);
+      console.log("Dialog aberto, clientes:", clientes.length);
     }
   }, [open]);
   
@@ -380,6 +381,8 @@ function NovaOportunidadeDialog({
         return (client.razaoSocial?.toLowerCase().includes(searchCliente.toLowerCase())) ||
                (client.cpfCnpj?.includes(searchCliente));
       });
+  
+  console.log("clientesFiltrados:", clientesFiltrados.length, "clientes:", clientes.length, "search:", searchCliente);
   
   const form = useForm({
     resolver: zodResolver(insertOpportunitySchema),
