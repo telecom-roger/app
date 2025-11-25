@@ -371,6 +371,14 @@ function NovaOportunidadeDialog({
 }) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [searchCliente, setSearchCliente] = useState("");
+  
+  const clientesFiltrados = clientes.filter((client: any) =>
+    client.nome.toLowerCase().includes(searchCliente.toLowerCase()) ||
+    client.razaoSocial?.toLowerCase().includes(searchCliente.toLowerCase()) ||
+    client.cpfCnpj?.includes(searchCliente)
+  );
+  
   const form = useForm({
     resolver: zodResolver(insertOpportunitySchema),
     defaultValues: {
@@ -430,22 +438,36 @@ function NovaOportunidadeDialog({
                 <FormItem>
                   <FormLabel>Cliente</FormLabel>
                   <FormControl>
-                    <SelectComponent value={field.value} onValueChange={field.onChange}>
-                      <SelectComponentTrigger>
-                        <SelectComponentValue placeholder="Selecione um cliente" />
-                      </SelectComponentTrigger>
-                      <SelectComponentContent>
-                        {Array.isArray(clientes) ? (
-                          clientes.map((client: any) => (
-                            <SelectComponentItem key={client.id} value={client.id}>
-                              {client.nome}
-                            </SelectComponentItem>
-                          ))
-                        ) : (
-                          <SelectComponentItem value="">Carregando clientes...</SelectComponentItem>
-                        )}
-                      </SelectComponentContent>
-                    </SelectComponent>
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="Buscar cliente por nome, razão social ou CNPJ..."
+                        value={searchCliente}
+                        onChange={(e) => setSearchCliente(e.target.value)}
+                        data-testid="input-search-cliente"
+                      />
+                      <SelectComponent value={field.value} onValueChange={field.onChange}>
+                        <SelectComponentTrigger>
+                          <SelectComponentValue placeholder="Selecione um cliente" />
+                        </SelectComponentTrigger>
+                        <SelectComponentContent>
+                          {Array.isArray(clientes) && clientes.length > 0 ? (
+                            clientesFiltrados.length > 0 ? (
+                              clientesFiltrados.map((client: any) => (
+                                <SelectComponentItem key={client.id} value={client.id}>
+                                  {client.nome}
+                                </SelectComponentItem>
+                              ))
+                            ) : (
+                              <SelectComponentItem value="" disabled>
+                                Nenhum cliente encontrado
+                              </SelectComponentItem>
+                            )
+                          ) : (
+                            <SelectComponentItem value="">Carregando clientes...</SelectComponentItem>
+                          )}
+                        </SelectComponentContent>
+                      </SelectComponent>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
