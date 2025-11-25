@@ -78,6 +78,38 @@ export default async function runApp(
     throw err;
   });
 
+  // Auto-reconnect WhatsApp sessions on startup (after hot reload or restart)
+  setTimeout(async () => {
+    log("🔄 Verificando sessões WhatsApp para reconexão automática...");
+    try {
+      const storage = await import("./storage");
+      const whatsappService = await import("./whatsappService");
+      const allSessions = await storage.getAllWhatsappSessions();
+      let reconnected = 0;
+      
+      for (const session of allSessions) {
+        // Check if session should be alive but isn't in memory
+        if (session.status === "conectada") {
+          const isAlive = await whatsappService.isSessionAlive(session.sessionId);
+          
+          if (!isAlive && whatsappService.isSessionCredentialsSaved(session.sessionId)) {
+            log(`✨ Reconectando sessão ${session.sessionId}...`);
+            whatsappService.initializeWhatsAppSession(session.sessionId).catch(err => {
+              log(`Erro ao reconectar ${session.sessionId}: ${err.message}`, "whatsapp");
+            });
+            reconnected++;
+          }
+        }
+      }
+      
+      if (reconnected > 0) {
+        log(`✅ ${reconnected} sessão(ões) marcada(s) para reconexão`);
+      }
+    } catch (err) {
+      log(`⚠️ Erro ao auto-reconectar sessões: ${err}`, "whatsapp");
+    }
+  }, 1000); // Wait 1 second after server starts
+
   // importantly run the final setup after setting up all the other routes so
   // the catch-all route doesn't interfere with the other routes
   await setup(app, server);
