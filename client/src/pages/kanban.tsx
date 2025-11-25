@@ -485,55 +485,54 @@ function NovaOportunidadeDialog({
                     <FormControl>
                       <div className="space-y-2">
                         <Input
-                          placeholder="Buscar por razão social ou CNPJ..."
+                          placeholder="Buscar por CNPJ ou razão social..."
                           value={searchCliente}
                           onChange={(e) => setSearchCliente(e.target.value)}
                           onFocus={() => setShowDropdown(true)}
                           data-testid="input-search-cliente"
+                          className="bg-background"
                         />
-                        {showDropdown && (
-                          <div className="border rounded-md max-h-48 overflow-y-auto bg-background z-50 shadow-lg">
-                            {Array.isArray(clientes) && clientes.length > 0 ? (
-                              clientesFiltrados.length > 0 ? (
-                                <>
-                                  <div className="sticky top-0 p-2 bg-background border-b text-xs text-muted-foreground">
-                                    {clientesFiltrados.length} de {clientes.length} clientes
+                        {showDropdown && searchCliente.length > 0 && (
+                          <div className="border rounded-lg max-h-56 overflow-y-auto bg-background z-50 shadow-xl">
+                            {clientesFiltrados.length > 0 ? (
+                              <div className="space-y-2 p-2">
+                                {clientesFiltrados.map((client: any) => (
+                                  <div
+                                    key={client.id}
+                                    onClick={() => {
+                                      field.onChange(client.id);
+                                      setSearchCliente("");
+                                      setShowDropdown(false);
+                                    }}
+                                    className="p-3 border border-border rounded-lg hover-elevate cursor-pointer bg-card transition-all"
+                                    data-testid={`option-client-${client.id}`}
+                                  >
+                                    <div className="font-semibold text-primary">{client.razaoSocial}</div>
+                                    <div className="text-xs text-muted-foreground mt-1">{client.cpfCnpj}</div>
                                   </div>
-                                  {clientesFiltrados.map((client: any) => (
-                                    <div
-                                      key={client.id}
-                                      onClick={() => {
-                                        field.onChange(client.id);
-                                        setSearchCliente("");
-                                        setShowDropdown(false);
-                                      }}
-                                      className="p-3 border-b hover:bg-muted cursor-pointer last:border-b-0"
-                                      data-testid={`option-client-${client.id}`}
-                                    >
-                                      <div className="font-medium">{client.razaoSocial || client.nome}</div>
-                                      {client.cpfCnpj && (
-                                        <div className="text-xs text-muted-foreground">{client.cpfCnpj}</div>
-                                      )}
-                                    </div>
-                                  ))}
-                                </>
-                              ) : (
-                                <div className="p-3 text-sm text-muted-foreground text-center">
-                                  Nenhum cliente encontrado
-                                </div>
-                              )
+                                ))}
+                              </div>
                             ) : (
-                              <div className="p-3 text-sm text-muted-foreground text-center">
-                                Carregando clientes...
+                              <div className="p-6 text-sm text-muted-foreground text-center">
+                                Nenhum cliente encontrado
                               </div>
                             )}
                           </div>
                         )}
                         {fieldSelectedClient && (
-                          <div className="p-2 bg-muted rounded text-sm">
-                            <div className="font-medium">{fieldSelectedClient.razaoSocial || fieldSelectedClient.nome}</div>
-                            <div className="text-xs text-muted-foreground">{fieldSelectedClient.cpfCnpj}</div>
-                          </div>
+                          <Card className="p-3 border-primary/30">
+                            <div className="flex items-start gap-3">
+                              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                <span className="text-xs font-bold text-primary">
+                                  {fieldSelectedClient.razaoSocial?.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-foreground truncate">{fieldSelectedClient.razaoSocial}</div>
+                                <div className="text-xs text-muted-foreground mt-1">{fieldSelectedClient.cpfCnpj}</div>
+                              </div>
+                            </div>
+                          </Card>
                         )}
                       </div>
                     </FormControl>
@@ -705,55 +704,54 @@ function EditarOportunidadeDialog({
                     <FormControl>
                       <div className="space-y-2">
                         <Input
-                          placeholder="Buscar por razão social ou CNPJ..."
+                          placeholder="Buscar por CNPJ ou razão social..."
                           value={searchCliente}
                           onChange={(e) => setSearchCliente(e.target.value)}
                           onFocus={() => setShowDropdown(true)}
                           data-testid="input-search-cliente-edit"
+                          className="bg-background"
                         />
-                        {showDropdown && (
-                          <div className="border rounded-md max-h-48 overflow-y-auto bg-background z-50 shadow-lg">
-                            {Array.isArray(clientes) && clientes.length > 0 ? (
-                              clientesFiltrados.length > 0 ? (
-                                <>
-                                  <div className="sticky top-0 p-2 bg-background border-b text-xs text-muted-foreground">
-                                    {clientesFiltrados.length} de {clientes.length} clientes
+                        {showDropdown && searchCliente.length > 0 && (
+                          <div className="border rounded-lg max-h-56 overflow-y-auto bg-background z-50 shadow-xl">
+                            {clientesFiltrados.length > 0 ? (
+                              <div className="space-y-2 p-2">
+                                {clientesFiltrados.map((client: any) => (
+                                  <div
+                                    key={client.id}
+                                    onClick={() => {
+                                      field.onChange(client.id);
+                                      setSearchCliente("");
+                                      setShowDropdown(false);
+                                    }}
+                                    className="p-3 border border-border rounded-lg hover-elevate cursor-pointer bg-card transition-all"
+                                    data-testid={`option-client-edit-${client.id}`}
+                                  >
+                                    <div className="font-semibold text-primary">{client.razaoSocial}</div>
+                                    <div className="text-xs text-muted-foreground mt-1">{client.cpfCnpj}</div>
                                   </div>
-                                  {clientesFiltrados.map((client: any) => (
-                                    <div
-                                      key={client.id}
-                                      onClick={() => {
-                                        field.onChange(client.id);
-                                        setSearchCliente("");
-                                        setShowDropdown(false);
-                                      }}
-                                      className="p-3 border-b hover:bg-muted cursor-pointer last:border-b-0"
-                                      data-testid={`option-client-edit-${client.id}`}
-                                    >
-                                      <div className="font-medium">{client.razaoSocial || client.nome}</div>
-                                      {client.cpfCnpj && (
-                                        <div className="text-xs text-muted-foreground">{client.cpfCnpj}</div>
-                                      )}
-                                    </div>
-                                  ))}
-                                </>
-                              ) : (
-                                <div className="p-3 text-sm text-muted-foreground text-center">
-                                  Nenhum cliente encontrado
-                                </div>
-                              )
+                                ))}
+                              </div>
                             ) : (
-                              <div className="p-3 text-sm text-muted-foreground text-center">
-                                Carregando clientes...
+                              <div className="p-6 text-sm text-muted-foreground text-center">
+                                Nenhum cliente encontrado
                               </div>
                             )}
                           </div>
                         )}
                         {fieldSelectedClient && (
-                          <div className="p-2 bg-muted rounded text-sm">
-                            <div className="font-medium">{fieldSelectedClient.razaoSocial || fieldSelectedClient.nome}</div>
-                            <div className="text-xs text-muted-foreground">{fieldSelectedClient.cpfCnpj}</div>
-                          </div>
+                          <Card className="p-3 border-primary/30">
+                            <div className="flex items-start gap-3">
+                              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                <span className="text-xs font-bold text-primary">
+                                  {fieldSelectedClient.razaoSocial?.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-foreground truncate">{fieldSelectedClient.razaoSocial}</div>
+                                <div className="text-xs text-muted-foreground mt-1">{fieldSelectedClient.cpfCnpj}</div>
+                              </div>
+                            </div>
+                          </Card>
                         )}
                       </div>
                     </FormControl>
