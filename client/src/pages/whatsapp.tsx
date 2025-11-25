@@ -39,6 +39,7 @@ export default function WhatsApp() {
   const { data: sessions, isLoading } = useQuery<any[]>({
     queryKey: ["/api/whatsapp/sessions"],
     enabled: isAuthenticated,
+    refetchInterval: 2000, // Poll every 2 seconds for real-time status updates
   });
 
   const connectMutation = useMutation({
