@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
-import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, whatsappSessions, clients } from "@shared/schema";
+import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, whatsappSessions, clients, interactions } from "@shared/schema";
 import * as storage from "./storage";
 import * as whatsappService from "./whatsappService";
 import { setupAuth, isAuthenticated } from "./localAuth";
@@ -861,7 +861,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endpoint para listar clientes com WhatsApp
+  // Endpoint para listar clientes com WhatsApp e histórico de campanhas
   app.get("/api/clients/whatsapp-list", isAuthenticated, async (req, res) => {
     try {
       const { status = "todos" } = req.query;
@@ -885,9 +885,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Filter clients with valid phones
       const clientsWithPhones = result.filter((c) => c.telefone && c.telefone.trim());
 
-      res.json(clientsWithPhones);
+      // Fetch last campaign for each client
+      const clientsComHistorico = await Promise.all(
+        clientsWithPhones.map(async (client) => {
+          try {
+            // Get last whatsapp_enviado interaction
+            const lastCampaign = await db
+              .select()
+              .from(interactions)
+              .where(eq(interactions.clientId, client.id))
+              .orderBy((t) => t.createdAt)
+              .limit(1);
+
+            let ultimaCampanha = undefined;
+            if (lastCampaign && lastCampaign.length > 0) {
+              const data = lastCampaign[0].createdAt;
+              const agora = new Date();
+              const minutosPara = Math.floor((agora.getTime() - data.getTime()) / 1000 / 60);
+              const recente = minutosPara < 120; // Recente = menos de 2 horas
+
+              ultimaCampanha = {
+                data: data.toLocaleString("pt-BR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+                minutosPara,
+                recente,
+              };
+            }
+
+            return {
+              ...client,
+              ultimaCampanha,
+            };
+          } catch (err) {
+            console.warn("Erro ao buscar histórico do cliente:", err);
+            return client;
+          }
+        })
+      );
+
+      res.json(clientsComHistorico);
     } catch (error: any) {
       console.error("Error fetching WhatsApp client list:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Endpoint para listar histórico de campanhas de um cliente
+  app.get("/api/clients/:clientId/campaign-history", isAuthenticated, async (req, res) => {
+    try {
+      const { clientId } = req.params;
+
+      const history = await db
+        .select({
+          id: interactions.id,
+          titulo: interactions.titulo,
+          texto: interactions.texto,
+          createdAt: interactions.createdAt,
+          meta: interactions.meta,
+        })
+        .from(interactions)
+        .where(eq(interactions.clientId, clientId))
+        .orderBy((t) => t.createdAt)
+        .limit(100);
+
+      res.json(history);
+    } catch (error: any) {
+      console.error("Error fetching campaign history:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });

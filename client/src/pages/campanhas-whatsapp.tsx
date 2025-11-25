@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -41,6 +42,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  ScrollArea,
+} from "@/components/ui/scroll-area";
 import { 
   Send, 
   Upload, 
@@ -54,6 +58,8 @@ import {
   Trash2,
   Download,
   X,
+  Calendar,
+  AlertTriangle,
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import Papa from "papaparse";
@@ -75,6 +81,11 @@ type ClientForImport = {
   nome: string;
   telefone: string;
   email?: string;
+  ultimaCampanha?: {
+    data: string;
+    minutosPara: number;
+    recente: boolean;
+  };
 };
 
 export default function CampanhasWhatsApp() {
@@ -96,12 +107,21 @@ export default function CampanhasWhatsApp() {
   const [confirmarEnvio, setConfirmarEnvio] = useState(false);
   const [mostrarSeletorBD, setMostrarSeletorBD] = useState(false);
   const [filtroStatus, setFiltroStatus] = useState("todos");
+  const [searchClientes, setSearchClientes] = useState("");
+  const [clientesSelecionados, setClientesSelecionados] = useState<Set<string>>(new Set());
+  const [mostrarHistorico, setMostrarHistorico] = useState(false);
 
-  // Fetch clients
-  const { data: clientesDisponiveis = [] } = useQuery<ClientForImport[]>({
+  // Fetch clients with campaign history
+  const { data: clientesDisponiveis = [], isLoading: carregandoClientes } = useQuery<ClientForImport[]>({
     queryKey: ["/api/clients/whatsapp-list"],
     enabled: isAuthenticated && mostrarSeletorBD,
   });
+
+  // Filter clients by search
+  const clientesFiltrados = clientesDisponiveis.filter((c) =>
+    c.nome.toLowerCase().includes(searchClientes.toLowerCase()) ||
+    c.telefone.includes(searchClientes)
+  );
 
   // Parse CSV when text changes
   useEffect(() => {
@@ -181,24 +201,49 @@ export default function CampanhasWhatsApp() {
     }
   };
 
-  // Import clients from database
-  const importarDosBD = () => {
-    const contatosFromDB: ContactEntry[] = clientesDisponiveis
-      .filter((c) => c.telefone)
-      .map((c, idx) => ({
-        id: (idx + 1).toString(),
-        whatsapp: c.telefone,
-        empresa: c.nome || "N/A",
-      }));
+  // Import selected clients from database
+  const importarSelecionadosDoBD = () => {
+    const contatosFromDB: ContactEntry[] = Array.from(clientesSelecionados)
+      .map((clientId) => {
+        const cliente = clientesDisponiveis.find((c) => c.id === clientId);
+        return {
+          id: cliente?.id || "",
+          whatsapp: cliente?.telefone || "",
+          empresa: cliente?.nome || "N/A",
+        };
+      })
+      .filter((c) => c.whatsapp);
+
+    if (contatosFromDB.length === 0) {
+      toast({
+        title: "Erro",
+        description: "Selecione pelo menos um cliente",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setContatos(contatosFromDB);
     setVariaveisDisponiveis(["id", "whatsapp", "empresa"]);
+    setClientesSelecionados(new Set());
     setMostrarSeletorBD(false);
+    setSearchClientes("");
 
     toast({
       title: "Sucesso",
-      description: `${contatosFromDB.length} contatos carregados da base`,
+      description: `${contatosFromDB.length} contato${contatosFromDB.length !== 1 ? "s" : ""} carregado${contatosFromDB.length !== 1 ? "s" : ""} da base`,
     });
+  };
+
+  // Toggle client selection
+  const toggleClienteSelecionado = (clientId: string) => {
+    const novo = new Set(clientesSelecionados);
+    if (novo.has(clientId)) {
+      novo.delete(clientId);
+    } else {
+      novo.add(clientId);
+    }
+    setClientesSelecionados(novo);
   };
 
   // Replace variables in template
@@ -377,6 +422,7 @@ export default function CampanhasWhatsApp() {
         <TabsList>
           <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
           <TabsTrigger value="configuracao">Configuração</TabsTrigger>
+          <TabsTrigger value="historico">Histórico</TabsTrigger>
         </TabsList>
 
         {/* ===== ABA MENSAGENS ===== */}
@@ -732,52 +778,150 @@ export default function CampanhasWhatsApp() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ===== ABA HISTÓRICO ===== */}
+        <TabsContent value="historico" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Histórico de Campanhas por Cliente</CardTitle>
+              <CardDescription>Veja quando cada cliente recebeu mensagens</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                onClick={() => setMostrarHistorico(true)}
+                variant="outline"
+                size="sm"
+                data-testid="button-abrir-historico"
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Visualizar Histórico
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
-      {/* Dialog: Import from DB */}
+      {/* Dialog: Import from DB with Multi-Select */}
       <Dialog open={mostrarSeletorBD} onOpenChange={setMostrarSeletorBD}>
-        <DialogContent>
+        <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Carregar Contatos da Base</DialogTitle>
+            <DialogTitle>Selecionar Contatos da Base</DialogTitle>
             <DialogDescription>
-              Selecione um status para filtrar os contatos
+              Escolha os clientes para receber as mensagens. RAZÃO_SOCIAL + CELULAR_PRINCIPAL
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="lead">Lead</SelectItem>
-                <SelectItem value="ativo">Ativo</SelectItem>
-                <SelectItem value="proposta">Proposta</SelectItem>
-                <SelectItem value="fechado">Fechado</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="space-y-4 flex-1 flex flex-col">
+            {/* Search Input */}
+            <Input
+              placeholder="Buscar por nome ou telefone..."
+              value={searchClientes}
+              onChange={(e) => setSearchClientes(e.target.value)}
+              data-testid="input-search-clientes"
+            />
 
-            <div className="text-sm text-muted-foreground">
-              Total de contatos com telefone: <strong>{clientesDisponiveis.length}</strong>
-            </div>
+            {/* Clients Table */}
+            {carregandoClientes ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : clientesFiltrados.length === 0 ? (
+              <div className="flex items-center justify-center py-8 text-muted-foreground">
+                Nenhum cliente encontrado
+              </div>
+            ) : (
+              <ScrollArea className="flex-1 border rounded-md">
+                <div className="relative">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-muted">
+                      <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={clientesSelecionados.size === clientesFiltrados.length && clientesFiltrados.length > 0}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setClientesSelecionados(new Set(clientesFiltrados.map((c) => c.id)));
+                              } else {
+                                setClientesSelecionados(new Set());
+                              }
+                            }}
+                            data-testid="checkbox-select-all"
+                          />
+                        </TableHead>
+                        <TableHead>RAZÃO SOCIAL</TableHead>
+                        <TableHead>CELULAR PRINCIPAL</TableHead>
+                        <TableHead className="text-xs">Última Campanha</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {clientesFiltrados.map((cliente) => (
+                        <TableRow key={cliente.id} className="hover-elevate cursor-pointer">
+                          <TableCell onClick={(e) => {
+                            e.stopPropagation();
+                            toggleClienteSelecionado(cliente.id);
+                          }}>
+                            <Checkbox
+                              checked={clientesSelecionados.has(cliente.id)}
+                              onCheckedChange={() => toggleClienteSelecionado(cliente.id)}
+                              data-testid={`checkbox-cliente-${cliente.id}`}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">{cliente.nome}</TableCell>
+                          <TableCell className="font-mono text-sm">{cliente.telefone}</TableCell>
+                          <TableCell className="text-xs">
+                            {cliente.ultimaCampanha ? (
+                              <div className="flex items-center gap-2">
+                                {cliente.ultimaCampanha.recente ? (
+                                  <Badge variant="destructive" className="text-xs gap-1">
+                                    <AlertTriangle className="h-3 w-3" />
+                                    {cliente.ultimaCampanha.minutosPara}m
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-xs">
+                                    {cliente.ultimaCampanha.data}
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">Nenhuma</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </ScrollArea>
+            )}
 
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setMostrarSeletorBD(false)}
-                data-testid="button-cancelar-seletor"
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={importarDosBD}
-                disabled={clientesDisponiveis.length === 0}
-                data-testid="button-confirmar-importar"
-              >
-                Importar {clientesDisponiveis.length} Contatos
-              </Button>
+            {/* Summary */}
+            <div className="flex justify-between items-center p-3 bg-muted rounded">
+              <span className="text-sm">
+                <strong>{clientesSelecionados.size}</strong> de <strong>{clientesFiltrados.length}</strong> selecionados
+              </span>
             </div>
+          </div>
+
+          {/* Buttons */}
+          <div className="flex gap-3 justify-end">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setMostrarSeletorBD(false);
+                setClientesSelecionados(new Set());
+                setSearchClientes("");
+              }}
+              data-testid="button-cancelar-seletor"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={importarSelecionadosDoBD}
+              disabled={clientesSelecionados.size === 0}
+              data-testid="button-confirmar-importar"
+            >
+              Importar {clientesSelecionados.size} Contato{clientesSelecionados.size !== 1 ? "s" : ""}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
