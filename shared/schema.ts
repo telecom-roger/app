@@ -47,7 +47,7 @@ export const clients = pgTable("clients", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   nome: text("nome").notNull(),
   razaoSocial: text("razao_social"),
-  cpfCnpj: varchar("cpf_cnpj", { length: 20 }),
+  cpfCnpj: varchar("cpf_cnpj", { length: 50 }),
   status: varchar("status", { length: 50 }).notNull().default("lead"), // lead, ativo, inativo, proposta, fechado, perdido
   carteira: varchar("carteira", { length: 100 }), // Vivo, Claro, Tim, etc
   categoria: varchar("categoria", { length: 100 }),
