@@ -176,19 +176,22 @@ export default function WhatsApp() {
                     {connectMutation.isPending ? "Gerando QR Code..." : "Conectar"}
                   </Button>
                   {qrCode && !qrCode.startsWith("error") && !qrCode.startsWith("fallback:") && (
-                    <div className="text-center p-4 bg-gray-50 rounded-lg dark:bg-gray-900 space-y-3 border-2 border-[#776BFF]">
+                    <div className="flex flex-col items-center gap-4 p-6 bg-gradient-to-b from-purple-50 to-blue-50 dark:from-purple-950 dark:to-blue-950 rounded-xl border-3 border-[#776BFF] shadow-lg">
                       <img
                         src={qrCode}
                         alt="QR Code WhatsApp"
-                        className="mx-auto w-full max-w-xs rounded-lg p-1 bg-white"
+                        className="w-80 h-80 rounded-lg p-2 bg-white border-2 border-gray-200 dark:border-gray-700 shadow-md"
                         onError={() => console.error("Erro ao carregar imagem QR")}
                       />
-                      <div>
-                        <p className="text-sm font-semibold text-foreground mb-1">
-                          📱 Escaneie com seu WhatsApp
+                      <div className="text-center space-y-2">
+                        <p className="text-lg font-bold text-foreground">
+                          📱 Escaneie o Código QR
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          Configurações → Dispositivos vinculados → Vincular um dispositivo
+                        <p className="text-sm text-muted-foreground max-w-xs">
+                          Abra o WhatsApp → Configurações → Dispositivos Vinculados → Vincular Dispositivo
+                        </p>
+                        <p className="text-xs text-green-600 dark:text-green-400 font-medium">
+                          ✓ Código válido por 5 minutos
                         </p>
                       </div>
                     </div>
