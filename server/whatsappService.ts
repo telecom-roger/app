@@ -2,6 +2,7 @@ import QRCode from "qrcode";
 import { makeWASocket, DisconnectReason, useMultiFileAuthState, Browsers } from "@whiskeysockets/baileys";
 import { Boom } from "@hapi/boom";
 import path from "path";
+import fs from "fs";
 
 // Map to store active connections and QR codes
 const activeSessions = new Map<string, any>();
@@ -129,4 +130,22 @@ export function isSessionConnected(sessionId: string): boolean {
 
 export function getSessionStatus(sessionId: string): string {
   return sessionStatus.get(sessionId) || "desconectada";
+}
+
+export function isSessionCredentialsSaved(sessionId: string): boolean {
+  // Check if this session has saved credentials (indicating it was previously connected)
+  const authDir = path.join(process.cwd(), "whatsapp_auth", sessionId);
+  const credsPath = path.join(authDir, "creds.json");
+  
+  try {
+    if (fs.existsSync(credsPath)) {
+      const creds = JSON.parse(fs.readFileSync(credsPath, "utf-8"));
+      // If creds exist and have me data, it means the session was connected before
+      return !!creds?.me;
+    }
+  } catch (error) {
+    console.error(`Error checking credentials for ${sessionId}:`, error);
+  }
+  
+  return false;
 }

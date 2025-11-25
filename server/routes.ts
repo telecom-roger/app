@@ -537,7 +537,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Sync status from memory to database (non-blocking)
       try {
         for (const session of sessions) {
-          const liveStatus = whatsappService.getSessionStatus(session.sessionId);
+          // Get live status from memory (connection state)
+          let liveStatus = whatsappService.getSessionStatus(session.sessionId);
+          
+          // If memory shows "desconectada" but credentials are saved, it means the connection
+          // was lost but the session can be restored - mark it as "conectada"
+          if (liveStatus === "desconectada" && whatsappService.isSessionCredentialsSaved(session.sessionId)) {
+            liveStatus = "conectada";
+            console.log(`📚 Sessão ${session.sessionId} tem credenciais salvas - marcando como conectada`);
+          }
+          
           if (liveStatus !== session.status) {
             console.log(`🔄 Sincronizando status da sessão ${session.sessionId}: ${session.status} → ${liveStatus}`);
             await storage.updateWhatsappSession(session.id, { status: liveStatus });
