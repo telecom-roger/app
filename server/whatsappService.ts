@@ -151,30 +151,18 @@ export function isSessionCredentialsSaved(sessionId: string): boolean {
 }
 
 export async function isSessionAlive(sessionId: string): Promise<boolean> {
-  // Check if the Baileys socket is actually alive
+  // Check if session is in memory and marked as connected
   const sock = activeSessions.get(sessionId);
+  const status = sessionStatus.get(sessionId);
   
-  if (!sock) {
-    return false; // Socket doesn't exist in memory
-  }
-  
-  try {
-    // Check if socket still has a connection property (lightweight check)
-    // If the socket exists and hasn't been closed, it should have a ws connection
-    if (!sock.ws) {
-      console.warn(`⚠️ Socket ${sessionId} não tem ws connection - marcando como desconectada`);
-      sessionStatus.set(sessionId, "desconectada");
-      activeSessions.delete(sessionId);
-      return false;
-    }
-    
-    return true;
-  } catch (error) {
-    console.warn(`⚠️ Sessão ${sessionId} erro ao verificar alive:`, (error as any)?.message);
-    sessionStatus.set(sessionId, "desconectada");
-    activeSessions.delete(sessionId);
+  // If socket doesn't exist or status is explicitly disconnected, return false
+  if (!sock || status === "desconectada") {
     return false;
   }
+  
+  // If socket exists and status is conectada, assume it's alive
+  // (we're trusting the connection.update events from Baileys)
+  return status === "conectada";
 }
 
 export async function sendMessage(sessionId: string, telefone: string, mensagem: string): Promise<boolean> {

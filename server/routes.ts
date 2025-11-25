@@ -537,29 +537,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userIdFilter = user.role === 'admin' ? undefined : user.id;
       const sessions = await storage.getAllWhatsappSessions(userIdFilter);
       
-      // Auto-reconnect sessions that were previously connected but lost connection (hot reload)
-      // but don't immediately mark as desconectada if socket is missing
+      // Sync status from memory to database (non-blocking)
       try {
         for (const session of sessions) {
-          const liveStatus = whatsappService.getSessionStatus(session.sessionId);
+          // Get live status from memory (connection state)
+          let liveStatus = whatsappService.getSessionStatus(session.sessionId);
           
-          // If marked as conectada but socket isn't in memory, try to auto-reconnect
-          // (this can happen after hot reload)
-          if (session.status === "conectada" && liveStatus === "desconectada") {
-            // Check if credentials exist (was previously connected)
-            if (whatsappService.isSessionCredentialsSaved(session.sessionId)) {
-              console.log(`🔄 Auto-reconnecting sessão ${session.sessionId} após hot reload...`);
-              // Reconnect asynchronously (don't wait for it)
-              whatsappService.initializeWhatsAppSession(session.sessionId).catch(err => {
-                console.error(`Erro ao auto-reconectar ${session.sessionId}:`, err);
-              });
-              // Mark as "reconectando" temporarily
-              await storage.updateWhatsappSession(session.id, { status: "conectada" });
+          // If status is "conectada", verify the connection is actually alive
+          if (liveStatus === "conectada") {
+            const isAlive = await whatsappService.isSessionAlive(session.sessionId);
+            if (!isAlive) {
+              liveStatus = "desconectada";
+              console.log(`💀 Conexão morta detectada para ${session.sessionId} - marcando como desconectada`);
             }
+          }
+          
+          // Status from memory is the source of truth
+          // Don't automatically mark as "conectada" just because credentials exist
+          // That would hide real disconnections from the user
+          
+          if (liveStatus !== session.status) {
+            console.log(`🔄 Sincronizando status da sessão ${session.sessionId}: ${session.status} → ${liveStatus}`);
+            await storage.updateWhatsappSession(session.id, { status: liveStatus });
           }
         }
       } catch (syncError: any) {
-        console.warn("⚠️ Erro ao auto-reconectar (continuando anyway):", syncError.message);
+        console.warn("⚠️ Erro ao sincronizar status (continuando anyway):", syncError.message);
       }
       
       // Fetch updated sessions (with same filter)
