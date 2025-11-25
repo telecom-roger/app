@@ -59,7 +59,7 @@ export default function Clientes() {
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [page, setPage] = useState(1);
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
-  const limit = 5;
+  const limit = 10;
 
   // Delete mutation
   const deleteMutation = useMutation({
