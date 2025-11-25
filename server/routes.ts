@@ -2,9 +2,9 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
-import QRCode from "qrcode";
 import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, whatsappSessions } from "@shared/schema";
 import * as storage from "./storage";
+import * as whatsappService from "./whatsappService";
 import { setupAuth, isAuthenticated } from "./localAuth";
 import { db } from "./db";
 
@@ -555,20 +555,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: (req.user as any).id,
       });
 
-      // Gerar QR code
+      // Initialize WhatsApp connection and get QR code
       let qrCodeUrl = "";
       try {
-        qrCodeUrl = await QRCode.toDataURL(sessionId, {
-          errorCorrectionLevel: "H",
-          type: "image/png",
-          width: 350,
-          margin: 2,
-          color: { dark: "#1A0B41", light: "#ffffff" },
-        });
-        console.log("QR code gerado com sucesso para sessão:", sessionId);
+        console.log("🔄 Iniciando conexão Baileys para sessão:", sessionId);
+        await whatsappService.initializeWhatsAppSession(sessionId);
+        
+        // Get QR code (wait a bit for it to be generated)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        qrCodeUrl = whatsappService.getQRCode(sessionId) || "";
+        
+        if (qrCodeUrl) {
+          console.log("✅ QR code obtido com sucesso para sessão:", sessionId);
+        } else {
+          console.warn("⚠️ QR code não foi gerado para sessão:", sessionId);
+        }
       } catch (err) {
-        console.error("Erro ao gerar QR code:", err);
-        // Fallback: se falhar, retorna o sessionId como placeholder
+        console.error("Erro ao gerar QR code via Baileys:", err);
         qrCodeUrl = "";
       }
 
@@ -596,21 +599,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Não autorizado" });
       }
 
+      // Close old session
+      if (session.sessionId) {
+        whatsappService.closeSession(session.sessionId);
+      }
+
       // Reset session status and generate new QR code
       const newSessionId = `session_${Date.now()}`;
       let qrCodeUrl = "";
       
       try {
-        qrCodeUrl = await QRCode.toDataURL(newSessionId, {
-          errorCorrectionLevel: "H",
-          type: "image/png",
-          width: 350,
-          margin: 2,
-          color: { dark: "#1A0B41", light: "#ffffff" },
-        });
-        console.log("QR code gerado com sucesso para reconectar:", newSessionId);
+        console.log("🔄 Reconectando sessão com novo ID:", newSessionId);
+        await whatsappService.initializeWhatsAppSession(newSessionId);
+        
+        // Get QR code (wait a bit for it to be generated)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        qrCodeUrl = whatsappService.getQRCode(newSessionId) || "";
+        
+        if (qrCodeUrl) {
+          console.log("✅ QR code reconectado com sucesso para sessão:", newSessionId);
+        } else {
+          console.warn("⚠️ QR code não foi gerado para reconectar:", newSessionId);
+        }
       } catch (err) {
-        console.error("Erro ao gerar QR code para reconectar:", err);
+        console.error("Erro ao reconectar sessão:", err);
       }
 
       // Update session with new ID and reset status
@@ -642,6 +654,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verify ownership
       if (session.userId !== (req.user as any).id && (req.user as any).role !== "admin") {
         return res.status(403).json({ error: "Não autorizado" });
+      }
+
+      // Close WhatsApp connection
+      if (session.sessionId) {
+        whatsappService.closeSession(session.sessionId);
       }
 
       const [deleted] = await db
