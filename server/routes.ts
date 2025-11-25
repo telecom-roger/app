@@ -26,7 +26,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== CLIENT ROUTES ====================
   app.get("/api/clients", isAuthenticated, async (req, res) => {
     try {
-      const { search, status, page = "1", limit = "20" } = req.query;
+      const { search, status, page = "1", limit = "10000" } = req.query;
       const result = await storage.getClients({
         search: search as string,
         status: status as string,
