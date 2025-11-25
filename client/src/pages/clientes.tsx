@@ -183,23 +183,23 @@ export default function Clientes() {
       </Card>
 
       {/* Table */}
-      <Card>
+      <Card className="bg-white border-2 border-primary shadow-lg overflow-hidden">
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nome / Razão Social</TableHead>
-              <TableHead>CPF/CNPJ</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Carteira</TableHead>
-              <TableHead>Score</TableHead>
-              <TableHead>Tags</TableHead>
+          <TableHeader className="bg-primary/5">
+            <TableRow className="border-b-2 border-primary/20 hover:bg-transparent">
+              <TableHead className="text-primary font-bold">Nome / Razão Social</TableHead>
+              <TableHead className="text-primary font-bold">CPF/CNPJ</TableHead>
+              <TableHead className="text-primary font-bold">Status</TableHead>
+              <TableHead className="text-primary font-bold">Carteira</TableHead>
+              <TableHead className="text-primary font-bold">Score</TableHead>
+              <TableHead className="text-primary font-bold">Tags</TableHead>
               <TableHead className="w-12"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
+                <TableRow key={i} className="border-b border-primary/10 hover:bg-primary/5">
                   <TableCell><Skeleton className="h-4 w-48" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-5 w-20" /></TableCell>
@@ -213,7 +213,7 @@ export default function Clientes() {
               data.clientes.map((cliente) => (
                 <TableRow 
                   key={cliente.id} 
-                  className="cursor-pointer hover-elevate"
+                  className="cursor-pointer border-b border-primary/10 hover:bg-primary/5 hover:shadow-md transition-all duration-200 hover-elevate"
                   data-testid={`row-cliente-${cliente.id}`}
                 >
                   <TableCell>
@@ -316,8 +316,8 @@ export default function Clientes() {
 
         {/* Pagination */}
         {data && data.total > limit && (
-          <div className="flex items-center justify-between p-4 border-t">
-            <div className="text-sm text-muted-foreground">
+          <div className="flex items-center justify-between p-4 border-t-2 border-primary/20 bg-primary/2">
+            <div className="text-sm text-primary font-medium">
               Mostrando {(page - 1) * limit + 1} a {Math.min(page * limit, data.total)} de {data.total} clientes
             </div>
             <div className="flex gap-2">
@@ -327,6 +327,7 @@ export default function Clientes() {
                 disabled={page === 1}
                 onClick={() => setPage(p => p - 1)}
                 data-testid="button-prev-page"
+                className="border-primary text-primary hover:bg-primary hover:text-white"
               >
                 Anterior
               </Button>
@@ -336,6 +337,7 @@ export default function Clientes() {
                 disabled={page * limit >= data.total}
                 onClick={() => setPage(p => p + 1)}
                 data-testid="button-next-page"
+                className="border-primary text-primary hover:bg-primary hover:text-white"
               >
                 Próxima
               </Button>
