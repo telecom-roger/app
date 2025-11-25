@@ -373,6 +373,12 @@ function NovaOportunidadeDialog({
   const { toast } = useToast();
   const [searchCliente, setSearchCliente] = useState("");
   
+  useEffect(() => {
+    if (open) {
+      setSearchCliente("");
+    }
+  }, [open]);
+  
   const clientesFiltrados = searchCliente.trim() === "" 
     ? clientes 
     : clientes.filter((client: any) =>
