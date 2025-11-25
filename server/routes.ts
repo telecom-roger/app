@@ -795,6 +795,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // New endpoint for single message sending from campaigns page
+  app.post("/api/whatsapp/enviar-broadcast", isAuthenticated, async (req, res) => {
+    try {
+      const { telefone, mensagem } = req.body;
+      
+      if (!telefone || !mensagem) {
+        return res.status(400).json({ error: "telefone e mensagem são obrigatórios" });
+      }
+
+      // Get user's first active WhatsApp session
+      const user = (req.user as any);
+      const sessions = await storage.getAllWhatsappSessions(user.role === 'admin' ? undefined : user.id);
+      const sessaoConectada = sessions.find((s) => s.status === 'conectada');
+      
+      if (!sessaoConectada) {
+        return res.status(400).json({ error: "Nenhuma sessão WhatsApp conectada" });
+      }
+
+      // Verify the session is actually alive
+      const isAlive = await whatsappService.isSessionAlive(sessaoConectada.sessionId);
+      if (!isAlive) {
+        return res.status(400).json({ error: "Sessão WhatsApp não está mais conectada" });
+      }
+
+      // Send the message
+      try {
+        await whatsappService.sendMessage(sessaoConectada.sessionId, telefone, mensagem);
+        res.json({ 
+          success: true,
+          mensagem: "Mensagem enviada com sucesso"
+        });
+      } catch (sendError: any) {
+        console.error("Erro ao enviar mensagem:", sendError);
+        res.status(400).json({ 
+          error: sendError.message || "Erro ao enviar mensagem"
+        });
+      }
+    } catch (error: any) {
+      console.error("Error in whatsapp broadcast:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // ==================== ADMIN ROUTES ====================
   app.get("/api/admin/users", isAuthenticated, requireAdmin, async (req, res) => {
     try {

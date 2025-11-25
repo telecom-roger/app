@@ -47,6 +47,11 @@ const menuItems = [
     icon: Mail,
   },
   {
+    title: "Campanhas WhatsApp",
+    url: "/campanhas/whatsapp",
+    icon: MessageSquare,
+  },
+  {
     title: "WhatsApp",
     url: "/whatsapp",
     icon: MessageSquare,
