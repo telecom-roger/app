@@ -382,7 +382,6 @@ function NovaOportunidadeDialog({
   const clientesFiltrados = searchCliente.trim() === "" 
     ? clientes 
     : clientes.filter((client: any) =>
-        (client.nome?.toLowerCase().includes(searchCliente.toLowerCase())) ||
         (client.razaoSocial?.toLowerCase().includes(searchCliente.toLowerCase())) ||
         (client.cpfCnpj?.includes(searchCliente))
       );
@@ -448,7 +447,7 @@ function NovaOportunidadeDialog({
                   <FormControl>
                     <div className="space-y-2">
                       <Input
-                        placeholder="Buscar por nome, razão social ou CNPJ..."
+                        placeholder="Buscar por razão social ou CNPJ..."
                         value={searchCliente}
                         onChange={(e) => setSearchCliente(e.target.value)}
                         data-testid="input-search-cliente"
