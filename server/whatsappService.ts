@@ -31,17 +31,18 @@ export async function initializeWhatsAppSession(sessionId: string): Promise<stri
 
         // If QR is generated, capture it as image
         if (qr) {
-          console.log("📱 QR Code recebido para sessão:", sessionId);
+          console.log("📱 QR Code recebido (valor) para sessão:", sessionId);
           try {
+            // Use o próprio QR do Baileys - é um string que pode ser renderizado
             const qrDataUrl = await QRCode.toDataURL(qr, {
-              errorCorrectionLevel: "H",
+              errorCorrectionLevel: "L", // Usar L para compatibilidade máxima
               type: "image/png",
-              width: 350,
-              margin: 2,
-              color: { dark: "#1A0B41", light: "#ffffff" },
+              width: 320,
+              margin: 1,
+              color: { dark: "#000000", light: "#FFFFFF" }, // Cores padrão para melhor leitura
             });
             qrCodes.set(sessionId, qrDataUrl);
-            console.log("✅ QR code convertido para image para sessão:", sessionId);
+            console.log("✅ QR code Baileys convertido para image para sessão:", sessionId, "tamanho:", qr.length);
           } catch (err) {
             console.error("❌ Erro ao gerar QR code image:", err);
             reject(new Error("Falha ao gerar QR code"));
