@@ -532,7 +532,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== WHATSAPP ROUTES ====================
   app.get("/api/whatsapp/sessions", isAuthenticated, async (req, res) => {
     try {
-      const sessions = await storage.getAllWhatsappSessions();
+      const user = (req.user as any);
+      // Admin sees all sessions, non-admin sees only their own
+      const userIdFilter = user.dbUser.role === 'admin' ? undefined : user.id;
+      const sessions = await storage.getAllWhatsappSessions(userIdFilter);
       
       // Sync status from memory to database (non-blocking)
       try {
@@ -562,8 +565,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn("⚠️ Erro ao sincronizar status (continuando anyway):", syncError.message);
       }
       
-      // Fetch updated sessions
-      const updatedSessions = await storage.getAllWhatsappSessions();
+      // Fetch updated sessions (with same filter)
+      const updatedSessions = await storage.getAllWhatsappSessions(userIdFilter);
       res.json(updatedSessions);
     } catch (error: any) {
       console.error("Error fetching WhatsApp sessions:", error);
