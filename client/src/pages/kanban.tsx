@@ -81,10 +81,12 @@ export default function Kanban() {
     enabled: isAuthenticated,
   });
 
-  const { data: clientes } = useQuery({
+  const { data: clientesData } = useQuery({
     queryKey: ["/api/clients"],
     enabled: isAuthenticated,
   });
+
+  const clientes = clientesData?.clientes || [];
 
   const moveCardMutation = useMutation({
     mutationFn: async ({ id, etapa }: { id: string; etapa: string }) => {
@@ -433,11 +435,15 @@ function NovaOportunidadeDialog({
                         <SelectComponentValue placeholder="Selecione um cliente" />
                       </SelectComponentTrigger>
                       <SelectComponentContent>
-                        {clientes?.map((client: any) => (
-                          <SelectComponentItem key={client.id} value={client.id}>
-                            {client.nome}
-                          </SelectComponentItem>
-                        ))}
+                        {Array.isArray(clientes) ? (
+                          clientes.map((client: any) => (
+                            <SelectComponentItem key={client.id} value={client.id}>
+                              {client.nome}
+                            </SelectComponentItem>
+                          ))
+                        ) : (
+                          <SelectComponentItem value="">Carregando clientes...</SelectComponentItem>
+                        )}
                       </SelectComponentContent>
                     </SelectComponent>
                   </FormControl>
