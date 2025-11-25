@@ -48,17 +48,31 @@ export default function WhatsApp() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/sessions"] });
       
-      if (data.qrCode) {
+      console.log("Resposta da conexão:", data);
+      if (data?.qrCode && data.qrCode.length > 0) {
         setQrCode(data.qrCode);
-        console.log("QR Code recebido do servidor");
+        console.log("QR Code (imagem) recebido do servidor");
+        toast({
+          title: "Sucesso",
+          description: "Sessão criada! Escaneie o QR code com seu WhatsApp",
+        });
+      } else if (data?.sessionId) {
+        // Fallback: mostrar ID se QR code não foi gerado
+        setQrCode("fallback:" + data.sessionId);
+        console.log("QR Code não disponível, usando fallback com ID:", data.sessionId);
+        toast({
+          title: "Atenção",
+          description: "Sessão criada, mas QR code não pôde ser gerado. Tente novamente.",
+          variant: "destructive",
+        });
       } else {
         setQrCode("error");
+        toast({
+          title: "Erro",
+          description: "Falha ao criar sessão",
+          variant: "destructive",
+        });
       }
-
-      toast({
-        title: "Sucesso",
-        description: "Sessão criada! Escaneie o QR code com seu WhatsApp",
-      });
       setSessionName("");
     },
     onError: (error: any) => {
@@ -159,12 +173,13 @@ export default function WhatsApp() {
                   >
                     {connectMutation.isPending ? "Gerando QR Code..." : "Conectar"}
                   </Button>
-                  {qrCode && qrCode !== "error" && (
+                  {qrCode && !qrCode.startsWith("error") && !qrCode.startsWith("fallback:") && (
                     <div className="text-center p-4 bg-gray-50 rounded-lg dark:bg-gray-900 space-y-3 border-2 border-[#776BFF]">
                       <img
                         src={qrCode}
                         alt="QR Code WhatsApp"
                         className="mx-auto w-full max-w-xs rounded-lg p-1 bg-white"
+                        onError={() => console.error("Erro ao carregar imagem QR")}
                       />
                       <div>
                         <p className="text-sm font-semibold text-foreground mb-1">
@@ -176,10 +191,23 @@ export default function WhatsApp() {
                       </div>
                     </div>
                   )}
+                  {qrCode?.startsWith("fallback:") && (
+                    <div className="text-center p-4 bg-yellow-50 rounded-lg dark:bg-yellow-950 space-y-2 border-2 border-yellow-200 dark:border-yellow-800">
+                      <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                        ⚠️ QR Code não pôde ser gerado
+                      </p>
+                      <p className="text-xs text-yellow-700 dark:text-yellow-300 break-all font-mono">
+                        ID: {qrCode.replace("fallback:", "")}
+                      </p>
+                      <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                        A sessão foi criada. Tente criar uma nova sessão.
+                      </p>
+                    </div>
+                  )}
                   {qrCode === "error" && (
                     <div className="text-center p-3 bg-red-50 rounded-lg dark:bg-red-950 border border-red-200 dark:border-red-800">
                       <p className="text-sm text-red-700 dark:text-red-200">
-                        Erro ao gerar QR code. Tente novamente.
+                        ❌ Erro ao criar sessão. Tente novamente.
                       </p>
                     </div>
                   )}

@@ -565,11 +565,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           margin: 2,
           color: { dark: "#1A0B41", light: "#ffffff" },
         });
+        console.log("QR code gerado com sucesso para sessão:", sessionId);
       } catch (err) {
-        console.error("Erro gerando QR code:", err);
+        console.error("Erro ao gerar QR code:", err);
+        // Fallback: se falhar, retorna o sessionId como placeholder
+        qrCodeUrl = "";
       }
 
-      res.json({ session, sessionId, qrCode: qrCodeUrl });
+      res.json({ 
+        session, 
+        sessionId, 
+        qrCode: qrCodeUrl,
+        success: true
+      });
     } catch (error: any) {
       console.error("Error creating WhatsApp session:", error);
       res.status(500).json({ error: "Internal server error" });
