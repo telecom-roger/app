@@ -58,6 +58,7 @@ export default function WhatsApp() {
       if (data?.qrCode && data.qrCode.length > 0) {
         console.log("🎯 Exibindo QR code na tela");
         setQrCode(data.qrCode);
+        setOpenDialog(true); // ✅ ABRIR DIÁLOGO COM QR CODE
         console.log("✓ QR Code (imagem) recebido do servidor");
         toast({
           title: "Sucesso",
@@ -66,6 +67,7 @@ export default function WhatsApp() {
       } else if (data?.sessionId) {
         // Fallback: mostrar ID se QR code não foi gerado
         setQrCode("fallback:" + data.sessionId);
+        setOpenDialog(true); // ✅ ABRIR DIÁLOGO COM FALLBACK
         console.log("⚠️ QR Code não disponível, usando fallback com ID:", data.sessionId);
         toast({
           title: "Atenção",
@@ -74,6 +76,7 @@ export default function WhatsApp() {
         });
       } else {
         setQrCode("error");
+        setOpenDialog(true); // ✅ ABRIR DIÁLOGO COM ERRO
         console.log("❌ Erro: sem qrCode e sem sessionId");
         toast({
           title: "Erro",
