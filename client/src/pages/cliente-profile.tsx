@@ -181,6 +181,105 @@ export default function ClienteProfile() {
             </CardContent>
           </Card>
 
+          {/* Telecom Data */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Dados Telecom</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {clienteLoading ? (
+                <>
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                </>
+              ) : (
+                <>
+                  {cliente?.APARELHO_LIBERADO && (
+                    <div><p className="text-sm text-muted-foreground">Aparelho Liberado</p><p className="font-medium">{cliente.APARELHO_LIBERADO}</p></div>
+                  )}
+                  {cliente?.PEDIDO_MOVEL && (
+                    <div><p className="text-sm text-muted-foreground">Pedido Móvel</p><p className="font-medium">{cliente.PEDIDO_MOVEL}</p></div>
+                  )}
+                  {cliente?.M_FIXA && (
+                    <div><p className="text-sm text-muted-foreground">M Fixa</p><p className="font-medium">{cliente.M_FIXA}</p></div>
+                  )}
+                  {cliente?.PEDIDO_FIXA && (
+                    <div><p className="text-sm text-muted-foreground">Pedido Fixa</p><p className="font-medium">{cliente.PEDIDO_FIXA}</p></div>
+                  )}
+                  {cliente?.EMAIL_PRINCIPAL && (
+                    <div><p className="text-sm text-muted-foreground">Email Principal</p><p className="font-medium break-all">{cliente.EMAIL_PRINCIPAL}</p></div>
+                  )}
+                  {cliente?.CELULAR_PRINCIPAL && (
+                    <div><p className="text-sm text-muted-foreground">Celular Principal</p><p className="font-medium">{cliente.CELULAR_PRINCIPAL}</p></div>
+                  )}
+                  {cliente?.TIPO_GESTOR && (
+                    <div><p className="text-sm text-muted-foreground">Tipo Gestor</p><p className="font-medium">{cliente.TIPO_GESTOR}</p></div>
+                  )}
+                  {cliente?.FLG_DOMINIO_PUBLICO_SFA && (
+                    <div><p className="text-sm text-muted-foreground">Domínio Público SFA</p><p className="font-medium">Sim</p></div>
+                  )}
+                  {cliente?.TELEFONE_COMERCIAL && (
+                    <div><p className="text-sm text-muted-foreground">Telefone Comercial</p><p className="font-medium">{cliente.TELEFONE_COMERCIAL}</p></div>
+                  )}
+                  {cliente?.CELULAR && (
+                    <div><p className="text-sm text-muted-foreground">Celular</p><p className="font-medium">{cliente.CELULAR}</p></div>
+                  )}
+                  {cliente?.TELEFONE_RESIDENCIAL && (
+                    <div><p className="text-sm text-muted-foreground">Telefone Residencial</p><p className="font-medium">{cliente.TELEFONE_RESIDENCIAL}</p></div>
+                  )}
+                  {cliente?.EMAIL_SIBEL && (
+                    <div><p className="text-sm text-muted-foreground">Email Sibel</p><p className="font-medium break-all">{cliente.EMAIL_SIBEL}</p></div>
+                  )}
+                  {cliente?.PROP_MOVEL_AVANCADA && (
+                    <div><p className="text-sm text-muted-foreground">Prop. Móvel/Avançada</p><p className="font-medium">{cliente.PROP_MOVEL_AVANCADA}</p></div>
+                  )}
+                  {cliente?.SERASA && (
+                    <div><p className="text-sm text-muted-foreground">Serasa</p><p className="font-medium">{cliente.SERASA}</p></div>
+                  )}
+                  {cliente?.MENSAGEM_SERASA && (
+                    <div><p className="text-sm text-muted-foreground">Mensagem Serasa</p><p className="font-medium">{cliente.MENSAGEM_SERASA}</p></div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Contact & Address Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Endereço & Contato</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {clienteLoading ? (
+                <>
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                </>
+              ) : (
+                <>
+                  {cliente?.endereco && (
+                    <div><p className="text-sm text-muted-foreground">Endereço</p><p className="font-medium">{cliente.endereco} {cliente.numero && `nº ${cliente.numero}`} {cliente.complemento && `- ${cliente.complemento}`}</p></div>
+                  )}
+                  {cliente?.cidade && (
+                    <div><p className="text-sm text-muted-foreground">Cidade</p><p className="font-medium">{cliente.cidade} {cliente.uf && `- ${cliente.uf}`}</p></div>
+                  )}
+                  {cliente?.cep && (
+                    <div><p className="text-sm text-muted-foreground">CEP</p><p className="font-medium">{cliente.cep}</p></div>
+                  )}
+                  {cliente?.telefone && (
+                    <div><p className="text-sm text-muted-foreground">Telefone</p><p className="font-medium">{cliente.telefone}</p></div>
+                  )}
+                  {cliente?.email && (
+                    <div><p className="text-sm text-muted-foreground">Email</p><p className="font-medium break-all">{cliente.email}</p></div>
+                  )}
+                  {cliente?.contato && (
+                    <div><p className="text-sm text-muted-foreground">Pessoa de Contato</p><p className="font-medium">{cliente.contato}</p></div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Quick Actions */}
           <Card>
             <CardHeader>
