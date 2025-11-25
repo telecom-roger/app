@@ -151,7 +151,7 @@ export function isSessionCredentialsSaved(sessionId: string): boolean {
 }
 
 export async function isSessionAlive(sessionId: string): Promise<boolean> {
-  // Check if the Baileys socket is actually alive by trying a light operation
+  // Check if the Baileys socket is actually alive
   const sock = activeSessions.get(sessionId);
   
   if (!sock) {
@@ -159,17 +159,18 @@ export async function isSessionAlive(sessionId: string): Promise<boolean> {
   }
   
   try {
-    // Try a simple operation to verify connection is alive
-    // This will throw if the connection is dead
-    await Promise.race([
-      sock.groupFetchAllParticipating().then(() => true),
-      new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 3000))
-    ]);
+    // Check if socket still has a connection property (lightweight check)
+    // If the socket exists and hasn't been closed, it should have a ws connection
+    if (!sock.ws) {
+      console.warn(`⚠️ Socket ${sessionId} não tem ws connection - marcando como desconectada`);
+      sessionStatus.set(sessionId, "desconectada");
+      activeSessions.delete(sessionId);
+      return false;
+    }
     
     return true;
   } catch (error) {
-    console.warn(`⚠️ Sessão ${sessionId} não responde - marcando como desconectada:`, (error as any)?.message);
-    // If the check fails, the connection is dead
+    console.warn(`⚠️ Sessão ${sessionId} erro ao verificar alive:`, (error as any)?.message);
     sessionStatus.set(sessionId, "desconectada");
     activeSessions.delete(sessionId);
     return false;
