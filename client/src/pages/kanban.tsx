@@ -461,7 +461,7 @@ function NovaOportunidadeDialog({
   const onSubmit = (data: any) => {
     createMutation.mutate({
       ...data,
-      valorEstimado: data.valorEstimado ? parseInt(data.valorEstimado) * 100 : 0,
+      valorEstimado: data.valorEstimado || 0,
     });
   };
 
@@ -573,7 +573,8 @@ function NovaOportunidadeDialog({
 
                 const parseCurrency = (text: string) => {
                   const cleaned = text.replace(/\D/g, "");
-                  return cleaned ? parseInt(cleaned) : 0;
+                  // Converte para centavos (multiplica por 100)
+                  return cleaned ? parseInt(cleaned) * 100 : 0;
                 };
 
                 return (
@@ -698,7 +699,7 @@ function EditarOportunidadeDialog({
   const onSubmit = (data: any) => {
     editMutation.mutate({
       ...data,
-      valorEstimado: data.valorEstimado ? parseInt(data.valorEstimado) * 100 : 0,
+      valorEstimado: data.valorEstimado || 0,
     });
   };
 
@@ -812,7 +813,8 @@ function EditarOportunidadeDialog({
 
                 const parseCurrency = (text: string) => {
                   const cleaned = text.replace(/\D/g, "");
-                  return cleaned ? parseInt(cleaned) : 0;
+                  // Converte para centavos (multiplica por 100)
+                  return cleaned ? parseInt(cleaned) * 100 : 0;
                 };
 
                 return (
