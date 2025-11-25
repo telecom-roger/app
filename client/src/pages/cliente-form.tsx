@@ -55,15 +55,27 @@ export default function ClienteForm() {
   // Fetch cliente para edição
   const { data: cliente, isLoading: clienteLoading } = useQuery<Client>({
     queryKey: ["/api/clients", id],
-    enabled: isEditing && isAuthenticated,
+    enabled: isEditing && isAuthenticated && !!id,
   });
 
   // Preencher form quando cliente é carregado
   useEffect(() => {
-    if (cliente) {
-      form.reset(cliente);
+    if (cliente && isEditing) {
+      console.log("Preenchendo form com cliente:", cliente);
+      form.reset({
+        nome: cliente.nome || "",
+        razaoSocial: cliente.razaoSocial || "",
+        cpfCnpj: cliente.cpfCnpj || "",
+        status: cliente.status || "lead",
+        carteira: cliente.carteira || "",
+        categoria: cliente.categoria || "",
+        score: cliente.score || 0,
+        planoAtual: cliente.planoAtual || "",
+        produtoAtual: cliente.produtoAtual || "",
+        tags: cliente.tags || [],
+      });
     }
-  }, [cliente, form]);
+  }, [cliente?.id, isEditing]);
 
   // Mutation para criar/atualizar
   const saveMutation = useMutation({
