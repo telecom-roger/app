@@ -42,7 +42,8 @@ export default function WhatsApp() {
 
   const connectMutation = useMutation({
     mutationFn: async (nome: string) => {
-      const result: any = await apiRequest("POST", "/api/whatsapp/connect", { nome });
+      const response = await apiRequest("POST", "/api/whatsapp/connect", { nome });
+      const result = await response.json();
       return result;
     },
     onSuccess: (data) => {
@@ -86,7 +87,8 @@ export default function WhatsApp() {
 
   const deleteMutation = useMutation({
     mutationFn: async (sessionId: string) => {
-      return await apiRequest("DELETE", `/api/whatsapp/sessions/${sessionId}`, {});
+      const response = await apiRequest("DELETE", `/api/whatsapp/sessions/${sessionId}`, {});
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/sessions"] });
