@@ -584,6 +584,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/whatsapp/sessions/:id/reconnect", isAuthenticated, async (req, res) => {
+    try {
+      const session = await storage.getWhatsappSessionById(req.params.id);
+      if (!session) {
+        return res.status(404).json({ error: "Sessão não encontrada" });
+      }
+
+      // Verify ownership
+      if (session.userId !== (req.user as any).id && (req.user as any).role !== "admin") {
+        return res.status(403).json({ error: "Não autorizado" });
+      }
+
+      // Reset session status and generate new QR code
+      const newSessionId = `session_${Date.now()}`;
+      let qrCodeUrl = "";
+      
+      try {
+        qrCodeUrl = await QRCode.toDataURL(newSessionId, {
+          errorCorrectionLevel: "H",
+          type: "image/png",
+          width: 350,
+          margin: 2,
+          color: { dark: "#1A0B41", light: "#ffffff" },
+        });
+        console.log("QR code gerado com sucesso para reconectar:", newSessionId);
+      } catch (err) {
+        console.error("Erro ao gerar QR code para reconectar:", err);
+      }
+
+      // Update session with new ID and reset status
+      const updatedSession = await storage.updateWhatsappSession(req.params.id, {
+        sessionId: newSessionId,
+        status: "desconectada",
+        qrCode: qrCodeUrl || null,
+      });
+
+      res.json({ 
+        session: updatedSession, 
+        sessionId: newSessionId, 
+        qrCode: qrCodeUrl,
+        success: true
+      });
+    } catch (error: any) {
+      console.error("Error reconnecting WhatsApp session:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.delete("/api/whatsapp/sessions/:id", isAuthenticated, async (req, res) => {
     try {
       const session = await storage.getWhatsappSessionById(req.params.id);

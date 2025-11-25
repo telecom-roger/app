@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MessageSquare, Plus, Trash2 } from "lucide-react";
+import { MessageSquare, Plus, Trash2, RotateCw } from "lucide-react";
 
 export default function WhatsApp() {
   const { toast } = useToast();
@@ -34,6 +34,7 @@ export default function WhatsApp() {
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
+  const [reconnectSessionId, setReconnectSessionId] = useState<string | null>(null);
 
   const { data: sessions, isLoading } = useQuery<any[]>({
     queryKey: ["/api/whatsapp/sessions"],
@@ -102,6 +103,38 @@ export default function WhatsApp() {
       toast({
         title: "Erro",
         description: error.message || "Falha ao deletar sessão",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const reconnectMutation = useMutation({
+    mutationFn: async (sessionId: string) => {
+      const response = await apiRequest("POST", `/api/whatsapp/sessions/${sessionId}/reconnect`, {});
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/sessions"] });
+      
+      if (data?.qrCode && data.qrCode.length > 0) {
+        setQrCode(data.qrCode);
+        setOpenDialog(true);
+        toast({
+          title: "Sucesso",
+          description: "Sessão reconectada! Escaneie o novo QR code",
+        });
+      } else {
+        toast({
+          title: "Atenção",
+          description: "Sessão preparada para reconectar, mas QR code não disponível",
+        });
+      }
+      setReconnectSessionId(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Falha ao reconectar sessão",
         variant: "destructive",
       });
     },
@@ -271,6 +304,21 @@ export default function WhatsApp() {
                       ? "Offline"
                       : "Erro"}
                   </Badge>
+                  {session.status === "desconectada" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setReconnectSessionId(session.id);
+                        reconnectMutation.mutate(session.id);
+                      }}
+                      disabled={reconnectMutation.isPending}
+                      data-testid={`button-reconnect-${session.id}`}
+                      className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950"
+                    >
+                      <RotateCw className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
