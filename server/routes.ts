@@ -526,6 +526,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== WHATSAPP ROUTES ====================
+  app.get("/api/whatsapp/sessions", isAuthenticated, async (req, res) => {
+    try {
+      const sessions = await storage.getAllWhatsappSessions();
+      res.json(sessions);
+    } catch (error: any) {
+      console.error("Error fetching WhatsApp sessions:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/whatsapp/connect", isAuthenticated, async (req, res) => {
+    try {
+      const { nome } = req.body;
+      if (!nome) {
+        return res.status(400).json({ error: "Nome da sessão é obrigatório" });
+      }
+
+      const sessionId = `session_${Date.now()}`;
+      const session = await storage.createWhatsappSession({
+        nome,
+        sessionId,
+        status: "desconectada",
+        userId: (req.user as any).id,
+      });
+
+      res.json({ session, sessionId });
+    } catch (error: any) {
+      console.error("Error creating WhatsApp session:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // ==================== ADMIN ROUTES ====================
   app.get("/api/admin/users", isAuthenticated, requireAdmin, async (req, res) => {
     try {

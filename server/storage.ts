@@ -33,6 +33,7 @@ import {
   customFields,
   auditLogs,
   importJobs,
+  whatsappSessions,
 } from "@shared/schema";
 
 // ==================== USER STORAGE ====================
@@ -414,4 +415,44 @@ export async function getStatusDistribution() {
       value: row.count,
     })) || []
   );
+}
+
+// ==================== WHATSAPP SESSIONS ====================
+export async function createWhatsappSession(data: any) {
+  const [result] = await db.insert(whatsappSessions).values(data).returning();
+  return result;
+}
+
+export async function updateWhatsappSession(id: string, data: any) {
+  const [result] = await db
+    .update(whatsappSessions)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(whatsappSessions.id, id))
+    .returning();
+  return result;
+}
+
+export async function getWhatsappSessionById(id: string) {
+  const [result] = await db
+    .select()
+    .from(whatsappSessions)
+    .where(eq(whatsappSessions.id, id))
+    .limit(1);
+  return result;
+}
+
+export async function getWhatsappSessionBySessionId(sessionId: string) {
+  const [result] = await db
+    .select()
+    .from(whatsappSessions)
+    .where(eq(whatsappSessions.sessionId, sessionId))
+    .limit(1);
+  return result;
+}
+
+export async function getAllWhatsappSessions() {
+  return await db
+    .select()
+    .from(whatsappSessions)
+    .orderBy(desc(whatsappSessions.createdAt));
 }
