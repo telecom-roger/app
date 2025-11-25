@@ -31,8 +31,13 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     // Build URL from query key, handling nested objects/arrays correctly
     let url = "";
-    for (const key of queryKey) {
+    for (let i = 0; i < queryKey.length; i++) {
+      const key = queryKey[i];
       if (typeof key === "string") {
+        // Add slash before string keys after the first one (for path segments like /api/clients/:id)
+        if (i > 0 && !url.endsWith("/")) {
+          url += "/";
+        }
         url += key;
       } else if (typeof key === "object" && key !== null) {
         // Handle object query parameters
