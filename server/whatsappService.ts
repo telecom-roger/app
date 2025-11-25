@@ -149,3 +149,29 @@ export function isSessionCredentialsSaved(sessionId: string): boolean {
   
   return false;
 }
+
+export async function isSessionAlive(sessionId: string): Promise<boolean> {
+  // Check if the Baileys socket is actually alive by trying a light operation
+  const sock = activeSessions.get(sessionId);
+  
+  if (!sock) {
+    return false; // Socket doesn't exist in memory
+  }
+  
+  try {
+    // Try a simple operation to verify connection is alive
+    // This will throw if the connection is dead
+    await Promise.race([
+      sock.groupFetchAllParticipating().then(() => true),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 3000))
+    ]);
+    
+    return true;
+  } catch (error) {
+    console.warn(`⚠️ Sessão ${sessionId} não responde - marcando como desconectada:`, (error as any)?.message);
+    // If the check fails, the connection is dead
+    sessionStatus.set(sessionId, "desconectada");
+    activeSessions.delete(sessionId);
+    return false;
+  }
+}

@@ -540,6 +540,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Get live status from memory (connection state)
           let liveStatus = whatsappService.getSessionStatus(session.sessionId);
           
+          // If status is "conectada", verify the connection is actually alive
+          if (liveStatus === "conectada") {
+            const isAlive = await whatsappService.isSessionAlive(session.sessionId);
+            if (!isAlive) {
+              liveStatus = "desconectada";
+              console.log(`💀 Conexão morta detectada para ${session.sessionId} - marcando como desconectada`);
+            }
+          }
+          
           // If memory shows "desconectada" but credentials are saved, it means the connection
           // was lost but the session can be restored - mark it as "conectada"
           if (liveStatus === "desconectada" && whatsappService.isSessionCredentialsSaved(session.sessionId)) {

@@ -39,7 +39,7 @@ export default function WhatsApp() {
   const { data: sessions, isLoading } = useQuery<any[]>({
     queryKey: ["/api/whatsapp/sessions"],
     enabled: isAuthenticated,
-    refetchInterval: 2000, // Poll every 2 seconds for real-time status updates
+    refetchInterval: 1000, // Poll every 1 second for real-time status updates
   });
 
   // Auto-close modal when any session connects
