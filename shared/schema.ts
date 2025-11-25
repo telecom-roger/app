@@ -54,6 +54,22 @@ export const clients = pgTable("clients", {
   score: integer("score").default(0), // 0-100 lead scoring
   planoAtual: text("plano_atual"),
   produtoAtual: text("produto_atual"),
+  // Contact fields
+  telefone: varchar("telefone", { length: 20 }),
+  email: varchar("email", { length: 255 }),
+  contato: text("contato"), // Contact person name
+  // Address fields
+  endereco: text("endereco"),
+  numero: varchar("numero", { length: 20 }),
+  complemento: text("complemento"),
+  cep: varchar("cep", { length: 10 }),
+  cidade: varchar("cidade", { length: 100 }),
+  uf: varchar("uf", { length: 2 }), // State abbreviation (SP, RJ, etc)
+  // Contract fields
+  dataContrato: timestamp("data_contrato"),
+  valorContrato: integer("valor_contrato"), // in cents
+  dataUltimoContato: timestamp("data_ultimo_contato"),
+  observacoes: text("observacoes"),
   tags: text("tags").array().default(sql`ARRAY[]::text[]`),
   camposCustom: jsonb("campos_custom").default(sql`'{}'::jsonb`), // flexible custom fields
   createdAt: timestamp("created_at").defaultNow(),
@@ -61,11 +77,18 @@ export const clients = pgTable("clients", {
   createdBy: varchar("created_by").references(() => users.id),
 });
 
-export const insertClientSchema = createInsertSchema(clients).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
+export const insertClientSchema = createInsertSchema(clients)
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+  })
+  .extend({
+    uf: z.string().max(2).optional().nullable(),
+    cep: z.string().regex(/^\d{5}-?\d{3}$|^$/, "CEP inválido").optional().nullable(),
+    email: z.string().email("Email inválido").optional().nullable(),
+    telefone: z.string().min(10, "Telefone inválido").optional().nullable(),
+  });
 
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type Client = typeof clients.$inferSelect;

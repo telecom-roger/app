@@ -43,6 +43,19 @@ interface ColumnMapping {
   score: number;
   planoAtual: number;
   produtoAtual: number;
+  telefone: number;
+  email: number;
+  contato: number;
+  endereco: number;
+  numero: number;
+  complemento: number;
+  cep: number;
+  cidade: number;
+  uf: number;
+  dataContrato: number;
+  valorContrato: number;
+  dataUltimoContato: number;
+  observacoes: number;
 }
 
 export default function Importacao() {
@@ -62,6 +75,19 @@ export default function Importacao() {
     score: 6,
     planoAtual: 7,
     produtoAtual: 8,
+    telefone: -1,
+    email: -1,
+    contato: -1,
+    endereco: -1,
+    numero: -1,
+    complemento: -1,
+    cep: -1,
+    cidade: -1,
+    uf: -1,
+    dataContrato: -1,
+    valorContrato: -1,
+    dataUltimoContato: -1,
+    observacoes: -1,
   });
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{
@@ -276,14 +302,25 @@ export default function Importacao() {
             </div>
 
             {/* Mapping selects */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-3">
               {[
                 { key: "nome", label: "Nome *" },
                 { key: "razaoSocial", label: "Razão Social" },
                 { key: "cpfCnpj", label: "CPF/CNPJ" },
+                { key: "telefone", label: "Telefone" },
+                { key: "email", label: "Email" },
+                { key: "contato", label: "Contato" },
                 { key: "status", label: "Status" },
                 { key: "carteira", label: "Carteira" },
                 { key: "categoria", label: "Categoria" },
+                { key: "endereco", label: "Endereço" },
+                { key: "numero", label: "Número" },
+                { key: "complemento", label: "Complemento" },
+                { key: "cep", label: "CEP" },
+                { key: "cidade", label: "Cidade" },
+                { key: "uf", label: "UF" },
+                { key: "valorContrato", label: "Valor Contrato" },
+                { key: "observacoes", label: "Observações" },
               ].map((field) => (
                 <div key={field.key}>
                   <label className="text-sm font-medium">{field.label}</label>

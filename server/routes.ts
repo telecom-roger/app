@@ -319,20 +319,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let errorCount = 0;
       const errors: string[] = [];
 
+      // Helper to safely get row value
+      const getRowValue = (row: any[], colIndex: number) => {
+        if (colIndex < 0) return null;
+        const val = row[colIndex];
+        return val && val.toString().trim() !== "" ? val.toString().trim() : null;
+      };
+
       // Process each row
       for (let i = 0; i < data.length; i++) {
         try {
           const row = data[i];
           const clientData = {
-            nome: row[mapping.nome] || `Cliente ${i + 1}`,
-            razaoSocial: row[mapping.razaoSocial] || null,
-            cpfCnpj: row[mapping.cpfCnpj] || null,
-            status: row[mapping.status] || "lead",
-            carteira: row[mapping.carteira] || null,
-            categoria: row[mapping.categoria] || null,
-            score: parseInt(row[mapping.score]) || 0,
-            planoAtual: row[mapping.planoAtual] || null,
-            produtoAtual: row[mapping.produtoAtual] || null,
+            nome: getRowValue(row, mapping.nome) || `Cliente ${i + 1}`,
+            razaoSocial: getRowValue(row, mapping.razaoSocial),
+            cpfCnpj: getRowValue(row, mapping.cpfCnpj),
+            status: getRowValue(row, mapping.status) || "lead",
+            carteira: getRowValue(row, mapping.carteira),
+            categoria: getRowValue(row, mapping.categoria),
+            score: mapping.score >= 0 ? parseInt(getRowValue(row, mapping.score) || "0") || 0 : 0,
+            planoAtual: getRowValue(row, mapping.planoAtual),
+            produtoAtual: getRowValue(row, mapping.produtoAtual),
+            // New contact fields
+            telefone: getRowValue(row, mapping.telefone),
+            email: getRowValue(row, mapping.email),
+            contato: getRowValue(row, mapping.contato),
+            // New address fields
+            endereco: getRowValue(row, mapping.endereco),
+            numero: getRowValue(row, mapping.numero),
+            complemento: getRowValue(row, mapping.complemento),
+            cep: getRowValue(row, mapping.cep),
+            cidade: getRowValue(row, mapping.cidade),
+            uf: getRowValue(row, mapping.uf),
+            // New contract fields
+            dataContrato: mapping.dataContrato >= 0 ? new Date(getRowValue(row, mapping.dataContrato) || "") : null,
+            valorContrato: mapping.valorContrato >= 0 ? parseInt(getRowValue(row, mapping.valorContrato) || "0") || 0 : null,
+            dataUltimoContato: mapping.dataUltimoContato >= 0 ? new Date(getRowValue(row, mapping.dataUltimoContato) || "") : null,
+            observacoes: getRowValue(row, mapping.observacoes),
           };
 
           const validated = insertClientSchema.parse(clientData);

@@ -48,6 +48,19 @@ export default function ClienteForm() {
       score: 0,
       planoAtual: "",
       produtoAtual: "",
+      telefone: "",
+      email: "",
+      contato: "",
+      endereco: "",
+      numero: "",
+      complemento: "",
+      cep: "",
+      cidade: "",
+      uf: "",
+      dataContrato: undefined,
+      valorContrato: 0,
+      dataUltimoContato: undefined,
+      observacoes: "",
       tags: [],
     },
   });
@@ -72,6 +85,19 @@ export default function ClienteForm() {
         score: cliente.score || 0,
         planoAtual: cliente.planoAtual || "",
         produtoAtual: cliente.produtoAtual || "",
+        telefone: cliente.telefone || "",
+        email: cliente.email || "",
+        contato: cliente.contato || "",
+        endereco: cliente.endereco || "",
+        numero: cliente.numero || "",
+        complemento: cliente.complemento || "",
+        cep: cliente.cep || "",
+        cidade: cliente.cidade || "",
+        uf: cliente.uf || "",
+        dataContrato: cliente.dataContrato || undefined,
+        valorContrato: cliente.valorContrato || 0,
+        dataUltimoContato: cliente.dataUltimoContato || undefined,
+        observacoes: cliente.observacoes || "",
         tags: cliente.tags || [],
       });
     }
@@ -319,6 +345,274 @@ export default function ClienteForm() {
                     )}
                   />
                 </div>
+
+                {/* Contato */}
+                <div className="grid grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="telefone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Telefone</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="(11) 99999-9999"
+                            {...field}
+                            data-testid="input-telefone"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="email"
+                            placeholder="email@example.com"
+                            {...field}
+                            data-testid="input-email"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="contato"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Pessoa de Contato</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Nome do contato"
+                            {...field}
+                            data-testid="input-contato"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Endereço */}
+                <div className="grid grid-cols-4 gap-4">
+                  <div className="col-span-2">
+                    <FormField
+                      control={form.control}
+                      name="endereco"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Endereço</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Rua, avenida..."
+                              {...field}
+                              data-testid="input-endereco"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="numero"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Número</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="123"
+                            {...field}
+                            data-testid="input-numero"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="complemento"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Complemento</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Apto, sala..."
+                            {...field}
+                            data-testid="input-complemento"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Cidade, UF, CEP */}
+                <div className="grid grid-cols-4 gap-4">
+                  <div className="col-span-2">
+                    <FormField
+                      control={form.control}
+                      name="cidade"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Cidade</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="São Paulo"
+                              {...field}
+                              data-testid="input-cidade"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="uf"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>UF</FormLabel>
+                        <FormControl>
+                          <Input
+                            maxLength={2}
+                            placeholder="SP"
+                            {...field}
+                            data-testid="input-uf"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="cep"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>CEP</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="00000-000"
+                            {...field}
+                            data-testid="input-cep"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Contrato */}
+                <div className="grid grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="dataContrato"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Data do Contrato</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            {...field}
+                            value={
+                              field.value instanceof Date
+                                ? field.value.toISOString().split("T")[0]
+                                : field.value
+                                ? new Date(field.value).toISOString().split("T")[0]
+                                : ""
+                            }
+                            onChange={(e) =>
+                              field.onChange(e.target.value ? new Date(e.target.value) : null)
+                            }
+                            data-testid="input-data-contrato"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="valorContrato"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Valor do Contrato</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="0,00"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            data-testid="input-valor-contrato"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="dataUltimoContato"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Último Contato</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            {...field}
+                            value={
+                              field.value instanceof Date
+                                ? field.value.toISOString().split("T")[0]
+                                : field.value
+                                ? new Date(field.value).toISOString().split("T")[0]
+                                : ""
+                            }
+                            onChange={(e) =>
+                              field.onChange(e.target.value ? new Date(e.target.value) : null)
+                            }
+                            data-testid="input-data-ultimo-contato"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Observações */}
+                <FormField
+                  control={form.control}
+                  name="observacoes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Observações</FormLabel>
+                      <FormControl>
+                        <textarea
+                          placeholder="Anotações sobre o cliente..."
+                          {...field}
+                          className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          data-testid="textarea-observacoes"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 {/* Buttons */}
                 <div className="flex gap-3 pt-4">
