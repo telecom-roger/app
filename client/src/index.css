@@ -15,12 +15,12 @@
   --card: 240 5% 98%;
   --card-foreground: 251 65% 16%;
   --card-border: 240 5% 93%;
-  --sidebar: 270 54% 96%;
-  --sidebar-foreground: 256 72% 46%;
-  --sidebar-border: 270 54% 90%;
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 240 4% 46%;
+  --sidebar-border: 240 6% 90%;
   --sidebar-primary: 245 100% 71%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 270 40% 88%;
+  --sidebar-accent: 270 54% 90%;
   --sidebar-accent-foreground: 256 72% 46%;
   --sidebar-ring: 245 100% 71%;
   --popover: 0 0% 100%;
