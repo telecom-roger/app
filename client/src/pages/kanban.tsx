@@ -456,7 +456,19 @@ function NovaOportunidadeDialog({
                             clientesFiltrados.length > 0 ? (
                               clientesFiltrados.map((client: any) => (
                                 <SelectComponentItem key={client.id} value={client.id}>
-                                  {client.nome}
+                                  <div className="flex flex-col">
+                                    <span>{client.nome}</span>
+                                    {client.razaoSocial && (
+                                      <span className="text-xs text-muted-foreground">
+                                        {client.razaoSocial}
+                                      </span>
+                                    )}
+                                    {client.cpfCnpj && (
+                                      <span className="text-xs text-muted-foreground">
+                                        {client.cpfCnpj}
+                                      </span>
+                                    )}
+                                  </div>
                                 </SelectComponentItem>
                               ))
                             ) : (
