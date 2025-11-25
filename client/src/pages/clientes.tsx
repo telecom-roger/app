@@ -59,7 +59,7 @@ export default function Clientes() {
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [page, setPage] = useState(1);
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
-  const limit = 20;
+  const limit = 9;
 
   // Delete mutation
   const deleteMutation = useMutation({
@@ -182,169 +182,162 @@ export default function Clientes() {
         </div>
       </Card>
 
-      {/* Table */}
-      <Card className="bg-white border-2 border-primary shadow-lg overflow-hidden">
-        <Table>
-          <TableHeader className="bg-primary/5">
-            <TableRow className="border-b-2 border-primary/20 hover:bg-transparent">
-              <TableHead className="text-primary font-bold">Nome / Razão Social</TableHead>
-              <TableHead className="text-primary font-bold">CPF/CNPJ</TableHead>
-              <TableHead className="text-primary font-bold">Status</TableHead>
-              <TableHead className="text-primary font-bold">Carteira</TableHead>
-              <TableHead className="text-primary font-bold">Score</TableHead>
-              <TableHead className="text-primary font-bold">Tags</TableHead>
-              <TableHead className="w-12"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i} className="border-b border-primary/10 hover:bg-primary/5">
-                  <TableCell><Skeleton className="h-4 w-48" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-8" /></TableCell>
-                </TableRow>
-              ))
-            ) : data?.clientes && data.clientes.length > 0 ? (
-              data.clientes.map((cliente) => (
-                <TableRow 
-                  key={cliente.id} 
-                  className="cursor-pointer border-b border-primary/10 hover:bg-primary/5 hover:shadow-md transition-all duration-200 hover-elevate"
-                  data-testid={`row-cliente-${cliente.id}`}
-                >
-                  <TableCell>
-                    <Link href={`/clientes/${cliente.id}`}>
-                      <div>
-                        <div className="font-medium">{cliente.nome}</div>
-                        {cliente.razaoSocial && (
-                          <div className="text-sm text-muted-foreground">
-                            {cliente.razaoSocial}
-                          </div>
-                        )}
-                      </div>
-                    </Link>
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">
-                    {cliente.cpfCnpj || '-'}
-                  </TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant="secondary" 
-                      className={statusColors[cliente.status] || ''}
-                    >
-                      {cliente.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {cliente.carteira || '-'}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="text-sm font-medium">{cliente.score || 0}</div>
-                      <div className="h-1.5 w-16 rounded-full bg-muted overflow-hidden">
-                        <div 
-                          className="h-full bg-primary"
-                          style={{ width: `${cliente.score || 0}%` }}
-                        />
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1 flex-wrap">
-                      {cliente.tags && cliente.tags.length > 0 ? (
-                        cliente.tags.slice(0, 2).map((tag, i) => (
-                          <Badge key={i} variant="outline" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))
-                      ) : (
-                        <span className="text-sm text-muted-foreground">-</span>
-                      )}
-                      {cliente.tags && cliente.tags.length > 2 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{cliente.tags.length - 2}
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" data-testid="button-actions">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/clientes/${cliente.id}/editar`}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Editar
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => setDeleteClientId(cliente.id)}
-                          className="text-destructive"
-                          data-testid={`button-delete-${cliente.id}`}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Deletar
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-12">
-                  <div className="text-muted-foreground">
-                    <Users className="h-12 w-12 mx-auto mb-3 opacity-40" />
-                    <p>Nenhum cliente encontrado</p>
-                    <p className="text-sm mt-1">
-                      Importe seus clientes ou crie um novo cadastro
-                    </p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-
-        {/* Pagination */}
-        {data && data.total > limit && (
-          <div className="flex items-center justify-between p-4 border-t-2 border-primary/20 bg-primary/2">
-            <div className="text-sm text-primary font-medium">
-              Mostrando {(page - 1) * limit + 1} a {Math.min(page * limit, data.total)} de {data.total} clientes
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === 1}
-                onClick={() => setPage(p => p - 1)}
-                data-testid="button-prev-page"
-                className="border-primary text-primary hover:bg-primary hover:text-white"
-              >
-                Anterior
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page * limit >= data.total}
-                onClick={() => setPage(p => p + 1)}
-                data-testid="button-next-page"
-                className="border-primary text-primary hover:bg-primary hover:text-white"
-              >
-                Próxima
-              </Button>
-            </div>
+      {/* Cards Grid */}
+      <div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 9 }).map((_, i) => (
+              <Card key={i} className="p-4">
+                <Skeleton className="h-12 w-full mb-3" />
+                <Skeleton className="h-8 w-3/4 mb-2" />
+                <Skeleton className="h-16 w-full" />
+              </Card>
+            ))}
           </div>
+        ) : data?.clientes && data.clientes.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {data.clientes.map((cliente) => (
+                <Link key={cliente.id} href={`/clientes/${cliente.id}`}>
+                  <Card 
+                    className="p-4 hover-elevate cursor-pointer transition-all border border-border h-full hover:shadow-lg"
+                    data-testid={`card-cliente-${cliente.id}`}
+                  >
+                    <div className="space-y-3">
+                      {/* Header */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-foreground truncate text-sm">
+                            {cliente.razaoSocial || cliente.nome}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {cliente.cpfCnpj}
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-7 w-7"
+                              data-testid={`button-actions-${cliente.id}`}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link href={`/clientes/${cliente.id}/editar`}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Editar
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => setDeleteClientId(cliente.id)}
+                              className="text-destructive"
+                              data-testid={`button-delete-${cliente.id}`}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Deletar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+
+                      {/* Status Badge */}
+                      <div>
+                        <Badge 
+                          variant="secondary" 
+                          className={`${statusColors[cliente.status] || ''} text-xs`}
+                        >
+                          {cliente.status}
+                        </Badge>
+                      </div>
+
+                      {/* Score */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs text-muted-foreground">Score</span>
+                          <span className="text-sm font-semibold text-primary">{cliente.score || 0}%</span>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                          <div 
+                            className="h-full bg-primary"
+                            style={{ width: `${cliente.score || 0}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Info Row */}
+                      {cliente.carteira && (
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">Carteira: </span>
+                          <span className="font-medium">{cliente.carteira}</span>
+                        </div>
+                      )}
+
+                      {/* Tags */}
+                      {cliente.tags && cliente.tags.length > 0 && (
+                        <div className="flex gap-1 flex-wrap pt-1">
+                          {cliente.tags.slice(0, 2).map((tag, i) => (
+                            <Badge key={i} variant="outline" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                          {cliente.tags.length > 2 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{cliente.tags.length - 2}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {data.total > limit && (
+              <div className="flex items-center justify-between mt-8 p-4">
+                <div className="text-sm text-muted-foreground">
+                  Página {page} de {Math.ceil(data.total / limit)} • {data.total} clientes
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page === 1}
+                    onClick={() => setPage(p => p - 1)}
+                    data-testid="button-prev-page"
+                  >
+                    Anterior
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page * limit >= data.total}
+                    onClick={() => setPage(p => p + 1)}
+                    data-testid="button-next-page"
+                  >
+                    Próxima
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <Card className="p-12 text-center">
+            <div className="text-muted-foreground">
+              <Users className="h-12 w-12 mx-auto mb-3 opacity-40" />
+              <p className="font-medium">Nenhum cliente encontrado</p>
+              <p className="text-sm mt-1">
+                Importe seus clientes ou crie um novo cadastro
+              </p>
+            </div>
+          </Card>
         )}
-      </Card>
+      </div>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteClientId} onOpenChange={() => setDeleteClientId(null)}>
