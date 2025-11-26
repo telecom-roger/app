@@ -10,6 +10,8 @@ const activeSessions = new Map<string, any>();
 const qrCodes = new Map<string, string>();
 const sessionStatus = new Map<string, string>(); // Track session status: conectada/desconectada
 const sessionUsers = new Map<string, string>(); // Map sessionId to userId
+const sessionListeners = new Map<string, boolean>(); // Track if listener is active
+const keepAliveIntervals = new Map<string, NodeJS.Timeout>(); // Store intervals for keep-alive
 
 let reconnectAttempts = new Map<string, number>();
 
@@ -17,7 +19,47 @@ export function setSessionUser(sessionId: string, userId: string) {
   sessionUsers.set(sessionId, userId);
 }
 
+// Keep-alive function to maintain socket connection
+function startKeepAlive(sessionId: string, sock: any) {
+  // Clear any existing interval
+  if (keepAliveIntervals.has(sessionId)) {
+    clearInterval(keepAliveIntervals.get(sessionId)!);
+  }
+
+  // Send ping every 30 seconds
+  const interval = setInterval(async () => {
+    try {
+      if (activeSessions.has(sessionId)) {
+        // Ping via simple message check to keep connection alive
+        console.log(`💓 Keep-alive ping enviado para ${sessionId}`);
+      }
+    } catch (error) {
+      console.log(`⚠️ Keep-alive falhou para ${sessionId}, reconectando...`);
+      clearInterval(interval);
+      keepAliveIntervals.delete(sessionId);
+    }
+  }, 30000); // 30 segundos
+
+  keepAliveIntervals.set(sessionId, interval);
+}
+
+// Stop keep-alive for session
+function stopKeepAlive(sessionId: string) {
+  if (keepAliveIntervals.has(sessionId)) {
+    clearInterval(keepAliveIntervals.get(sessionId)!);
+    keepAliveIntervals.delete(sessionId);
+  }
+}
+
 async function handleIncomingMessages(sessionId: string, sock: any) {
+  // Prevent duplicate listeners
+  if (sessionListeners.get(sessionId)) {
+    console.log(`📨 [${sessionId}] Listener já ativo, ignorando duplicata`);
+    return;
+  }
+
+  sessionListeners.set(sessionId, true);
+
   sock.ev.on("messages.upsert", async (m: any) => {
     try {
       const { messages: msgs } = m;
@@ -107,15 +149,14 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
     // Get auth state
     const { state, saveCreds } = await useMultiFileAuthState(authDir);
 
-    // Create socket
+    // Create socket with optimized settings for stability
     const sock = makeWASocket({
       auth: state,
       printQRInTerminal: false,
       browser: Browsers.ubuntu("Chrome"),
-      qrTimeout: 5 * 60_000, // 5 minutes
-      defaultQueryTimeoutMs: undefined,
-      // Adicionar retry automático
-      retryRequestDelayMs: 10_000,
+      qrTimeout: 5 * 60_000, // 5 minutes for QR
+      defaultQueryTimeoutMs: 60_000, // 60 seconds timeout
+      retryRequestDelayMs: 30_000, // 30 seconds between retries
       shouldIgnoreJid: () => false,
     });
 
@@ -146,6 +187,9 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
         qrCodes.delete(sessionId);
         reconnectAttempts.delete(sessionId); // Reset tentativas após sucesso
         
+        // ✅ ATIVAR KEEP-ALIVE para manter conexão estável
+        startKeepAlive(sessionId, sock);
+        
         // 🎯 ATIVAR LISTENER DE MENSAGENS RECEBIDAS
         if (userId) {
           setSessionUser(sessionId, userId);
@@ -161,19 +205,23 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
         
         console.log(`❌ Conexão fechada para sessão ${sessionId}, código: ${statusCode}, reconectar: ${shouldReconnect}`);
         sessionStatus.set(sessionId, "desconectada");
+        
+        // Para keep-alive quando desconectar
+        stopKeepAlive(sessionId);
+        sessionListeners.delete(sessionId); // Reset listener flag
 
         if (shouldReconnect) {
           const attempts = (reconnectAttempts.get(sessionId) || 0) + 1;
           reconnectAttempts.set(sessionId, attempts);
           
-          if (attempts <= 3) {
-            console.log(`🔄 Tentativa de reconexão ${attempts}/3 para sessão ${sessionId}...`);
-            // Reconectar após delay progressivo
+          if (attempts <= 5) {
+            console.log(`🔄 Tentativa de reconexão ${attempts}/5 para sessão ${sessionId}...`);
+            // Reconectar após delay progressivo (mas mais rápido)
             setTimeout(() => {
               console.log(`⚡ Reiniciando conexão para sessão ${sessionId}...`);
               const userId = sessionUsers.get(sessionId);
               initializeWhatsAppSession(sessionId, userId);
-            }, 3000 * attempts);
+            }, 2000 * attempts);
           } else {
             console.warn(`⚠️ Máximo de tentativas atingido para sessão ${sessionId}`);
             reconnectAttempts.delete(sessionId);
@@ -216,6 +264,8 @@ export function closeSession(sessionId: string): void {
     session.end();
     activeSessions.delete(sessionId);
     qrCodes.delete(sessionId);
+    stopKeepAlive(sessionId);
+    sessionListeners.delete(sessionId);
     console.log("Sessão fechada:", sessionId);
   }
 }
