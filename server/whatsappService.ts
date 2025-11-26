@@ -81,7 +81,7 @@ async function handleIncomingMessages(sessionId: string, sock: any) {
   });
 }
 
-export async function initializeWhatsAppSession(sessionId: string): Promise<void> {
+export async function initializeWhatsAppSession(sessionId: string, userId?: string): Promise<void> {
   try {
     // Create auth directory for this session
     const authDir = path.join(process.cwd(), "whatsapp_auth", sessionId);
@@ -127,6 +127,13 @@ export async function initializeWhatsAppSession(sessionId: string): Promise<void
         sessionStatus.set(sessionId, "conectada");
         qrCodes.delete(sessionId);
         reconnectAttempts.delete(sessionId); // Reset tentativas após sucesso
+        
+        // 🎯 ATIVAR LISTENER DE MENSAGENS RECEBIDAS
+        if (userId) {
+          setSessionUser(sessionId, userId);
+          handleIncomingMessages(sessionId, sock);
+          console.log(`📱 Listener de mensagens ativado para sessão ${sessionId} do usuário ${userId}`);
+        }
       }
 
       if (connection === "close") {
@@ -146,7 +153,8 @@ export async function initializeWhatsAppSession(sessionId: string): Promise<void
             // Reconectar após delay progressivo
             setTimeout(() => {
               console.log(`⚡ Reiniciando conexão para sessão ${sessionId}...`);
-              initializeWhatsAppSession(sessionId);
+              const userId = sessionUsers.get(sessionId);
+              initializeWhatsAppSession(sessionId, userId);
             }, 3000 * attempts);
           } else {
             console.warn(`⚠️ Máximo de tentativas atingido para sessão ${sessionId}`);
