@@ -435,11 +435,8 @@ export default function Chat() {
                         )}
                         
                         {msg.tipo === "audio" && msg.arquivo && (
-                          <div className="flex items-center gap-3 py-2">
-                            <div className="bg-opacity-30 p-2 rounded-full">
-                              <Music className="h-5 w-5" />
-                            </div>
-                            <audio controls className="flex-1 h-8 max-w-sm">
+                          <div className="w-48">
+                            <audio controls className="w-full h-8 rounded-full">
                               <source src={msg.arquivo} type={msg.mimeType} />
                             </audio>
                           </div>

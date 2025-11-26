@@ -364,7 +364,7 @@ export async function sendAudio(sessionId: string, telefone: string, audioBase64
     await sock.sendMessage(jid, { 
       audio: buffer,
       mimetype: "audio/aac",
-      ptt: false
+      ptt: true
     });
     
     console.log(`✅ Áudio enviado com sucesso para ${jid}`);
