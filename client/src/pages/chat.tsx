@@ -35,9 +35,9 @@ export default function Chat() {
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
   const [messageText, setMessageText] = useState("");
 
-  // Fetch clients based on search term
+  // Fetch all clients once (filtering happens on frontend)
   const { data: clients = [], isLoading: clientsLoading } = useQuery<Client[]>({
-    queryKey: ["/api/clients/whatsapp-list", searchTerm],
+    queryKey: ["/api/clients/whatsapp-list"],
     refetchInterval: false,
   });
 
