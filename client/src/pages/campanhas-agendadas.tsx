@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -42,6 +43,16 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -79,6 +90,9 @@ export default function CampanhasAgendadas() {
   const { toast } = useToast();
   const [openDialog, setOpenDialog] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showClientSelector, setShowClientSelector] = useState(false);
+  const [clientesSelecionados, setClientesSelecionados] = useState<Set<string>>(new Set());
+  const [searchClientes, setSearchClientes] = useState("");
 
   const { data: campaigns = [], isLoading: loadingCampaigns } = useQuery<Campaign[]>({
     queryKey: ["/api/campaigns/scheduled"],
@@ -109,6 +123,49 @@ export default function CampanhasAgendadas() {
       return Array.isArray(data) ? data : [];
     },
   });
+
+  // Filter clients by search
+  const clientesFiltrados = clients.filter((c) =>
+    c.nome.toLowerCase().includes(searchClientes.toLowerCase()) ||
+    c.telefone.includes(searchClientes)
+  );
+
+  // Toggle client selection
+  const toggleClienteSelecionado = (clientId: string) => {
+    const novo = new Set(clientesSelecionados);
+    if (novo.has(clientId)) {
+      novo.delete(clientId);
+    } else {
+      novo.add(clientId);
+    }
+    setClientesSelecionados(novo);
+  };
+
+  // Import selected clients
+  const importarSelecionadosDoBD = () => {
+    if (clientesSelecionados.size === 0) {
+      toast({
+        title: "Erro",
+        description: "Selecione pelo menos um cliente",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Store selected clients in filtros
+    const clientIds = Array.from(clientesSelecionados);
+    form.setValue("filtros", { clientIds });
+    form.setValue("totalRecipients", clientesSelecionados.size);
+    
+    setShowClientSelector(false);
+    setClientesSelecionados(new Set());
+    setSearchClientes("");
+
+    toast({
+      title: "Sucesso",
+      description: `${clientesSelecionados.size} cliente${clientesSelecionados.size !== 1 ? "s" : ""} selecionado${clientesSelecionados.size !== 1 ? "s" : ""}`,
+    });
+  };
 
   const form = useForm({
     resolver: zodResolver(insertCampaignSchema),
@@ -235,6 +292,23 @@ export default function CampanhasAgendadas() {
                   )}
                 />
 
+                <FormItem>
+                  <FormLabel>Clientes</FormLabel>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowClientSelector(true)}
+                      className="flex-1"
+                      data-testid="button-select-clients"
+                    >
+                      {form.watch("totalRecipients") > 0
+                        ? `${form.watch("totalRecipients")} cliente${form.watch("totalRecipients") !== 1 ? "s" : ""} selecionado${form.watch("totalRecipients") !== 1 ? "s" : ""}`
+                        : "Selecionar Clientes"}
+                    </Button>
+                  </div>
+                </FormItem>
+
                 <FormField
                   control={form.control}
                   name="agendadaPara"
@@ -292,6 +366,87 @@ export default function CampanhasAgendadas() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Cliente Selector Dialog */}
+      <Dialog open={showClientSelector} onOpenChange={setShowClientSelector}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Selecionar Clientes</DialogTitle>
+            <DialogDescription>
+              Escolha os clientes que receberão a campanha
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <Input
+              placeholder="Buscar por nome ou telefone..."
+              value={searchClientes}
+              onChange={(e) => setSearchClientes(e.target.value)}
+              data-testid="input-search-clients"
+            />
+
+            <ScrollArea className="h-96 border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={clientesSelecionados.size === clientesFiltrados.length && clientesFiltrados.length > 0}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setClientesSelecionados(new Set(clientesFiltrados.map((c) => c.id)));
+                          } else {
+                            setClientesSelecionados(new Set());
+                          }
+                        }}
+                        data-testid="checkbox-select-all"
+                      />
+                    </TableHead>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Telefone</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {clientesFiltrados.map((client) => (
+                    <TableRow key={client.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={clientesSelecionados.has(client.id)}
+                          onCheckedChange={() => toggleClienteSelecionado(client.id)}
+                          data-testid={`checkbox-client-${client.id}`}
+                        />
+                      </TableCell>
+                      <TableCell>{client.nome}</TableCell>
+                      <TableCell>{client.telefone}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{client.status}</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+
+            <div className="flex gap-2 justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowClientSelector(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                onClick={importarSelecionadosDoBD}
+                data-testid="button-confirm-clients"
+              >
+                Confirmar ({clientesSelecionados.size})
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {loadingCampaigns ? (
         <div className="flex justify-center">
