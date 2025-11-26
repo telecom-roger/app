@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or, ilike } from "drizzle-orm";
 import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, whatsappSessions, clients, interactions, conversations } from "@shared/schema";
 import * as storage from "./storage";
 import * as whatsappService from "./whatsappService";
@@ -1265,6 +1265,133 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(mensagem);
     } catch (error: any) {
       console.error("Error simulating message:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // ==================== CHAT API ROUTES ====================
+  // GET /api/chat/conversations - List all conversations for authenticated user
+  app.get("/api/chat/conversations", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const convs = await storage.getConversations(userId);
+      
+      // Format for frontend chat component
+      const formatted = convs.map((c: any) => ({
+        id: c.id,
+        phoneNumber: c.clientNome || "Contato",
+        lastMessage: c.ultimaMensagem || "Sem mensagens",
+        lastMessageAt: c.ultimaMensagemEm || new Date().toISOString(),
+      }));
+      
+      res.json(formatted);
+    } catch (error: any) {
+      console.error("Error fetching conversations:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/chat/messages/:phone - Get messages for a conversation by phone number
+  app.get("/api/chat/messages/:phone", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const { phone } = req.params;
+      
+      // Find conversation by phone
+      const conv = await storage.findConversationByPhoneAndUser(phone, userId);
+      if (!conv) {
+        return res.json([]);
+      }
+      
+      // Get messages from conversation
+      const msgs = await storage.getMessages(conv.id, 100);
+      
+      // Format for frontend
+      const formatted = msgs.map((m: any) => ({
+        id: m.id,
+        conversationId: m.conversationId,
+        content: m.conteudo,
+        fromPhoneNumber: phone,
+        toPhoneNumber: phone,
+        direction: m.sender === "usuario" ? "outbound" : "inbound",
+        createdAt: m.createdAt?.toISOString() || new Date().toISOString(),
+      }));
+      
+      res.json(formatted.reverse()); // Return in ascending order (oldest first)
+    } catch (error: any) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // POST /api/chat/messages - Send a message via WhatsApp
+  app.post("/api/chat/messages", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const { toPhoneNumber, content } = req.body;
+      
+      if (!toPhoneNumber || !content) {
+        return res.status(400).json({ error: "Missing toPhoneNumber or content" });
+      }
+      
+      // Find conversation by phone
+      let conv = await storage.findConversationByPhoneAndUser(toPhoneNumber, userId);
+      
+      if (!conv) {
+        // Try to find or create a conversation by phone
+        let normalizado = toPhoneNumber.replace(/\D/g, "");
+        if (normalizado.startsWith("55")) {
+          normalizado = normalizado.substring(2);
+        }
+        
+        // Find client by phone
+        const [client] = await db
+          .select()
+          .from(clients)
+          .where(or(
+            ilike(clients.CELULAR_PRINCIPAL, `%${normalizado}%`),
+            ilike(clients.telefone, `%${normalizado}%`)
+          ))
+          .limit(1);
+        
+        if (client) {
+          conv = await storage.createOrGetConversation(client.id, userId);
+        } else {
+          return res.status(404).json({ error: "Conversa não encontrada" });
+        }
+      }
+      
+      // Save message to database
+      const msg = await storage.createMessage({
+        conversationId: conv.id,
+        sender: "usuario",
+        tipo: "texto",
+        conteudo: content,
+      });
+      
+      // Try to send via WhatsApp (get first available session)
+      const sessionId = `user_${userId}`;
+      if (whatsappService.isSessionConnected(sessionId)) {
+        const success = await whatsappService.sendMessage(sessionId, toPhoneNumber, content);
+        if (!success) {
+          console.warn(`⚠️ Failed to send via WhatsApp for ${toPhoneNumber}`);
+        }
+      } else {
+        console.warn(`⚠️ WhatsApp session not connected for user ${userId}`);
+      }
+      
+      // Return formatted message
+      res.json({
+        id: msg.id,
+        conversationId: msg.conversationId,
+        content: msg.conteudo,
+        fromPhoneNumber: toPhoneNumber,
+        toPhoneNumber: toPhoneNumber,
+        direction: "outbound",
+        createdAt: msg.createdAt?.toISOString() || new Date().toISOString(),
+      });
+    } catch (error: any) {
+      console.error("Error sending message:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });

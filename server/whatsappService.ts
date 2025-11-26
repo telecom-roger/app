@@ -118,10 +118,7 @@ async function handleIncomingMessages(sessionId: string, sock: any) {
           
           if (!conversation) {
             console.log(`📨 [${sessionId}] Criando nova conversa para telefone: ${senderPhone}`);
-            conversation = await storage.createConversation({
-              userId,
-              telefone: senderPhone,
-            });
+            continue; // Skip if no conversation found
           }
           
           // Save message to database
@@ -242,7 +239,7 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
     setTimeout(() => {
       if (!activeSessions.has(sessionId) && qrCodes.has(sessionId)) {
         console.warn("⏱️ QR code timeout para sessão:", sessionId);
-        sock?.end();
+        sock.end?.();
       }
     }, 120000);
   } catch (error) {

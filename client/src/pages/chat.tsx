@@ -31,13 +31,13 @@ export default function Chat() {
   const [messageText, setMessageText] = useState("");
 
   // Fetch conversations
-  const { data: conversations = [], isLoading: conversationsLoading } = useQuery({
+  const { data: conversations = [], isLoading: conversationsLoading } = useQuery<Conversation[]>({
     queryKey: ["/api/chat/conversations"],
     refetchInterval: 5000,
   });
 
   // Fetch messages for selected conversation
-  const { data: messages = [], isLoading: messagesLoading } = useQuery({
+  const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
     queryKey: selectedPhone ? ["/api/chat/messages", selectedPhone] : [],
     enabled: !!selectedPhone,
     refetchInterval: 3000,
