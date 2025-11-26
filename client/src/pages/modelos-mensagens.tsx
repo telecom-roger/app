@@ -115,9 +115,10 @@ export default function ModelosMensagens() {
 
   const handleEdit = (template: Template) => {
     setEditingId(template.id);
+    const tipo = (template.tipo === "email" ? "email" : "whatsapp") as "email" | "whatsapp";
     form.reset({
       nome: template.nome,
-      tipo: (template.tipo as "whatsapp" | "email"),
+      tipo,
       assunto: template.assunto || "",
       conteudo: template.conteudo,
       imageUrl: template.imageUrl || "",

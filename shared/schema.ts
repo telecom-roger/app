@@ -197,6 +197,8 @@ export const insertTemplateSchema = createInsertSchema(templates).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  tipo: z.enum(["email", "whatsapp"]),
 });
 
 export type InsertTemplate = z.infer<typeof insertTemplateSchema>;

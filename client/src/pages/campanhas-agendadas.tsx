@@ -45,6 +45,36 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+// Conversão de fuso horário para São Paulo (UTC-3)
+const convertToSaoPauloDate = (isoDate: string) => {
+  try {
+    const date = new Date(isoDate);
+    if (isNaN(date.getTime())) return "";
+    // Converter de UTC para São Paulo (subtract 3 hours)
+    const spDate = new Date(date.getTime() - 3 * 60 * 60 * 1000);
+    return spDate.toISOString().slice(0, 16);
+  } catch {
+    return "";
+  }
+};
+
+const convertFromSaoPauloDate = (dateTimeLocal: string) => {
+  try {
+    // dateTimeLocal é "YYYY-MM-DDTHH:mm" interpretado como São Paulo local
+    const isoString = dateTimeLocal + ":00Z"; // Parse como UTC
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return new Date().toISOString();
+    
+    // Agora temos a hora em UTC. Mas queremos que seja São Paulo (UTC-3)
+    // Se usuário escolheu 16:00, quer dizer 16:00 SP = 19:00 UTC
+    // Então adiciona 3 horas
+    const spDate = new Date(date.getTime() + 3 * 60 * 60 * 1000);
+    return spDate.toISOString();
+  } catch {
+    return new Date().toISOString();
+  }
+};
+
 export default function CampanhasAgendadas() {
   const { toast } = useToast();
   const [openDialog, setOpenDialog] = useState(false);
@@ -218,15 +248,15 @@ export default function CampanhasAgendadas() {
                           data-testid="input-schedule-datetime"
                           value={
                             field.value
-                              ? new Date(field.value)
-                                  .toISOString()
-                                  .slice(0, 16)
+                              ? convertToSaoPauloDate(field.value)
                               : ""
                           }
                           onChange={(e) => {
-                            field.onChange(
-                              new Date(e.target.value).toISOString()
-                            );
+                            if (e.target.value) {
+                              field.onChange(
+                                convertFromSaoPauloDate(e.target.value)
+                              );
+                            }
                           }}
                         />
                       </FormControl>
