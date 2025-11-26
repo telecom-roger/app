@@ -66,19 +66,16 @@ async function processIncomingMessages(sessionId: string, m: any) {
       if (msg.key.remoteJid?.includes("@g.us")) continue;
 
       // Extract phone number from WhatsApp identifiers
-      let senderPhone = "";
-      
-      // If it's a broadcast list (@lid), try to get the real phone from participant
-      if (msg.key.remoteJid?.includes("@lid") && msg.key.participant) {
-        senderPhone = msg.key.participant.replace("@s.whatsapp.net", "").replace("@c.us", "").trim();
-        console.log(`[RECEBIMENTO] @lid detectado, usando participant: ${msg.key.participant} → ${senderPhone}`);
-      } else {
-        // Normal message - extract phone from remoteJid
-        senderPhone = msg.key.remoteJid || "";
-        senderPhone = senderPhone.replace("@s.whatsapp.net", "").replace("@lid", "").replace("@c.us", "").trim();
-      }
+      // PRIORITY: participant has the real phone number, use it first
+      let senderPhone = (msg.key.participant || msg.key.remoteJid || "")
+        .replace("@s.whatsapp.net", "")
+        .replace("@lid", "")
+        .replace("@c.us", "")
+        .trim();
       
       if (!senderPhone) continue;
+      
+      console.log(`[RECEBIMENTO] Telefone extraído: participant="${msg.key.participant}" remoteJid="${msg.key.remoteJid}" → FINAL: "${senderPhone}"`);
 
       let conteudo = "";
       let tipo = "texto";
