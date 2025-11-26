@@ -60,6 +60,24 @@ interface QuickReply {
   ordem: number;
 }
 
+interface ClientNote {
+  id: string;
+  conteudo: string;
+  cor: string;
+  createdAt: string;
+}
+
+const NOTE_COLORS = [
+  { name: "Azul", class: "bg-blue-500" },
+  { name: "Roxo", class: "bg-purple-500" },
+  { name: "Verde", class: "bg-green-500" },
+  { name: "Vermelho", class: "bg-red-500" },
+  { name: "Amarelo", class: "bg-yellow-500" },
+  { name: "Laranja", class: "bg-orange-500" },
+  { name: "Rosa", class: "bg-pink-500" },
+  { name: "Cinza", class: "bg-gray-500" },
+];
+
 export default function Chat() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
@@ -70,6 +88,9 @@ export default function Chat() {
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
+  const [showNoteInput, setShowNoteInput] = useState(false);
+  const [noteText, setNoteText] = useState("");
+  const [noteColor, setNoteColor] = useState("bg-blue-500");
 
   const { data: quickReplies = [] } = useQuery<QuickReply[]>({
     queryKey: ["/api/quick-replies"],
