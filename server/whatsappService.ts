@@ -113,17 +113,17 @@ async function processIncomingMessages(sessionId: string, m: any) {
         conteudo = msg.message.extendedTextMessage.text;
       } else if (msg.message?.imageMessage) {
         tipo = "imagem";
-        conteudo = msg.message.imageMessage.caption || "[Imagem]";
+        conteudo = msg.message.imageMessage.caption || "";
         mimeType = msg.message.imageMessage.mimetype || "image/jpeg";
         nomeArquivo = `image_${Date.now()}.jpg`;
       } else if (msg.message?.audioMessage) {
         tipo = "audio";
-        conteudo = "[Áudio]";
+        conteudo = "";
         mimeType = msg.message.audioMessage.mimetype || "audio/aac";
         nomeArquivo = `audio_${Date.now()}.m4a`;
       } else if (msg.message?.videoMessage) {
         tipo = "video";
-        conteudo = msg.message.videoMessage.caption || "[Vídeo]";
+        conteudo = msg.message.videoMessage.caption || "";
         mimeType = msg.message.videoMessage.mimetype || "video/mp4";
         nomeArquivo = `video_${Date.now()}.mp4`;
       } else if (msg.message?.documentMessage) {

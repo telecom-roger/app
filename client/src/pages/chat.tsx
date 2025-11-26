@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
@@ -58,6 +59,7 @@ export default function Chat() {
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   // Fetch all conversations for current user
   const { data: conversations = [], isLoading: conversationsLoading, refetch: refetchConversations } = useQuery<Conversation[]>({
@@ -466,9 +468,13 @@ export default function Chat() {
                         {msg.tipo === "texto" && <p className="text-sm">{msg.conteudo}</p>}
                         
                         {msg.tipo === "imagem" && msg.arquivo && (
-                          <div className="mb-2">
+                          <button
+                            onClick={() => setSelectedImage(msg.arquivo)}
+                            className="cursor-pointer hover:opacity-80 transition-opacity"
+                            data-testid={`button-open-image-${msg.id}`}
+                          >
                             <img src={msg.arquivo} alt="Imagem" className="max-w-xs rounded max-h-64 object-cover" />
-                          </div>
+                          </button>
                         )}
                         
                         {msg.tipo === "audio" && msg.arquivo && (
@@ -486,8 +492,6 @@ export default function Chat() {
                           </a>
                         )}
                         
-                        {msg.conteudo && msg.tipo !== "texto" && <p className="text-sm mt-2">{msg.conteudo}</p>}
-                        
                         <div className="flex items-center justify-between gap-2 mt-1">
                           <p className="text-xs opacity-70">
                             {new Date(msg.createdAt).toLocaleTimeString("pt-BR")}
@@ -504,6 +508,40 @@ export default function Chat() {
                 )}
               </div>
             </ScrollArea>
+
+      {/* Image Viewer Modal */}
+      <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>
+        <DialogContent className="max-w-2xl p-0 bg-black border-0">
+          <div className="relative w-full h-auto flex items-center justify-center">
+            {selectedImage && (
+              <>
+                <img src={selectedImage} alt="Imagem expandida" className="max-w-full max-h-[80vh] object-contain" />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="absolute top-4 right-4 bg-black/50 hover:bg-black/70"
+                  onClick={() => {
+                    const link = document.createElement("a");
+                    link.href = selectedImage;
+                    link.download = `imagem_${Date.now()}.jpg`;
+                    link.click();
+                  }}
+                  data-testid="button-download-image"
+                >
+                  <Download className="h-5 w-5 text-white" />
+                </Button>
+                <button
+                  onClick={() => setSelectedImage(null)}
+                  className="absolute top-4 left-4 bg-black/50 hover:bg-black/70 rounded-full p-2 transition-colors"
+                  data-testid="button-close-image"
+                >
+                  <X className="h-5 w-5 text-white" />
+                </button>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
             {/* Input */}
             <div className="p-4 border-t border-border bg-card flex gap-2">
