@@ -4,7 +4,7 @@ import { z } from "zod";
 import { eq, and, or, ilike, desc } from "drizzle-orm";
 import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, whatsappSessions, clients, interactions, conversations, messages } from "@shared/schema";
 import * as storage from "./storage";
-import * as whatsappService from "./whatsappService";
+import * as whatsappService from "./wpconnectService";
 import { setupAuth, isAuthenticated } from "./localAuth";
 import { db } from "./db";
 
