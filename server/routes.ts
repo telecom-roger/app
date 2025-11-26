@@ -1110,6 +1110,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Start conversation with a client
+  app.post("/api/chat/start-conversation/:clientId", isAuthenticated, async (req, res) => {
+    try {
+      const { clientId } = req.params;
+      const user = (req.user as any);
+
+      // Check if client exists
+      const cliente = await storage.getClientById(clientId);
+      if (!cliente) {
+        return res.status(404).json({ error: "Cliente não encontrado" });
+      }
+
+      const conversa = await storage.createOrGetConversation(clientId, user.id);
+      res.json(conversa);
+    } catch (error: any) {
+      console.error("Error starting conversation:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // TEST ENDPOINT: Simulate receiving a message from client
+  app.post("/api/chat/test/receive-message/:conversationId", isAuthenticated, async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      const { conteudo = "Olá! Tudo bem?" } = req.body;
+
+      const mensagem = await storage.createMessage({
+        conversationId,
+        sender: "client",
+        tipo: "texto",
+        conteudo,
+      });
+
+      res.json(mensagem);
+    } catch (error: any) {
+      console.error("Error simulating message:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // ==================== ADMIN ROUTES ====================
   app.get("/api/admin/users", isAuthenticated, requireAdmin, async (req, res) => {
     try {

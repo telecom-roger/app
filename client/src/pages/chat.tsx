@@ -37,6 +37,8 @@ export default function Chat() {
   const [conversaSelecionada, setConversaSelecionada] = useState<string | null>(null);
   const [mensagemTexto, setMensagemTexto] = useState("");
   const [arquivoSelecionado, setArquivoSelecionado] = useState<File | null>(null);
+  const [mostrarClientesDisp, setMostrarClientesDisp] = useState(false);
+  const [clientesSelecionaveis, setClientesSelecionaveis] = useState<any[]>([]);
 
   // Get conversations
   const { data: conversas = [], isLoading: carregandoConversas } = useQuery<any[]>({
@@ -48,6 +50,12 @@ export default function Chat() {
   const { data: mensagens = [], isLoading: carregandoMensagens } = useQuery<any[]>({
     queryKey: ["/api/chat/messages", conversaSelecionada],
     enabled: isAuthenticated && !!conversaSelecionada,
+  });
+
+  // Get available clients for new conversation
+  const { data: clientesDisponiveis = [] } = useQuery<any[]>({
+    queryKey: ["/api/clients/whatsapp-list"],
+    enabled: isAuthenticated && mostrarClientesDisp,
   });
 
   // Send message mutation
@@ -79,6 +87,59 @@ export default function Chat() {
     },
   });
 
+  // Start conversation mutation
+  const { mutate: iniciarConversa, isPending: iniciandoConversa } = useMutation({
+    mutationFn: async (clientId: string) => {
+      const response = await fetch(`/api/chat/start-conversation/${clientId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      return response.json();
+    },
+    onSuccess: (conversa) => {
+      setConversaSelecionada(conversa.id);
+      setMostrarClientesDisp(false);
+      queryClient.invalidateQueries({
+        queryKey: ["/api/chat/conversations"],
+      });
+      toast({
+        title: "Conversa iniciada",
+        description: "Agora você pode enviar mensagens",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Erro ao iniciar conversa",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Test receive message mutation
+  const { mutate: simularMensagemRecebida, isPending: simulando } = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/chat/test/receive-message/${conversaSelecionada}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conteudo: "Obrigado, já recebi sua mensagem!" }),
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["/api/chat/messages", conversaSelecionada],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/chat/conversations"],
+      });
+      toast({
+        title: "Mensagem recebida",
+        description: "Teste: mensagem do cliente simulada",
+      });
+    },
+  });
+
   const handleEnviarMensagem = () => {
     if (!conversaSelecionada) return;
     if (!mensagemTexto.trim() && !arquivoSelecionado) return;
@@ -101,11 +162,33 @@ export default function Chat() {
           <CardHeader>
             <CardTitle className="text-base flex justify-between items-center">
               <span>Conversas</span>
-              <Button size="icon" variant="ghost">
+              <Button 
+                size="icon" 
+                variant="ghost"
+                onClick={() => setMostrarClientesDisp(!mostrarClientesDisp)}
+                data-testid="button-nova-conversa"
+              >
                 <Plus className="h-4 w-4" />
               </Button>
             </CardTitle>
           </CardHeader>
+          {mostrarClientesDisp && (
+            <CardContent className="p-4 border-b space-y-2 max-h-[200px] overflow-auto">
+              <p className="text-xs text-muted-foreground font-semibold">Selecione um cliente:</p>
+              {(clientesDisponiveis as any[]).map((client: any) => (
+                <Button
+                  key={client.id}
+                  variant="outline"
+                  className="w-full justify-start text-left"
+                  onClick={() => iniciarConversa(client.id)}
+                  disabled={iniciandoConversa}
+                  data-testid={`button-select-client-${client.id}`}
+                >
+                  <span className="truncate">{client.nome}</span>
+                </Button>
+              ))}
+            </CardContent>
+          )}
           <CardContent className="p-0">
             <ScrollArea className="h-[520px]">
               <div className="space-y-1 p-4">
@@ -201,35 +284,46 @@ export default function Chat() {
                 </ScrollArea>
 
                 {/* Input */}
-                <div className="flex gap-2">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    data-testid="button-upload-arquivo"
-                  >
-                    <ImageIcon className="h-4 w-4" />
-                  </Button>
-                  <Input
-                    placeholder="Digite sua mensagem..."
-                    value={mensagemTexto}
-                    onChange={(e) => setMensagemTexto(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleEnviarMensagem();
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      data-testid="button-upload-arquivo"
+                    >
+                      <ImageIcon className="h-4 w-4" />
+                    </Button>
+                    <Input
+                      placeholder="Digite sua mensagem..."
+                      value={mensagemTexto}
+                      onChange={(e) => setMensagemTexto(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleEnviarMensagem();
+                        }
+                      }}
+                      data-testid="input-mensagem"
+                    />
+                    <Button
+                      onClick={handleEnviarMensagem}
+                      disabled={
+                        enviando ||
+                        (!mensagemTexto.trim() && !arquivoSelecionado)
                       }
-                    }}
-                    data-testid="input-mensagem"
-                  />
+                      data-testid="button-enviar-mensagem"
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <Button
-                    onClick={handleEnviarMensagem}
-                    disabled={
-                      enviando ||
-                      (!mensagemTexto.trim() && !arquivoSelecionado)
-                    }
-                    data-testid="button-enviar-mensagem"
+                    variant="outline"
+                    className="w-full text-xs"
+                    onClick={() => simularMensagemRecebida()}
+                    disabled={simulando || !conversaSelecionada}
+                    data-testid="button-teste-receber"
                   >
-                    <Send className="h-4 w-4" />
+                    🧪 Teste: Simular mensagem recebida
                   </Button>
                 </div>
               </CardContent>
