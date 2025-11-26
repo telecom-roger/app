@@ -314,6 +314,98 @@ export async function sendMessage(sessionId: string, telefone: string, mensagem:
   }
 }
 
+export async function sendImage(sessionId: string, telefone: string, imageBase64: string, caption?: string): Promise<boolean> {
+  try {
+    const sock = activeSessions.get(sessionId);
+    if (!sock) {
+      console.error(`❌ Sessão ${sessionId} não encontrada para enviar imagem`);
+      return false;
+    }
+
+    let jid = telefone.replace(/\D/g, "");
+    if (!jid.startsWith("55")) {
+      jid = "55" + jid;
+    }
+    jid = jid + "@s.whatsapp.net";
+
+    console.log(`📤 Enviando imagem para ${jid}...`);
+    
+    const buffer = Buffer.from(imageBase64.split(",")[1] || imageBase64, "base64");
+    await sock.sendMessage(jid, { 
+      image: buffer,
+      caption: caption || ""
+    });
+    
+    console.log(`✅ Imagem enviada com sucesso para ${jid}`);
+    return true;
+  } catch (error) {
+    console.error(`❌ Erro ao enviar imagem para ${telefone}:`, error);
+    return false;
+  }
+}
+
+export async function sendAudio(sessionId: string, telefone: string, audioBase64: string): Promise<boolean> {
+  try {
+    const sock = activeSessions.get(sessionId);
+    if (!sock) {
+      console.error(`❌ Sessão ${sessionId} não encontrada para enviar áudio`);
+      return false;
+    }
+
+    let jid = telefone.replace(/\D/g, "");
+    if (!jid.startsWith("55")) {
+      jid = "55" + jid;
+    }
+    jid = jid + "@s.whatsapp.net";
+
+    console.log(`📤 Enviando áudio para ${jid}...`);
+    
+    const buffer = Buffer.from(audioBase64.split(",")[1] || audioBase64, "base64");
+    await sock.sendMessage(jid, { 
+      audio: buffer,
+      mimetype: "audio/mpeg",
+      ptt: true
+    });
+    
+    console.log(`✅ Áudio enviado com sucesso para ${jid}`);
+    return true;
+  } catch (error) {
+    console.error(`❌ Erro ao enviar áudio para ${telefone}:`, error);
+    return false;
+  }
+}
+
+export async function sendDocument(sessionId: string, telefone: string, docBase64: string, filename: string): Promise<boolean> {
+  try {
+    const sock = activeSessions.get(sessionId);
+    if (!sock) {
+      console.error(`❌ Sessão ${sessionId} não encontrada para enviar documento`);
+      return false;
+    }
+
+    let jid = telefone.replace(/\D/g, "");
+    if (!jid.startsWith("55")) {
+      jid = "55" + jid;
+    }
+    jid = jid + "@s.whatsapp.net";
+
+    console.log(`📤 Enviando documento para ${jid}...`);
+    
+    const buffer = Buffer.from(docBase64.split(",")[1] || docBase64, "base64");
+    await sock.sendMessage(jid, { 
+      document: buffer,
+      mimetype: "application/octet-stream",
+      fileName: filename
+    });
+    
+    console.log(`✅ Documento enviado com sucesso para ${jid}`);
+    return true;
+  } catch (error) {
+    console.error(`❌ Erro ao enviar documento para ${telefone}:`, error);
+    return false;
+  }
+}
+
 export async function executeCampaign(campaign: any, db: any, clients: any[]): Promise<void> {
   try {
     const { campaigns } = await import('@shared/schema');

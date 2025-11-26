@@ -150,12 +150,12 @@ export default function Chat() {
 
   // Send message mutation
   const sendMutation = useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async (payload: any) => {
       if (!selectedConversationId) return;
-      const res = await apiRequest("POST", `/api/chat/messages/${selectedConversationId}`, {
-        conteudo: content,
-        tipo: "texto",
-      });
+      if (typeof payload === "string") {
+        payload = { conteudo: payload, tipo: "texto" };
+      }
+      const res = await apiRequest("POST", `/api/chat/messages/${selectedConversationId}`, payload);
       return res.json();
     },
     onSuccess: () => {
@@ -376,7 +376,29 @@ export default function Chat() {
                             : "bg-muted text-foreground"
                         }`}
                       >
-                        <p className="text-sm">{msg.conteudo}</p>
+                        {msg.tipo === "texto" && <p className="text-sm">{msg.conteudo}</p>}
+                        
+                        {msg.tipo === "imagem" && msg.arquivo && (
+                          <div className="mb-2">
+                            <img src={msg.arquivo} alt="Imagem" className="max-w-xs rounded max-h-64 object-cover" />
+                          </div>
+                        )}
+                        
+                        {msg.tipo === "audio" && msg.arquivo && (
+                          <audio controls className="max-w-xs mb-2">
+                            <source src={msg.arquivo} type={msg.mimeType} />
+                          </audio>
+                        )}
+                        
+                        {msg.tipo === "documento" && msg.arquivo && (
+                          <a href={msg.arquivo} download={msg.nomeArquivo} className="flex items-center gap-2 text-sm hover:underline">
+                            <File className="h-4 w-4" />
+                            {msg.nomeArquivo}
+                          </a>
+                        )}
+                        
+                        {msg.conteudo && msg.tipo !== "texto" && <p className="text-sm mt-2">{msg.conteudo}</p>}
+                        
                         <div className="flex items-center justify-between gap-2 mt-1">
                           <p className="text-xs opacity-70">
                             {new Date(msg.createdAt).toLocaleTimeString("pt-BR")}
@@ -409,6 +431,22 @@ export default function Chat() {
                 disabled={sendMutation.isPending}
                 data-testid="input-message"
               />
+              <input
+                type="file"
+                id="file-upload"
+                onChange={handleFileUpload}
+                className="hidden"
+                data-testid="input-file-upload"
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => document.getElementById("file-upload")?.click()}
+                disabled={sendMutation.isPending}
+                data-testid="button-file-upload"
+              >
+                <Paperclip className="h-4 w-4" />
+              </Button>
               <Button
                 onClick={handleSendMessage}
                 disabled={!messageText.trim() || sendMutation.isPending}
