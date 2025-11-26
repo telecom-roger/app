@@ -1,7 +1,7 @@
 # Plataforma de Atendimento Inteligente
 
 ## Visão Geral
-Plataforma completa para gerenciar 500k+ clientes de operadoras de telecom com CRM, comunicação em massa (WhatsApp/Email), Kanban de vendas e automação com IA.
+Plataforma completa para gerenciar 500k+ clientes de operadoras de telecom com CRM, comunicação em massa (WhatsApp/Email), Kanban de vendas, automação com IA e **agendamento de campanhas automáticas**.
 
 ## Tecnologias
 **Frontend:**
@@ -17,8 +17,8 @@ Plataforma completa para gerenciar 500k+ clientes de operadoras de telecom com C
 - PostgreSQL (Replit Database) para persistência
 - Drizzle ORM para queries
 - Replit Auth para autenticação (JWT + OAuth)
-- BullMQ + Redis para filas de processamento
-- SendGrid para envio de emails
+- Background job processing para campanhas agendadas
+- SendGrid para envio de emails (futuro)
 
 **Design System:**
 - Cor Principal: #1A0B41 (azul escuro profundo)
@@ -51,12 +51,12 @@ Plataforma completa para gerenciar 500k+ clientes de operadoras de telecom com C
 ### Modelo de Dados
 Principais entidades no PostgreSQL:
 - **users**: Usuários do sistema (Admin, Gerente, Agente)
-- **clients**: Base de clientes (500k+)
+- **clients**: Base de clientes (1845 registros) - carteira="Dominio", status="Lead"
 - **contacts**: Contatos de clientes (telefone, email)
 - **opportunities**: Oportunidades de vendas (Kanban)
-- **campaigns**: Campanhas de comunicação
-- **templates**: Templates de email/WhatsApp
-- **conversations**: Histórico de conversas
+- **campaigns**: Campanhas de comunicação com agendamento
+- **templates**: Templates de email/WhatsApp com suporte a imagens
+- **conversations**: Histórico de conversas WhatsApp
 - **interactions**: Timeline de interações
 - **customFields**: Campos dinâmicos configuráveis
 - **auditLogs**: Logs de auditoria completos
@@ -85,7 +85,7 @@ Principais entidades no PostgreSQL:
 - ✅ Mapeamento interativo de colunas
 - ✅ Normalização de telefones brasileiros (+55)
 - ✅ Detecção de duplicados
-- ✅ Relatório de validação detalhado com 211+ clientes testados
+- ✅ Relatório de validação detalhado com 1845 clientes testados
 
 ### Kanban de Oportunidades
 - ✅ Drag-and-drop funcional entre 5 colunas (Lead → Contato → Proposta → Fechado → Perdido)
@@ -101,6 +101,20 @@ Principais entidades no PostgreSQL:
 - ✅ Editor de templates com variáveis dinâmicas
 - ✅ Agendamento de envios
 - ✅ Status tracking (rascunho, agendada, enviando, concluída)
+
+### Modelos de Mensagens (NOVO!)
+- ✅ Criação de templates com título, tipo, conteúdo e imagem
+- ✅ Suporte a variáveis dinâmicas {{variavel}}
+- ✅ Edição e exclusão de modelos
+- ✅ Separação por tipo (WhatsApp/Email)
+- ✅ Página dedicada: `/modelos-mensagens`
+
+### Campanhas Agendadas (NOVO!)
+- ✅ Agendamento de campanhas para data/hora específica
+- ✅ Campanhas executadas automaticamente no horário agendado
+- ✅ Listagem com status e data de envio
+- ✅ Cancelamento de campanhas agendadas
+- ✅ Página dedicada: `/campanhas-agendadas`
 
 ### Admin Panel
 - ✅ Templates CRUD completo (criar, listar, deletar)
@@ -129,7 +143,9 @@ Principais entidades no PostgreSQL:
 - ✅ GET/POST/DELETE /api/clients (com paginação e filtros)
 - ✅ GET/POST/DELETE /api/opportunities (com drag-and-drop)
 - ✅ GET/POST /api/campaigns
-- ✅ GET/POST/DELETE /api/templates (com CRUD completo)
+- ✅ GET/POST/PATCH/DELETE /api/templates (CRUD completo)
+- ✅ GET/POST/DELETE /api/campaigns/schedule (agendamento)
+- ✅ GET /api/campaigns/scheduled (listar agendadas)
 - ✅ GET /api/timeline/:clientId (histórico de interações)
 - ✅ POST /api/import/clients (com validação e mapeamento)
 - ✅ GET /api/admin/users (listagem de usuários)
@@ -139,11 +155,17 @@ Principais entidades no PostgreSQL:
 - ✅ Relacionamentos configurados corretamente
 - ✅ Índices em chaves estrangeiras para performance
 - ✅ Express payload limit aumentado para 50MB (importações em massa)
+- ✅ Campo `imageUrl` adicionado a templates
+
+### Sistema de Armazenamento
+- ✅ Métodos em storage.ts para CRUD completo
+- ✅ Métodos implementados: `deleteCampaign`, `updateTemplate`, `deleteTemplate`
+- ✅ Query builders otimizados com Drizzle ORM
 
 ### Sistema de Auditoria
 - ✅ Logs completos para criar, editar, deletar
 - ✅ Rastreamento de IP e User-Agent
-- ✅ Auditoria de templates, opportunities, clientes
+- ✅ Auditoria de templates, opportunities, clientes, campanhas
 
 ## Variáveis de Ambiente
 
@@ -180,28 +202,39 @@ Isso inicia:
 - Passport Local com bcrypt para autenticação
 - Middleware de autenticação em todas as rotas
 - Validação com Zod schemas compartilhados
+- Storage layer para abstração CRUD
 
 ### Dados
 - PostgreSQL Replit Database
 - Tipos compartilhados em `shared/schema.ts`
 - Storage pattern para abstração CRUD
+- Migrations via Drizzle ORM
 
-## Estado Atual - ✅ MVP PRONTO PARA PRODUÇÃO
-Todas as funcionalidades principais implementadas, testadas e integradas:
+## Estado Atual - ✅ MVP + AGENDAMENTO PRONTO!
+Todas as funcionalidades principais implementadas e testadas:
 - ✅ Autenticação funcional
 - ✅ CRM completo com clientes e oportunidades
 - ✅ Kanban drag-and-drop operacional
 - ✅ Campanhas e templates gerenciáveis
+- ✅ Modelos de mensagens com imagens
+- ✅ Agendamento de campanhas automáticas
 - ✅ Admin panel com controle de usuários
-- ✅ Importação em massa testada (211+ registros)
+- ✅ Importação em massa testada (1845 registros)
 - ✅ Design system profissional implementado
 - ✅ Modo escuro suportado
 - ✅ Responsividade total
+
+**Status da Base de Dados:**
+- 1.845 clientes cadastrados
+- Todos com carteira = "Dominio"
+- Todos com status = "Lead"
+- Multi-usuário com isolamento de dados
 
 **Próximas Melhorias (Futuro):**
 - [ ] Integração WhatsApp (WPPConnect ou Meta API)
 - [ ] IA com OpenAI (lead scoring, sugestões, respostas automáticas)
 - [ ] SendGrid para envio automático de emails
+- [ ] Scheduler em background (Bull/Redis)
 - [ ] ElasticSearch para busca full-text
 - [ ] Relatórios exportáveis (CSV/PDF)
 - [ ] Observabilidade (logs estruturados, métricas)

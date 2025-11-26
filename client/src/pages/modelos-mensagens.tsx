@@ -55,6 +55,7 @@ export default function ModelosMensagens() {
     queryKey: ["/api/templates"],
     queryFn: async () => {
       const res = await fetch("/api/templates");
+      if (!res.ok) throw new Error("Failed to fetch templates");
       return res.json();
     },
   });
@@ -63,12 +64,12 @@ export default function ModelosMensagens() {
     resolver: zodResolver(insertTemplateSchema),
     defaultValues: {
       nome: "",
-      tipo: "whatsapp",
+      tipo: "whatsapp" as const,
       assunto: "",
       conteudo: "",
       imageUrl: "",
-      variaveis: undefined,
-      ativo: undefined,
+      variaveis: [] as string[],
+      ativo: true,
     },
   });
 
@@ -130,12 +131,12 @@ export default function ModelosMensagens() {
     setEditingId(null);
     form.reset({
       nome: "",
-      tipo: "whatsapp",
+      tipo: "whatsapp" as const,
       assunto: "",
       conteudo: "",
       imageUrl: "",
-      variaveis: undefined,
-      ativo: undefined,
+      variaveis: [],
+      ativo: true,
     });
     setOpenDialog(true);
   };

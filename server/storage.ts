@@ -259,6 +259,10 @@ export async function getCampaignById(id: string): Promise<Campaign | undefined>
   return result;
 }
 
+export async function deleteCampaign(id: string): Promise<void> {
+  await db.delete(campaigns).where(eq(campaigns.id, id));
+}
+
 // ==================== TEMPLATE STORAGE ====================
 export async function createTemplate(data: InsertTemplate): Promise<Template> {
   const [result] = await db.insert(templates).values(data).returning();
@@ -275,6 +279,18 @@ export async function getTemplates(): Promise<Template[]> {
 
 export async function getTemplateById(id: string): Promise<Template | undefined> {
   const [result] = await db.select().from(templates).where(eq(templates.id, id)).limit(1);
+  return result;
+}
+
+export async function updateTemplate(
+  id: string,
+  data: Partial<InsertTemplate>
+): Promise<Template | undefined> {
+  const [result] = await db
+    .update(templates)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(templates.id, id))
+    .returning();
   return result;
 }
 

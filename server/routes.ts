@@ -407,9 +407,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/campaigns/scheduled", isAuthenticated, async (req, res) => {
     try {
       const user = req.user as any;
-      const whereCondition = user.role === 'admin' ? eq(db.select().from(sql`campaigns`).where(eq(sql`status`, 'agendada')), sql`campaigns.status='agendada'`) : sql`campaigns.status='agendada' AND campaigns.created_by=${user.id}`;
+      const { campaigns: campaignsTable } = await import("@shared/schema");
       
-      const scheduled = await db.select().from(sql`campaigns`).where(sql`status = 'agendada'`);
+      const scheduled = await db
+        .select()
+        .from(campaigns)
+        .where(
+          user.role === 'admin'
+            ? eq(campaigns.status, 'agendada')
+            : and(eq(campaigns.status, 'agendada'), eq(campaigns.createdBy, user.id))
+        );
       res.json(scheduled);
     } catch (error: any) {
       console.error("Error fetching scheduled campaigns:", error);
