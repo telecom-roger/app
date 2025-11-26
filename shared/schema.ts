@@ -371,3 +371,51 @@ export const insertWhatsappSessionSchema = createInsertSchema(whatsappSessions).
 
 export type InsertWhatsappSession = z.infer<typeof insertWhatsappSessionSchema>;
 export type WhatsappSession = typeof whatsappSessions.$inferSelect;
+
+// ==================== CONVERSATIONS ====================
+export const conversations = pgTable("conversations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  assunto: text("assunto"),
+  ativa: boolean("ativa").default(true),
+  ultimaMensagem: text("ultima_mensagem"),
+  ultimaMensagemEm: timestamp("ultima_mensagem_em"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_conversations_client").on(table.clientId),
+  index("idx_conversations_user").on(table.userId),
+]);
+
+export type Conversation = typeof conversations.$inferSelect;
+export const insertConversationSchema = createInsertSchema(conversations).omit({
+  id: true,
+  createdAt: true,
+  ultimaMensagemEm: true,
+});
+export type InsertConversation = z.infer<typeof insertConversationSchema>;
+
+// ==================== MESSAGES ====================
+export const messages = pgTable("messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  conversationId: varchar("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+  sender: varchar("sender", { length: 20 }).notNull(), // "user", "client"
+  tipo: varchar("tipo", { length: 20 }).notNull().default("texto"), // texto, imagem, audio, video, documento
+  conteudo: text("conteudo"),
+  arquivo: text("arquivo"), // URL no Replit Storage
+  nomeArquivo: text("nome_arquivo"),
+  tamanho: integer("tamanho"), // em bytes
+  mimeType: text("mime_type"),
+  lido: boolean("lido").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_messages_conversation").on(table.conversationId),
+  index("idx_messages_sender").on(table.sender),
+]);
+
+export type Message = typeof messages.$inferSelect;
+export const insertMessageSchema = createInsertSchema(messages).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertMessage = z.infer<typeof insertMessageSchema>;

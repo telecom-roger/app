@@ -21,6 +21,10 @@ import type {
   InsertAuditLog,
   ImportJob,
   InsertImportJob,
+  Conversation,
+  InsertConversation,
+  Message,
+  InsertMessage,
 } from "@shared/schema";
 import {
   clients,
@@ -34,6 +38,8 @@ import {
   auditLogs,
   importJobs,
   whatsappSessions,
+  conversations,
+  messages,
 } from "@shared/schema";
 
 // ==================== USER STORAGE ====================
@@ -504,4 +510,67 @@ export async function getClientsForBroadcast(filtros?: { status?: string; cartei
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
   return await db.select().from(clients).where(whereClause);
+}
+
+// ==================== CHAT STORAGE ====================
+export async function createOrGetConversation(clientId: string, userId: string): Promise<Conversation> {
+  const [existing] = await db
+    .select()
+    .from(conversations)
+    .where(and(eq(conversations.clientId, clientId), eq(conversations.userId, userId)))
+    .limit(1);
+  
+  if (existing) return existing;
+  
+  const [created] = await db
+    .insert(conversations)
+    .values({ clientId, userId, ativa: true })
+    .returning();
+  return created;
+}
+
+export async function getConversations(userId: string): Promise<(Conversation & { clientNome: string })[]> {
+  const result = await db
+    .select({
+      id: conversations.id,
+      clientId: conversations.clientId,
+      userId: conversations.userId,
+      assunto: conversations.assunto,
+      ativa: conversations.ativa,
+      ultimaMensagem: conversations.ultimaMensagem,
+      ultimaMensagemEm: conversations.ultimaMensagemEm,
+      createdAt: conversations.createdAt,
+      clientNome: clients.nome,
+    })
+    .from(conversations)
+    .leftJoin(clients, eq(conversations.clientId, clients.id))
+    .where(eq(conversations.userId, userId))
+    .orderBy(desc(conversations.ultimaMensagemEm));
+  return result;
+}
+
+export async function getMessages(conversationId: string, limit: number = 50): Promise<Message[]> {
+  return await db
+    .select()
+    .from(messages)
+    .where(eq(messages.conversationId, conversationId))
+    .orderBy(desc(messages.createdAt))
+    .limit(limit);
+}
+
+export async function createMessage(data: InsertMessage): Promise<Message> {
+  const [created] = await db.insert(messages).values(data).returning();
+  
+  // Update conversation last message
+  if (created.conversationId) {
+    await db
+      .update(conversations)
+      .set({
+        ultimaMensagem: created.conteudo || `[${created.tipo.toUpperCase()}]`,
+        ultimaMensagemEm: new Date(),
+      })
+      .where(eq(conversations.id, created.conversationId));
+  }
+  
+  return created;
 }
