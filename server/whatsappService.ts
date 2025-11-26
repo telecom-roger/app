@@ -455,7 +455,8 @@ export async function sendAudio(sessionId: string, telefone: string, audioBase64
     
     const result = await sock.sendMessage(jid, { 
       audio: buffer,
-      mimetype: "audio/mpeg"
+      mimetype: "audio/mpeg",
+      ptt: true
     });
     
     console.log(`✅ Áudio enviado com sucesso para ${jid}. Message ID:`, result.key?.id);
