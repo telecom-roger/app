@@ -245,7 +245,7 @@ export default function Chat() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">
-                            {conv.client?.nome || "Contato desconhecido"}
+                            {conv.client?.razaoSocial || conv.client?.nome || "Contato desconhecido"}
                           </p>
                           <p className="text-xs text-muted-foreground truncate">
                             {conv.client?.CELULAR_PRINCIPAL || conv.client?.telefone || "Sem telefone"}
@@ -283,7 +283,7 @@ export default function Chat() {
               <Phone className="h-5 w-5 text-primary" />
               <div className="flex-1">
                 <p className="font-medium text-foreground">
-                  {selectedConversation.client?.nome || "Contato"}
+                  {selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato"}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {selectedConversation.client?.CELULAR_PRINCIPAL || selectedConversation.client?.telefone}
