@@ -266,9 +266,9 @@ export default function Chat() {
           sendMutation.mutate({ 
             arquivo: base64, 
             tipo: "audio", 
-            nomeArquivo: `audio_${Date.now()}.m4a`, 
+            nomeArquivo: `audio_${Date.now()}.opus`, 
             tamanho: blob.size, 
-            mimeType: "audio/aac" 
+            mimeType: "audio/webm" 
           } as any);
         };
         reader.readAsDataURL(blob);
