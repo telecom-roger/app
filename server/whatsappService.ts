@@ -480,13 +480,15 @@ export async function sendDocument(sessionId: string, telefone: string, docBase6
     console.log(`📤 Enviando documento para ${jid}...`);
     
     const buffer = Buffer.from(docBase64.split(",")[1] || docBase64, "base64");
+    const mimeType = getMimeTypeFromFileName(filename);
+    
     await sock.sendMessage(jid, { 
       document: buffer,
-      mimetype: "application/octet-stream",
+      mimetype: mimeType,
       fileName: filename
     });
     
-    console.log(`✅ Documento enviado com sucesso para ${jid}`);
+    console.log(`✅ Documento enviado com sucesso para ${jid} (${mimeType})`);
     return true;
   } catch (error) {
     console.error(`❌ Erro ao enviar documento para ${telefone}:`, error);
