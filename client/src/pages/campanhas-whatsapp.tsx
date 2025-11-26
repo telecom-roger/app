@@ -709,8 +709,12 @@ export default function CampanhasWhatsApp() {
                         }
                       }}
                     >
-                      <SelectTrigger id="template-select" className="h-10" data-testid="select-template">
-                        <SelectValue placeholder="Selecionar modelo (opcional)..." />
+                      <SelectTrigger id="template-select" className="h-10 text-foreground" data-testid="select-template">
+                        <SelectValue placeholder="Selecionar modelo (opcional)...">
+                          {templateSelecionado && templates.length > 0
+                            ? templates.find((t: any) => t.id === templateSelecionado)?.titulo
+                            : "Selecionar modelo (opcional)..."}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent className="max-h-72">
                         {templates.length > 0 ? (
