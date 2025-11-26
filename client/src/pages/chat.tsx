@@ -245,6 +245,9 @@ export default function Chat() {
       sendMutation.mutate({ arquivo: base64, tipo, nomeArquivo: file.name, tamanho: file.size, mimeType: file.type } as any);
     };
     reader.readAsDataURL(file);
+    
+    // Reset input so same file can be selected again
+    e.target.value = "";
   };
 
   const handleStartRecording = async () => {
