@@ -83,6 +83,7 @@ type ClientForImport = {
   razaoSocial?: string;
   telefone: string;
   email?: string;
+  status?: string;
   ultimaCampanha?: {
     data: string;
     minutosPara: number;
@@ -1141,19 +1142,13 @@ export default function CampanhasWhatsApp() {
                           <TableCell className="font-medium" data-testid={`text-razaosocial-${cliente.id}`}>{cliente.razaoSocial || cliente.nome}</TableCell>
                           <TableCell className="font-mono text-sm font-medium" data-testid={`text-celular-${cliente.id}`}>{cliente.telefone}</TableCell>
                           <TableCell className="text-xs" data-testid={`status-campanha-${cliente.id}`}>
-                            {cliente.ultimaCampanha ? (
-                              cliente.ultimaCampanha.recente ? (
-                                <Badge variant="destructive" className="text-xs gap-1">
-                                  <AlertTriangle className="h-3 w-3" />
-                                  {cliente.ultimaCampanha.minutosPara}m atrás
-                                </Badge>
-                              ) : (
-                                <Badge variant="outline" className="text-xs">
-                                  {cliente.ultimaCampanha.data}
-                                </Badge>
-                              )
+                            {cliente.status === "ENVIADO" ? (
+                              <Badge variant="destructive" className="text-xs gap-1">
+                                <AlertTriangle className="h-3 w-3" />
+                                Enviado
+                              </Badge>
                             ) : (
-                              <Badge variant="secondary" className="text-xs">Novo</Badge>
+                              <Badge variant="secondary" className="text-xs">{cliente.status || "Lead"}</Badge>
                             )}
                           </TableCell>
                         </TableRow>

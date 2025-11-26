@@ -54,10 +54,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Endpoint para listar clientes com WhatsApp (MUST be before :id route)
-  // Filtra apenas clientes que NÃO foram marcados como ENVIADO
   app.get("/api/clients/whatsapp-list", isAuthenticated, async (req, res) => {
     try {
-      const { ne } = require("drizzle-orm");
       const allClients = await db
         .select({
           id: clients.id,
@@ -69,7 +67,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: clients.status,
         })
         .from(clients)
-        .where(ne(clients.status, "ENVIADO"))
         .limit(10000);
 
       const clientsWithPhones = allClients.filter((c) => c.telefone && c.telefone.trim());
