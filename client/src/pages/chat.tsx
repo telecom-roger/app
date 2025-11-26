@@ -104,6 +104,17 @@ export default function Chat() {
     sendMutation.mutate(messageText);
   };
 
+  const handleStartConversation = () => {
+    if (!selectedPhone) return;
+    // Send initial greeting message
+    sendMutation.mutate("Olá! Como vai?");
+    toast({
+      title: "Conversa iniciada!",
+      description: `Conversa com ${selectedClientName} iniciada`,
+      variant: "default",
+    });
+  };
+
   return (
     <div className="flex h-full gap-4 p-4 bg-background">
       {/* Search and Clients List */}
@@ -169,14 +180,29 @@ export default function Chat() {
       <div className="flex-1 flex flex-col gap-4">
         {selectedPhone ? (
           <>
-            <div className="flex items-center gap-2 p-3 bg-card border rounded-lg">
-              <Phone className="h-5 w-5 text-primary" />
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-foreground truncate">
-                  {selectedClientName}
-                </p>
-                <p className="text-sm text-muted-foreground">{selectedPhone}</p>
+            <div className="flex items-center gap-2 p-3 bg-card border rounded-lg justify-between">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <Phone className="h-5 w-5 text-primary" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-foreground truncate">
+                    {selectedClientName}
+                  </p>
+                  <p className="text-sm text-muted-foreground">{selectedPhone}</p>
+                </div>
               </div>
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={handleStartConversation}
+                disabled={sendMutation.isPending}
+                data-testid="button-start-conversation"
+              >
+                {sendMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "+"
+                )}
+              </Button>
             </div>
 
             {/* Messages */}
