@@ -81,6 +81,11 @@ const menuItems = [
     icon: Zap,
   },
   {
+    title: "Histórico de Campanhas",
+    url: "/campanhas-historico",
+    icon: BarChart3,
+  },
+  {
     title: "Importação",
     url: "/importacao",
     icon: FileUp,

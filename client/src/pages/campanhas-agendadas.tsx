@@ -103,8 +103,9 @@ export default function CampanhasAgendadas() {
       const res = await fetch("/api/campaigns/scheduled");
       if (!res.ok) throw new Error("Failed to fetch campaigns");
       const data = await res.json();
-      return Array.isArray(data) ? data : [];
+      return Array.isArray(data) ? data.filter((c: any) => c.status === 'agendada') : [];
     },
+    refetchInterval: 3000,
   });
 
   const { data: templates = [] } = useQuery<Template[]>({
