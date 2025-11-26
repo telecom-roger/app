@@ -16,7 +16,9 @@ const keepAliveIntervals = new Map<string, NodeJS.Timeout>(); // Store intervals
 let reconnectAttempts = new Map<string, number>();
 
 export function setSessionUser(sessionId: string, userId: string) {
+  console.log(`👤 setSessionUser: ${sessionId} → ${userId}`);
   sessionUsers.set(sessionId, userId);
+  console.log(`✅ sessionUsers agora tem ${sessionUsers.size} entradas:`, [...sessionUsers.keys()]);
 }
 
 // Keep-alive function to maintain socket connection
@@ -59,16 +61,17 @@ async function handleIncomingMessages(sessionId: string, sock: any) {
   }
 
   sessionListeners.set(sessionId, true);
+  console.log(`✅ [${sessionId}] Listener registrado no messages.upsert`);
 
   sock.ev.on("messages.upsert", async (m: any) => {
     try {
       const { messages: msgs } = m;
       const userId = sessionUsers.get(sessionId);
       
-      console.log(`📨 [${sessionId}] 🔔 LISTENER ATIVADO - userId=${userId}, msgs recebidas=${msgs?.length || 0}`);
+      console.log(`📨 [${sessionId}] EVENT messages.upsert - userId=${userId}, msgs=${msgs?.length || 0}`);
       
       if (!userId) {
-        console.log(`📨 [${sessionId}] ❌ Nenhum userId configurado!`);
+        console.log(`📨 [${sessionId}] ❌ userId VAZIO! sessionUsers:`, [...sessionUsers.entries()]);
         return;
       }
       
@@ -186,7 +189,7 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
       }
 
       if (connection === "open") {
-        console.log("✅ Conexão estabelecida para sessão:", sessionId);
+        console.log("🟢 CONNECTION OPEN para sessão:", sessionId, "| userId param:", userId);
         activeSessions.set(sessionId, sock);
         sessionStatus.set(sessionId, "conectada");
         qrCodes.delete(sessionId);
@@ -194,20 +197,19 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
         
         startKeepAlive(sessionId, sock);
         
-        // 🎯 Sempre ativar listener, mesmo se userId não foi passado diretamente
-        let currentUserId = userId;
+        // 🎯 SEMPRE ativar listener - userId DEVE estar disponível aqui!
+        const currentUserId = userId || sessionUsers.get(sessionId);
+        console.log(`🔍 currentUserId resolved: ${currentUserId} (userId param: ${userId}, map: ${sessionUsers.get(sessionId)})`);
+        
         if (!currentUserId) {
-          currentUserId = sessionUsers.get(sessionId);
-          console.log(`⚠️ userId não passado, tentando recuperar do map: ${currentUserId}`);
+          console.error(`❌❌❌ CRÍTICO: Nenhum userId para ${sessionId}! Não ativando listener!`);
+          console.error(`📌 sessionUsers map:`, [...sessionUsers.entries()]);
+          return;
         }
         
-        if (currentUserId) {
-          setSessionUser(sessionId, currentUserId);
-          handleIncomingMessages(sessionId, sock);
-          console.log(`🎯 LISTENER ATIVADO: ${sessionId} | Usuário: ${currentUserId}`);
-        } else {
-          console.log(`❌ CRÍTICO: Nenhum userId disponível para ${sessionId}`);
-        }
+        setSessionUser(sessionId, currentUserId);
+        handleIncomingMessages(sessionId, sock);
+        console.log(`🎯🎯🎯 LISTENER ATIVADO PARA: ${sessionId} | Usuário: ${currentUserId}`);
       }
 
       if (connection === "close") {
