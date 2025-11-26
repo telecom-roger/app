@@ -447,14 +447,19 @@ export async function sendAudio(sessionId: string, telefone: string, audioBase64
     jid = jid + "@s.whatsapp.net";
 
     console.log(`📤 Enviando áudio para ${jid}...`);
+    console.log(`📊 Tamanho base64: ${audioBase64.length} caracteres`);
     
-    const buffer = Buffer.from(audioBase64.split(",")[1] || audioBase64, "base64");
-    await sock.sendMessage(jid, { 
+    const base64Data = audioBase64.split(",")[1] || audioBase64;
+    const buffer = Buffer.from(base64Data, "base64");
+    console.log(`📊 Tamanho buffer: ${buffer.length} bytes`);
+    
+    const result = await sock.sendMessage(jid, { 
       audio: buffer,
-      mimetype: "audio/webm"
+      mimetype: "audio/webm",
+      ptt: true
     });
     
-    console.log(`✅ Áudio enviado com sucesso para ${jid}`);
+    console.log(`✅ Áudio enviado com sucesso para ${jid}. Message ID:`, result.key?.id);
     return true;
   } catch (error) {
     console.error(`❌ Erro ao enviar áudio para ${telefone}:`, error);
