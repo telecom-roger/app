@@ -131,8 +131,12 @@ export default function Chat() {
     },
     onSuccess: () => {
       if (selectedConversationId) {
-        refetchMessages();
-        refetchConversations();
+        queryClient.invalidateQueries({
+          queryKey: ["/api/chat/messages", selectedConversationId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["/api/chat/conversations"],
+        });
       }
     },
   });
