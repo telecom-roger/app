@@ -811,9 +811,9 @@ export default function CampanhasWhatsApp() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 flex-1 flex flex-col overflow-hidden">
+          <div className="space-y-3 flex-1 flex flex-col overflow-hidden">
             {/* Search Input */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
               <Input
                 placeholder="🔍 Buscar por nome ou telefone..."
                 value={searchClientes}
@@ -821,13 +821,49 @@ export default function CampanhasWhatsApp() {
                 className="flex-1"
                 data-testid="input-search-clientes"
               />
-              <Badge variant="secondary" className="h-10 px-3 flex items-center gap-2">
+              <Badge variant="secondary" className="h-10 px-3 flex items-center gap-2 whitespace-nowrap">
                 {clientesFiltrados.length} clientes
               </Badge>
             </div>
 
+            {/* Quick Select Buttons */}
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setClientesSelecionados(new Set(clientesFiltrados.map((c) => c.id)))}
+                disabled={clientesFiltrados.length === 0}
+                data-testid="button-select-all-quick"
+              >
+                ✓ Selecionar Todos
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setClientesSelecionados(new Set())}
+                disabled={clientesSelecionados.size === 0}
+                data-testid="button-deselect-all"
+              >
+                ✕ Desselecionar Todos
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const novos = clientesFiltrados
+                    .filter((c) => !c.ultimaCampanha)
+                    .map((c) => c.id);
+                  setClientesSelecionados(new Set(novos));
+                }}
+                disabled={clientesFiltrados.every((c) => c.ultimaCampanha)}
+                data-testid="button-select-news"
+              >
+                ⭐ Apenas Novos
+              </Button>
+            </div>
+
             {/* Clients Table with better styling */}
-            <div className="flex-1 overflow-hidden flex flex-col border rounded-lg bg-white dark:bg-slate-950">
+            <div className="flex-1 overflow-hidden flex flex-col border rounded-lg bg-white dark:bg-slate-950 min-h-[500px]">
               {carregandoClientes ? (
                 <div className="flex items-center justify-center flex-1">
                   <div className="flex flex-col items-center gap-2">
