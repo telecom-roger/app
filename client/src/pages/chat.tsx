@@ -342,7 +342,48 @@ export default function Chat() {
     }
   };
 
-  const selectedConversation = conversations.find(c => c.id === selectedConversationId);
+  // Create note mutation
+  const createNoteMutation = useMutation({
+    mutationFn: async (data: { conteudo: string; cor: string }) => {
+      if (!currentClientId) return;
+      const res = await apiRequest("POST", `/api/client-notes/${currentClientId}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      refetchNotes();
+      setNoteText("");
+      setNoteColor("bg-blue-500");
+      setShowNoteInput(false);
+      toast({ title: "Nota adicionada", variant: "default" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro ao criar nota", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Delete note mutation
+  const deleteNoteMutation = useMutation({
+    mutationFn: async (noteId: string) => {
+      const res = await apiRequest("DELETE", `/api/client-notes/${noteId}`, {});
+      return res.json();
+    },
+    onSuccess: () => {
+      refetchNotes();
+      toast({ title: "Nota removida", variant: "default" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro ao remover nota", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const handleCreateNote = () => {
+    if (!noteText.trim() || !currentClientId) return;
+    createNoteMutation.mutate({ conteudo: noteText, cor: noteColor });
+  };
+
+  const handleDeleteNote = (noteId: string) => {
+    deleteNoteMutation.mutate(noteId);
+  };
 
   const handleSelectQuickReply = (reply: string) => {
     setMessageText(reply);
