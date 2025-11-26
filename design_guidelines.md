@@ -2,55 +2,77 @@
 
 ## Design Approach
 
-**System:** Linear-inspired design system optimized for data-dense enterprise productivity applications
+**System:** Modern Startup Design (Linear + Vercel + Figma inspired)
 
 **Core Principles:**
-- Information density with breathing room
-- Scannable data hierarchies
-- Consistent, predictable patterns
-- Professional efficiency over visual flair
+- Clean, spacious layouts with premium whitespace
+- Modern sans-serif typography (Inter)
+- Smooth micro-interactions and elevation effects
+- Data-driven UI with visual hierarchy
+- Professional but approachable aesthetic
+- Dark/Light mode fully supported
 
 ---
 
 ## Typography System
 
-**Font Family:** Inter (Google Fonts CDN)
-- Primary: Inter for all UI elements
-- Monospace: 'Fira Code' for data fields, phone numbers, IDs
+**Font Family:** Inter (sans-serif, modern)
+- Primary: Inter for all UI
+- Monospace: 'Fira Code' for data/codes
 
 **Type Scale:**
-- **Hero/Headers (h1):** text-3xl (30px), font-semibold, tracking-tight
-- **Section Headers (h2):** text-xl (20px), font-semibold
-- **Card/Panel Headers (h3):** text-lg (18px), font-medium
-- **Body Text:** text-sm (14px), font-normal
-- **Secondary/Metadata:** text-xs (12px), font-normal
-- **Buttons/Labels:** text-sm (14px), font-medium
-- **Table Headers:** text-xs (12px), font-semibold, uppercase, tracking-wide
+- **Hero (h1):** text-4xl, font-bold, tracking-tight
+- **Page Title (h2):** text-3xl, font-semibold, tracking-tight
+- **Section Headers (h3):** text-xl, font-semibold
+- **Card Headers (h4):** text-lg, font-medium
+- **Body Text:** text-sm (14px), font-normal, leading-relaxed
+- **Secondary/Meta:** text-xs (12px), font-normal, text-muted-foreground
+- **Buttons:** text-sm (14px), font-medium
+- **Table Headers:** text-xs, font-semibold, uppercase
 
-**Line Heights:**
-- Headers: leading-tight (1.25)
-- Body: leading-relaxed (1.625)
-- Data tables: leading-normal (1.5)
+---
+
+## Color Palette
+
+**Primary Brand Colors:**
+- Dark Blue (Primary): #1A0B41 - Deep, professional, trustworthy
+- Purple Accent (CTA): #7069FF - Vibrant, modern, action-oriented
+- Neutral Base: White (#FFFFFF) & Dark (#0F0F0F)
+
+**Semantic Colors:**
+- Success: #10B981 (emerald)
+- Warning: #F59E0B (amber)
+- Destructive: #EF4444 (red)
+- Info: #3B82F6 (blue)
+
+**Background Layers:**
+- Canvas: Pure white (light) / Dark slate (dark)
+- Surface: Subtle gray (light) / Elevated dark (dark)
+- Muted: 95% opacity overlays
 
 ---
 
 ## Layout & Spacing System
 
-**Spacing Primitives:** Tailwind units of 2, 4, 6, 8, 12, 16 (p-2, m-4, gap-6, space-y-8, py-12, mb-16)
+**Spacing Scale (Tailwind):**
+- Extra Small: 2px (gap-0.5, p-0.5)
+- Small: 8px (gap-2, p-2, mb-2)
+- Medium: 16px (gap-4, p-4, space-y-4) ← MOST COMMON
+- Large: 24px (gap-6, p-6, space-y-6)
+- Extra Large: 32px (gap-8, p-8, space-y-8)
 
 **Container Strategy:**
-- App shell: Fixed sidebar (w-64), fluid main content
-- Content max-width: max-w-7xl mx-auto
+- App shell: Fixed sidebar (w-64) + fluid main content
+- Page max-width: max-w-7xl mx-auto
 - Page padding: px-6 py-8 (desktop), px-4 py-6 (mobile)
-- Card/Panel padding: p-6 (desktop), p-4 (mobile)
-- Compact sections: p-4
-- Section spacing: space-y-8 for vertical rhythm
+- Card padding: p-6 (default), p-4 (compact)
+- Content columns: gap-6 (default), gap-4 (mobile)
 
-**Grid System:**
-- Dashboard KPIs: grid-cols-1 md:grid-cols-2 lg:grid-cols-4
-- Client list/table: Full-width with internal column management
-- Form layouts: grid-cols-1 md:grid-cols-2 gap-6
-- Kanban columns: Dynamic width with min-w-80
+**Grid & Layout:**
+- Dashboard: grid-cols-1 md:grid-cols-2 lg:grid-cols-4
+- Forms: grid-cols-1 md:grid-cols-2 gap-6
+- Campaign Editor: 2-column (60/40) on desktop, stacked on mobile
+- Kanban: Horizontal scroll with min-w-80 columns
 
 ---
 
@@ -58,154 +80,204 @@
 
 ### Navigation
 **Sidebar (Fixed Left):**
-- Width: w-64, full height, vertical nav
-- Logo/Brand area: h-16 with p-4
-- Nav items: px-4 py-2, rounded-md, with icons (20px) + text
-- Active state: filled background, medium weight font
-- Collapsible groups for Admin section
+- Width: w-64 (fixed), full height, border-right
+- Logo area: h-16, p-4, flex items-center justify-center
+- Nav items: px-4 py-2, rounded-md, with icon (20px) + text
+- Active state: bg-primary text-white, font-semibold
+- Hover: hover-elevate effect (preset)
+- Groups: Collapsible with label (uppercase, smaller text)
 
-**Top Bar:**
-- Height: h-16, border-bottom
-- Search bar (center-left), user menu (right)
-- Breadcrumbs for deep navigation
-
-### Data Display
-**Tables:**
-- Striped rows (subtle), hover states
-- Fixed header on scroll
-- Cell padding: px-4 py-3
-- Actions column (right-aligned): icon buttons
-- Bulk selection checkboxes (left column)
-- Sortable headers with caret icons
-
-**Timeline Feed:**
-- Vertical line connector (left side, 2px)
-- Timeline items: ml-8, with dot indicator on line
-- Card style for each item: rounded-lg, border, p-4
-- Icon badges for item type (message, note, status change)
-- Timestamp: text-xs, secondary text, top-right
-- Expandable preview → full modal
-
-**Kanban Board:**
-- Columns: rounded-lg, min-w-80, max-w-sm, bg-subtle
-- Column header: p-4, sticky top, with count badge
-- Cards: rounded-md, p-4, mb-3, draggable cursor
-- Card content: Client name (font-medium), metadata (text-xs), value (font-semibold if present)
+**Header Bar:**
+- Height: h-16, fixed top, border-bottom
+- Flex row: items-center justify-between
+- Left: SidebarTrigger + page title
+- Right: Theme toggle, user menu
 
 ### Forms & Inputs
-**Input Fields:**
-- Height: h-10, rounded-md, px-3
-- Border: 1px solid, focus ring (2px)
-- Label: text-sm font-medium, mb-2
-- Helper text: text-xs, mt-1
-- Error state: border-red, text-red-600
+**Text Input / Select:**
+- Height: h-10 (default), rounded-md
+- Padding: px-3 py-2
+- Border: 1px solid border-input
+- Focus: ring-2 ring-primary/50
+- Label: text-sm font-medium, block mb-2
+- Helper: text-xs text-muted-foreground
 
-**Modals:**
-- Max width: max-w-2xl for forms, max-w-4xl for complex content
-- Padding: p-6
-- Header: border-bottom, pb-4, with close button (top-right)
-- Footer: border-top, pt-4, buttons right-aligned
-- Backdrop: semi-transparent dark overlay
+**Textarea:**
+- Min-height: h-48 (for campaign editor)
+- Font: font-mono text-sm
+- Resize: resize-none (controlled)
+- Padding: p-3, line-height: leading-relaxed
 
-**Buttons:**
-- Primary (CTAs): rounded-md, px-4 py-2, font-medium, uses #7069FF
-- Secondary: border variant
-- Ghost: transparent with hover background
-- Icon buttons: w-9 h-9, rounded-md, centered icon
-- **Buttons on images: backdrop-blur-sm bg-white/20 text-white**
+**Select/Dropdown:**
+- Height: h-10, px-3
+- Max-height content: max-h-72 (scrollable)
+- Item size: text-sm py-2 px-2
+- Hover: hover-elevate
 
-### Cards & Panels
+### Buttons
+**Variants:**
+- **Primary (default):** bg-primary text-white, px-4 py-2
+- **Outline:** border-1 border-input, hover-elevate
+- **Ghost:** transparent, hover:bg-muted
+- **Secondary:** bg-secondary text-secondary-foreground
+- **Destructive:** bg-destructive text-white
+
+**Sizes:**
+- **sm:** px-3 py-1, text-sm
+- **default:** px-4 py-2, text-sm
+- **lg:** px-6 py-3, text-base
+- **icon:** h-10 w-10, rounded-md, centered
+
+**Interactions:**
+- Hover: hover-elevate (preset in index.css)
+- Active/Press: active-elevate-2 (preset)
+- Disabled: opacity-50 cursor-not-allowed
+
+### Cards
 **Standard Card:**
-- rounded-lg, border, shadow-sm
-- Header section: p-4 border-b with title + actions
-- Body: p-6
-- Compact variant: p-4 throughout
+- rounded-lg, border-1, shadow-sm
+- Header: border-b pb-4, mb-4
+- Content: p-6 (comfortable padding)
+- Footer: border-t pt-4 (optional)
+- Hover: hover-elevate for interactive cards
 
-**Stat Cards (Dashboard):**
-- p-6, rounded-lg
-- Value: text-2xl font-semibold
-- Label: text-sm, secondary
-- Icon: top-right, 24px
-- Trend indicator: text-xs with arrow icon
+**Badge:**
+- Inline, small padding: px-2.5 py-0.5
+- Rounded-full, text-xs
+- Variant colors: default, secondary, outline, destructive
 
-### Interactive Elements
-**Filters Panel:**
-- Collapsible sidebar or top bar
-- Filter groups: space-y-6
-- Apply/Clear buttons at bottom
+### Data Display
+**Table:**
+- Striped rows: odd:bg-muted/40
+- Hover: hover:bg-muted/60 transition
+- Cell padding: px-4 py-3
+- Header: uppercase text-xs font-semibold
+- Scrollable: overflow-x-auto on mobile
 
-**Search:**
-- Prominent position, min-w-96
-- Magnifying glass icon (left)
-- Keyboard shortcut hint (right): ⌘K
-- Dropdown results: absolute, shadow-lg, max-h-96, overflow-auto
+**Progress Bar:**
+- Height: h-2 (default), h-3 (large)
+- Rounded-full, bg-muted, overflow-hidden
+- Fill: bg-primary with smooth animation
+
+### Modals & Dialogs
+**Modal Container:**
+- Max-width: max-w-2xl (default), max-w-4xl (large)
+- Rounded-lg, shadow-2xl
+- Padding: p-6
+- Header: border-b pb-4, mb-6
+- Footer: border-t pt-4, flex justify-end gap-2
+- Backdrop: bg-black/50 fixed inset-0
 
 ---
 
 ## Page-Specific Layouts
 
+### Campaigns (WhatsApp / Scheduled)
+**Layout:** 2-column grid on desktop, stacked on mobile
+- **Left (60%):** Contacts input + preview table
+- **Right (40%):** Message template editor + model selector
+- Spacing: gap-8 between columns, space-y-6 within sections
+
+**Components:**
+- Input section: Card with large textarea (h-56)
+- Preview table: max-h-64 with overflow-auto
+- Template selector: w-full, h-10
+- Live preview: bg-primary/5 border-primary/20, max-h-32
+
 ### Dashboard
-- 4-column KPI cards at top (grid)
-- Below: 2-column layout (graph + activity feed)
-- Spacing: gap-6 between sections
+- KPI cards: 4-column grid (responsive: 1→2→4)
+- Each card: p-6, value text-2xl font-semibold
+- Below: 2-column (charts + activity feed)
 
-### Import Wizard
-- Stepper progress (top): 4 steps with connecting lines
-- Content area: max-w-4xl mx-auto
-- Preview table during mapping step
-- Validation results: list with icons (success/error/warning)
+### Admin / Settings
+- Tab navigation: TabsList with TabsTriggers
+- Content: max-w-5xl mx-auto
+- Two-column form: left (list) + right (detail)
 
-### Client Profile
-- **Layout:** Two-column (70/30 split on desktop)
-- Left: Timeline feed (full height, scrollable)
-- Right: Client info card (sticky), Quick actions panel
+### Client Profile / Details
+- Timeline: Left side (full-height scrollable)
+- Info panel: Right side (sticky on desktop)
 - Mobile: Stack vertically
 
-### Kanban
-- Horizontal scroll container
-- Columns: flex, gap-4
-- Add column button (right end)
-- Filters in top bar
+---
 
-### Admin Panel
-- Tab navigation for sections (Users, Fields, Templates, Settings)
-- Content: max-w-5xl
-- Side-by-side edit pattern: list (left 40%) + detail form (right 60%)
+## Animations & Transitions
+
+**Micro-interactions:**
+- Hover elevation: Use hover-elevate class (preset)
+- Button clicks: Active-elevate-2 (preset)
+- Page transitions: fade-in 150ms ease-out
+- Modal open/close: scale 95→100 + fade 200ms
+
+**Avoid:**
+- Excessive animations on scroll
+- Layout shifts on hover (use visibility:hidden instead of display:none)
+- Animations on mobile (keep snappy)
 
 ---
 
-## Images
+## Dark Mode
 
-**Dashboard:** No hero image. Focus on data visualization and KPI cards.
+**Implementation:**
+- CSS variables with light/dark variants
+- Automatic toggle via theme provider
+- Color scale: All semantic colors have dark equivalents
+- Example: `bg-white dark:bg-slate-950`
 
-**Login Page:** Optional subtle background gradient or abstract pattern (telecom/tech theme), but keep minimal to maintain professional focus. Logo centered.
-
-**Empty States:** Simple illustrations for "No clients yet", "No messages", "Import your first file" - line art style, not photos.
-
-**Client Timeline:** User avatars (32px rounded-full) for notes/actions by team members.
-
----
-
-## Animations
-
-**Minimal, purposeful only:**
-- Modal enter/exit: 200ms ease-out scale + fade
-- Dropdown menus: 150ms ease-out
-- Kanban drag: smooth transform, no delay
-- Button clicks: subtle scale (0.98)
-- **No scroll animations, no excessive transitions**
+**Color Adjustments:**
+- Text: dark:text-slate-100
+- Borders: dark:border-slate-700
+- Backgrounds: Inverted contrast hierarchy
 
 ---
 
-## Responsive Behavior
+## Responsive Design
 
 **Breakpoints:**
-- Mobile: < 768px - Stack columns, full-width cards, hamburger menu
-- Tablet: 768px - 1024px - 2-column grids, visible sidebar
-- Desktop: > 1024px - Full layout with fixed sidebar
+- Mobile: < 768px (compact, single column)
+- Tablet: 768px - 1024px (2 columns)
+- Desktop: > 1024px (full layout, sidebar visible)
 
-**Mobile Adaptations:**
-- Sidebar becomes slide-over drawer
-- Tables: horizontal scroll or card view toggle
-- Kanban: one column visible, swipe navigation
-- Reduce padding: p-6 → p-4, gap-6 → gap-4
+**Adaptations:**
+- Sidebar: Hamburger menu on mobile (drawer)
+- Grids: 1 column → 2 columns → full responsive
+- Tables: Horizontal scroll or card view on mobile
+- Modals: max-w-full on mobile, p-4 padding
+
+---
+
+## Design Tokens (CSS Variables)
+
+Primary theme colors already configured in `index.css` as HSL variables:
+- `--primary`: 266 95% 27% (Primary Blue)
+- `--accent`: 266 95% 44% (Purple CTA)
+- `--background`: Light/Dark backgrounds
+- `--foreground`: Text colors
+- `--muted`: Secondary/tertiary text
+- `--border`: Border colors
+
+Use throughout: `bg-primary`, `text-primary`, `border-primary`, etc.
+
+---
+
+## Accessibility
+
+**Requirements:**
+- All interactive elements: data-testid (button, input, link)
+- Keyboard navigation: Tab, Enter, Escape
+- Color contrast: WCAG AA minimum (4.5:1 for text)
+- ARIA labels: form fields with `<Label>` + htmlFor
+- Focus states: ring-2 ring-primary always visible
+
+---
+
+## Professional Polish Checklist
+
+- ✅ Consistent spacing (use multiples of 4px)
+- ✅ Hover states on all interactive elements
+- ✅ Loading states (spinners, skeletons)
+- ✅ Empty states (illustrations, helpful text)
+- ✅ Error handling (validation messages, toasts)
+- ✅ Responsive on all breakpoints
+- ✅ Dark mode support
+- ✅ Fast interactions (200ms max for perceived delays)

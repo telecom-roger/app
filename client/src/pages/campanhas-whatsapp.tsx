@@ -578,106 +578,98 @@ export default function CampanhasWhatsApp() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left: Contatos */}
-            <div className="lg:col-span-1 space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Contatos</CardTitle>
-                  <CardDescription>Cole planilha ou importe da base</CardDescription>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left Section: Contatos + Preview */}
+            <div className="space-y-6">
+              {/* Input Card */}
+              <Card className="border hover-elevate transition-all">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg">Contatos</CardTitle>
+                      <CardDescription className="mt-1">Cole seus dados ou importe da base</CardDescription>
+                    </div>
+                    {contatosProcessados > 0 && (
+                      <Badge className="text-sm px-3 py-1" variant="secondary">
+                        {contatosProcessados} contato{contatosProcessados !== 1 ? "s" : ""}
+                      </Badge>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Textarea for pasting */}
                   <Textarea
-                    placeholder="Cole seus contatos aqui (Ctrl+C/Ctrl+V)..."
+                    placeholder="Cole aqui (Tab para separar colunas, Enter para linhas)..."
                     value={textoPlanilha}
                     onChange={(e) => setTextoPlanilha(e.target.value)}
-                    className="font-mono text-sm h-48"
+                    className="font-mono text-sm h-56 resize-none"
                     data-testid="textarea-contatos"
                   />
-
-                  {/* Import from DB button */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setMostrarSeletorBD(true)}
-                    className="w-full"
-                    data-testid="button-importar-db"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Carregar da Base
-                  </Button>
-
-                  {/* Clear button */}
-                  {contatos.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2">
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setContatos([]);
-                        setTextoPlanilha("");
-                        setVariaveisDisponiveis([]);
-                      }}
+                      variant="default"
+                      onClick={() => setMostrarSeletorBD(true)}
                       className="w-full"
-                      data-testid="button-limpar-contatos"
+                      data-testid="button-importar-db"
                     >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Limpar
+                      <Download className="h-4 w-4 mr-2" />
+                      Base de Dados
                     </Button>
-                  )}
-
-                  {contatosProcessados > 0 && (
-                    <div className="space-y-2">
-                      <Badge className="w-full justify-center py-2 text-sm" variant="outline">
-                        {contatosProcessados} contato
-                        {contatosProcessados !== 1 ? "s" : ""} válido
-                        {contatosProcessados !== 1 ? "s" : ""}
-                      </Badge>
-                      <div className="text-xs text-muted-foreground space-y-1">
-                        <div>
-                          <strong>Variáveis:</strong>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {variaveisDisponiveis.map((v) => (
-                            <Badge key={v} variant="secondary" className="text-xs">
-                              {"{"}
-                              {v}
-                              {"}"}
-                            </Badge>
-                          ))}
-                        </div>
+                    {contatos.length > 0 && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setContatos([]);
+                          setTextoPlanilha("");
+                          setVariaveisDisponiveis([]);
+                        }}
+                        className="w-full"
+                        data-testid="button-limpar-contatos"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Limpar
+                      </Button>
+                    )}
+                  </div>
+                  {variaveisDisponiveis.length > 0 && (
+                    <div className="pt-2 border-t">
+                      <div className="text-xs font-semibold text-muted-foreground mb-2">Variáveis Disponíveis:</div>
+                      <div className="flex flex-wrap gap-2">
+                        {variaveisDisponiveis.map((v) => (
+                          <Badge key={v} variant="outline" className="text-xs font-mono">
+                            {"{"}
+                            {v}
+                            {"}"}
+                          </Badge>
+                        ))}
                       </div>
                     </div>
                   )}
                 </CardContent>
               </Card>
-            </div>
 
-            {/* Center: Tabela de Contatos */}
-            <div className="lg:col-span-1 space-y-4">
-              <Card className="flex flex-col h-full">
-                <CardHeader>
-                  <CardTitle className="text-base">Planilha</CardTitle>
-                  <CardDescription>Visualização dos contatos</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1 overflow-hidden flex flex-col">
-                  {contatos.length > 0 ? (
-                    <div className="flex-1 overflow-auto border rounded-md">
+              {/* Preview Card */}
+              {contatos.length > 0 && (
+                <Card className="border">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm">Visualização de Contatos</CardTitle>
+                  </CardHeader>
+                  <CardContent className="overflow-hidden">
+                    <div className="border rounded-md overflow-auto max-h-64">
                       <Table className="text-xs">
                         <TableHeader className="sticky top-0 bg-muted">
                           <TableRow>
-                            {variaveisDisponiveis.slice(0, 3).map((v) => (
-                              <TableHead key={v} className="py-2 px-3">
+                            {variaveisDisponiveis.slice(0, 4).map((v) => (
+                              <TableHead key={v} className="py-3 px-4 font-semibold text-xs">
                                 {v}
                               </TableHead>
                             ))}
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {contatos.slice(0, 10).map((contato, idx) => (
-                            <TableRow key={idx}>
-                              {variaveisDisponiveis.slice(0, 3).map((v) => (
-                                <TableCell key={`${idx}-${v}`} className="py-2 px-3 font-mono text-xs">
+                          {contatos.slice(0, 8).map((contato, idx) => (
+                            <TableRow key={idx} className="hover:bg-muted/50">
+                              {variaveisDisponiveis.slice(0, 4).map((v) => (
+                                <TableCell key={`${idx}-${v}`} className="py-3 px-4 font-mono text-xs truncate">
                                   {contato[v] || "-"}
                                 </TableCell>
                               ))}
@@ -685,32 +677,28 @@ export default function CampanhasWhatsApp() {
                           ))}
                         </TableBody>
                       </Table>
-                      {contatos.length > 10 && (
-                        <div className="text-xs text-muted-foreground p-3 border-t">
-                          ... e mais {contatos.length - 10}
+                      {contatos.length > 8 && (
+                        <div className="text-xs text-muted-foreground p-3 border-t text-center bg-muted/30">
+                          +{contatos.length - 8} contatos
                         </div>
                       )}
                     </div>
-                  ) : (
-                    <div className="flex items-center justify-center flex-1 text-muted-foreground">
-                      Nenhum contato
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
-            {/* Right: Template */}
-            <div className="lg:col-span-1 space-y-4">
-              <Card className="flex flex-col h-full">
-                <CardHeader>
-                  <CardTitle className="text-base">Template</CardTitle>
-                  <CardDescription>Use {"{variavel}"} para personalizar</CardDescription>
+            {/* Right Section: Template Editor */}
+            <div className="space-y-6">
+              <Card className="border flex flex-col h-auto md:h-fit lg:h-auto hover-elevate transition-all">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg">Mensagem</CardTitle>
+                  <CardDescription className="mt-1">Use {"{variável}"} para personalizar</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4 flex-1 flex flex-col">
-                  {/* Seletor de Templates */}
+                <CardContent className="space-y-5">
+                  {/* Template Selector */}
                   <div className="space-y-2">
-                    <Label htmlFor="template-select">Selecionar Modelo</Label>
+                    <Label htmlFor="template-select" className="text-sm font-semibold">Usar Modelo</Label>
                     <Select 
                       value={templateSelecionado}
                       onValueChange={(value) => {
@@ -721,18 +709,18 @@ export default function CampanhasWhatsApp() {
                         }
                       }}
                     >
-                      <SelectTrigger id="template-select" data-testid="select-template">
-                        <SelectValue placeholder="Escolher modelo (opcional)" />
+                      <SelectTrigger id="template-select" className="h-10" data-testid="select-template">
+                        <SelectValue placeholder="Selecionar modelo (opcional)..." />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-72">
                         {templates.length > 0 ? (
                           templates.map((t: any) => (
-                            <SelectItem key={t.id} value={t.id}>
+                            <SelectItem key={t.id} value={t.id} className="text-sm">
                               {t.titulo}
                             </SelectItem>
                           ))
                         ) : (
-                          <SelectItem value="vazio" disabled>
+                          <SelectItem value="vazio" disabled className="text-xs text-muted-foreground">
                             Nenhum modelo disponível
                           </SelectItem>
                         )}
@@ -740,28 +728,46 @@ export default function CampanhasWhatsApp() {
                     </Select>
                   </div>
 
-                  <Textarea
-                    placeholder="Olá {empresa}! Temos uma promoção especial para você..."
-                    value={template}
-                    onChange={(e) => setTemplate(e.target.value)}
-                    className="flex-1 font-mono text-sm"
-                    data-testid="textarea-template"
-                  />
-                  
+                  {/* Divider */}
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-muted"></div>
+                    </div>
+                    <div className="relative flex justify-center text-xs">
+                      <span className="px-2 bg-white dark:bg-slate-950 text-muted-foreground">ou escreva aqui</span>
+                    </div>
+                  </div>
+
+                  {/* Template Textarea */}
+                  <div className="space-y-2">
+                    <Textarea
+                      placeholder="Olá {empresa}! Temos uma promoção especial para você..."
+                      value={template}
+                      onChange={(e) => setTemplate(e.target.value)}
+                      className="flex-1 font-mono text-sm h-48 resize-none"
+                      data-testid="textarea-template"
+                    />
+                  </div>
+
+                  {/* Preview Button */}
                   <Button
-                    variant="outline"
+                    variant={mostrarPreview ? "default" : "outline"}
                     size="sm"
                     onClick={() => setMostrarPreview(!mostrarPreview)}
+                    className="w-full"
                     data-testid="button-toggle-preview"
                   >
                     <Eye className="h-4 w-4 mr-2" />
-                    {mostrarPreview ? "Ocultar" : "Ver"} Preview
+                    {mostrarPreview ? "Ocultar Preview" : "Ver Preview"}
                   </Button>
 
+                  {/* Live Preview */}
                   {mostrarPreview && contatos.length > 0 && (
-                    <div className="bg-muted p-3 rounded-md text-sm border-l-2 border-primary max-h-40 overflow-y-auto">
-                      <div className="font-semibold mb-2 text-xs">Preview (1º contato):</div>
-                      <div className="whitespace-pre-wrap break-words text-xs">{obterPreview()}</div>
+                    <div className="bg-primary/5 border border-primary/20 p-4 rounded-md text-sm space-y-2">
+                      <div className="font-semibold text-xs text-primary mb-2">Visualização (1º contato):</div>
+                      <div className="whitespace-pre-wrap break-words text-sm font-mono leading-relaxed text-foreground max-h-32 overflow-y-auto">
+                        {obterPreview()}
+                      </div>
                     </div>
                   )}
                 </CardContent>
