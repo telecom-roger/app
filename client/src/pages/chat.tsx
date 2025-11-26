@@ -127,7 +127,16 @@ export default function Chat() {
   };
 
   const handleSendMessage = () => {
-    if (!messageText.trim() || !selectedConversationId) return;
+    console.log(`🔵 handleSendMessage: text="${messageText.trim()}", convId="${selectedConversationId}"`);
+    if (!messageText.trim()) {
+      console.log(`❌ Sem texto`);
+      return;
+    }
+    if (!selectedConversationId) {
+      console.log(`❌ Sem conversationId`);
+      return;
+    }
+    console.log(`✅ Enviando: ${messageText}`);
     sendMutation.mutate(messageText);
   };
 
@@ -277,12 +286,18 @@ export default function Chat() {
             {/* Input */}
             <div className="flex gap-2">
               <Input
-                placeholder="Digite uma mensagem..."
+                placeholder={selectedConversationId ? "Digite uma mensagem..." : "Selecione um cliente..."}
                 value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-                onKeyPress={(e) =>
-                  e.key === "Enter" && !e.shiftKey && handleSendMessage()
-                }
+                onChange={(e) => {
+                  setMessageText(e.target.value);
+                  console.log(`📝 Digitando: "${e.target.value}", convId: ${selectedConversationId}`);
+                }}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
                 disabled={!selectedConversationId || sendMutation.isPending}
                 data-testid="input-message"
               />
