@@ -403,6 +403,148 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Scheduled campaigns
+  app.get("/api/campaigns/scheduled", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const whereCondition = user.role === 'admin' ? eq(db.select().from(sql`campaigns`).where(eq(sql`status`, 'agendada')), sql`campaigns.status='agendada'`) : sql`campaigns.status='agendada' AND campaigns.created_by=${user.id}`;
+      
+      const scheduled = await db.select().from(sql`campaigns`).where(sql`status = 'agendada'`);
+      res.json(scheduled);
+    } catch (error: any) {
+      console.error("Error fetching scheduled campaigns:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/campaigns/schedule", isAuthenticated, async (req, res) => {
+    try {
+      const { nome, templateId, agendadaPara, filtros } = req.body;
+      if (!nome || !templateId || !agendadaPara) {
+        return res.status(400).json({ error: "Nome, templateId e agendadaPara são obrigatórios" });
+      }
+
+      const validatedData = insertCampaignSchema.parse({
+        nome,
+        tipo: "whatsapp",
+        templateId,
+        status: "agendada",
+        agendadaPara: new Date(agendadaPara),
+        filtros: filtros || {},
+        createdBy: (req.user as any).id,
+      });
+
+      const campaign = await storage.createCampaign(validatedData);
+
+      await storage.createAuditLog({
+        userId: (req.user as any).id,
+        acao: "criar",
+        entidade: "campaign_scheduled",
+        entidadeId: campaign.id,
+        dadosNovos: campaign as any,
+        ipAddress: req.ip,
+        userAgent: req.get("user-agent"),
+      });
+
+      res.status(201).json(campaign);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      console.error("Error scheduling campaign:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/campaigns/:id", isAuthenticated, async (req, res) => {
+    try {
+      const campaign = await storage.getCampaignById(req.params.id);
+      if (!campaign) {
+        return res.status(404).json({ error: "Campanha não encontrada" });
+      }
+
+      // Verify ownership
+      const user = req.user as any;
+      if (campaign.createdBy !== user.id && user.role !== 'admin') {
+        return res.status(403).json({ error: "Não autorizado" });
+      }
+
+      await storage.deleteCampaign(req.params.id);
+
+      await storage.createAuditLog({
+        userId: user.id,
+        acao: "excluir",
+        entidade: "campaign",
+        entidadeId: req.params.id,
+        dadosAntigos: campaign as any,
+        ipAddress: req.ip,
+        userAgent: req.get("user-agent"),
+      });
+
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting campaign:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.patch("/api/templates/:id", isAuthenticated, async (req, res) => {
+    try {
+      const template = await storage.getTemplateById(req.params.id);
+      if (!template) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+
+      const validatedData = insertTemplateSchema.partial().parse(req.body);
+      const updated = await storage.updateTemplate(req.params.id, validatedData);
+
+      await storage.createAuditLog({
+        userId: (req.user as any).id,
+        acao: "editar",
+        entidade: "template",
+        entidadeId: req.params.id,
+        dadosAntigos: template as any,
+        dadosNovos: updated as any,
+        ipAddress: req.ip,
+        userAgent: req.get("user-agent"),
+      });
+
+      res.json(updated);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      console.error("Error updating template:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/templates/:id", isAuthenticated, async (req, res) => {
+    try {
+      const template = await storage.getTemplateById(req.params.id);
+      if (!template) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+
+      await storage.deleteTemplate(req.params.id);
+
+      await storage.createAuditLog({
+        userId: (req.user as any).id,
+        acao: "excluir",
+        entidade: "template",
+        entidadeId: req.params.id,
+        dadosAntigos: template as any,
+        ipAddress: req.ip,
+        userAgent: req.get("user-agent"),
+      });
+
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting template:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // ==================== TEMPLATE ROUTES ====================
   app.get("/api/templates", isAuthenticated, async (req, res) => {
     try {

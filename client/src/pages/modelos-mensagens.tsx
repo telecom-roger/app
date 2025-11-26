@@ -67,8 +67,8 @@ export default function ModelosMensagens() {
       assunto: "",
       conteudo: "",
       imageUrl: "",
-      variaveis: [],
-      ativo: true,
+      variaveis: undefined,
+      ativo: undefined,
     },
   });
 
@@ -134,8 +134,8 @@ export default function ModelosMensagens() {
       assunto: "",
       conteudo: "",
       imageUrl: "",
-      variaveis: [],
-      ativo: true,
+      variaveis: undefined,
+      ativo: undefined,
     });
     setOpenDialog(true);
   };

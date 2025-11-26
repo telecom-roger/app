@@ -9,6 +9,8 @@ import {
   BarChart3,
   Database,
   MessageCircle,
+  Clock,
+  Edit3,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -61,6 +63,16 @@ const menuItems = [
     title: "Chat",
     url: "/chat",
     icon: MessageCircle,
+  },
+  {
+    title: "Modelos de Mensagens",
+    url: "/modelos-mensagens",
+    icon: Edit3,
+  },
+  {
+    title: "Campanhas Agendadas",
+    url: "/campanhas-agendadas",
+    icon: Clock,
   },
   {
     title: "Importação",
