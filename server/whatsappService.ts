@@ -5,13 +5,12 @@ import path from "path";
 import fs from "fs";
 import * as storage from "./storage";
 
-// Map to store active connections and QR codes
 const activeSessions = new Map<string, any>();
 const qrCodes = new Map<string, string>();
-const sessionStatus = new Map<string, string>(); // Track session status: conectada/desconectada
-const sessionUsers = new Map<string, string>(); // Map sessionId to userId
-const sessionListeners = new Map<string, boolean>(); // Track if listener is active
-const keepAliveIntervals = new Map<string, NodeJS.Timeout>(); // Store intervals for keep-alive
+const sessionStatus = new Map<string, string>();
+const sessionUsers = new Map<string, string>();
+const sessionListeners = new Map<string, boolean>();
+const keepAliveIntervals = new Map<string, NodeJS.Timeout>();
 
 let reconnectAttempts = new Map<string, number>();
 
@@ -19,18 +18,14 @@ export function setSessionUser(sessionId: string, userId: string) {
   sessionUsers.set(sessionId, userId);
 }
 
-// Keep-alive function to maintain socket connection
 function startKeepAlive(sessionId: string, sock: any) {
-  // Clear any existing interval
   if (keepAliveIntervals.has(sessionId)) {
     clearInterval(keepAliveIntervals.get(sessionId)!);
   }
 
-  // Send ping every 30 seconds
   const interval = setInterval(async () => {
     try {
       if (activeSessions.has(sessionId)) {
-        // Ping via simple message check to keep connection alive
         console.log(`💓 Keep-alive ping enviado para ${sessionId}`);
       }
     } catch (error) {
@@ -38,30 +33,16 @@ function startKeepAlive(sessionId: string, sock: any) {
       clearInterval(interval);
       keepAliveIntervals.delete(sessionId);
     }
-  }, 30000); // 30 segundos
+  }, 30000);
 
   keepAliveIntervals.set(sessionId, interval);
 }
 
-// Stop keep-alive for session
 function stopKeepAlive(sessionId: string) {
   if (keepAliveIntervals.has(sessionId)) {
     clearInterval(keepAliveIntervals.get(sessionId)!);
     keepAliveIntervals.delete(sessionId);
   }
-}
-
-async function handleIncomingMessages(sessionId: string, sock: any) {
-  if (sessionListeners.get(sessionId)) {
-    return;
-  }
-
-  sessionListeners.set(sessionId, true);
-  console.log(`✅ LISTENER REGISTRADO: ${sessionId}`);
-
-  // Registrar MÚLTIPLOS eventos para não perder mensagens
-  sock.ev.on("messages.upsert", processIncomingMessages.bind(null, sessionId));
-  sock.ev.on("messages.update", processIncomingMessages.bind(null, sessionId));
 }
 
 async function processIncomingMessages(sessionId: string, m: any) {
@@ -70,11 +51,16 @@ async function processIncomingMessages(sessionId: string, m: any) {
     if (!msgs || msgs.length === 0) return;
 
     const userId = sessionUsers.get(sessionId);
-    if (!userId) return;
+    if (!userId) {
+      console.log(`[RECEBIMENTO] userId não encontrado para ${sessionId}`);
+      return;
+    }
+
+    console.log(`[RECEBIMENTO] Processando ${msgs.length} mensagens para ${sessionId}`);
 
     for (const msg of msgs) {
       if (msg.key.fromMe) continue;
-      if (msg.key.remoteJid?.includes("@g.us")) continue; // Skip group messages
+      if (msg.key.remoteJid?.includes("@g.us")) continue;
 
       const senderPhone = msg.key.remoteJid?.replace("@s.whatsapp.net", "") || "";
       if (!senderPhone) continue;
@@ -113,57 +99,65 @@ async function processIncomingMessages(sessionId: string, m: any) {
           conteudo,
         });
 
-        console.log(`📥 RECEBIDO DE ${senderPhone}: "${conteudo}"`);
+        console.log(`📥 ✅ RECEBIDO E SALVO DE ${senderPhone}: "${conteudo}"`);
       } catch (error) {
-        console.error(`Erro ao processar:`, error);
+        console.error(`[RECEBIMENTO] Erro ao processar:`, error);
       }
     }
   } catch (error) {
-    console.error(`Erro no processamento:`, error);
+    console.error(`[RECEBIMENTO] Erro geral:`, error);
   }
+}
+
+async function handleIncomingMessages(sessionId: string, sock: any) {
+  if (sessionListeners.get(sessionId)) {
+    return;
+  }
+
+  sessionListeners.set(sessionId, true);
+  console.log(`\n🎯🎯🎯 LISTENER REGISTRADO E ATIVADO PARA: ${sessionId} 🎯🎯🎯\n`);
+
+  sock.ev.on("messages.upsert", (m: any) => processIncomingMessages(sessionId, m));
+  sock.ev.on("messages.update", (m: any) => processIncomingMessages(sessionId, m));
+  
+  // Força o processamento de mensagens antigas quando conecta
+  console.log(`[LISTENER] Aguardando mensagens para ${sessionId}...`);
 }
 
 export async function initializeWhatsAppSession(sessionId: string, userId?: string): Promise<void> {
   try {
-    // Create auth directory for this session
     const authDir = path.join(process.cwd(), "whatsapp_auth", sessionId);
 
-    // Get auth state
     const { state, saveCreds } = await useMultiFileAuthState(authDir);
 
-    // Create socket with optimized settings for stability
     const sock = makeWASocket({
       auth: state,
       printQRInTerminal: false,
       browser: Browsers.ubuntu("Chrome"),
-      qrTimeout: 5 * 60_000, // 5 minutes for QR
-      defaultQueryTimeoutMs: 60_000, // 60 seconds timeout
-      retryRequestDelayMs: 30_000, // 30 seconds between retries
+      qrTimeout: 5 * 60_000,
+      defaultQueryTimeoutMs: 60_000,
+      retryRequestDelayMs: 30_000,
       shouldIgnoreJid: () => false,
     });
 
-    // Handle QR code
+    let qrGenerated = false;
+
     sock.ev.on("connection.update", async (update: any) => {
       const { connection, lastDisconnect, qr } = update;
 
-      // If QR is generated, capture it as image
-      if (qr) {
-        console.log("📱 QR Code recebido para sessão:", sessionId, "valor:", qr.substring(0, 50));
+      if (qr && !qrGenerated) {
+        qrGenerated = true;
         try {
-          // Usar configurações padrão do QRCode para máxima compatibilidade
-          const qrDataUrl = await QRCode.toDataURL(qr, {
-            width: 320,
-            margin: 2,
-          });
-          qrCodes.set(sessionId, qrDataUrl);
-          console.log("✅ QR code gerado com sucesso para sessão:", sessionId);
+          const qrString = await QRCode.toDataURL(qr);
+          qrCodes.set(sessionId, qrString);
+          console.log(`✅ QR Code gerado para sessão: ${sessionId}`);
         } catch (err) {
           console.error("❌ Erro ao gerar QR code image:", err);
         }
       }
 
       if (connection === "open") {
-        console.log("✅ CONEXÃO ABERTA:", sessionId);
+        console.log("🟢 CONEXÃO ABERTA:", sessionId);
         activeSessions.set(sessionId, sock);
         sessionStatus.set(sessionId, "conectada");
         qrCodes.delete(sessionId);
@@ -175,57 +169,37 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
         if (currentUserId) {
           setSessionUser(sessionId, currentUserId);
           await handleIncomingMessages(sessionId, sock);
-          console.log(`📱 LISTENER INICIALIZADO: ${sessionId}`);
+          console.log(`🎯 INICIALIZAÇÃO COMPLETA: ${sessionId}`);
         }
       }
 
       if (connection === "close") {
         const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
         
-        console.log(`❌ Conexão fechada para sessão ${sessionId}, código: ${statusCode}`);
         sessionStatus.set(sessionId, "desconectada");
-        
-        // Para keep-alive quando desconectar
         stopKeepAlive(sessionId);
-        
-        // Sempre deletar socket de sessão ativa
         activeSessions.delete(sessionId);
+        sessionListeners.delete(sessionId);
 
-        // **SEMPRE** reconectar automaticamente (máximo 30 tentativas)
-        const attempts = (reconnectAttempts.get(sessionId) || 0) + 1;
-        reconnectAttempts.set(sessionId, attempts);
-        
-        if (attempts <= 30) {
-          console.log(`🔄 Auto-reconectando ${attempts}/30 para sessão ${sessionId}... (código: ${statusCode})`);
-          // Delay progressivo: 100ms, 500ms, 1s, 2s, etc.
-          const delay = Math.min(100 * Math.pow(1.5, attempts - 1), 15000);
-          setTimeout(() => {
-            console.log(`⚡ Tentativa ${attempts} de reconexão para sessão ${sessionId}...`);
-            const userId = sessionUsers.get(sessionId);
-            // IMPORTANTE: Resetar listener flag aqui para criar novo listener
-            sessionListeners.delete(sessionId);
-            initializeWhatsAppSession(sessionId, userId);
-          }, delay);
+        if (
+          statusCode === DisconnectReason.loggedOut ||
+          statusCode === DisconnectReason.userInitiatedDisconnect
+        ) {
+          console.log(`❌ Sessão encerrada: ${sessionId}`);
         } else {
-          console.warn(`⚠️ Máximo de tentativas atingido para sessão ${sessionId}`);
-          reconnectAttempts.delete(sessionId);
-          sessionListeners.delete(sessionId);
+          const attempts = (reconnectAttempts.get(sessionId) || 0) + 1;
+          if (attempts < 5) {
+            reconnectAttempts.set(sessionId, attempts);
+            console.log(`🔄 Reconectando... (tentativa ${attempts})`);
+            setTimeout(() => initializeWhatsAppSession(sessionId, currentUserId), 5000);
+          }
         }
       }
     });
 
-    // Handle credentials
     sock.ev.on("creds.update", saveCreds);
-
-    // Set timeout for QR code (120 seconds = 2 minutes)
-    setTimeout(() => {
-      if (!activeSessions.has(sessionId) && qrCodes.has(sessionId)) {
-        console.warn("⏱️ QR code timeout para sessão:", sessionId);
-        sock.end?.();
-      }
-    }, 120000);
   } catch (error) {
-    console.error("❌ Erro ao inicializar sessão WhatsApp:", error);
+    console.error(`❌ Erro ao inicializar sessão ${sessionId}:`, error);
   }
 }
 
@@ -233,61 +207,22 @@ export function getQRCode(sessionId: string): string | null {
   return qrCodes.get(sessionId) || null;
 }
 
-export function getActiveSession(sessionId: string): any {
-  return activeSessions.get(sessionId) || null;
-}
-
-export function closeSession(sessionId: string): void {
-  const session = activeSessions.get(sessionId);
-  if (session) {
-    session.end();
-    activeSessions.delete(sessionId);
-    qrCodes.delete(sessionId);
-    stopKeepAlive(sessionId);
-    sessionListeners.delete(sessionId);
-    console.log("Sessão fechada:", sessionId);
-  }
-}
-
-export function isSessionConnected(sessionId: string): boolean {
-  return activeSessions.has(sessionId);
-}
-
 export function getSessionStatus(sessionId: string): string {
   return sessionStatus.get(sessionId) || "desconectada";
 }
 
-export function isSessionCredentialsSaved(sessionId: string): boolean {
-  // Check if this session has saved credentials (indicating it was previously connected)
-  const authDir = path.join(process.cwd(), "whatsapp_auth", sessionId);
-  const credsPath = path.join(authDir, "creds.json");
-  
-  try {
-    if (fs.existsSync(credsPath)) {
-      const creds = JSON.parse(fs.readFileSync(credsPath, "utf-8"));
-      // If creds exist and have me data, it means the session was connected before
-      return !!creds?.me;
-    }
-  } catch (error) {
-    console.error(`Error checking credentials for ${sessionId}:`, error);
+export function closeSession(sessionId: string): void {
+  const sock = activeSessions.get(sessionId);
+  if (sock) {
+    sock.end(undefined);
+    activeSessions.delete(sessionId);
+    sessionStatus.set(sessionId, "desconectada");
+    stopKeepAlive(sessionId);
   }
-  
-  return false;
 }
 
-export async function isSessionAlive(sessionId: string): Promise<boolean> {
-  // Check if session is in memory and marked as connected
-  const sock = activeSessions.get(sessionId);
-  const status = sessionStatus.get(sessionId);
-  
-  // If socket doesn't exist or status is explicitly disconnected, return false
-  if (!sock || status === "desconectada") {
-    return false;
-  }
-  
-  // If socket exists and status is conectada, assume it's alive
-  // (we're trusting the connection.update events from Baileys)
-  return status === "conectada";
+export function getAllActiveSessions(): string[] {
+  return Array.from(activeSessions.keys());
 }
 
 export async function sendMessage(sessionId: string, telefone: string, mensagem: string): Promise<boolean> {
@@ -298,8 +233,7 @@ export async function sendMessage(sessionId: string, telefone: string, mensagem:
       return false;
     }
 
-    // Normalize phone number (add country code if needed)
-    let jid = telefone.replace(/\D/g, ""); // Remove non-digits
+    let jid = telefone.replace(/\D/g, "");
     if (!jid.startsWith("55")) {
       jid = "55" + jid;
     }
@@ -307,7 +241,6 @@ export async function sendMessage(sessionId: string, telefone: string, mensagem:
 
     console.log(`📤 Enviando mensagem para ${jid}...`);
     
-    // Send message
     await sock.sendMessage(jid, { text: mensagem });
     
     console.log(`✅ Mensagem enviada com sucesso para ${jid}`);
