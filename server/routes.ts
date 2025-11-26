@@ -1687,6 +1687,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== QUICK REPLIES ROUTES ====================
+  app.get("/api/quick-replies", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const replies = await storage.getQuickRepliesByUserId(user.dbUser.id);
+      res.json(replies);
+    } catch (error: any) {
+      console.error("Error fetching quick replies:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/quick-replies", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const { conteudo, ordem } = req.body;
+      
+      const reply = await storage.createQuickReply({
+        userId: user.dbUser.id,
+        conteudo,
+        ordem: ordem || 0,
+      });
+      res.json(reply);
+    } catch (error: any) {
+      console.error("Error creating quick reply:", error);
+      res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
+  app.patch("/api/quick-replies/:id", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const { id } = req.params;
+      const { conteudo, ordem } = req.body;
+      
+      const reply = await storage.updateQuickReply(id, { conteudo, ordem });
+      if (!reply) return res.status(404).json({ error: "Quick reply not found" });
+      res.json(reply);
+    } catch (error: any) {
+      console.error("Error updating quick reply:", error);
+      res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
+  app.delete("/api/quick-replies/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteQuickReply(id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting quick reply:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // ==================== ADMIN ROUTES ====================
   app.get("/api/admin/users", isAuthenticated, requireAdmin, async (req, res) => {
     try {

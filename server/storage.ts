@@ -25,6 +25,8 @@ import type {
   InsertConversation,
   Message,
   InsertMessage,
+  QuickReply,
+  InsertQuickReply,
 } from "@shared/schema";
 import {
   clients,
@@ -40,6 +42,7 @@ import {
   whatsappSessions,
   conversations,
   messages,
+  quickReplies,
 } from "@shared/schema";
 
 // ==================== USER STORAGE ====================
@@ -704,4 +707,31 @@ export async function countUnreadMessages(conversationId: string): Promise<numbe
       eq(messages.lido, false)
     ));
   return result[0]?.count ? Number(result[0].count) : 0;
+}
+
+// ==================== QUICK REPLIES STORAGE ====================
+export async function getQuickRepliesByUserId(userId: string): Promise<QuickReply[]> {
+  return await db
+    .select()
+    .from(quickReplies)
+    .where(eq(quickReplies.userId, userId))
+    .orderBy(asc(quickReplies.ordem), asc(quickReplies.createdAt));
+}
+
+export async function createQuickReply(data: InsertQuickReply): Promise<QuickReply> {
+  const [result] = await db.insert(quickReplies).values(data).returning();
+  return result;
+}
+
+export async function updateQuickReply(id: string, data: Partial<InsertQuickReply>): Promise<QuickReply | undefined> {
+  const [result] = await db
+    .update(quickReplies)
+    .set(data)
+    .where(eq(quickReplies.id, id))
+    .returning();
+  return result;
+}
+
+export async function deleteQuickReply(id: string): Promise<void> {
+  await db.delete(quickReplies).where(eq(quickReplies.id, id));
 }

@@ -53,13 +53,11 @@ interface Client {
   CELULAR_PRINCIPAL?: string;
 }
 
-const QUICK_REPLIES = [
-  "Olá, tudo bem?",
-  "Qual é a sua dúvida?",
-  "Como posso ajudá-lo?",
-  "Segue em anexo...",
-  "Entraremos em contato em breve"
-];
+interface QuickReply {
+  id: string;
+  conteudo: string;
+  ordem: number;
+}
 
 export default function Chat() {
   const { toast } = useToast();
@@ -71,6 +69,11 @@ export default function Chat() {
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
+
+  const { data: quickReplies = [] } = useQuery<QuickReply[]>({
+    queryKey: ["/api/quick-replies"],
+    refetchInterval: 10000,
+  });
 
   // Fetch all conversations for current user
   const { data: conversations = [], isLoading: conversationsLoading, refetch: refetchConversations } = useQuery<Conversation[]>({
@@ -459,19 +462,27 @@ export default function Chat() {
                     <Plus className="h-5 w-5" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-48 p-2" align="end">
-                  <div className="space-y-1">
-                    {QUICK_REPLIES.map((reply, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => handleSelectQuickReply(reply)}
-                        className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
-                        data-testid={`button-quick-reply-${idx}`}
-                      >
-                        {reply}
-                      </button>
-                    ))}
-                  </div>
+                <PopoverContent className="w-56 p-2" align="end">
+                  {quickReplies.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">
+                      Nenhuma mensagem configurada. Vá a Configurações para adicionar.
+                    </p>
+                  ) : (
+                    <div className="space-y-1 max-h-80 overflow-y-auto">
+                      {quickReplies.map((reply: QuickReply) => (
+                        <button
+                          key={reply.id}
+                          onClick={() => handleSelectQuickReply(reply.conteudo)}
+                          className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors break-words"
+                          data-testid={`button-quick-reply-${reply.id}`}
+                          title={reply.conteudo}
+                        >
+                          {reply.conteudo.substring(0, 60)}
+                          {reply.conteudo.length > 60 ? "..." : ""}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </PopoverContent>
               </Popover>
               {(selectedConversation.unreadCount ?? 0) > 0 && selectedConversation.unreadCount && (

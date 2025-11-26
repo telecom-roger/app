@@ -403,3 +403,24 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
   createdAt: true,
 });
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
+
+// ==================== QUICK REPLIES ====================
+export const quickReplies = pgTable("quick_replies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  conteudo: text("conteudo").notNull(),
+  ordem: integer("ordem").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_quick_replies_user").on(table.userId),
+]);
+
+export const insertQuickReplySchema = createInsertSchema(quickReplies).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  conteudo: z.string().min(1, "Mensagem não pode estar vazia").max(1000, "Mensagem muito longa"),
+});
+
+export type QuickReply = typeof quickReplies.$inferSelect;
+export type InsertQuickReply = z.infer<typeof insertQuickReplySchema>;
