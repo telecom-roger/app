@@ -119,22 +119,19 @@ export default function Chat() {
     setSelectedClientName(client.nome);
     setSelectedPhone(phone);
     setSearchTerm("");
+    // Load or create conversation by phone
+    getConversationMutation.mutate(phone);
   };
 
   const handleSendMessage = () => {
-    if (!messageText.trim() || !selectedPhone) return;
+    if (!messageText.trim() || !selectedConversationId) return;
     sendMutation.mutate(messageText);
   };
 
   const handleStartConversation = () => {
-    if (!selectedPhone) return;
+    if (!selectedConversationId) return;
     // Send initial greeting message
     sendMutation.mutate("Olá! Como vai?");
-    toast({
-      title: "Conversa iniciada!",
-      description: `Conversa com ${selectedClientName} iniciada`,
-      variant: "default",
-    });
   };
 
   return (
