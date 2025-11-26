@@ -293,7 +293,11 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
     const tempoRandomMin = 10; // segundos
     const tempoRandomMax = 60; // segundos
 
-    // Simula envio (em produção, usaria WhatsApp API)
+    // Pega a primeira sessão ativa para enviar mensagens
+    const activeSessions = getAllActiveSessions();
+    const sessionId = activeSessions.length > 0 ? activeSessions[0] : null;
+    
+    // Envia mensagens via WhatsApp
     for (let index = 0; index < recipientClients.length; index++) {
       const client = recipientClients[index];
       try {
@@ -316,8 +320,13 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
         conteudo = conteudo.replace(/{CELULAR_PRINCIPAL}/g, client.CELULAR_PRINCIPAL || '');
         conteudo = conteudo.replace(/{NOME_CONTATO}/g, client.NOME_CONTATO || '');
 
-        // Simula envio (você pode integrar com WhatsApp aqui)
         console.log(`📤 [${index + 1}/${recipientClients.length}] Enviando para ${client.razaoSocial} (${client.telefone})...`);
+        
+        // Tenta enviar via WhatsApp se houver sessão ativa
+        let mensagemEnviada = false;
+        if (sessionId && isSessionAlive(sessionId)) {
+          mensagemEnviada = await sendMessage(sessionId, client.CELULAR_PRINCIPAL || client.telefone, conteudo);
+        }
         
         // Registra interação
         await storage.createInteraction({
@@ -326,7 +335,7 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
           origem: 'system',
           titulo: `Campanha agendada: ${campaign.nome}`,
           texto: conteudo,
-          meta: { campaignId: campaign.id, templateId: template.id },
+          meta: { campaignId: campaign.id, templateId: template.id, enviado: mensagemEnviada },
           createdBy: campaign.createdBy,
         });
 
