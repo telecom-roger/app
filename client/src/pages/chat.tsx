@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Send, Phone, MessageSquare, Search, X } from "lucide-react";
+import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
@@ -186,6 +186,21 @@ export default function Chat() {
   const handleSendMessage = () => {
     if (!messageText.trim() || !selectedConversationId) return;
     sendMutation.mutate(messageText);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedConversationId) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64 = event.target?.result as string;
+      const tipo = file.type.startsWith("image/") ? "imagem" : 
+                   file.type.startsWith("audio/") ? "audio" : "documento";
+      
+      sendMutation.mutate({ arquivo: base64, tipo, nomeArquivo: file.name, tamanho: file.size, mimeType: file.type } as any);
+    };
+    reader.readAsDataURL(file);
   };
 
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);

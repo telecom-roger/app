@@ -1519,8 +1519,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 if (tipo === "texto") {
                   await whatsappService.sendMessage(session.sessionId, telefone, conteudo);
                   console.log(`✅ Mensagem enviada para WhatsApp: ${telefone}`);
-                } else {
-                  console.log(`⚠️ Chat suporta apenas texto por enquanto`);
+                } else if (tipo === "imagem" && arquivo) {
+                  await whatsappService.sendImage(session.sessionId, telefone, arquivo, conteudo);
+                  console.log(`✅ Imagem enviada para WhatsApp: ${telefone}`);
+                } else if (tipo === "audio" && arquivo) {
+                  await whatsappService.sendAudio(session.sessionId, telefone, arquivo);
+                  console.log(`✅ Áudio enviado para WhatsApp: ${telefone}`);
+                } else if (tipo === "documento" && arquivo) {
+                  await whatsappService.sendDocument(session.sessionId, telefone, arquivo, nomeArquivo);
+                  console.log(`✅ Documento enviado para WhatsApp: ${telefone}`);
                 }
               }
             }
