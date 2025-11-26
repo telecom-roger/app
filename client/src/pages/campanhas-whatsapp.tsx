@@ -1229,14 +1229,14 @@ export default function CampanhasWhatsApp() {
                     const cliente = clientesDisponiveis.find((c) => c.id === clientId);
                     return {
                       id: cliente?.id || "",
-                      whatsapp: cliente?.telefone || "",
-                      empresa: cliente?.razaoSocial || cliente?.nome || "N/A",
+                      celular: cliente?.telefone || "",
+                      razao_social: cliente?.razaoSocial || cliente?.nome || "N/A",
                     };
                   })
-                  .filter((c) => c.whatsapp);
+                  .filter((c) => c.celular);
 
                 setContatos(contatosFromDB);
-                setVariaveisDisponiveis(["id", "whatsapp", "empresa"]);
+                setVariaveisDisponiveis(["celular", "razao_social"]);
                 setClientesSelecionados(new Set());
                 setMostrarSeletorBD(false);
                 setSearchClientes("");
