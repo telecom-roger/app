@@ -579,18 +579,29 @@ export async function getConversations(userId: string): Promise<any[]> {
       id: conversations.id,
       clientId: conversations.clientId,
       userId: conversations.userId,
+      canal: conversations.canal,
       assunto: conversations.assunto,
       ativa: conversations.ativa,
       ultimaMensagem: conversations.ultimaMensagem,
       ultimaMensagemEm: conversations.ultimaMensagemEm,
       createdAt: conversations.createdAt,
-      clientNome: clients.nome,
-      razaoSocial: clients.razaoSocial,
+      client: {
+        id: clients.id,
+        nome: clients.nome,
+        razaoSocial: clients.razaoSocial,
+        CELULAR_PRINCIPAL: clients.CELULAR_PRINCIPAL,
+        telefone: clients.telefone,
+      }
     })
     .from(conversations)
     .leftJoin(clients, eq(conversations.clientId, clients.id))
-    .where(eq(conversations.userId, userId));
-  return result;
+    .where(eq(conversations.userId, userId))
+    .orderBy(desc(conversations.ultimaMensagemEm));
+  
+  return result.map(row => ({
+    ...row,
+    client: row.client && row.client.id ? row.client : null
+  }));
 }
 
 export async function getMessages(conversationId: string, limit: number = 50): Promise<Message[]> {

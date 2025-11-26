@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Send, Phone, MessageSquare, Search } from "lucide-react";
+import { Loader2, Send, Phone, MessageSquare, Search, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
@@ -15,6 +15,25 @@ interface Message {
   sender: "user" | "client";
   tipo: string;
   createdAt: string;
+}
+
+interface Conversation {
+  id: string;
+  clientId: string;
+  userId: string;
+  canal: string;
+  assunto?: string;
+  ativa: boolean;
+  ultimaMensagem?: string;
+  ultimaMensagemEm?: string;
+  createdAt: string;
+  client?: {
+    id: string;
+    nome: string;
+    razaoSocial?: string;
+    CELULAR_PRINCIPAL?: string;
+    telefone: string;
+  };
 }
 
 interface Client {
@@ -29,19 +48,23 @@ interface Client {
 export default function Chat() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
-  const [selectedClientName, setSelectedClientName] = useState<string | null>(null);
-  const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [messageText, setMessageText] = useState("");
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
-  // Fetch all clients once (filtering happens on frontend)
+  // Fetch all conversations for current user
+  const { data: conversations = [], isLoading: conversationsLoading, refetch: refetchConversations } = useQuery<Conversation[]>({
+    queryKey: ["/api/chat/conversations"],
+    refetchInterval: 3000,
+  });
+
+  // Fetch all clients for search
   const { data: clients = [], isLoading: clientsLoading } = useQuery<Client[]>({
     queryKey: ["/api/clients/whatsapp-list"],
     refetchInterval: false,
   });
 
-  // Filter clients by search term (nome, razão social, CNPJ, celular)
+  // Filter clients by search term
   const filteredClients = searchTerm.trim()
     ? clients.filter((client: Client) => {
         const term = searchTerm.toLowerCase();
@@ -59,6 +82,13 @@ export default function Chat() {
       })
     : [];
 
+  // Sort conversations by last message date (most recent first)
+  const sortedConversations = [...conversations].sort((a, b) => {
+    const aTime = a.ultimaMensagemEm ? new Date(a.ultimaMensagemEm).getTime() : 0;
+    const bTime = b.ultimaMensagemEm ? new Date(b.ultimaMensagemEm).getTime() : 0;
+    return bTime - aTime;
+  });
+
   // Get or create conversation by phone
   const getConversationMutation = useMutation({
     mutationFn: async (phone: string) => {
@@ -68,8 +98,10 @@ export default function Chat() {
       return res.json();
     },
     onSuccess: (data: any) => {
-      console.log("✅ Conversa recebida do servidor:", data);
       setSelectedConversationId(data.id);
+      setSearchTerm("");
+      setShowSearchResults(false);
+      refetchConversations();
       toast({ title: "Conversa carregada", variant: "default" });
     },
     onError: (error: any) => {
@@ -79,7 +111,6 @@ export default function Chat() {
         description: error.message || "Cliente não encontrado",
         variant: "destructive",
       });
-      setSelectedPhone(null);
     },
   });
 
@@ -105,7 +136,7 @@ export default function Chat() {
       queryClient.invalidateQueries({
         queryKey: selectedConversationId ? ["/api/chat/messages", selectedConversationId] : [],
       });
-      toast({ title: "Mensagem enviada", variant: "default" });
+      refetchConversations();
     },
     onError: (error: any) => {
       toast({
@@ -118,133 +149,150 @@ export default function Chat() {
 
   const handleSelectClient = (client: Client) => {
     const phone = client.CELULAR_PRINCIPAL || client.telefone;
-    setSelectedClientId(client.id);
-    setSelectedClientName(client.nome);
-    setSelectedPhone(phone);
-    setSearchTerm("");
-    // Load or create conversation by phone
     getConversationMutation.mutate(phone);
   };
 
+  const handleSelectConversation = (conversationId: string) => {
+    setSelectedConversationId(conversationId);
+  };
+
   const handleSendMessage = () => {
-    console.log(`🔵 handleSendMessage: text="${messageText.trim()}", convId="${selectedConversationId}"`);
-    if (!messageText.trim()) {
-      console.log(`❌ Sem texto`);
-      return;
-    }
-    if (!selectedConversationId) {
-      console.log(`❌ Sem conversationId`);
-      return;
-    }
-    console.log(`✅ Enviando: ${messageText}`);
+    if (!messageText.trim() || !selectedConversationId) return;
     sendMutation.mutate(messageText);
   };
 
-  const handleStartConversation = () => {
-    if (!selectedConversationId) {
-      toast({
-        title: "Aguarde",
-        description: "Carregando conversa...",
-        variant: "default",
-      });
-      return;
-    }
-    // Send initial greeting message
-    sendMutation.mutate("Olá! Como vai?");
-  };
+  const selectedConversation = conversations.find(c => c.id === selectedConversationId);
 
   return (
-    <div className="flex h-full gap-4 p-4 bg-background">
-      {/* Search and Clients List */}
-      <div className="w-80 flex flex-col gap-2">
-        <h2 className="text-lg font-semibold text-foreground">Buscar Cliente</h2>
-
+    <div className="flex h-full bg-background">
+      {/* Left Sidebar - Conversations List */}
+      <div className="w-80 flex flex-col border-r border-border bg-card">
         {/* Search Input */}
-        <div className="relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Nome, CNPJ ou celular..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
-            data-testid="input-search-client"
-          />
+        <div className="p-4 space-y-3 border-b border-border">
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar cliente..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setShowSearchResults(e.target.value.trim().length > 0);
+              }}
+              className="pl-9"
+              data-testid="input-search-client"
+            />
+          </div>
         </div>
 
-        {/* Clients List */}
-        <ScrollArea className="flex-1 border rounded-lg bg-card">
-          <div className="p-4 space-y-2">
-            {searchTerm.trim() === "" ? (
-              <p className="text-sm text-muted-foreground">
-                Digite para buscar um cliente
-              </p>
-            ) : clientsLoading ? (
-              <div className="flex items-center justify-center h-20">
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              </div>
-            ) : filteredClients.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Nenhum cliente encontrado
-              </p>
-            ) : (
-              filteredClients.map((client: Client) => (
-                <button
-                  key={client.id}
-                  onClick={() => handleSelectClient(client)}
-                  className={`w-full text-left p-3 rounded-lg transition-colors hover:bg-muted ${
-                    selectedClientId === client.id
-                      ? "bg-primary text-primary-foreground"
-                      : "text-foreground"
-                  }`}
-                  data-testid={`button-client-${client.id}`}
-                >
-                  <p className="text-sm font-medium truncate">{client.nome}</p>
-                  {client.razaoSocial && (
-                    <p className="text-xs text-muted-foreground truncate">
-                      {client.razaoSocial}
-                    </p>
-                  )}
-                  <p className="text-xs text-muted-foreground truncate">
-                    {client.CELULAR_PRINCIPAL || client.telefone}
+        {/* Search Results or Conversations List */}
+        <ScrollArea className="flex-1">
+          <div className="p-2">
+            {showSearchResults && searchTerm.trim() !== "" ? (
+              // Search results
+              <>
+                {clientsLoading ? (
+                  <div className="flex items-center justify-center h-20">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                ) : filteredClients.length === 0 ? (
+                  <p className="text-sm text-muted-foreground p-4">
+                    Nenhum cliente encontrado
                   </p>
-                </button>
-              ))
+                ) : (
+                  filteredClients.map((client: Client) => (
+                    <button
+                      key={client.id}
+                      onClick={() => handleSelectClient(client)}
+                      className="w-full text-left p-3 rounded-lg transition-colors hover:bg-muted mb-2"
+                      data-testid={`button-search-client-${client.id}`}
+                    >
+                      <p className="text-sm font-medium truncate">{client.nome}</p>
+                      {client.razaoSocial && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {client.razaoSocial}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground truncate">
+                        {client.CELULAR_PRINCIPAL || client.telefone}
+                      </p>
+                    </button>
+                  ))
+                )}
+              </>
+            ) : (
+              // Conversations list
+              <>
+                {conversationsLoading ? (
+                  <div className="flex items-center justify-center h-20">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                ) : sortedConversations.length === 0 ? (
+                  <p className="text-sm text-muted-foreground p-4 text-center">
+                    Nenhuma conversa ainda
+                  </p>
+                ) : (
+                  sortedConversations.map((conv: Conversation) => (
+                    <button
+                      key={conv.id}
+                      onClick={() => handleSelectConversation(conv.id)}
+                      className={`w-full text-left p-3 rounded-lg transition-colors mb-1 hover:bg-muted ${
+                        selectedConversationId === conv.id
+                          ? "bg-primary text-primary-foreground"
+                          : "text-foreground"
+                      }`}
+                      data-testid={`button-conversation-${conv.id}`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {conv.client?.nome || "Contato desconhecido"}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {conv.client?.CELULAR_PRINCIPAL || conv.client?.telefone || "Sem telefone"}
+                          </p>
+                        </div>
+                        {conv.ultimaMensagemEm && (
+                          <p className="text-xs text-muted-foreground whitespace-nowrap">
+                            {new Date(conv.ultimaMensagemEm).toLocaleTimeString("pt-BR", {
+                              hour: "2-digit",
+                              minute: "2-digit"
+                            })}
+                          </p>
+                        )}
+                      </div>
+                      {conv.ultimaMensagem && (
+                        <p className="text-xs text-muted-foreground truncate mt-1">
+                          {conv.ultimaMensagem}
+                        </p>
+                      )}
+                    </button>
+                  ))
+                )}
+              </>
             )}
           </div>
         </ScrollArea>
       </div>
 
-      {/* Messages Area */}
-      <div className="flex-1 flex flex-col gap-4">
-        {selectedPhone ? (
+      {/* Right Panel - Messages */}
+      <div className="flex-1 flex flex-col">
+        {selectedConversation ? (
           <>
-            <div className="flex items-center gap-2 p-3 bg-card border rounded-lg justify-between">
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <Phone className="h-5 w-5 text-primary" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-foreground truncate">
-                    {selectedClientName}
-                  </p>
-                  <p className="text-sm text-muted-foreground">{selectedPhone}</p>
-                </div>
+            {/* Header */}
+            <div className="flex items-center gap-2 p-4 border-b border-border bg-card">
+              <Phone className="h-5 w-5 text-primary" />
+              <div className="flex-1">
+                <p className="font-medium text-foreground">
+                  {selectedConversation.client?.nome || "Contato"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedConversation.client?.CELULAR_PRINCIPAL || selectedConversation.client?.telefone}
+                </p>
               </div>
-              <Button
-                size="icon"
-                variant="outline"
-                onClick={handleStartConversation}
-                disabled={sendMutation.isPending || getConversationMutation.isPending || !selectedConversationId}
-                data-testid="button-start-conversation"
-              >
-                {sendMutation.isPending || getConversationMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "+"
-                )}
-              </Button>
             </div>
 
             {/* Messages */}
-            <ScrollArea className="flex-1 border rounded-lg bg-card p-4">
+            <ScrollArea className="flex-1 p-4">
               <div className="space-y-3 flex flex-col">
                 {messagesLoading ? (
                   <div className="flex items-center justify-center h-20">
@@ -284,21 +332,18 @@ export default function Chat() {
             </ScrollArea>
 
             {/* Input */}
-            <div className="flex gap-2">
+            <div className="p-4 border-t border-border bg-card flex gap-2">
               <Input
-                placeholder={selectedConversationId ? "Digite uma mensagem..." : "Selecione um cliente..."}
+                placeholder="Digite uma mensagem..."
                 value={messageText}
-                onChange={(e) => {
-                  setMessageText(e.target.value);
-                  console.log(`📝 Digitando: "${e.target.value}", convId: ${selectedConversationId}`);
-                }}
+                onChange={(e) => setMessageText(e.target.value)}
                 onKeyPress={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
                     handleSendMessage();
                   }
                 }}
-                disabled={!selectedConversationId || sendMutation.isPending}
+                disabled={sendMutation.isPending}
                 data-testid="input-message"
               />
               <Button
@@ -316,11 +361,11 @@ export default function Chat() {
             </div>
           </>
         ) : (
-          <Card className="flex items-center justify-center h-full">
+          <Card className="flex items-center justify-center h-full m-4">
             <div className="text-center">
               <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">
-                Busque e selecione um cliente para começar
+                Selecione uma conversa ou busque um cliente
               </p>
             </div>
           </Card>
