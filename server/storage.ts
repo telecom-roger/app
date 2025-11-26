@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq, and, desc, sql, ilike, or, inArray } from "drizzle-orm";
+import { eq, and, desc, asc, sql, ilike, or, inArray } from "drizzle-orm";
 import type {
   Client,
   InsertClient,
@@ -616,7 +616,7 @@ export async function getMessages(conversationId: string, limit: number = 50): P
     .select()
     .from(messages)
     .where(eq(messages.conversationId, conversationId))
-    .orderBy(desc(messages.createdAt))
+    .orderBy(asc(messages.createdAt))
     .limit(limit);
 }
 
