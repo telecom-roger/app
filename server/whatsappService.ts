@@ -208,20 +208,26 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
         
         // Para keep-alive quando desconectar
         stopKeepAlive(sessionId);
-        sessionListeners.delete(sessionId); // Reset listener flag
+        
+        // RESETAR listener flag para permitir criação de novo listener na reconexão
+        sessionListeners.delete(sessionId);
+        
+        // Sempre deletar socket de sessão ativa
+        activeSessions.delete(sessionId);
 
         if (shouldReconnect) {
           const attempts = (reconnectAttempts.get(sessionId) || 0) + 1;
           reconnectAttempts.set(sessionId, attempts);
           
-          if (attempts <= 5) {
-            console.log(`🔄 Tentativa de reconexão ${attempts}/5 para sessão ${sessionId}...`);
-            // Reconectar após delay progressivo (mas mais rápido)
+          if (attempts <= 10) {
+            console.log(`🔄 Tentativa de reconexão ${attempts}/10 para sessão ${sessionId}... código: ${statusCode}`);
+            // Reconectar rapidamente (sem esperar progressivo em caso de desconexão rápida)
+            const delay = Math.min(1000 + (attempts * 500), 5000);
             setTimeout(() => {
               console.log(`⚡ Reiniciando conexão para sessão ${sessionId}...`);
               const userId = sessionUsers.get(sessionId);
               initializeWhatsAppSession(sessionId, userId);
-            }, 2000 * attempts);
+            }, delay);
           } else {
             console.warn(`⚠️ Máximo de tentativas atingido para sessão ${sessionId}`);
             reconnectAttempts.delete(sessionId);
@@ -230,8 +236,6 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
           console.log("Sessão finalizada pelo usuário");
           reconnectAttempts.delete(sessionId);
         }
-        
-        activeSessions.delete(sessionId);
       }
     });
 
