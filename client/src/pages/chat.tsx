@@ -33,6 +33,7 @@ export default function Chat() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [selectedClientName, setSelectedClientName] = useState<string | null>(null);
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [messageText, setMessageText] = useState("");
 
   // Fetch all clients once (filtering happens on frontend)
@@ -59,26 +60,47 @@ export default function Chat() {
       })
     : [];
 
-  // Fetch messages for selected client
+  // Get or create conversation by phone
+  const getConversationMutation = useMutation({
+    mutationFn: async (phone: string) => {
+      return apiRequest("POST", "/api/chat/conversation-by-phone", {
+        phone,
+      });
+    },
+    onSuccess: (data) => {
+      setSelectedConversationId(data.id);
+      toast({ title: "Conversa carregada", variant: "default" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao carregar conversa",
+        description: error.message || "Cliente não encontrado",
+        variant: "destructive",
+      });
+      setSelectedPhone(null);
+    },
+  });
+
+  // Fetch messages for selected conversation
   const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
-    queryKey: selectedPhone ? ["/api/chat/messages", selectedPhone] : [],
-    enabled: !!selectedPhone,
+    queryKey: selectedConversationId ? ["/api/chat/messages", selectedConversationId] : [],
+    enabled: !!selectedConversationId,
     refetchInterval: 3000,
   });
 
   // Send message mutation
   const sendMutation = useMutation({
     mutationFn: async (content: string) => {
-      if (!selectedPhone) return;
-      return apiRequest("POST", "/api/chat/messages", {
-        toPhoneNumber: selectedPhone,
-        content,
+      if (!selectedConversationId) return;
+      return apiRequest("POST", `/api/chat/messages/${selectedConversationId}`, {
+        conteudo: content,
+        tipo: "texto",
       });
     },
     onSuccess: () => {
       setMessageText("");
       queryClient.invalidateQueries({
-        queryKey: selectedPhone ? ["/api/chat/messages", selectedPhone] : [],
+        queryKey: selectedConversationId ? ["/api/chat/messages", selectedConversationId] : [],
       });
       toast({ title: "Mensagem enviada", variant: "default" });
     },
