@@ -8,6 +8,16 @@ import * as whatsappService from "./whatsappService";
 import { setupAuth, isAuthenticated } from "./localAuth";
 import { db } from "./db";
 
+// Track campaigns in progress
+const campanhasEmProgresso = new Map<string, {
+  id: string;
+  total: number;
+  enviadas: number;
+  erros: number;
+  status: "em_progresso" | "concluida" | "cancelada";
+  criadoEm: Date;
+}>();
+
 // Admin middleware
 function requireAdmin(req: Request, res: Response, next: Function) {
   const user = (req.user as any);
@@ -842,15 +852,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Nenhuma sessão WhatsApp conectada" });
       }
 
-      // Return immediately - processing happens in background
+      // Create campaign tracking ID
+      const campanhaId = `camp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      campanhasEmProgresso.set(campanhaId, {
+        id: campanhaId,
+        total: contatos.length,
+        enviadas: 0,
+        erros: 0,
+        status: "em_progresso",
+        criadoEm: new Date(),
+      });
+
+      // Return immediately with campaign ID
       res.json({ 
         success: true,
+        campanhaId,
         mensagem: "Campanha iniciada em background",
         total: contatos.length
       });
 
       // Process messages in background (don't wait for response)
       (async () => {
+        let enviadas = 0;
+        let erros = 0;
+        
         for (let i = 0; i < contatos.length; i++) {
           try {
             const contato = contatos[i];
@@ -875,6 +900,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
 
               await whatsappService.sendMessage(sessaoConectada.sessionId, telefone, mensagem);
+              enviadas++;
               
               // Record interaction in timeline
               if (clientId) {
@@ -898,6 +924,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             } catch (err) {
               console.error(`Erro ao enviar para ${telefone}:`, err);
+              erros++;
+            }
+
+            // Update tracking
+            const campanha = campanhasEmProgresso.get(campanhaId);
+            if (campanha) {
+              campanha.enviadas = enviadas;
+              campanha.erros = erros;
             }
 
             // Wait before next message
@@ -906,12 +940,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           } catch (err) {
             console.error("Erro processando contato:", err);
+            erros++;
           }
         }
-        console.log("Campanha de fundo concluída");
+        
+        // Mark as completed
+        const campanha = campanhasEmProgresso.get(campanhaId);
+        if (campanha) {
+          campanha.status = "concluida";
+        }
+        
+        console.log(`Campanha ${campanhaId} concluída: ${enviadas} enviadas, ${erros} erros`);
+        
+        // Clean up after 1 hour
+        setTimeout(() => campanhasEmProgresso.delete(campanhaId), 3600000);
       })().catch((err) => console.error("Erro na campanha de background:", err));
     } catch (error: any) {
       console.error("Error in background campaign:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Endpoint para obter status de campanhas em progresso
+  app.get("/api/whatsapp/campanhas-em-progresso", isAuthenticated, async (req, res) => {
+    try {
+      const campanhas = Array.from(campanhasEmProgresso.values())
+        .sort((a, b) => b.criadoEm.getTime() - a.criadoEm.getTime());
+      
+      res.json(campanhas);
+    } catch (error: any) {
+      console.error("Error fetching campaigns:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });

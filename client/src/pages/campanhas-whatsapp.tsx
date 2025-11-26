@@ -112,12 +112,32 @@ export default function CampanhasWhatsApp() {
   const [mostrarHistorico, setMostrarHistorico] = useState(false);
   const [quantidadeSelecar, setQuantidadeSelecar] = useState(10);
   const cancelarEnvioRef = useRef(false);
+  const [campanhasEmProgresso, setCampanhasEmProgresso] = useState<any[]>([]);
 
   // Fetch clients with campaign history
   const { data: clientesDisponiveis = [], isLoading: carregandoClientes } = useQuery<ClientForImport[]>({
     queryKey: ["/api/clients/whatsapp-list"],
     enabled: isAuthenticated && mostrarSeletorBD,
   });
+
+  // Poll for campaigns in progress
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch("/api/whatsapp/campanhas-em-progresso");
+        if (res.ok) {
+          const data = await res.json();
+          setCampanhasEmProgresso(data);
+        }
+      } catch (err) {
+        console.error("Erro ao buscar campanhas:", err);
+      }
+    }, 2000); // Poll a cada 2 segundos
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
 
   // Filter clients by search
   const clientesFiltrados = clientesDisponiveis.filter((c) =>
@@ -358,6 +378,7 @@ export default function CampanhasWhatsApp() {
         <TabsList>
           <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
           <TabsTrigger value="configuracao">Configuração</TabsTrigger>
+          <TabsTrigger value="progresso">Campanhas em Progresso {campanhasEmProgresso.length > 0 && `(${campanhasEmProgresso.length})`}</TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
         </TabsList>
 
@@ -726,6 +747,58 @@ export default function CampanhasWhatsApp() {
                   />
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ===== ABA CAMPANHAS EM PROGRESSO ===== */}
+        <TabsContent value="progresso" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Campanhas em Progresso</CardTitle>
+              <CardDescription>Acompanhe o status de suas campanhas em tempo real</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {campanhasEmProgresso.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhuma campanha em progresso no momento
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {campanhasEmProgresso.map((campanha) => (
+                    <div key={campanha.id} className="border rounded-lg p-4 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <div className="font-mono text-sm">{campanha.id}</div>
+                        <Badge variant={campanha.status === "concluida" ? "outline" : "secondary"}>
+                          {campanha.status === "em_progresso" ? "Em Progresso" : "Concluída"}
+                        </Badge>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="text-sm text-muted-foreground">
+                          {campanha.enviadas} / {campanha.total} mensagens enviadas
+                        </div>
+                        <Progress value={(campanha.enviadas / campanha.total) * 100} />
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Enviadas:</span>
+                          <div className="font-semibold text-green-600 dark:text-green-400">{campanha.enviadas}</div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Erros:</span>
+                          <div className={`font-semibold ${campanha.erros > 0 ? "text-destructive" : ""}`}>{campanha.erros}</div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Taxa de Sucesso:</span>
+                          <div className="font-semibold">{Math.round((campanha.enviadas / campanha.total) * 100)}%</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
