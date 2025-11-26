@@ -52,85 +52,75 @@ function stopKeepAlive(sessionId: string) {
 }
 
 async function handleIncomingMessages(sessionId: string, sock: any) {
-  // Prevent duplicate listeners
   if (sessionListeners.get(sessionId)) {
     return;
   }
 
   sessionListeners.set(sessionId, true);
+  console.log(`✅ LISTENER REGISTRADO: ${sessionId}`);
 
-  sock.ev.on("messages.upsert", async (m: any) => {
-    try {
-      const { messages: msgs } = m;
-      const userId = sessionUsers.get(sessionId);
-      
-      if (!userId || !msgs || msgs.length === 0) {
-        return;
+  // Registrar MÚLTIPLOS eventos para não perder mensagens
+  sock.ev.on("messages.upsert", processIncomingMessages.bind(null, sessionId));
+  sock.ev.on("messages.update", processIncomingMessages.bind(null, sessionId));
+}
+
+async function processIncomingMessages(sessionId: string, m: any) {
+  try {
+    const { messages: msgs } = m || {};
+    if (!msgs || msgs.length === 0) return;
+
+    const userId = sessionUsers.get(sessionId);
+    if (!userId) return;
+
+    for (const msg of msgs) {
+      if (msg.key.fromMe) continue;
+      if (msg.key.remoteJid?.includes("@g.us")) continue; // Skip group messages
+
+      const senderPhone = msg.key.remoteJid?.replace("@s.whatsapp.net", "") || "";
+      if (!senderPhone) continue;
+
+      let conteudo = "";
+      let tipo = "texto";
+
+      if (msg.message?.conversation) {
+        conteudo = msg.message.conversation;
+      } else if (msg.message?.extendedTextMessage?.text) {
+        conteudo = msg.message.extendedTextMessage.text;
+      } else if (msg.message?.imageMessage) {
+        tipo = "imagem";
+        conteudo = msg.message.imageMessage.caption || "[Imagem]";
+      } else if (msg.message?.audioMessage) {
+        tipo = "audio";
+        conteudo = "[Áudio]";
+      } else if (msg.message?.videoMessage) {
+        tipo = "video";
+        conteudo = msg.message.videoMessage.caption || "[Vídeo]";
+      } else if (msg.message?.documentMessage) {
+        tipo = "documento";
+        conteudo = `[${msg.message.documentMessage.fileName || "Documento"}]`;
+      } else {
+        continue;
       }
-      
-      for (const msg of msgs) {
-        // Ignore sent messages, only process incoming
-        if (msg.key.fromMe) {
-          continue;
-        }
-        
-        // Get sender phone
-        const senderPhone = msg.key.remoteJid?.replace("@s.whatsapp.net", "") || "";
-        if (!senderPhone) {
-          continue;
-        }
-        
-        console.log(`📥 Mensagem recebida de: ${senderPhone}`);
-        
-        try {
-          // Extract message content
-          let conteudo = "";
-          let tipo = "texto";
-          
-          if (msg.message?.conversation) {
-            conteudo = msg.message.conversation;
-          } else if (msg.message?.extendedTextMessage?.text) {
-            conteudo = msg.message.extendedTextMessage.text;
-          } else if (msg.message?.imageMessage) {
-            tipo = "imagem";
-            conteudo = msg.message.imageMessage.caption || "[Imagem]";
-          } else if (msg.message?.audioMessage) {
-            tipo = "audio";
-            conteudo = "[Áudio]";
-          } else if (msg.message?.videoMessage) {
-            tipo = "video";
-            conteudo = msg.message.videoMessage.caption || "[Vídeo]";
-          } else if (msg.message?.documentMessage) {
-            tipo = "documento";
-            conteudo = `[${msg.message.documentMessage.fileName || "Documento"}]`;
-          } else {
-            continue;
-          }
-          
-          // Get or create conversation
-          let conversation = await storage.findConversationByPhoneAndUser(senderPhone, userId);
-          
-          if (!conversation) {
-            continue;
-          }
-          
-          // Save message to database
-          await storage.createMessage({
-            conversationId: conversation.id,
-            sender: "client",
-            tipo,
-            conteudo,
-          });
-          
-          console.log(`✅ RECEBIDO E SALVO: "${conteudo}"`);
-        } catch (error) {
-          console.error(`Erro ao processar mensagem:`, error);
-        }
+
+      try {
+        const conversation = await storage.findConversationByPhoneAndUser(senderPhone, userId);
+        if (!conversation) continue;
+
+        await storage.createMessage({
+          conversationId: conversation.id,
+          sender: "client",
+          tipo,
+          conteudo,
+        });
+
+        console.log(`📥 RECEBIDO DE ${senderPhone}: "${conteudo}"`);
+      } catch (error) {
+        console.error(`Erro ao processar:`, error);
       }
-    } catch (error) {
-      console.error(`Erro no listener:`, error);
     }
-  });
+  } catch (error) {
+    console.error(`Erro no processamento:`, error);
+  }
 }
 
 export async function initializeWhatsAppSession(sessionId: string, userId?: string): Promise<void> {
@@ -173,7 +163,7 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
       }
 
       if (connection === "open") {
-        console.log("✅ Conexão estabelecida:", sessionId);
+        console.log("✅ CONEXÃO ABERTA:", sessionId);
         activeSessions.set(sessionId, sock);
         sessionStatus.set(sessionId, "conectada");
         qrCodes.delete(sessionId);
@@ -181,12 +171,11 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
         
         startKeepAlive(sessionId, sock);
         
-        // Ativar listener de mensagens recebidas
         const currentUserId = userId || sessionUsers.get(sessionId);
         if (currentUserId) {
           setSessionUser(sessionId, currentUserId);
-          handleIncomingMessages(sessionId, sock);
-          console.log(`📱 Listener ativado para sessão: ${sessionId}`);
+          await handleIncomingMessages(sessionId, sock);
+          console.log(`📱 LISTENER INICIALIZADO: ${sessionId}`);
         }
       }
 
