@@ -1,13 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, Plus, Image as ImageIcon, Loader } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -39,13 +39,13 @@ export default function Chat() {
   const [arquivoSelecionado, setArquivoSelecionado] = useState<File | null>(null);
 
   // Get conversations
-  const { data: conversas = [], isLoading: carregandoConversas } = useQuery({
+  const { data: conversas = [], isLoading: carregandoConversas } = useQuery<any[]>({
     queryKey: ["/api/chat/conversations"],
     enabled: isAuthenticated,
   });
 
   // Get messages for selected conversation
-  const { data: mensagens = [], isLoading: carregandoMensagens } = useQuery({
+  const { data: mensagens = [], isLoading: carregandoMensagens } = useQuery<any[]>({
     queryKey: ["/api/chat/messages", conversaSelecionada],
     enabled: isAuthenticated && !!conversaSelecionada,
   });
@@ -53,11 +53,12 @@ export default function Chat() {
   // Send message mutation
   const { mutate: enviarMensagem, isPending: enviando } = useMutation({
     mutationFn: async (dados: any) => {
-      const response = await apiRequest(
-        `/api/chat/messages/${conversaSelecionada}`,
-        { method: "POST", body: JSON.stringify(dados) }
-      );
-      return response;
+      const response = await fetch(`/api/chat/messages/${conversaSelecionada}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dados),
+      });
+      return response.json();
     },
     onSuccess: () => {
       setMensagemTexto("");
@@ -112,10 +113,10 @@ export default function Chat() {
                   <div className="flex items-center justify-center h-32">
                     <Loader className="h-6 w-6 animate-spin" />
                   </div>
-                ) : conversas.length === 0 ? (
+                ) : (conversas as any[]).length === 0 ? (
                   <p className="text-sm text-muted-foreground">Nenhuma conversa</p>
                 ) : (
-                  conversas.map((conversa: Conversation) => (
+                  (conversas as any[]).map((conversa: any) => (
                     <button
                       key={conversa.id}
                       onClick={() => setConversaSelecionada(conversa.id)}
@@ -159,12 +160,12 @@ export default function Chat() {
                       <div className="flex items-center justify-center h-32">
                         <Loader className="h-6 w-6 animate-spin" />
                       </div>
-                    ) : mensagens.length === 0 ? (
+                    ) : (mensagens as any[]).length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center">
                         Nenhuma mensagem
                       </p>
                     ) : (
-                      [...mensagens].reverse().map((msg: Message) => (
+                      [...(mensagens as any[])].reverse().map((msg: any) => (
                         <div
                           key={msg.id}
                           className={`flex ${

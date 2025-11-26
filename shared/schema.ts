@@ -229,28 +229,6 @@ export const insertCampaignSchema = createInsertSchema(campaigns).omit({
 export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
 export type Campaign = typeof campaigns.$inferSelect;
 
-// ==================== CONVERSATIONS (WhatsApp/Email History) ====================
-export const conversations = pgTable("conversations", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
-  contactId: varchar("contact_id").references(() => contacts.id),
-  canal: varchar("canal", { length: 20 }).notNull(), // whatsapp, email
-  sessionId: varchar("session_id"), // WhatsApp session identifier
-  mensagens: jsonb("mensagens").default(sql`'[]'::jsonb`), // array of {direction, texto, attachments, timestamp, status}
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_conversations_client").on(table.clientId),
-]);
-
-export const insertConversationSchema = createInsertSchema(conversations).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export type InsertConversation = z.infer<typeof insertConversationSchema>;
-export type Conversation = typeof conversations.$inferSelect;
 
 // ==================== INTERACTIONS (Timeline Items) ====================
 export const interactions = pgTable("interactions", {

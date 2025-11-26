@@ -1063,6 +1063,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== CHAT ROUTES ====================
+  app.get("/api/chat/conversations", isAuthenticated, async (req, res) => {
+    try {
+      const user = (req.user as any);
+      const conversas = await storage.getConversations(user.id);
+      res.json(conversas);
+    } catch (error: any) {
+      console.error("Error fetching conversations:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/chat/messages/:conversationId", isAuthenticated, async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      const msgs = await storage.getMessages(conversationId);
+      res.json(msgs);
+    } catch (error: any) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/chat/messages/:conversationId", isAuthenticated, async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      const { conteudo, tipo = "texto" } = req.body;
+      const user = (req.user as any);
+
+      if (!conteudo && tipo === "texto") {
+        return res.status(400).json({ error: "Conteúdo obrigatório" });
+      }
+
+      const mensagem = await storage.createMessage({
+        conversationId,
+        sender: "user",
+        tipo,
+        conteudo,
+      });
+
+      res.json(mensagem);
+    } catch (error: any) {
+      console.error("Error creating message:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // ==================== ADMIN ROUTES ====================
   app.get("/api/admin/users", isAuthenticated, requireAdmin, async (req, res) => {
     try {

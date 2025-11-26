@@ -8,6 +8,7 @@ import {
   Settings,
   BarChart3,
   Database,
+  MessageCircle,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -55,6 +56,11 @@ const menuItems = [
     title: "WhatsApp",
     url: "/whatsapp",
     icon: MessageSquare,
+  },
+  {
+    title: "Chat",
+    url: "/chat",
+    icon: MessageCircle,
   },
   {
     title: "Importação",

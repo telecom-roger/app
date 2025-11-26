@@ -529,7 +529,7 @@ export async function createOrGetConversation(clientId: string, userId: string):
   return created;
 }
 
-export async function getConversations(userId: string): Promise<(Conversation & { clientNome: string })[]> {
+export async function getConversations(userId: string): Promise<any[]> {
   const result = await db
     .select({
       id: conversations.id,
@@ -544,8 +544,7 @@ export async function getConversations(userId: string): Promise<(Conversation & 
     })
     .from(conversations)
     .leftJoin(clients, eq(conversations.clientId, clients.id))
-    .where(eq(conversations.userId, userId))
-    .orderBy(desc(conversations.ultimaMensagemEm));
+    .where(eq(conversations.userId, userId));
   return result;
 }
 
