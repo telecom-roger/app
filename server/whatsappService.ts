@@ -120,7 +120,6 @@ async function handleIncomingMessages(sessionId: string, sock: any) {
   sock.ev.on("messages.upsert", (m: any) => processIncomingMessages(sessionId, m));
   sock.ev.on("messages.update", (m: any) => processIncomingMessages(sessionId, m));
   
-  // Força o processamento de mensagens antigas quando conecta
   console.log(`[LISTENER] Aguardando mensagens para ${sessionId}...`);
 }
 
@@ -138,6 +137,7 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
       defaultQueryTimeoutMs: 60_000,
       retryRequestDelayMs: 30_000,
       shouldIgnoreJid: () => false,
+      syncFullHistory: false,
     });
 
     let qrGenerated = false;
@@ -183,7 +183,7 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
 
         if (
           statusCode === DisconnectReason.loggedOut ||
-          statusCode === DisconnectReason.userInitiatedDisconnect
+          statusCode === 401
         ) {
           console.log(`❌ Sessão encerrada: ${sessionId}`);
         } else {
@@ -227,6 +227,10 @@ export function getAllActiveSessions(): string[] {
 
 export function isSessionAlive(sessionId: string): boolean {
   return activeSessions.has(sessionId) && sessionStatus.get(sessionId) === "conectada";
+}
+
+export function getActiveSession(sessionId: string): any {
+  return activeSessions.get(sessionId) || null;
 }
 
 export async function sendMessage(sessionId: string, telefone: string, mensagem: string): Promise<boolean> {

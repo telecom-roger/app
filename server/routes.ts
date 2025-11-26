@@ -4,7 +4,7 @@ import { z } from "zod";
 import { eq, and, or, ilike, desc } from "drizzle-orm";
 import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, whatsappSessions, clients, interactions, conversations, messages } from "@shared/schema";
 import * as storage from "./storage";
-import * as whatsappService from "./wpconnectService";
+import * as whatsappService from "./whatsappService";
 import { setupAuth, isAuthenticated } from "./localAuth";
 import { db } from "./db";
 
@@ -1160,12 +1160,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   telefone = "55" + telefone;
                 }
 
-                // Envia a mensagem via WPConnect
+                // Envia a mensagem
                 if (tipo === "texto") {
                   await whatsappService.sendMessage(session.sessionId, telefone, conteudo);
                   console.log(`✅ Mensagem enviada para WhatsApp: ${telefone}`);
                 } else {
-                  console.log(`⚠️ WPConnect suporta apenas texto no chat por enquanto`);
+                  console.log(`⚠️ Chat suporta apenas texto por enquanto`);
                 }
               }
             }
