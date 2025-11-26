@@ -33,7 +33,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertCampaignSchema, type Campaign, type Template } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Clock } from "lucide-react";
+import { Plus, Trash2, Clock, X, Download, AlertCircle, Loader } from "lucide-react";
 import { useState } from "react";
 import {
   Form,
@@ -93,6 +93,7 @@ export default function CampanhasAgendadas() {
   const [showClientSelector, setShowClientSelector] = useState(false);
   const [clientesSelecionados, setClientesSelecionados] = useState<Set<string>>(new Set());
   const [searchClientes, setSearchClientes] = useState("");
+  const [quantidadeSelecar, setQuantidadeSelecar] = useState(10);
 
   const { data: campaigns = [], isLoading: loadingCampaigns } = useQuery<Campaign[]>({
     queryKey: ["/api/campaigns/scheduled"],
@@ -367,83 +368,187 @@ export default function CampanhasAgendadas() {
         </Dialog>
       </div>
 
-      {/* Cliente Selector Dialog */}
+      {/* Cliente Selector Dialog - Exatamente igual a campanhas-whatsapp */}
       <Dialog open={showClientSelector} onOpenChange={setShowClientSelector}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Selecionar Clientes</DialogTitle>
+        <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
+          <DialogHeader className="border-b pb-4">
+            <DialogTitle className="text-2xl">Selecionar Clientes</DialogTitle>
             <DialogDescription>
-              Escolha os clientes que receberão a campanha
+              Escolha os clientes que receberão a campanha agendada. Use a busca para filtrar.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <Input
-              placeholder="Buscar por nome ou telefone..."
-              value={searchClientes}
-              onChange={(e) => setSearchClientes(e.target.value)}
-              data-testid="input-search-clients"
-            />
-
-            <ScrollArea className="h-96 border rounded-md">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <Checkbox
-                        checked={clientesSelecionados.size === clientesFiltrados.length && clientesFiltrados.length > 0}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setClientesSelecionados(new Set(clientesFiltrados.map((c) => c.id)));
-                          } else {
-                            setClientesSelecionados(new Set());
-                          }
-                        }}
-                        data-testid="checkbox-select-all"
-                      />
-                    </TableHead>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Telefone</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {clientesFiltrados.map((client) => (
-                    <TableRow key={client.id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={clientesSelecionados.has(client.id)}
-                          onCheckedChange={() => toggleClienteSelecionado(client.id)}
-                          data-testid={`checkbox-client-${client.id}`}
-                        />
-                      </TableCell>
-                      <TableCell>{client.nome}</TableCell>
-                      <TableCell>{client.telefone}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{client.status}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </ScrollArea>
-
-            <div className="flex gap-2 justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowClientSelector(false)}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="button"
-                onClick={importarSelecionadosDoBD}
-                data-testid="button-confirm-clients"
-              >
-                Confirmar ({clientesSelecionados.size})
-              </Button>
+          <div className="space-y-3 flex-1 flex flex-col overflow-hidden">
+            {/* Search Input + Counter */}
+            <div className="flex gap-2 items-center">
+              <Input
+                placeholder="🔍 Buscar por nome ou telefone..."
+                value={searchClientes}
+                onChange={(e) => setSearchClientes(e.target.value)}
+                className="flex-1"
+                data-testid="input-search-clients"
+              />
+              <Badge variant="secondary" className="h-10 px-3 flex items-center gap-2 whitespace-nowrap">
+                {clientesFiltrados.length} clientes
+              </Badge>
             </div>
+
+            {/* Quick Select Buttons */}
+            <div className="flex gap-2 flex-wrap items-center">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setClientesSelecionados(new Set(clientesFiltrados.map((c) => c.id)))}
+                disabled={clientesFiltrados.length === 0}
+                data-testid="button-select-all-quick"
+              >
+                ✓ Selecionar Todos
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setClientesSelecionados(new Set())}
+                disabled={clientesSelecionados.size === 0}
+                data-testid="button-deselect-all"
+              >
+                ✕ Desselecionar Todos
+              </Button>
+
+              {/* Divider */}
+              <div className="h-6 w-px bg-border" />
+
+              {/* Random Selection */}
+              <div className="flex gap-2 items-center">
+                <Label className="text-xs font-medium whitespace-nowrap">Aleatório:</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={clientesFiltrados.length}
+                  value={quantidadeSelecar}
+                  onChange={(e) => setQuantidadeSelecar(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-16 h-9"
+                  data-testid="input-quantidade-selecionar"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const shuffled = [...clientesFiltrados].sort(() => Math.random() - 0.5);
+                    const quantidadeReal = Math.min(quantidadeSelecar, clientesFiltrados.length);
+                    const selecionados = shuffled.slice(0, quantidadeReal).map((c) => c.id);
+                    setClientesSelecionados(new Set(selecionados));
+                  }}
+                  disabled={clientesFiltrados.length === 0}
+                  data-testid="button-random-select"
+                >
+                  🎲 Selecionar
+                </Button>
+              </div>
+            </div>
+
+            {/* Clients Table with better styling */}
+            <div className="flex-1 overflow-hidden flex flex-col border rounded-lg bg-white dark:bg-slate-950 min-h-[400px]">
+              {clientesFiltrados.length === 0 ? (
+                <div className="flex items-center justify-center flex-1 text-muted-foreground">
+                  <div className="text-center">
+                    <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>Nenhum cliente encontrado</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 overflow-y-auto border-t">
+                  <Table className="text-sm w-full">
+                    <TableHeader className="sticky top-0 bg-slate-100 dark:bg-slate-800 z-10">
+                      <TableRow className="border-b-2">
+                        <TableHead className="w-12 text-center py-2 px-3">
+                          <Checkbox
+                            checked={clientesSelecionados.size === clientesFiltrados.length && clientesFiltrados.length > 0}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setClientesSelecionados(new Set(clientesFiltrados.map((c) => c.id)));
+                              } else {
+                                setClientesSelecionados(new Set());
+                              }
+                            }}
+                            data-testid="checkbox-select-all"
+                          />
+                        </TableHead>
+                        <TableHead className="font-semibold py-2 px-3">NOME</TableHead>
+                        <TableHead className="font-semibold py-2 px-3">CELULAR</TableHead>
+                        <TableHead className="font-semibold py-2 px-3">CARTEIRA</TableHead>
+                        <TableHead className="font-semibold text-xs py-2 px-3">STATUS</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {clientesFiltrados.map((client) => (
+                        <TableRow key={client.id} className="border-b hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer transition-colors" data-testid={`row-cliente-${client.id}`}>
+                          <TableCell className="text-center w-12 py-2 px-3" onClick={(e) => {
+                            e.stopPropagation();
+                            toggleClienteSelecionado(client.id);
+                          }}>
+                            <Checkbox
+                              checked={clientesSelecionados.has(client.id)}
+                              onCheckedChange={() => toggleClienteSelecionado(client.id)}
+                              data-testid={`checkbox-cliente-${client.id}`}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium py-2 px-3" data-testid={`text-nome-${client.id}`}>{client.nome}</TableCell>
+                          <TableCell className="font-mono text-sm font-medium py-2 px-3" data-testid={`text-celular-${client.id}`}>{client.telefone}</TableCell>
+                          <TableCell className="py-2 px-3">
+                            <Badge variant="outline" className="text-xs">{client.carteira || "N/A"}</Badge>
+                          </TableCell>
+                          <TableCell className="text-xs py-2 px-3" data-testid={`status-cliente-${client.id}`}>
+                            <Badge variant="secondary" className="text-xs">{client.status || "Lead"}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+
+            {/* Summary with Stats */}
+            <div className="flex gap-4 items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border">
+              <div className="flex gap-6">
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Selecionados:</span>
+                  <span className="font-semibold ml-2 text-lg text-primary">{clientesSelecionados.size}</span>
+                </div>
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Total:</span>
+                  <span className="font-semibold ml-2 text-lg">{clientesFiltrados.length}</span>
+                </div>
+              </div>
+              {clientesSelecionados.size > 0 && (
+                <div className="text-xs text-green-600 dark:text-green-400">
+                  ✓ Pronto para agendar
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 justify-end border-t pt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowClientSelector(false);
+                setClientesSelecionados(new Set());
+                setSearchClientes("");
+              }}
+              data-testid="button-cancelar-seletor"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Cancelar
+            </Button>
+            <Button
+              onClick={importarSelecionadosDoBD}
+              disabled={clientesSelecionados.size === 0}
+              data-testid="button-confirmar-seletor"
+            >
+              Confirmar ({clientesSelecionados.size})
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
