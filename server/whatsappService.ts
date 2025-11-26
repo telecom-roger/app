@@ -436,50 +436,6 @@ export async function sendImage(sessionId: string, telefone: string, imageBase64
   }
 }
 
-async function convertWebMToMp3(webmBase64: string): Promise<Buffer | null> {
-  try {
-    const tempDir = path.join(process.cwd(), "temp_audio");
-    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-    
-    const timestamp = Date.now();
-    const webmPath = path.join(tempDir, `audio_${timestamp}.webm`);
-    const mp3Path = path.join(tempDir, `audio_${timestamp}.mp3`);
-    
-    // Write WebM
-    const base64Data = webmBase64.split(",")[1] || webmBase64;
-    const buffer = Buffer.from(base64Data, "base64");
-    fs.writeFileSync(webmPath, buffer);
-    console.log(`📝 WebM temporário: ${webmPath} (${buffer.length} bytes)`);
-    
-    // Convert using ffmpeg with better quality
-    try {
-      await execAsync(`ffmpeg -i "${webmPath}" -b:a 128k -ac 1 -ar 16000 -n "${mp3Path}" 2>/dev/null`, { timeout: 30000 });
-      console.log(`✅ Conversão WebM → MP3 concluída (qualidade: 128kbps)`);
-    } catch (err) {
-      console.warn(`⚠️ ffmpeg erro (pode ser warning):`, (err as any).message?.substring(0, 200));
-      // Continue mesmo com erro, pois ffmpeg pode sair com código 1
-    }
-    
-    if (fs.existsSync(mp3Path)) {
-      const mp3Buffer = fs.readFileSync(mp3Path);
-      console.log(`📊 MP3 convertido: ${mp3Path} (${mp3Buffer.length} bytes)`);
-      
-      // Cleanup
-      fs.unlinkSync(webmPath);
-      fs.unlinkSync(mp3Path);
-      
-      return mp3Buffer;
-    } else {
-      console.warn(`⚠️ MP3 não gerado, usando WebM original`);
-      fs.unlinkSync(webmPath);
-      return buffer;
-    }
-  } catch (error) {
-    console.error(`❌ Erro na conversão:`, error);
-    return null;
-  }
-}
-
 export async function sendAudio(sessionId: string, telefone: string, audioBase64: string): Promise<boolean> {
   try {
     const sock = activeSessions.get(sessionId);
@@ -497,18 +453,15 @@ export async function sendAudio(sessionId: string, telefone: string, audioBase64
     console.log(`📤 Enviando áudio para ${jid}...`);
     console.log(`📊 Tamanho base64: ${audioBase64.length} caracteres`);
     
-    // Try to convert WebM to MP3
-    let audioBuffer = await convertWebMToMp3(audioBase64);
-    if (!audioBuffer) {
-      const base64Data = audioBase64.split(",")[1] || audioBase64;
-      audioBuffer = Buffer.from(base64Data, "base64");
-    }
+    // Send WebM directly without conversion
+    const base64Data = audioBase64.split(",")[1] || audioBase64;
+    const audioBuffer = Buffer.from(base64Data, "base64");
     
-    console.log(`📊 Tamanho áudio final: ${audioBuffer.length} bytes`);
+    console.log(`📊 Tamanho áudio: ${audioBuffer.length} bytes`);
     
     const result = await sock.sendMessage(jid, { 
       audio: audioBuffer,
-      mimetype: "audio/mpeg",
+      mimetype: "audio/webm",
       ptt: true
     });
     
