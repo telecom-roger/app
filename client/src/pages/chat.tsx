@@ -96,20 +96,27 @@ export default function Chat() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
+      if (!response.ok) {
+        throw new Error("Erro ao iniciar conversa");
+      }
       return response.json();
     },
     onSuccess: (conversa) => {
-      setConversaSelecionada(conversa.id);
-      setMostrarClientesDisp(false);
-      queryClient.invalidateQueries({
-        queryKey: ["/api/chat/conversations"],
-      });
-      toast({
-        title: "Conversa iniciada",
-        description: "Agora você pode enviar mensagens",
-      });
+      if (conversa && conversa.id) {
+        setConversaSelecionada(conversa.id);
+        setBusca("");
+        setMostrarClientesDisp(false);
+        queryClient.invalidateQueries({
+          queryKey: ["/api/chat/conversations"],
+        });
+        toast({
+          title: "Conversa iniciada",
+          description: "Agora você pode enviar mensagens",
+        });
+      }
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Erro ao iniciar conversa:", error);
       toast({
         title: "Erro",
         description: "Erro ao iniciar conversa",
