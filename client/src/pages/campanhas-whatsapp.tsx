@@ -113,6 +113,7 @@ export default function CampanhasWhatsApp() {
   const [quantidadeSelecar, setQuantidadeSelecar] = useState(10);
   const cancelarEnvioRef = useRef(false);
   const [campanhasEmProgresso, setCampanhasEmProgresso] = useState<any[]>([]);
+  const [modoBackground, setModoBackground] = useState(true);
 
   // Fetch clients with campaign history
   const { data: clientesDisponiveis = [], isLoading: carregandoClientes } = useQuery<ClientForImport[]>({
@@ -313,46 +314,163 @@ export default function CampanhasWhatsApp() {
       return;
     }
 
-    setEnviando(true);
-    setConfirmarEnvio(false);
+    if (modoBackground) {
+      // ===== BACKGROUND MODE =====
+      setEnviando(true);
+      setConfirmarEnvio(false);
 
-    try {
-      // Enviar para backend de forma assíncrona (fire-and-forget)
-      fetch("/api/whatsapp/enviar-campanha-background", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contatos: contatos.map((c) => ({
-            id: c.id || "",
-            celular: c.celular || c.numeroTelefone || c.telefone || c.whatsapp || "",
-            razao_social: c.razao_social || c.empresa || "N/A",
-          })),
-          template,
-          tempoDelay,
-        }),
-      }).catch((err) => console.error("Erro ao enviar campanha:", err));
+      try {
+        // Enviar para backend de forma assíncrona (fire-and-forget)
+        fetch("/api/whatsapp/enviar-campanha-background", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contatos: contatos.map((c) => ({
+              id: c.id || "",
+              celular: c.celular || c.numeroTelefone || c.telefone || c.whatsapp || "",
+              razao_social: c.razao_social || c.empresa || "N/A",
+            })),
+            template,
+            tempoDelay,
+          }),
+        }).catch((err) => console.error("Erro ao enviar campanha:", err));
 
-      // Show notification and allow navigation
-      toast({
-        title: "Campanha iniciada!",
-        description: `${contatos.length} mensagens serão enviadas em background. Você pode continuar navegando!`,
-      });
+        // Show notification and allow navigation
+        toast({
+          title: "Campanha iniciada!",
+          description: `${contatos.length} mensagens serão enviadas em background. Você pode continuar navegando!`,
+        });
 
-      // Clear form and go back
-      setContatos([]);
-      setTextoPlanilha("");
-      setTemplate("");
-      setVariaveisDisponiveis([]);
-      setStatusEnvio([]);
-      
-    } catch (error: any) {
-      toast({
-        title: "Erro",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setEnviando(false);
+        // Clear form and go back
+        setContatos([]);
+        setTextoPlanilha("");
+        setTemplate("");
+        setVariaveisDisponiveis([]);
+        setStatusEnvio([]);
+        
+      } catch (error: any) {
+        toast({
+          title: "Erro",
+          description: error.message,
+          variant: "destructive",
+        });
+      } finally {
+        setEnviando(false);
+      }
+    } else {
+      // ===== NORMAL MODE (original com progresso visível) =====
+      setEnviando(true);
+      cancelarEnvioRef.current = false;
+      setStatusEnvio(
+        contatos.map((c) => ({
+          telefone: c.whatsapp || c.numeroTelefone || c.telefone || c.celular || "???",
+          clientId: c.id || "",
+          status: "pendente" as const,
+        }))
+      );
+
+      try {
+        for (let i = 0; i < contatos.length; i++) {
+          if (cancelarEnvioRef.current) {
+            toast({
+              title: "Cancelado",
+              description: "Envio cancelado pelo usuário",
+              variant: "default",
+            });
+            break;
+          }
+          const contato = contatos[i];
+          const telefone =
+            contato.whatsapp ||
+            contato.numeroTelefone ||
+            contato.telefone ||
+            contato.celular ||
+            "";
+
+          if (!telefone) continue;
+
+          // Update status to sending
+          setStatusEnvio((prev) =>
+            prev.map((s) =>
+              s.telefone === telefone ? { ...s, status: "enviando" } : s
+            )
+          );
+
+          try {
+            const mensagem = substituirVariaveisNoTemplate(template, contato);
+            
+            const response = await fetch("/api/whatsapp/enviar-broadcast", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                telefone,
+                mensagem,
+                clientId: contato.id || "",
+              }),
+            });
+
+            if (response.ok) {
+              setStatusEnvio((prev) =>
+                prev.map((s) =>
+                  s.telefone === telefone
+                    ? {
+                        ...s,
+                        status: "sucesso",
+                        timestamp: new Date().toLocaleTimeString("pt-BR"),
+                      }
+                    : s
+                )
+              );
+            } else {
+              const erro = await response.text();
+              setStatusEnvio((prev) =>
+                prev.map((s) =>
+                  s.telefone === telefone
+                    ? {
+                        ...s,
+                        status: "erro",
+                        erro: erro,
+                        timestamp: new Date().toLocaleTimeString("pt-BR"),
+                      }
+                    : s
+                )
+              );
+            }
+          } catch (error: any) {
+            setStatusEnvio((prev) =>
+              prev.map((s) =>
+                s.telefone === telefone
+                  ? {
+                      ...s,
+                      status: "erro",
+                      erro: error.message,
+                      timestamp: new Date().toLocaleTimeString("pt-BR"),
+                    }
+                  : s
+              )
+            );
+          }
+
+          // Wait before next message
+          if (i < contatos.length - 1) {
+            await new Promise((resolve) => setTimeout(resolve, tempoDelay * 1000));
+          }
+        }
+
+        toast({
+          title: "Sucesso",
+          description: "Campanha concluída",
+        });
+      } catch (error: any) {
+        toast({
+          title: "Erro",
+          description: error.message,
+          variant: "destructive",
+        });
+      } finally {
+        setEnviando(false);
+        setConfirmarEnvio(false);
+      }
     }
   };
 
@@ -663,18 +781,32 @@ export default function CampanhasWhatsApp() {
 
           {/* Action Buttons */}
           <div className="flex justify-between items-center gap-4">
-            <div className="text-sm text-muted-foreground">
-              {contatosProcessados > 0 ? (
-                <>
-                  <strong>{contatosProcessados}</strong> contato
-                  {contatosProcessados !== 1 ? "s" : ""} prontos para envio
-                </>
-              ) : (
-                "Cole seus contatos para começar"
-              )}
+            <div className="flex gap-4 items-center">
+              <div className="text-sm text-muted-foreground">
+                {contatosProcessados > 0 ? (
+                  <>
+                    <strong>{contatosProcessados}</strong> contato
+                    {contatosProcessados !== 1 ? "s" : ""} prontos para envio
+                  </>
+                ) : (
+                  "Cole seus contatos para começar"
+                )}
+              </div>
+              <div className="flex items-center gap-2 pl-4 border-l">
+                <Label className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={modoBackground}
+                    onChange={(e) => setModoBackground(e.target.checked)}
+                    disabled={enviando}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  Enviar em Background
+                </Label>
+              </div>
             </div>
             <div className="flex gap-2">
-              {enviando && (
+              {enviando && !modoBackground && (
                 <Button
                   onClick={() => {
                     cancelarEnvioRef.current = true;
