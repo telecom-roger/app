@@ -64,7 +64,7 @@ export default function Chat() {
     queryKey: ["/api/chat/conversations"],
     refetchInterval: 500, // Poll a cada 500ms para atualização rápida
     staleTime: 0, // Força sempre buscar dados frescos do backend
-    gcTime: 0, // Desabilita cache completo
+    gcTime: 5000, // Cache por 5 segundos apenas
   });
 
   // Fetch all clients for search
