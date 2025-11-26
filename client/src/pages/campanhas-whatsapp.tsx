@@ -121,6 +121,13 @@ export default function CampanhasWhatsApp() {
   const cancelarEnvioRef = useRef(false);
   const [campanhasEmProgresso, setCampanhasEmProgresso] = useState<any[]>([]);
   const [modoBackground, setModoBackground] = useState(true);
+  const [templateSelecionado, setTemplateSelecionado] = useState("");
+
+  // Fetch templates
+  const { data: templates = [] } = useQuery<any[]>({
+    queryKey: ["/api/templates"],
+    enabled: isAuthenticated,
+  });
 
   // Fetch clients with campaign history
   const { data: clientesDisponiveis = [], isLoading: carregandoClientes } = useQuery<ClientForImport[]>({
@@ -695,6 +702,38 @@ export default function CampanhasWhatsApp() {
                   <CardDescription>Use {"{variavel}"} para personalizar</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 flex-1 flex flex-col">
+                  {/* Seletor de Templates */}
+                  <div className="space-y-2">
+                    <Label htmlFor="template-select">Selecionar Modelo</Label>
+                    <Select 
+                      value={templateSelecionado}
+                      onValueChange={(value) => {
+                        setTemplateSelecionado(value);
+                        const templ = templates.find((t: any) => t.id === value);
+                        if (templ) {
+                          setTemplate(templ.conteudo);
+                        }
+                      }}
+                    >
+                      <SelectTrigger id="template-select" data-testid="select-template">
+                        <SelectValue placeholder="Escolher modelo (opcional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {templates.length > 0 ? (
+                          templates.map((t: any) => (
+                            <SelectItem key={t.id} value={t.id}>
+                              {t.titulo}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="vazio" disabled>
+                            Nenhum modelo disponível
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <Textarea
                     placeholder="Olá {empresa}! Temos uma promoção especial para você..."
                     value={template}
