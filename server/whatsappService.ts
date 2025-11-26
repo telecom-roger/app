@@ -121,7 +121,8 @@ async function processIncomingMessages(sessionId: string, m: any) {
         tipo = "documento";
         conteudo = `[${msg.message.documentMessage.fileName || "Documento"}]`;
       } else {
-        console.log(`[RECEBIMENTO] ⚠️ Tipo de msg desconhecida, pulando`);
+        console.log(`[RECEBIMENTO] ⚠️ Tipo de msg desconhecida, estrutura:`, Object.keys(msg.message || {}));
+        console.log(`[RECEBIMENTO] 🔍 DEBUG msg.message completo:`, JSON.stringify(msg.message).substring(0, 200));
         continue;
       }
 
