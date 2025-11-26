@@ -140,8 +140,22 @@ async function processIncomingMessages(sessionId: string, m: any) {
             conversation = await storage.createOrGetConversation(client.id, userId);
             console.log(`✨ Conversa criada automaticamente: ${conversation.id}`);
           } else {
-            console.warn(`[RECEBIMENTO] ❌ Cliente não encontrado para ${senderPhone}, descartando mensagem`);
-            continue;
+            console.warn(`[RECEBIMENTO] ⚠️ Cliente não encontrado, criando novo...`);
+            
+            // Auto-create new client for this phone number
+            const novoCliente = await storage.createClient({
+              nome: `Novo contato ${senderPhone}`,
+              telefone: senderPhone,
+              CELULAR_PRINCIPAL: senderPhone,
+              cpfCnpj: "",
+              status: "Lead",
+              carteira: "Dominio",
+              score: 0,
+            });
+            
+            console.log(`✅ Novo cliente criado: ${novoCliente.id}`);
+            conversation = await storage.createOrGetConversation(novoCliente.id, userId);
+            console.log(`✨ Conversa criada para novo contato: ${conversation.id}`);
           }
         }
 
