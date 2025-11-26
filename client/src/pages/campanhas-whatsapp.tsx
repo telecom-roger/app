@@ -126,6 +126,12 @@ export default function CampanhasWhatsApp() {
   // Fetch templates
   const { data: templates = [] } = useQuery<any[]>({
     queryKey: ["/api/templates"],
+    queryFn: async () => {
+      const res = await fetch("/api/templates");
+      if (!res.ok) throw new Error("Failed to fetch templates");
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    },
     enabled: isAuthenticated,
   });
 
