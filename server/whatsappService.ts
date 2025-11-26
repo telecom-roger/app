@@ -288,8 +288,14 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
     let enviados = 0;
     let erros = 0;
 
+    // Padrão de delay: 40 segundos + 0-40 segundos aleatório (40-80 segundos total)
+    const tempoDelay = 40; // segundos
+    const tempoRandomMin = 0; // segundos
+    const tempoRandomMax = 40; // segundos
+
     // Simula envio (em produção, usaria WhatsApp API)
-    for (const client of recipientClients) {
+    for (let index = 0; index < recipientClients.length; index++) {
+      const client = recipientClients[index];
       try {
         // Substitui variáveis no template (suporta {variavel} e {{variavel}})
         let conteudo = template.conteudo;
@@ -311,7 +317,7 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
         conteudo = conteudo.replace(/{NOME_CONTATO}/g, client.NOME_CONTATO || '');
 
         // Simula envio (você pode integrar com WhatsApp aqui)
-        console.log(`📤 Enviando para ${client.razaoSocial} (${client.telefone})...`);
+        console.log(`📤 [${index + 1}/${recipientClients.length}] Enviando para ${client.razaoSocial} (${client.telefone})...`);
         
         // Registra interação
         await storage.createInteraction({
@@ -326,9 +332,26 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
 
         enviados++;
         console.log(`✅ Enviado para ${client.razaoSocial}`);
+
+        // Delay entre mensagens: 40s + 0-40s aleatório (total 40-80s)
+        if (index < recipientClients.length - 1) {
+          const rangeExtra = (tempoRandomMax - tempoRandomMin) * 1000; // 40000ms
+          const randomExtra = Math.random() * rangeExtra + (tempoRandomMin * 1000); // 0-40000ms
+          const totalDelay = (tempoDelay * 1000) + randomExtra; // 40000-80000ms
+          console.log(`⏳ Aguardando ${(totalDelay / 1000).toFixed(1)}s antes do próximo envio...`);
+          await new Promise((resolve) => setTimeout(resolve, totalDelay));
+        }
       } catch (error) {
         console.error(`❌ Erro ao enviar para ${client.razaoSocial}:`, error);
         erros++;
+
+        // Mesmo com erro, aplica o delay
+        if (index < recipientClients.length - 1) {
+          const rangeExtra = (tempoRandomMax - tempoRandomMin) * 1000;
+          const randomExtra = Math.random() * rangeExtra + (tempoRandomMin * 1000);
+          const totalDelay = (tempoDelay * 1000) + randomExtra;
+          await new Promise((resolve) => setTimeout(resolve, totalDelay));
+        }
       }
     }
 
