@@ -89,9 +89,16 @@ async function processIncomingMessages(sessionId: string, m: any) {
       }
 
       try {
+        console.log(`[RECEBIMENTO] Telefone recebido: ${senderPhone}`);
+        
         const conversation = await storage.findConversationByPhoneAndUser(senderPhone, userId);
-        if (!conversation) continue;
+        if (!conversation) {
+          console.warn(`[RECEBIMENTO] ⚠️ Conversa não encontrada para ${senderPhone} e usuário ${userId}`);
+          continue;
+        }
 
+        console.log(`[RECEBIMENTO] Conversa encontrada: ${conversation.id}`);
+        
         await storage.createMessage({
           conversationId: conversation.id,
           sender: "client",
