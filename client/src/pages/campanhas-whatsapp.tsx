@@ -111,6 +111,7 @@ export default function CampanhasWhatsApp() {
   const [clientesSelecionados, setClientesSelecionados] = useState<Set<string>>(new Set());
   const [mostrarHistorico, setMostrarHistorico] = useState(false);
   const [quantidadeSelecar, setQuantidadeSelecar] = useState(10);
+  const [cancelarEnvio, setCancelarEnvio] = useState(false);
 
   // Fetch clients with campaign history
   const { data: clientesDisponiveis = [], isLoading: carregandoClientes } = useQuery<ClientForImport[]>({
@@ -292,6 +293,7 @@ export default function CampanhasWhatsApp() {
     }
 
     setEnviando(true);
+    setCancelarEnvio(false);
     setStatusEnvio(
       contatos.map((c) => ({
         telefone: c.whatsapp || c.numeroTelefone || c.telefone || c.celular || "???",
@@ -303,6 +305,14 @@ export default function CampanhasWhatsApp() {
     try {
       // Enviar para o backend
       for (let i = 0; i < contatos.length; i++) {
+        if (cancelarEnvio) {
+          toast({
+            title: "Cancelado",
+            description: "Envio cancelado pelo usuário",
+            variant: "default",
+          });
+          break;
+        }
         const contato = contatos[i];
         const telefone =
           contato.whatsapp ||
@@ -678,20 +688,33 @@ export default function CampanhasWhatsApp() {
                 "Cole seus contatos para começar"
               )}
             </div>
-            <Button
-              onClick={() => setConfirmarEnvio(true)}
-              disabled={
-                enviando ||
-                contatosProcessados === 0 ||
-                !template.trim() ||
-                tempoDelay < 10
-              }
-              size="lg"
-              data-testid="button-enviar-campanha"
-            >
-              <Send className="h-4 w-4 mr-2" />
-              {enviando ? "Enviando..." : "Enviar Campanha"}
-            </Button>
+            <div className="flex gap-2">
+              {enviando && (
+                <Button
+                  onClick={() => setCancelarEnvio(true)}
+                  variant="destructive"
+                  size="lg"
+                  data-testid="button-cancelar-envio"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cancelar Envio
+                </Button>
+              )}
+              <Button
+                onClick={() => setConfirmarEnvio(true)}
+                disabled={
+                  enviando ||
+                  contatosProcessados === 0 ||
+                  !template.trim() ||
+                  tempoDelay < 10
+                }
+                size="lg"
+                data-testid="button-enviar-campanha"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                {enviando ? "Enviando..." : "Enviar Campanha"}
+              </Button>
+            </div>
           </div>
         </TabsContent>
 
