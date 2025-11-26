@@ -520,12 +520,16 @@ export async function createOrGetConversation(clientId: string, userId: string):
     .where(and(eq(conversations.clientId, clientId), eq(conversations.userId, userId)))
     .limit(1);
   
-  if (existing) return existing;
+  if (existing) {
+    console.log("📌 Conversa existente encontrada:", existing.id);
+    return existing;
+  }
   
   const [created] = await db
     .insert(conversations)
     .values({ clientId, userId, canal: "whatsapp", ativa: true })
     .returning();
+  console.log("✨ Nova conversa criada:", created.id);
   return created;
 }
 
