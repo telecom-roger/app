@@ -235,7 +235,7 @@ export default function CampanhasWhatsApp() {
         return {
           id: cliente?.id || "",
           celular: cliente?.telefone || "",
-          razao_social: cliente?.nome || "N/A",
+          razao_social: cliente?.razaoSocial || "N/A",
         };
       })
       .filter((c) => c.celular);
