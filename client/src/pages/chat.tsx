@@ -411,6 +411,110 @@ export default function Chat() {
           </div>
         </div>
 
+        {/* Client Notes Section - Only show when conversation is selected and not searching */}
+        {!showSearchResults && selectedConversationId && (
+          <div className="px-4 py-3 border-b border-border space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-muted-foreground">NOTAS DO CLIENTE</p>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setShowNoteInput(!showNoteInput)}
+                disabled={!currentClientId}
+                data-testid="button-add-note"
+                className="h-6 w-6"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Notes List */}
+            {notesLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            ) : (
+              <div className="flex flex-wrap gap-1">
+                {clientNotes.map((note) => (
+                  <Badge
+                    key={note.id}
+                    className={`${note.cor} text-white cursor-pointer flex items-center gap-1 py-1 px-2 hover-elevate`}
+                    data-testid={`badge-note-${note.id}`}
+                  >
+                    <span className="text-xs max-w-[150px] truncate">{note.conteudo}</span>
+                    <button
+                      onClick={() => handleDeleteNote(note.id)}
+                      className="ml-1 opacity-70 hover:opacity-100"
+                      data-testid={`button-delete-note-${note.id}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            {/* Note Input Form */}
+            {showNoteInput && (
+              <div className="space-y-2 p-2 border border-border rounded-md bg-muted/20">
+                <Input
+                  placeholder="Adicionar nota..."
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      handleCreateNote();
+                    }
+                  }}
+                  data-testid="input-note-text"
+                  className="h-8 text-sm"
+                />
+                
+                {/* Color Picker */}
+                <div className="flex flex-wrap gap-1">
+                  {NOTE_COLORS.map((color) => (
+                    <button
+                      key={color.class}
+                      onClick={() => setNoteColor(color.class)}
+                      className={`w-6 h-6 rounded-full ${color.class} transition-transform ${
+                        noteColor === color.class ? "ring-2 ring-offset-1 ring-foreground scale-110" : ""
+                      }`}
+                      title={color.name}
+                      data-testid={`button-color-${color.name.toLowerCase()}`}
+                    />
+                  ))}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={handleCreateNote}
+                    disabled={!noteText.trim() || createNoteMutation.isPending}
+                    data-testid="button-save-note"
+                  >
+                    {createNoteMutation.isPending ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      "Salvar"
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setShowNoteInput(false);
+                      setNoteText("");
+                      setNoteColor("bg-blue-500");
+                    }}
+                    data-testid="button-cancel-note"
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Search Results or Conversations List */}
         <ScrollArea className="flex-1">
           <div className="p-2">
