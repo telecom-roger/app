@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -111,7 +111,7 @@ export default function CampanhasWhatsApp() {
   const [clientesSelecionados, setClientesSelecionados] = useState<Set<string>>(new Set());
   const [mostrarHistorico, setMostrarHistorico] = useState(false);
   const [quantidadeSelecar, setQuantidadeSelecar] = useState(10);
-  const [cancelarEnvio, setCancelarEnvio] = useState(false);
+  const cancelarEnvioRef = useRef(false);
 
   // Fetch clients with campaign history
   const { data: clientesDisponiveis = [], isLoading: carregandoClientes } = useQuery<ClientForImport[]>({
@@ -293,7 +293,7 @@ export default function CampanhasWhatsApp() {
     }
 
     setEnviando(true);
-    setCancelarEnvio(false);
+    cancelarEnvioRef.current = false;
     setStatusEnvio(
       contatos.map((c) => ({
         telefone: c.whatsapp || c.numeroTelefone || c.telefone || c.celular || "???",
@@ -305,7 +305,7 @@ export default function CampanhasWhatsApp() {
     try {
       // Enviar para o backend
       for (let i = 0; i < contatos.length; i++) {
-        if (cancelarEnvio) {
+        if (cancelarEnvioRef.current) {
           toast({
             title: "Cancelado",
             description: "Envio cancelado pelo usuário",
@@ -691,7 +691,9 @@ export default function CampanhasWhatsApp() {
             <div className="flex gap-2">
               {enviando && (
                 <Button
-                  onClick={() => setCancelarEnvio(true)}
+                  onClick={() => {
+                    cancelarEnvioRef.current = true;
+                  }}
                   variant="destructive"
                   size="lg"
                   data-testid="button-cancelar-envio"
