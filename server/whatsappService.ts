@@ -65,10 +65,14 @@ async function handleIncomingMessages(sessionId: string, sock: any) {
       const { messages: msgs } = m;
       const userId = sessionUsers.get(sessionId);
       
-      console.log(`📨 [${sessionId}] Listener ativado! userId=${userId}, msgs=${msgs?.length || 0}`);
+      console.log(`📨 [${sessionId}] 🔔 LISTENER ATIVADO - userId=${userId}, msgs recebidas=${msgs?.length || 0}`);
       
-      if (!userId || !msgs) {
-        console.log(`📨 [${sessionId}] Ignorando: userId=${userId}, msgs=${msgs?.length || 0}`);
+      if (!userId) {
+        console.log(`📨 [${sessionId}] ❌ Nenhum userId configurado!`);
+        return;
+      }
+      
+      if (!msgs || msgs.length === 0) {
         return;
       }
       
@@ -117,19 +121,21 @@ async function handleIncomingMessages(sessionId: string, sock: any) {
           let conversation = await storage.findConversationByPhoneAndUser(senderPhone, userId);
           
           if (!conversation) {
-            console.log(`📨 [${sessionId}] Criando nova conversa para telefone: ${senderPhone}`);
-            continue; // Skip if no conversation found
+            console.log(`📨 [${sessionId}] ⚠️ NENHUMA CONVERSA ENCONTRADA para ${senderPhone}, ignorando`);
+            continue;
           }
+          
+          console.log(`📨 [${sessionId}] ✓ Conversa encontrada: ${conversation.id}`);
           
           // Save message to database
           await storage.createMessage({
             conversationId: conversation.id,
-            sender: "cliente",
+            sender: "client",
             tipo,
             conteudo,
           });
           
-          console.log(`✅ Mensagem recebida de ${senderPhone} e salva na conversa ${conversation.id}`);
+          console.log(`✅ [RECEBIDO] Mensagem de ${senderPhone} salva em ${conversation.id}: "${conteudo}"`);
         } catch (error) {
           console.error(`Erro ao processar mensagem recebida:`, error);
         }
@@ -193,7 +199,9 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
         if (userId) {
           setSessionUser(sessionId, userId);
           handleIncomingMessages(sessionId, sock);
-          console.log(`📱 Listener de mensagens ativado para sessão ${sessionId} do usuário ${userId}`);
+          console.log(`🎯 LISTENER ATIVADO: ${sessionId} | Usuário: ${userId}`);
+        } else {
+          console.log(`⚠️ UserId não configurado para ${sessionId} - listener NÃO ativado`);
         }
       }
 
