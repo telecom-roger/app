@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle, Download } from "lucide-react";
+import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle, Download, Plus } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface Message {
   id: string;
@@ -52,6 +53,14 @@ interface Client {
   CELULAR_PRINCIPAL?: string;
 }
 
+const QUICK_REPLIES = [
+  "Olá, tudo bem?",
+  "Qual é a sua dúvida?",
+  "Como posso ajudá-lo?",
+  "Segue em anexo...",
+  "Entraremos em contato em breve"
+];
+
 export default function Chat() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
@@ -61,6 +70,7 @@ export default function Chat() {
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [showQuickReplies, setShowQuickReplies] = useState(false);
 
   // Fetch all conversations for current user
   const { data: conversations = [], isLoading: conversationsLoading, refetch: refetchConversations } = useQuery<Conversation[]>({
@@ -299,6 +309,11 @@ export default function Chat() {
 
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);
 
+  const handleSelectQuickReply = (reply: string) => {
+    setMessageText(reply);
+    setShowQuickReplies(false);
+  };
+
   return (
     <div className="flex h-full bg-background">
       {/* Left Sidebar - Conversations List */}
@@ -434,6 +449,31 @@ export default function Chat() {
                   </p>
                 </div>
               </div>
+              <Popover open={showQuickReplies} onOpenChange={setShowQuickReplies}>
+                <PopoverTrigger asChild>
+                  <Button 
+                    size="icon" 
+                    variant="ghost" 
+                    data-testid="button-quick-replies"
+                  >
+                    <Plus className="h-5 w-5" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-48 p-2" align="end">
+                  <div className="space-y-1">
+                    {QUICK_REPLIES.map((reply, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleSelectQuickReply(reply)}
+                        className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                        data-testid={`button-quick-reply-${idx}`}
+                      >
+                        {reply}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
               {(selectedConversation.unreadCount ?? 0) > 0 && selectedConversation.unreadCount && (
                 <span className="bg-red-500 text-white text-xs font-bold rounded-full min-w-[28px] h-7 flex items-center justify-center">
                   {selectedConversation.unreadCount > 99 ? "99+" : selectedConversation.unreadCount}
