@@ -613,7 +613,19 @@ export async function getConversations(userId: string): Promise<any[]> {
 
 export async function getMessages(conversationId: string, limit: number = 50): Promise<Message[]> {
   return await db
-    .select()
+    .select({
+      id: messages.id,
+      conversationId: messages.conversationId,
+      conteudo: messages.conteudo,
+      sender: messages.sender,
+      tipo: messages.tipo,
+      arquivo: messages.arquivo,
+      nomeArquivo: messages.nomeArquivo,
+      tamanho: messages.tamanho,
+      mimeType: messages.mimeType,
+      lido: messages.lido,
+      createdAt: messages.createdAt,
+    })
     .from(messages)
     .where(eq(messages.conversationId, conversationId))
     .orderBy(asc(messages.createdAt))
