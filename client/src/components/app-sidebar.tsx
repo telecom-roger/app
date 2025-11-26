@@ -12,6 +12,7 @@ import {
   Clock,
   Edit3,
   Zap,
+  Lightbulb,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -64,6 +65,11 @@ const menuItems = [
     title: "Chat",
     url: "/chat",
     icon: MessageCircle,
+  },
+  {
+    title: "Mensagens Rápidas",
+    url: "/mensagens-rapidas",
+    icon: Lightbulb,
   },
   {
     title: "Modelos de Mensagens",

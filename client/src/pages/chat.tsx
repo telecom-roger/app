@@ -525,7 +525,7 @@ export default function Chat() {
                         
                         {msg.tipo === "imagem" && msg.arquivo && (
                           <button
-                            onClick={() => setSelectedImage(msg.arquivo)}
+                            onClick={() => setSelectedImage(msg.arquivo!)}
                             className="cursor-pointer hover:opacity-80 transition-opacity"
                             data-testid={`button-open-image-${msg.id}`}
                           >
@@ -545,7 +545,7 @@ export default function Chat() {
                           <button
                             onClick={() => {
                               const link = document.createElement("a");
-                              link.href = msg.arquivo;
+                              link.href = msg.arquivo!;
                               link.download = msg.nomeArquivo || "documento";
                               link.click();
                             }}
