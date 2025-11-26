@@ -517,7 +517,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get the client IDs from the campaign filter (it's a JSONB object)
-      const clientIds: string[] = campaign.filtros?.clientIds || [];
+      const clientIds: string[] = (campaign.filtros as any)?.clientIds || [];
       
       if (clientIds.length === 0) {
         return res.json([]);
@@ -1289,7 +1289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Tenta pausar em memory primeiro
       const campanha = campanhasEmProgresso.get(id);
       if (campanha) {
-        campanha.status = "pausada";
+        campanha.status = "cancelada";
       }
 
       // Também atualiza no banco de dados
@@ -1297,7 +1297,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { eq } = await import("drizzle-orm");
       
       await db.update(campaignsTable)
-        .set({ status: "pausada" })
+        .set({ status: "cancelada" })
         .where(eq(campaignsTable.id, id));
       
       console.log(`⏸️  Campanha ${id} pausada`);

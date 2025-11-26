@@ -80,8 +80,9 @@ export default function Chat() {
 
   // WebSocket para notificações em tempo real de novas mensagens
   useEffect(() => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const ws = new WebSocket(
-      `ws://${window.location.host}/api/chat/ws`
+      `${protocol}//${window.location.host}/api/chat/ws`
     );
 
     ws.onmessage = (event) => {
