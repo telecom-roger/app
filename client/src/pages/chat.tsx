@@ -16,6 +16,9 @@ interface Message {
   tipo: string;
   createdAt: string;
   lido?: boolean;
+  arquivo?: string;
+  nomeArquivo?: string;
+  mimeType?: string;
 }
 
 interface Conversation {
@@ -432,9 +435,14 @@ export default function Chat() {
                         )}
                         
                         {msg.tipo === "audio" && msg.arquivo && (
-                          <audio controls className="max-w-xs mb-2">
-                            <source src={msg.arquivo} type={msg.mimeType} />
-                          </audio>
+                          <div className="flex items-center gap-3 py-2">
+                            <div className="bg-opacity-30 p-2 rounded-full">
+                              <Music className="h-5 w-5" />
+                            </div>
+                            <audio controls className="flex-1 h-8 max-w-sm">
+                              <source src={msg.arquivo} type={msg.mimeType} />
+                            </audio>
+                          </div>
                         )}
                         
                         {msg.tipo === "documento" && msg.arquivo && (
