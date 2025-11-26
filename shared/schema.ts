@@ -185,6 +185,7 @@ export const templates = pgTable("templates", {
   tipo: varchar("tipo", { length: 20 }).notNull(), // email, whatsapp
   assunto: text("assunto"), // for email
   conteudo: text("conteudo").notNull(),
+  imageUrl: text("image_url"), // image URL for WhatsApp/Email
   variaveis: text("variaveis").array().default(sql`ARRAY[]::text[]`), // ['razao_social', 'plano_atual']
   ativo: boolean("ativo").default(true),
   createdBy: varchar("created_by").references(() => users.id),
