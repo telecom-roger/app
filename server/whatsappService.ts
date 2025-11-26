@@ -8,6 +8,34 @@ import { db } from "./db";
 import { or, ilike } from "drizzle-orm";
 import { clients as clientsTable } from "@shared/schema";
 
+// Map file extensions to MIME types
+const mimeTypeMap: Record<string, string> = {
+  pdf: "application/pdf",
+  doc: "application/msword",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xls: "application/vnd.ms-excel",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ppt: "application/vnd.ms-powerpoint",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  txt: "text/plain",
+  csv: "text/csv",
+  zip: "application/zip",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  gif: "image/gif",
+  mp3: "audio/mpeg",
+  mp4: "video/mp4",
+  mov: "video/quicktime",
+  avi: "video/x-msvideo",
+};
+
+function getMimeTypeFromFileName(fileName: string): string {
+  if (!fileName) return "application/octet-stream";
+  const ext = fileName.split(".").pop()?.toLowerCase() || "";
+  return mimeTypeMap[ext] || "application/octet-stream";
+}
+
 const activeSessions = new Map<string, any>();
 const qrCodes = new Map<string, string>();
 const sessionStatus = new Map<string, string>();
@@ -130,7 +158,8 @@ async function processIncomingMessages(sessionId: string, m: any) {
         tipo = "documento";
         nomeArquivo = msg.message.documentMessage.fileName || "documento";
         conteudo = `[${nomeArquivo}]`;
-        mimeType = msg.message.documentMessage.mimetype || "application/octet-stream";
+        // Try to get mimeType from message, fallback to infer from filename
+        mimeType = msg.message.documentMessage.mimetype || getMimeTypeFromFileName(nomeArquivo || "");
       } else {
         // Ignorar mensagens de protocolo (history sync, etc)
         continue;

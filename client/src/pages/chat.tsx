@@ -486,10 +486,19 @@ export default function Chat() {
                         )}
                         
                         {msg.tipo === "documento" && msg.arquivo && (
-                          <a href={msg.arquivo} download={msg.nomeArquivo} className="flex items-center gap-2 text-sm hover:underline">
+                          <button
+                            onClick={() => {
+                              const link = document.createElement("a");
+                              link.href = msg.arquivo;
+                              link.download = msg.nomeArquivo || "documento";
+                              link.click();
+                            }}
+                            className="flex items-center gap-2 text-sm hover:underline cursor-pointer"
+                            data-testid={`button-download-document-${msg.id}`}
+                          >
                             <File className="h-4 w-4" />
                             {msg.nomeArquivo}
-                          </a>
+                          </button>
                         )}
                         
                         <div className="flex items-center justify-between gap-2 mt-1">
