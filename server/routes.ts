@@ -397,8 +397,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== CAMPAIGN ROUTES ====================
   app.get("/api/campaigns", isAuthenticated, async (req, res) => {
     try {
-      const campaigns = await storage.getCampaigns();
-      res.json(campaigns);
+      const user = req.user as any;
+      
+      const campaigns = await db
+        .select()
+        .from(campaignsTable)
+        .where(
+          user.role === 'admin'
+            ? undefined
+            : eq(campaignsTable.createdBy, user.id)
+        );
+      res.json(campaigns || []);
     } catch (error: any) {
       console.error("Error fetching campaigns:", error);
       res.status(500).json({ error: "Internal server error" });
@@ -627,8 +636,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== TEMPLATE ROUTES ====================
   app.get("/api/templates", isAuthenticated, async (req, res) => {
     try {
-      const templates = await storage.getTemplates();
-      res.json(templates);
+      const user = req.user as any;
+      
+      const templates = await db
+        .select()
+        .from(templatesTable)
+        .where(
+          user.role === 'admin'
+            ? undefined
+            : eq(templatesTable.createdBy, user.id)
+        );
+      res.json(templates || []);
     } catch (error: any) {
       console.error("Error fetching templates:", error);
       res.status(500).json({ error: "Internal server error" });
