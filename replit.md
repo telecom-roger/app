@@ -43,6 +43,7 @@ Plataforma completa para gerenciar 500k+ clientes de operadoras de telecom com C
   routes.ts       - Definição de rotas da API
   storage.ts      - Interface de storage e implementações
   replitAuth.ts   - Configuração do Replit Auth
+  whatsappService.ts - Gerenciamento de sessões WhatsApp e recebi
 
 /shared
   schema.ts       - Schemas Drizzle e tipos TypeScript compartilhados
@@ -56,12 +57,13 @@ Principais entidades no PostgreSQL:
 - **opportunities**: Oportunidades de vendas (Kanban)
 - **campaigns**: Campanhas de comunicação com agendamento
 - **templates**: Templates de email/WhatsApp com suporte a imagens
-- **conversations**: Histórico de conversas WhatsApp
+- **conversations**: Conversas bidirecionais WhatsApp
+- **messages**: Histórico de mensagens (usuário ↔ cliente)
 - **interactions**: Timeline de interações
 - **customFields**: Campos dinâmicos configuráveis
 - **auditLogs**: Logs de auditoria completos
 - **importJobs**: Jobs de importação CSV/XLSX
-- **whatsappSessions**: Sessões do WhatsApp
+- **whatsappSessions**: Sessões do WhatsApp conectadas
 
 ## Funcionalidades MVP (Fase 1 - ✅ CONCLUÍDA!)
 
@@ -116,6 +118,15 @@ Principais entidades no PostgreSQL:
 - ✅ Cancelamento de campanhas agendadas
 - ✅ Página dedicada: `/campanhas-agendadas`
 
+### Chat Bidirecional WhatsApp (IMPLEMENTANDO!)
+- ✅ Envio de mensagens via WhatsApp (200+ testadas)
+- ✅ Listeners ativos recebendo mensagens de clientes
+- ✅ Interface de chat em `/chat` com auto-refresh 3s
+- ✅ Normalização de formato de telefone (remover @s.whatsapp.net, @lid, @c.us)
+- ⏳ Auto-salvamento de mensagens recebidas
+- ⏳ Auto-criar conversas para novos contatos
+- ⏳ Listar conversas recentes com mensagens não lidas
+
 ### Admin Panel
 - ✅ Templates CRUD completo (criar, listar, deletar)
 - ✅ Gerenciamento de usuários
@@ -149,9 +160,13 @@ Principais entidades no PostgreSQL:
 - ✅ GET /api/timeline/:clientId (histórico de interações)
 - ✅ POST /api/import/clients (com validação e mapeamento)
 - ✅ GET /api/admin/users (listagem de usuários)
+- ✅ POST /api/whatsapp/connect (conectar WhatsApp)
+- ✅ GET /api/whatsapp/sessions (listar sessões)
+- ✅ GET /api/chat/messages/:conversationId (histórico)
+- ✅ POST /api/chat/messages/:conversationId (enviar)
 
 ### Banco de Dados PostgreSQL
-- ✅ Tabelas: users, sessions, clients, contacts, opportunities, campaigns, templates, interactions, auditLogs, customFields, tags
+- ✅ Tabelas: users, sessions, clients, contacts, opportunities, campaigns, templates, interactions, auditLogs, customFields, tags, conversations, messages, whatsappSessions
 - ✅ Relacionamentos configurados corretamente
 - ✅ Índices em chaves estrangeiras para performance
 - ✅ Express payload limit aumentado para 50MB (importações em massa)
@@ -159,8 +174,14 @@ Principais entidades no PostgreSQL:
 
 ### Sistema de Armazenamento
 - ✅ Métodos em storage.ts para CRUD completo
-- ✅ Métodos implementados: `deleteCampaign`, `updateTemplate`, `deleteTemplate`
+- ✅ Métodos implementados: `deleteCampaign`, `updateTemplate`, `deleteTemplate`, `findConversationByPhoneAndUser`, `createOrGetConversation`
 - ✅ Query builders otimizados com Drizzle ORM
+
+### Sistema de WhatsApp
+- ✅ Baileys listeners ativos e processando mensagens
+- ✅ Normalização de telefone (remover sufixos @s.whatsapp.net, @lid, @c.us)
+- ✅ Salvamento de mensagens recebidas
+- ⏳ Auto-criação de conversas para novos contatos
 
 ### Sistema de Auditoria
 - ✅ Logs completos para criar, editar, deletar
@@ -186,55 +207,19 @@ Isso inicia:
 - Frontend (Vite) em http://0.0.0.0:5000
 - Backend (Express) no mesmo servidor
 
-## Arquitetura Final
+## Estado Atual - 🔥 PRÓXIMO: Recebimento Bidirecional
 
-### Frontend
-- React 18 + TypeScript
-- Wouter para roteamento
-- TanStack Query v5 para data fetching
-- Shadcn/UI + Tailwind CSS para styling
-- Framer Motion para animações
-- Form validation com React Hook Form + Zod
+**Implementação em andamento:**
+- Mensagens enviadas: ✅ 200+ testadas com sucesso
+- Mensagens recebidas: ✅ Listeners ativos, normalizando telefones
+- Chat UI: ✅ Pronta em `/chat`
+- Auto-criar conversas: ⏳ Próxima implementação
 
-### Backend
-- Express.js com TypeScript
-- Drizzle ORM com PostgreSQL
-- Passport Local com bcrypt para autenticação
-- Middleware de autenticação em todas as rotas
-- Validação com Zod schemas compartilhados
-- Storage layer para abstração CRUD
+**Problema debugado:**
+- Telefones chegando com formato `@lid` (WhatsApp lists)
+- Solução: Limpar prefixos (@s.whatsapp.net, @lid, @c.us) antes de processar
 
-### Dados
-- PostgreSQL Replit Database
-- Tipos compartilhados em `shared/schema.ts`
-- Storage pattern para abstração CRUD
-- Migrations via Drizzle ORM
-
-## Estado Atual - ✅ MVP + AGENDAMENTO PRONTO!
-Todas as funcionalidades principais implementadas e testadas:
-- ✅ Autenticação funcional
-- ✅ CRM completo com clientes e oportunidades
-- ✅ Kanban drag-and-drop operacional
-- ✅ Campanhas e templates gerenciáveis
-- ✅ Modelos de mensagens com imagens
-- ✅ Agendamento de campanhas automáticas
-- ✅ Admin panel com controle de usuários
-- ✅ Importação em massa testada (1845 registros)
-- ✅ Design system profissional implementado
-- ✅ Modo escuro suportado
-- ✅ Responsividade total
-
-**Status da Base de Dados:**
-- 1.845 clientes cadastrados
-- Todos com carteira = "Dominio"
-- Todos com status = "Lead"
-- Multi-usuário com isolamento de dados
-
-**Próximas Melhorias (Futuro):**
-- [ ] Integração WhatsApp (WPPConnect ou Meta API)
-- [ ] IA com OpenAI (lead scoring, sugestões, respostas automáticas)
-- [ ] SendGrid para envio automático de emails
-- [ ] Scheduler em background (Bull/Redis)
-- [ ] ElasticSearch para busca full-text
-- [ ] Relatórios exportáveis (CSV/PDF)
-- [ ] Observabilidade (logs estruturados, métricas)
+**Próximas ações:**
+1. Auto-criar conversa quando mensagem chega de novo contato
+2. Listar conversas recentes com NOT READ badge
+3. Notificações de mensagens novas

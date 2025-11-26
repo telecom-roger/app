@@ -62,7 +62,10 @@ async function processIncomingMessages(sessionId: string, m: any) {
       if (msg.key.fromMe) continue;
       if (msg.key.remoteJid?.includes("@g.us")) continue;
 
-      const senderPhone = msg.key.remoteJid?.replace("@s.whatsapp.net", "") || "";
+      // Clean phone number - remove all WhatsApp suffixes
+      let senderPhone = msg.key.remoteJid || "";
+      senderPhone = senderPhone.replace("@s.whatsapp.net", "").replace("@lid", "").replace("@c.us", "").trim();
+      
       if (!senderPhone) continue;
 
       let conteudo = "";
