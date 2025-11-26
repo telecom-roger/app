@@ -141,6 +141,7 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
     });
 
     let qrGenerated = false;
+    const storedUserId = userId || sessionUsers.get(sessionId);
 
     sock.ev.on("connection.update", async (update: any) => {
       const { connection, lastDisconnect, qr } = update;
@@ -165,9 +166,8 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
         
         startKeepAlive(sessionId, sock);
         
-        const currentUserId = userId || sessionUsers.get(sessionId);
-        if (currentUserId) {
-          setSessionUser(sessionId, currentUserId);
+        if (storedUserId) {
+          setSessionUser(sessionId, storedUserId);
           await handleIncomingMessages(sessionId, sock);
           console.log(`🎯 INICIALIZAÇÃO COMPLETA: ${sessionId}`);
         }
@@ -191,7 +191,7 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
           if (attempts < 5) {
             reconnectAttempts.set(sessionId, attempts);
             console.log(`🔄 Reconectando... (tentativa ${attempts})`);
-            setTimeout(() => initializeWhatsAppSession(sessionId, currentUserId), 5000);
+            setTimeout(() => initializeWhatsAppSession(sessionId, storedUserId), 5000);
           }
         }
       }
@@ -223,6 +223,10 @@ export function closeSession(sessionId: string): void {
 
 export function getAllActiveSessions(): string[] {
   return Array.from(activeSessions.keys());
+}
+
+export function isSessionAlive(sessionId: string): boolean {
+  return activeSessions.has(sessionId) && sessionStatus.get(sessionId) === "conectada";
 }
 
 export async function sendMessage(sessionId: string, telefone: string, mensagem: string): Promise<boolean> {
