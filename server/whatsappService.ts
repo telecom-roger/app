@@ -258,3 +258,75 @@ export async function sendMessage(sessionId: string, telefone: string, mensagem:
     return false;
   }
 }
+
+export async function executeCampaign(campaign: any, db: any, clients: any[]): Promise<void> {
+  try {
+    console.log(`🚀 INICIANDO EXECUÇÃO DE CAMPANHA: ${campaign.nome} (${campaign.id})`);
+    
+    // Muda status para "enviando"
+    await db.update(require('@shared/schema').campaigns)
+      .set({ status: 'enviando' })
+      .where(require('drizzle-orm').eq(require('@shared/schema').campaigns.id, campaign.id));
+
+    const template = await storage.getTemplateById(campaign.templateId);
+    if (!template) {
+      console.error(`❌ Template ${campaign.templateId} não encontrado`);
+      return;
+    }
+
+    const clientIds = campaign.filtros?.clientIds || [];
+    if (clientIds.length === 0) {
+      console.warn(`⚠️ Nenhum cliente selecionado para campanha ${campaign.id}`);
+      return;
+    }
+
+    // Pega os clientes a enviar
+    const recipientClients = clients.filter((c: any) => clientIds.includes(c.id));
+    let enviados = 0;
+    let erros = 0;
+
+    // Simula envio (em produção, usaria WhatsApp API)
+    for (const client of recipientClients) {
+      try {
+        // Substitui variáveis no template
+        let conteudo = template.conteudo;
+        conteudo = conteudo.replace(/{{razao_social}}/g, client.razaoSocial || '');
+        conteudo = conteudo.replace(/{{telefone}}/g, client.telefone || '');
+        conteudo = conteudo.replace(/{{email}}/g, client.email || '');
+
+        // Simula envio (você pode integrar com WhatsApp aqui)
+        console.log(`📤 Enviando para ${client.razaoSocial} (${client.telefone})...`);
+        
+        // Registra interação
+        await storage.createInteraction({
+          clientId: client.id,
+          tipo: 'whatsapp_enviado',
+          origem: 'system',
+          titulo: `Campanha agendada: ${campaign.nome}`,
+          texto: conteudo,
+          meta: { campaignId: campaign.id, templateId: template.id },
+          createdBy: campaign.createdBy,
+        });
+
+        enviados++;
+        console.log(`✅ Enviado para ${client.razaoSocial}`);
+      } catch (error) {
+        console.error(`❌ Erro ao enviar para ${client.razaoSocial}:`, error);
+        erros++;
+      }
+    }
+
+    // Atualiza status para "concluida" com estatísticas
+    await db.update(require('@shared/schema').campaigns)
+      .set({ 
+        status: 'concluida',
+        totalEnviados: enviados,
+        totalErros: erros,
+      })
+      .where(require('drizzle-orm').eq(require('@shared/schema').campaigns.id, campaign.id));
+
+    console.log(`✅ CAMPANHA CONCLUÍDA: ${campaign.nome} | Enviados: ${enviados} | Erros: ${erros}`);
+  } catch (error) {
+    console.error(`❌ Erro ao executar campanha:`, error);
+  }
+}

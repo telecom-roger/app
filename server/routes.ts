@@ -1,7 +1,8 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
-import { eq, and, or, ilike, desc, sql } from "drizzle-orm";
+import { eq, and, or, ilike, desc, sql, lte } from "drizzle-orm";
+import cron from "node-cron";
 import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, whatsappSessions, clients, interactions, conversations, messages, campaigns as campaignsTable } from "@shared/schema";
 import * as storage from "./storage";
 import * as whatsappService from "./whatsappService";
@@ -30,6 +31,36 @@ function requireAdmin(req: Request, res: Response, next: Function) {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
   await setupAuth(app);
+
+  // ==================== SCHEDULER: CAMPANHAS AGENDADAS ====================
+  // Executa a cada 1 minuto
+  cron.schedule('* * * * *', async () => {
+    try {
+      const now = new Date();
+      const dueCampaigns = await db
+        .select()
+        .from(campaignsTable)
+        .where(
+          and(
+            eq(campaignsTable.status, 'agendada'),
+            lte(campaignsTable.agendadaPara, now)
+          )
+        );
+
+      if (dueCampaigns.length > 0) {
+        console.log(`⏰ SCHEDULER: Encontradas ${dueCampaigns.length} campanhas para executar`);
+        
+        const allClients = await storage.getClients({ limit: 10000, isAdmin: true });
+        const clientsList = allClients.data || [];
+
+        for (const campaign of dueCampaigns) {
+          await whatsappService.executeCampaign(campaign, db, clientsList);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Erro no scheduler de campanhas:', error);
+    }
+  });
 
   // ==================== AUTH ROUTES ====================
   app.get("/api/auth/user", isAuthenticated, async (req, res) => {
