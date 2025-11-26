@@ -145,10 +145,13 @@ export default function Chat() {
   // Filter clients by search (for new conversations)
   const clientesFiltrados = useMemo(() => {
     if (!busca) return [];
+    const buscaLower = busca.toLowerCase();
     return (clientesDisponiveis as any[]).filter(
       (client) =>
-        client.nome?.toLowerCase().includes(busca.toLowerCase()) ||
-        client.razaoSocial?.toLowerCase().includes(busca.toLowerCase())
+        client.nome?.toLowerCase().includes(buscaLower) ||
+        client.razaoSocial?.toLowerCase().includes(buscaLower) ||
+        client.telefone?.toLowerCase().includes(buscaLower) ||
+        client.cpfCnpj?.toLowerCase().includes(buscaLower)
     );
   }, [clientesDisponiveis, busca]);
 
@@ -266,11 +269,11 @@ export default function Chat() {
                           key={`new-${cliente.id}`}
                           onClick={() => iniciarConversa(cliente.id)}
                           disabled={iniciandoConversa}
-                          className="w-full text-left p-3 rounded-lg transition-all duration-200 hover:bg-muted/50 mb-2"
+                          className="w-full text-left p-3 rounded-lg transition-all duration-200 hover:bg-muted/50 mb-2 border border-primary/20"
                           data-testid={`button-novo-cliente-${cliente.id}`}
                         >
-                          <div className="flex items-start gap-3">
-                            <Avatar className="h-10 w-10 mt-1">
+                          <div className="flex items-start gap-2">
+                            <Avatar className="h-9 w-9 flex-shrink-0">
                               <AvatarFallback className="text-xs font-bold bg-primary/20">
                                 {(cliente.razaoSocial || cliente.nome)?.[0]?.toUpperCase() || "?"}
                               </AvatarFallback>
@@ -279,9 +282,17 @@ export default function Chat() {
                               <div className="font-medium text-sm truncate text-primary">
                                 {cliente.razaoSocial || cliente.nome}
                               </div>
-                              <div className="text-xs text-muted-foreground">
-                                Novo chat
-                              </div>
+                              {cliente.telefone && (
+                                <div className="text-xs text-muted-foreground truncate">
+                                  📞 {cliente.telefone}
+                                </div>
+                              )}
+                              {cliente.cpfCnpj && (
+                                <div className="text-xs text-muted-foreground truncate">
+                                  🔖 {cliente.cpfCnpj}
+                                </div>
+                              )}
+                              <div className="text-xs text-primary/70 mt-1">+ Novo chat</div>
                             </div>
                           </div>
                         </button>
