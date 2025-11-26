@@ -830,67 +830,65 @@ export default function CampanhasWhatsApp() {
                 Nenhum cliente encontrado
               </div>
             ) : (
-              <ScrollArea className="flex-1 border rounded-md">
-                <div className="relative">
-                  <Table>
-                    <TableHeader className="sticky top-0 bg-muted">
-                      <TableRow>
-                        <TableHead className="w-12">
+              <ScrollArea className="h-[400px] border rounded-md">
+                <Table className="text-sm">
+                  <TableHeader className="sticky top-0 bg-muted z-10">
+                    <TableRow>
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={clientesSelecionados.size === clientesFiltrados.length && clientesFiltrados.length > 0}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setClientesSelecionados(new Set(clientesFiltrados.map((c) => c.id)));
+                            } else {
+                              setClientesSelecionados(new Set());
+                            }
+                          }}
+                          data-testid="checkbox-select-all"
+                        />
+                      </TableHead>
+                      <TableHead>RAZÃO SOCIAL</TableHead>
+                      <TableHead>CELULAR PRINCIPAL</TableHead>
+                      <TableHead className="text-xs">Última Campanha</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {clientesFiltrados.map((cliente) => (
+                      <TableRow key={cliente.id} className="hover-elevate cursor-pointer">
+                        <TableCell onClick={(e) => {
+                          e.stopPropagation();
+                          toggleClienteSelecionado(cliente.id);
+                        }}>
                           <Checkbox
-                            checked={clientesSelecionados.size === clientesFiltrados.length && clientesFiltrados.length > 0}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setClientesSelecionados(new Set(clientesFiltrados.map((c) => c.id)));
-                              } else {
-                                setClientesSelecionados(new Set());
-                              }
-                            }}
-                            data-testid="checkbox-select-all"
+                            checked={clientesSelecionados.has(cliente.id)}
+                            onCheckedChange={() => toggleClienteSelecionado(cliente.id)}
+                            data-testid={`checkbox-cliente-${cliente.id}`}
                           />
-                        </TableHead>
-                        <TableHead>RAZÃO SOCIAL</TableHead>
-                        <TableHead>CELULAR PRINCIPAL</TableHead>
-                        <TableHead className="text-xs">Última Campanha</TableHead>
+                        </TableCell>
+                        <TableCell className="font-medium">{cliente.nome}</TableCell>
+                        <TableCell className="font-mono text-sm">{cliente.telefone}</TableCell>
+                        <TableCell className="text-xs">
+                          {cliente.ultimaCampanha ? (
+                            <div className="flex items-center gap-2">
+                              {cliente.ultimaCampanha.recente ? (
+                                <Badge variant="destructive" className="text-xs gap-1">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  {cliente.ultimaCampanha.minutosPara}m
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs">
+                                  {cliente.ultimaCampanha.data}
+                                </Badge>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">Nenhuma</span>
+                          )}
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {clientesFiltrados.map((cliente) => (
-                        <TableRow key={cliente.id} className="hover-elevate cursor-pointer">
-                          <TableCell onClick={(e) => {
-                            e.stopPropagation();
-                            toggleClienteSelecionado(cliente.id);
-                          }}>
-                            <Checkbox
-                              checked={clientesSelecionados.has(cliente.id)}
-                              onCheckedChange={() => toggleClienteSelecionado(cliente.id)}
-                              data-testid={`checkbox-cliente-${cliente.id}`}
-                            />
-                          </TableCell>
-                          <TableCell className="font-medium">{cliente.nome}</TableCell>
-                          <TableCell className="font-mono text-sm">{cliente.telefone}</TableCell>
-                          <TableCell className="text-xs">
-                            {cliente.ultimaCampanha ? (
-                              <div className="flex items-center gap-2">
-                                {cliente.ultimaCampanha.recente ? (
-                                  <Badge variant="destructive" className="text-xs gap-1">
-                                    <AlertTriangle className="h-3 w-3" />
-                                    {cliente.ultimaCampanha.minutosPara}m
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="text-xs">
-                                    {cliente.ultimaCampanha.data}
-                                  </Badge>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground">Nenhuma</span>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                    ))}
+                  </TableBody>
+                </Table>
               </ScrollArea>
             )}
 
