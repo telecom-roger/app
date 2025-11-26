@@ -209,32 +209,28 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
         // Para keep-alive quando desconectar
         stopKeepAlive(sessionId);
         
-        // RESETAR listener flag para permitir criação de novo listener na reconexão
-        sessionListeners.delete(sessionId);
-        
         // Sempre deletar socket de sessão ativa
         activeSessions.delete(sessionId);
 
-        if (shouldReconnect) {
-          const attempts = (reconnectAttempts.get(sessionId) || 0) + 1;
-          reconnectAttempts.set(sessionId, attempts);
-          
-          if (attempts <= 10) {
-            console.log(`🔄 Tentativa de reconexão ${attempts}/10 para sessão ${sessionId}... código: ${statusCode}`);
-            // Reconectar rapidamente (sem esperar progressivo em caso de desconexão rápida)
-            const delay = Math.min(1000 + (attempts * 500), 5000);
-            setTimeout(() => {
-              console.log(`⚡ Reiniciando conexão para sessão ${sessionId}...`);
-              const userId = sessionUsers.get(sessionId);
-              initializeWhatsAppSession(sessionId, userId);
-            }, delay);
-          } else {
-            console.warn(`⚠️ Máximo de tentativas atingido para sessão ${sessionId}`);
-            reconnectAttempts.delete(sessionId);
-          }
+        // **SEMPRE** reconectar, mesmo se statusCode indica logout (Baileys força desconexão)
+        const attempts = (reconnectAttempts.get(sessionId) || 0) + 1;
+        reconnectAttempts.set(sessionId, attempts);
+        
+        if (attempts <= 15) {
+          console.log(`🔄 Auto-reconectando ${attempts}/15 para sessão ${sessionId}... (código: ${statusCode})`);
+          // Reconectar MUITO rápido na primeira tentativa
+          const delay = attempts === 1 ? 500 : Math.min(1000 + (attempts * 300), 8000);
+          setTimeout(() => {
+            console.log(`⚡ Tentativa ${attempts} de reconexão para sessão ${sessionId}...`);
+            const userId = sessionUsers.get(sessionId);
+            // IMPORTANTE: Resetar listener flag aqui para criar novo listener
+            sessionListeners.delete(sessionId);
+            initializeWhatsAppSession(sessionId, userId);
+          }, delay);
         } else {
-          console.log("Sessão finalizada pelo usuário");
+          console.warn(`⚠️ Máximo de tentativas atingido para sessão ${sessionId}`);
           reconnectAttempts.delete(sessionId);
+          sessionListeners.delete(sessionId);
         }
       }
     });
