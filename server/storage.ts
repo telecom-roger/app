@@ -118,8 +118,14 @@ export async function getClients(params: {
   
   // Se não é admin, filtra apenas clientes do usuário
   if (userId && !isAdmin) {
-    conditions.push(eq(clients.createdBy, userId));
+    conditions.push(
+      or(
+        eq(clients.createdBy, userId),
+        sql`${clients.createdBy} IS NULL` // Também vê clientes sem proprietário definido
+      )
+    );
   }
+  // Se é admin, não filtra - vê todos os clientes
   
   if (search) {
     conditions.push(
@@ -509,8 +515,14 @@ export async function getClientsForBroadcast(filtros?: { status?: string; cartei
   
   // Se não é admin, filtra apenas clientes do usuário
   if (filtros?.userId && !filtros?.isAdmin) {
-    conditions.push(eq(clients.createdBy, filtros.userId));
+    conditions.push(
+      or(
+        eq(clients.createdBy, filtros.userId),
+        sql`${clients.createdBy} IS NULL` // Também vê clientes sem proprietário definido
+      )
+    );
   }
+  // Se é admin, não filtra - vê todos os clientes
   
   if (filtros?.status && filtros.status !== "") {
     conditions.push(eq(clients.status, filtros.status));

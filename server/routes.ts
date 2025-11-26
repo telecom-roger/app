@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
-import { eq, and, or, ilike, desc } from "drizzle-orm";
+import { eq, and, or, ilike, desc, sql } from "drizzle-orm";
 import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, whatsappSessions, clients, interactions, conversations, messages } from "@shared/schema";
 import * as storage from "./storage";
 import * as whatsappService from "./whatsappService";
@@ -60,7 +60,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/clients/whatsapp-list", isAuthenticated, async (req, res) => {
     try {
       const user = req.user as any;
-      const whereCondition = user.role === 'admin' ? undefined : eq(clients.createdBy, user.id);
+      const whereCondition = user.role === 'admin' ? undefined : or(
+        eq(clients.createdBy, user.id),
+        sql`${clients.createdBy} IS NULL`
+      );
       
       const allClients = await db
         .select({
