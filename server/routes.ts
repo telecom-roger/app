@@ -39,12 +39,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== CLIENT ROUTES ====================
   app.get("/api/clients", isAuthenticated, async (req, res) => {
     try {
+      const user = req.user as any;
       const { search, status, page = "1", limit = "10000" } = req.query;
       const result = await storage.getClients({
         search: search as string,
         status: status as string,
         page: parseInt(page as string),
         limit: parseInt(limit as string),
+        userId: user.id,
+        isAdmin: user.role === 'admin',
       });
       res.json(result);
     } catch (error: any) {
@@ -56,6 +59,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint para listar clientes com WhatsApp (MUST be before :id route)
   app.get("/api/clients/whatsapp-list", isAuthenticated, async (req, res) => {
     try {
+      const user = req.user as any;
+      const whereCondition = user.role === 'admin' ? undefined : eq(clients.createdBy, user.id);
+      
       const allClients = await db
         .select({
           id: clients.id,
@@ -67,6 +73,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: clients.status,
         })
         .from(clients)
+        .where(whereCondition)
         .limit(10000);
 
       const clientsWithPhones = allClients.filter((c) => c.telefone && c.telefone.trim());

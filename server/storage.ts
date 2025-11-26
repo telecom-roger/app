@@ -108,11 +108,19 @@ export async function getClients(params: {
   status?: string;
   page?: number;
   limit?: number;
+  userId?: string;
+  isAdmin?: boolean;
 }): Promise<{ clientes: Client[]; total: number }> {
-  const { search, status, page = 1, limit = 20 } = params;
+  const { search, status, page = 1, limit = 20, userId, isAdmin = false } = params;
   const offset = (page - 1) * limit;
 
   let conditions = [];
+  
+  // Se não é admin, filtra apenas clientes do usuário
+  if (userId && !isAdmin) {
+    conditions.push(eq(clients.createdBy, userId));
+  }
+  
   if (search) {
     conditions.push(
       or(
@@ -496,8 +504,13 @@ export async function getBroadcastStats(filtros?: { status?: string; carteira?: 
   };
 }
 
-export async function getClientsForBroadcast(filtros?: { status?: string; carteira?: string }) {
+export async function getClientsForBroadcast(filtros?: { status?: string; carteira?: string; userId?: string; isAdmin?: boolean }) {
   let conditions = [];
+  
+  // Se não é admin, filtra apenas clientes do usuário
+  if (filtros?.userId && !filtros?.isAdmin) {
+    conditions.push(eq(clients.createdBy, filtros.userId));
+  }
   
   if (filtros?.status && filtros.status !== "") {
     conditions.push(eq(clients.status, filtros.status));
