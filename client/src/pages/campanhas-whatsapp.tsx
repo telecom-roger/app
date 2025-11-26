@@ -209,6 +209,7 @@ export default function CampanhasWhatsApp() {
       .map((clientId) => {
         const cliente = clientesDisponiveis.find((c) => c.id === clientId);
         return {
+          id: cliente?.id || "",
           celular: cliente?.telefone || "",
           razao_social: cliente?.nome || "N/A",
         };
@@ -225,7 +226,7 @@ export default function CampanhasWhatsApp() {
     }
 
     setContatos(contatosFromDB);
-    setVariaveisDisponiveis(["celular", "razao_social"]);
+    setVariaveisDisponiveis(["celular", "razao_social", "id"]);
     setClientesSelecionados(new Set());
     setMostrarSeletorBD(false);
     setSearchClientes("");
