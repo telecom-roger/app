@@ -1222,6 +1222,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Pausar campanha em execução
+  app.post("/api/campaigns/:id/pause", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const campanha = campanhasEmProgresso.get(id);
+      
+      if (!campanha) {
+        return res.status(404).json({ error: "Campanha não encontrada" });
+      }
+
+      campanha.status = "pausada";
+      console.log(`⏸️  Campanha ${id} pausada`);
+      
+      res.json({ success: true, message: "Campanha pausada", campanha });
+    } catch (error: any) {
+      console.error("Error pausing campaign:", error);
+      res.status(500).json({ error: "Erro ao pausar campanha" });
+    }
+  });
+
+  // Deletar/Cancelar campanha em execução
+  app.post("/api/campaigns/:id/cancel", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const campanha = campanhasEmProgresso.get(id);
+      
+      if (!campanha) {
+        return res.status(404).json({ error: "Campanha não encontrada" });
+      }
+
+      campanhasEmProgresso.delete(id);
+      console.log(`❌ Campanha ${id} cancelada e removida`);
+      
+      res.json({ success: true, message: "Campanha cancelada", campaignId: id });
+    } catch (error: any) {
+      console.error("Error canceling campaign:", error);
+      res.status(500).json({ error: "Erro ao cancelar campanha" });
+    }
+  });
+
   // New endpoint for single message sending from campaigns page
   app.post("/api/whatsapp/enviar-broadcast", isAuthenticated, async (req, res) => {
     try {

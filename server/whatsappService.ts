@@ -261,12 +261,15 @@ export async function sendMessage(sessionId: string, telefone: string, mensagem:
 
 export async function executeCampaign(campaign: any, db: any, clients: any[]): Promise<void> {
   try {
+    const { campaigns } = await import('@shared/schema');
+    const { eq } = await import('drizzle-orm');
+    
     console.log(`🚀 INICIANDO EXECUÇÃO DE CAMPANHA: ${campaign.nome} (${campaign.id})`);
     
     // Muda status para "enviando"
-    await db.update(require('@shared/schema').campaigns)
+    await db.update(campaigns)
       .set({ status: 'enviando' })
-      .where(require('drizzle-orm').eq(require('@shared/schema').campaigns.id, campaign.id));
+      .where(eq(campaigns.id, campaign.id));
 
     const template = await storage.getTemplateById(campaign.templateId);
     if (!template) {
@@ -317,13 +320,13 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
     }
 
     // Atualiza status para "concluida" com estatísticas
-    await db.update(require('@shared/schema').campaigns)
+    await db.update(campaigns)
       .set({ 
         status: 'concluida',
         totalEnviados: enviados,
         totalErros: erros,
       })
-      .where(require('drizzle-orm').eq(require('@shared/schema').campaigns.id, campaign.id));
+      .where(eq(campaigns.id, campaign.id));
 
     console.log(`✅ CAMPANHA CONCLUÍDA: ${campaign.nome} | Enviados: ${enviados} | Erros: ${erros}`);
   } catch (error) {

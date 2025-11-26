@@ -1,21 +1,65 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Clock, CheckCircle, AlertCircle, Eye, MousePointerClick } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Clock, CheckCircle, AlertCircle, Eye, MousePointerClick, Pause, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 
 export default function CampanhasEmExecucao() {
+  const { toast } = useToast();
   const { data: campaigns = [], isLoading } = useQuery({
     queryKey: ["/api/campaigns"],
     queryFn: async () => {
       const res = await fetch("/api/campaigns");
       if (!res.ok) throw new Error("Failed to fetch campaigns");
       const data = await res.json();
-      return Array.isArray(data) ? data.filter((c: any) => ['enviando', 'concluida'].includes(c.status)) : [];
+      return Array.isArray(data) ? data.filter((c: any) => ['enviando', 'concluida', 'pausada'].includes(c.status)) : [];
     },
     refetchInterval: 2000, // Atualiza a cada 2 segundos
+  });
+
+  const pauseMutation = useMutation({
+    mutationFn: async (campaignId: string) => {
+      return apiRequest("POST", `/api/campaigns/${campaignId}/pause`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/campaigns"] });
+      toast({
+        title: "Campanha pausada",
+        description: "A campanha foi pausada com sucesso.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Falha ao pausar a campanha",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (campaignId: string) => {
+      return apiRequest("POST", `/api/campaigns/${campaignId}/cancel`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/campaigns"] });
+      toast({
+        title: "Campanha cancelada",
+        description: "A campanha foi cancelada e removida.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Falha ao cancelar a campanha",
+        variant: "destructive",
+      });
+    },
   });
 
   const getStatusBadge = (status: string) => {
@@ -26,6 +70,8 @@ export default function CampanhasEmExecucao() {
         return <Badge className="bg-green-500">✅ Concluída</Badge>;
       case 'cancelada':
         return <Badge className="bg-red-500">❌ Cancelada</Badge>;
+      case 'pausada':
+        return <Badge className="bg-yellow-500">⏸️ Pausada</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
@@ -105,6 +151,30 @@ export default function CampanhasEmExecucao() {
                   </span>
                 </div>
               </div>
+              {campaign.status === 'enviando' && (
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => pauseMutation.mutate(campaign.id)}
+                    disabled={pauseMutation.isPending}
+                    data-testid={`button-pause-campaign-${campaign.id}`}
+                  >
+                    <Pause className="w-4 h-4 mr-1" />
+                    Pausar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => deleteMutation.mutate(campaign.id)}
+                    disabled={deleteMutation.isPending}
+                    data-testid={`button-cancel-campaign-${campaign.id}`}
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    Cancelar
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Progress Bar */}
