@@ -122,6 +122,7 @@ export default function CampanhasWhatsApp() {
   const [campanhasEmProgresso, setCampanhasEmProgresso] = useState<any[]>([]);
   const [modoBackground, setModoBackground] = useState(true);
   const [templateSelecionado, setTemplateSelecionado] = useState("");
+  const [nomeModeloSelecionado, setNomeModeloSelecionado] = useState("");
 
   // Fetch templates
   const { data: templates = [] } = useQuery<any[]>({
@@ -706,14 +707,15 @@ export default function CampanhasWhatsApp() {
                         const templ = templates.find((t: any) => t.id === value);
                         if (templ) {
                           setTemplate(templ.conteudo);
+                          setNomeModeloSelecionado(templ.titulo);
                         }
                       }}
                     >
                       <SelectTrigger id="template-select" className="h-10 text-foreground" data-testid="select-template">
                         <SelectValue placeholder="Selecionar modelo (opcional)...">
-                          {templateSelecionado && templates.length > 0
-                            ? templates.find((t: any) => t.id === templateSelecionado)?.titulo
-                            : "Selecionar modelo (opcional)..."}
+                          <span className="text-foreground text-sm">
+                            {nomeModeloSelecionado || "Selecionar modelo (opcional)..."}
+                          </span>
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent className="max-h-72">
