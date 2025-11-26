@@ -1212,7 +1212,7 @@ export default function CampanhasWhatsApp() {
                     return {
                       id: cliente?.id || "",
                       whatsapp: cliente?.telefone || "",
-                      empresa: cliente?.nome || "N/A",
+                      empresa: cliente?.razaoSocial || cliente?.nome || "N/A",
                     };
                   })
                   .filter((c) => c.whatsapp);
