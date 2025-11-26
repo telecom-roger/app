@@ -1270,18 +1270,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ==================== CHAT API ROUTES ====================
-  // GET /api/chat/conversations - List all conversations for authenticated user
+  // GET /api/chat/conversations - List all conversations for authenticated user with optional search filter
   app.get("/api/chat/conversations", isAuthenticated, async (req, res) => {
     try {
       const userId = (req.user as any).id;
+      const { search = "" } = req.query;
+      const searchTerm = (search as string).toLowerCase().trim();
+      
+      // Get all conversations for user
       const convs = await storage.getConversations(userId);
       
+      // Filter by search term (razão social, CNPJ, celular)
+      const filtered = searchTerm
+        ? convs.filter((c: any) => {
+            const nome = c.clientNome?.toLowerCase() || "";
+            const razaoSocial = c.razaoSocial?.toLowerCase() || "";
+            const cpfCnpj = c.cpfCnpj?.toLowerCase() || "";
+            const celular = c.celularPrincipal?.toLowerCase() || "";
+            const telefone = c.telefone?.toLowerCase() || "";
+            
+            return (
+              nome.includes(searchTerm) ||
+              razaoSocial.includes(searchTerm) ||
+              cpfCnpj.includes(searchTerm) ||
+              celular.includes(searchTerm) ||
+              telefone.includes(searchTerm)
+            );
+          })
+        : convs;
+      
       // Format for frontend chat component
-      const formatted = convs.map((c: any) => ({
+      const formatted = filtered.map((c: any) => ({
         id: c.id,
         phoneNumber: c.clientNome || "Contato",
         lastMessage: c.ultimaMensagem || "Sem mensagens",
         lastMessageAt: c.ultimaMensagemEm || new Date().toISOString(),
+        razaoSocial: c.razaoSocial,
+        cpfCnpj: c.cpfCnpj,
+        celular: c.celularPrincipal,
       }));
       
       res.json(formatted);

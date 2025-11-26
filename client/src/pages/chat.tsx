@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Send, Phone, MessageSquare } from "lucide-react";
+import { Loader2, Send, Phone, MessageSquare, Search, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
@@ -29,10 +29,11 @@ export default function Chat() {
   const { toast } = useToast();
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
   const [messageText, setMessageText] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Fetch conversations
+  // Fetch conversations with search filter
   const { data: conversations = [], isLoading: conversationsLoading } = useQuery<Conversation[]>({
-    queryKey: ["/api/chat/conversations"],
+    queryKey: ["/api/chat/conversations", searchTerm],
     refetchInterval: 5000,
   });
 
@@ -79,6 +80,28 @@ export default function Chat() {
       {/* Conversations List */}
       <div className="w-64 flex flex-col gap-2">
         <h2 className="text-lg font-semibold text-foreground">Conversas</h2>
+        
+        {/* Search Input */}
+        <div className="relative">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar cliente..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8 pr-8"
+            data-testid="input-search-conversation"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground"
+              data-testid="button-clear-search"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
         <ScrollArea className="flex-1 border rounded-lg bg-card">
           <div className="p-4 space-y-2">
             {conversationsLoading ? (
