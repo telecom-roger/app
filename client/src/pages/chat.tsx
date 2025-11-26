@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Send, Phone, MessageSquare, Search, X } from "lucide-react";
+import { Loader2, Send, Phone, MessageSquare, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
@@ -18,26 +18,48 @@ interface Message {
   createdAt: string;
 }
 
-interface Conversation {
+interface Client {
   id: string;
-  phoneNumber: string;
-  lastMessage: string;
-  lastMessageAt: string;
+  nome: string;
+  razaoSocial?: string;
+  cpfCnpj?: string;
+  telefone: string;
+  CELULAR_PRINCIPAL?: string;
 }
 
 export default function Chat() {
   const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [selectedClientName, setSelectedClientName] = useState<string | null>(null);
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
   const [messageText, setMessageText] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
 
-  // Fetch conversations with search filter
-  const { data: conversations = [], isLoading: conversationsLoading } = useQuery<Conversation[]>({
-    queryKey: ["/api/chat/conversations", searchTerm],
-    refetchInterval: 5000,
+  // Fetch clients based on search term
+  const { data: clients = [], isLoading: clientsLoading } = useQuery<Client[]>({
+    queryKey: ["/api/clients/whatsapp-list", searchTerm],
+    refetchInterval: false,
   });
 
-  // Fetch messages for selected conversation
+  // Filter clients by search term (nome, razão social, CNPJ, celular)
+  const filteredClients = searchTerm.trim()
+    ? clients.filter((client: Client) => {
+        const term = searchTerm.toLowerCase();
+        const nome = client.nome?.toLowerCase() || "";
+        const razao = client.razaoSocial?.toLowerCase() || "";
+        const cnpj = client.cpfCnpj?.toLowerCase() || "";
+        const cel = (client.CELULAR_PRINCIPAL || client.telefone)?.toLowerCase() || "";
+        
+        return (
+          nome.includes(term) ||
+          razao.includes(term) ||
+          cnpj.includes(term) ||
+          cel.includes(term)
+        );
+      })
+    : [];
+
+  // Fetch messages for selected client
   const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
     queryKey: selectedPhone ? ["/api/chat/messages", selectedPhone] : [],
     enabled: !!selectedPhone,
@@ -58,7 +80,6 @@ export default function Chat() {
       queryClient.invalidateQueries({
         queryKey: selectedPhone ? ["/api/chat/messages", selectedPhone] : [],
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/chat/conversations"] });
       toast({ title: "Mensagem enviada", variant: "default" });
     },
     onError: (error: any) => {
@@ -70,6 +91,14 @@ export default function Chat() {
     },
   });
 
+  const handleSelectClient = (client: Client) => {
+    const phone = client.CELULAR_PRINCIPAL || client.telefone;
+    setSelectedClientId(client.id);
+    setSelectedClientName(client.nome);
+    setSelectedPhone(phone);
+    setSearchTerm("");
+  };
+
   const handleSendMessage = () => {
     if (!messageText.trim() || !selectedPhone) return;
     sendMutation.mutate(messageText);
@@ -77,62 +106,58 @@ export default function Chat() {
 
   return (
     <div className="flex h-full gap-4 p-4 bg-background">
-      {/* Conversations List */}
-      <div className="w-64 flex flex-col gap-2">
-        <h2 className="text-lg font-semibold text-foreground">Conversas</h2>
-        
+      {/* Search and Clients List */}
+      <div className="w-80 flex flex-col gap-2">
+        <h2 className="text-lg font-semibold text-foreground">Buscar Cliente</h2>
+
         {/* Search Input */}
         <div className="relative">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar cliente..."
+            placeholder="Nome, CNPJ ou celular..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8 pr-8"
-            data-testid="input-search-conversation"
+            className="pl-9"
+            data-testid="input-search-client"
           />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm("")}
-              className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground"
-              data-testid="button-clear-search"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
         </div>
 
+        {/* Clients List */}
         <ScrollArea className="flex-1 border rounded-lg bg-card">
           <div className="p-4 space-y-2">
-            {conversationsLoading ? (
+            {searchTerm.trim() === "" ? (
+              <p className="text-sm text-muted-foreground">
+                Digite para buscar um cliente
+              </p>
+            ) : clientsLoading ? (
               <div className="flex items-center justify-center h-20">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               </div>
-            ) : conversations.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhuma conversa</p>
+            ) : filteredClients.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nenhum cliente encontrado
+              </p>
             ) : (
-              conversations.map((conv: Conversation) => (
+              filteredClients.map((client: Client) => (
                 <button
-                  key={conv.id}
-                  onClick={() => setSelectedPhone(conv.phoneNumber)}
-                  className={`w-full text-left p-3 rounded-lg transition-colors ${
-                    selectedPhone === conv.phoneNumber
+                  key={client.id}
+                  onClick={() => handleSelectClient(client)}
+                  className={`w-full text-left p-3 rounded-lg transition-colors hover:bg-muted ${
+                    selectedClientId === client.id
                       ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted text-foreground"
+                      : "text-foreground"
                   }`}
-                  data-testid={`button-conversation-${conv.phoneNumber}`}
+                  data-testid={`button-client-${client.id}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {conv.phoneNumber}
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {conv.lastMessage}
-                      </p>
-                    </div>
-                  </div>
+                  <p className="text-sm font-medium truncate">{client.nome}</p>
+                  {client.razaoSocial && (
+                    <p className="text-xs text-muted-foreground truncate">
+                      {client.razaoSocial}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground truncate">
+                    {client.CELULAR_PRINCIPAL || client.telefone}
+                  </p>
                 </button>
               ))
             )}
@@ -146,7 +171,12 @@ export default function Chat() {
           <>
             <div className="flex items-center gap-2 p-3 bg-card border rounded-lg">
               <Phone className="h-5 w-5 text-primary" />
-              <span className="font-medium text-foreground">{selectedPhone}</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-foreground truncate">
+                  {selectedClientName}
+                </p>
+                <p className="text-sm text-muted-foreground">{selectedPhone}</p>
+              </div>
             </div>
 
             {/* Messages */}
@@ -220,7 +250,7 @@ export default function Chat() {
             <div className="text-center">
               <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">
-                Selecione uma conversa para começar
+                Busque e selecione um cliente para começar
               </p>
             </div>
           </Card>
