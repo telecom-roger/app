@@ -562,7 +562,16 @@ export async function getMessages(conversationId: string, limit: number = 50): P
 }
 
 export async function createMessage(data: InsertMessage): Promise<Message> {
+  console.log(`💾 Salvando mensagem: sender=${data.sender}, conteudo=${data.conteudo?.substring(0, 50)}, convId=${data.conversationId}`);
+  
   const [created] = await db.insert(messages).values(data).returning();
+  
+  if (!created) {
+    console.error(`❌ ERRO: createMessage não retornou mensagem!`);
+    throw new Error("Failed to create message");
+  }
+  
+  console.log(`✅ Mensagem salva no DB: ${created.id}`);
   
   // Update conversation last message
   if (created.conversationId) {
@@ -573,6 +582,8 @@ export async function createMessage(data: InsertMessage): Promise<Message> {
         ultimaMensagemEm: new Date(),
       })
       .where(eq(conversations.id, created.conversationId));
+    
+    console.log(`✅ Conversa atualizada: ${created.conversationId}`);
   }
   
   return created;

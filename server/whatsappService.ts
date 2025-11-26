@@ -190,18 +190,23 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
         activeSessions.set(sessionId, sock);
         sessionStatus.set(sessionId, "conectada");
         qrCodes.delete(sessionId);
-        reconnectAttempts.delete(sessionId); // Reset tentativas após sucesso
+        reconnectAttempts.delete(sessionId);
         
-        // ✅ ATIVAR KEEP-ALIVE para manter conexão estável
         startKeepAlive(sessionId, sock);
         
-        // 🎯 ATIVAR LISTENER DE MENSAGENS RECEBIDAS
-        if (userId) {
-          setSessionUser(sessionId, userId);
+        // 🎯 Sempre ativar listener, mesmo se userId não foi passado diretamente
+        let currentUserId = userId;
+        if (!currentUserId) {
+          currentUserId = sessionUsers.get(sessionId);
+          console.log(`⚠️ userId não passado, tentando recuperar do map: ${currentUserId}`);
+        }
+        
+        if (currentUserId) {
+          setSessionUser(sessionId, currentUserId);
           handleIncomingMessages(sessionId, sock);
-          console.log(`🎯 LISTENER ATIVADO: ${sessionId} | Usuário: ${userId}`);
+          console.log(`🎯 LISTENER ATIVADO: ${sessionId} | Usuário: ${currentUserId}`);
         } else {
-          console.log(`⚠️ UserId não configurado para ${sessionId} - listener NÃO ativado`);
+          console.log(`❌ CRÍTICO: Nenhum userId disponível para ${sessionId}`);
         }
       }
 

@@ -1328,6 +1328,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { conversationId } = req.params;
       const { conteudo, tipo = "texto" } = req.body;
+      const userId = (req.user as any).id;
+      
+      console.log(`📤 POST /api/chat/messages: convId=${conversationId}, conteudo=${conteudo?.substring(0, 30)}, userId=${userId}`);
       
       if (!conteudo) {
         return res.status(400).json({ error: "Message content required" });
@@ -1340,14 +1343,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         conteudo,
       });
       
+      console.log(`✅ Mensagem criada: ${JSON.stringify(msg)}`);
+      
       // Also try to send via WhatsApp
-      const conv = await db.select().from(conversations).where(eq(conversations.id, conversationId)).limit(1);
-      if (conv && conv[0]) {
-        const client = await db.select().from(clients).where(eq(clients.id, conv[0].clientId)).limit(1);
-        if (client && client[0]) {
-          const telefone = client[0].CELULAR_PRINCIPAL || client[0].telefone;
-          const sessions = await storage.getAllWhatsappSessions((req.user as any).id);
+      const [conv] = await db.select().from(conversations).where(eq(conversations.id, conversationId)).limit(1);
+      if (conv) {
+        const [client] = await db.select().from(clients).where(eq(clients.id, conv.clientId)).limit(1);
+        if (client) {
+          const telefone = client.CELULAR_PRINCIPAL || client.telefone;
+          const sessions = await storage.getAllWhatsappSessions(userId);
           const sessaoAtiva = sessions.find((s) => s.status === "conectada");
+          
+          console.log(`📱 Sessões do usuário: ${sessions.length}, Ativa: ${sessaoAtiva?.sessionId}`);
           
           if (sessaoAtiva && telefone) {
             try {
@@ -1363,7 +1370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(msg);
     } catch (error: any) {
       console.error("Error sending message:", error);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: error.message || "Internal server error" });
     }
   });
 
