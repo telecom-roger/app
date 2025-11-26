@@ -67,11 +67,13 @@ export default function Chat() {
         phone,
       });
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
+      console.log("✅ Conversa recebida do servidor:", data);
       setSelectedConversationId(data.id);
       toast({ title: "Conversa carregada", variant: "default" });
     },
     onError: (error: any) => {
+      console.error("❌ Erro ao carregar conversa:", error);
       toast({
         title: "Erro ao carregar conversa",
         description: error.message || "Cliente não encontrado",
