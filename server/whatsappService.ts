@@ -86,18 +86,9 @@ async function handleIncomingMessages(sessionId: string, sock: any) {
           continue;
         }
         
-        console.log(`📨 [${sessionId}] Buscando conversa para telefone: ${senderPhone}`);
+        console.log(`📨 [${sessionId}] Recebendo mensagem de ${senderPhone}`);
         
         try {
-          // Find conversation by phone
-          const conversation = await storage.findConversationByPhoneAndUser(senderPhone, userId);
-          if (!conversation) {
-            console.log(`📨 [${sessionId}] Nenhuma conversa encontrada para telefone: ${senderPhone}`);
-            continue;
-          }
-          
-          console.log(`📨 [${sessionId}] Conversa encontrada: ${conversation.id}`);
-          
           // Extract message content
           let conteudo = "";
           let tipo = "texto";
@@ -122,6 +113,17 @@ async function handleIncomingMessages(sessionId: string, sock: any) {
             continue;
           }
           
+          // Get or create conversation
+          let conversation = await storage.findConversationByPhoneAndUser(senderPhone, userId);
+          
+          if (!conversation) {
+            console.log(`📨 [${sessionId}] Criando nova conversa para telefone: ${senderPhone}`);
+            conversation = await storage.createConversation({
+              userId,
+              telefone: senderPhone,
+            });
+          }
+          
           // Save message to database
           await storage.createMessage({
             conversationId: conversation.id,
@@ -130,7 +132,7 @@ async function handleIncomingMessages(sessionId: string, sock: any) {
             conteudo,
           });
           
-          console.log(`✅ Mensagem recebida de ${senderPhone} e salva na conversa`);
+          console.log(`✅ Mensagem recebida de ${senderPhone} e salva na conversa ${conversation.id}`);
         } catch (error) {
           console.error(`Erro ao processar mensagem recebida:`, error);
         }
@@ -199,11 +201,9 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
       }
 
       if (connection === "close") {
-        const shouldReconnect =
-          (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
         const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
         
-        console.log(`❌ Conexão fechada para sessão ${sessionId}, código: ${statusCode}, reconectar: ${shouldReconnect}`);
+        console.log(`❌ Conexão fechada para sessão ${sessionId}, código: ${statusCode}`);
         sessionStatus.set(sessionId, "desconectada");
         
         // Para keep-alive quando desconectar
@@ -212,14 +212,14 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
         // Sempre deletar socket de sessão ativa
         activeSessions.delete(sessionId);
 
-        // **SEMPRE** reconectar, mesmo se statusCode indica logout (Baileys força desconexão)
+        // **SEMPRE** reconectar automaticamente (máximo 30 tentativas)
         const attempts = (reconnectAttempts.get(sessionId) || 0) + 1;
         reconnectAttempts.set(sessionId, attempts);
         
-        if (attempts <= 15) {
-          console.log(`🔄 Auto-reconectando ${attempts}/15 para sessão ${sessionId}... (código: ${statusCode})`);
-          // Reconectar MUITO rápido na primeira tentativa
-          const delay = attempts === 1 ? 500 : Math.min(1000 + (attempts * 300), 8000);
+        if (attempts <= 30) {
+          console.log(`🔄 Auto-reconectando ${attempts}/30 para sessão ${sessionId}... (código: ${statusCode})`);
+          // Delay progressivo: 100ms, 500ms, 1s, 2s, etc.
+          const delay = Math.min(100 * Math.pow(1.5, attempts - 1), 15000);
           setTimeout(() => {
             console.log(`⚡ Tentativa ${attempts} de reconexão para sessão ${sessionId}...`);
             const userId = sessionUsers.get(sessionId);

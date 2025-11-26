@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Send, Phone } from "lucide-react";
+import { Loader2, Send, Phone, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
@@ -206,5 +206,3 @@ export default function Chat() {
     </div>
   );
 }
-
-import { MessageSquare } from "lucide-react";
