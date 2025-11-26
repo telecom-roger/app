@@ -391,7 +391,7 @@ export default function Chat() {
                       onClick={() => handleSelectConversation(conv.id)}
                       className={`w-full text-left p-3 rounded-lg transition-colors mb-1 hover:bg-muted ${
                         selectedConversationId === conv.id
-                          ? "bg-primary text-primary-foreground"
+                          ? "bg-primary/15 text-foreground"
                           : "text-foreground"
                       }`}
                       data-testid={`button-conversation-${conv.id}`}
