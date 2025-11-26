@@ -62,6 +62,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+// @ts-ignore
 import Papa from "papaparse";
 
 type ContactEntry = {
@@ -1085,7 +1086,7 @@ export default function CampanhasWhatsApp() {
               </div>
             </div>
 
-            {/* Clients Table with better styling */}
+            {/* Clients Table with better styling - Scroll enabled */}
             <div className="flex-1 overflow-hidden flex flex-col border rounded-lg bg-white dark:bg-slate-950 min-h-[500px]">
               {carregandoClientes ? (
                 <div className="flex items-center justify-center flex-1">
@@ -1102,65 +1103,63 @@ export default function CampanhasWhatsApp() {
                   </div>
                 </div>
               ) : (
-                <div className="flex-1 overflow-hidden">
-                  <ScrollArea className="h-full">
-                    <Table className="text-sm">
-                      <TableHeader className="sticky top-0 bg-slate-100 dark:bg-slate-800 z-10">
-                        <TableRow className="border-b-2">
-                          <TableHead className="w-12 text-center">
+                <div className="flex-1 overflow-y-auto border-t">
+                  <Table className="text-sm w-full">
+                    <TableHeader className="sticky top-0 bg-slate-100 dark:bg-slate-800 z-10">
+                      <TableRow className="border-b-2">
+                        <TableHead className="w-12 text-center">
+                          <Checkbox
+                            checked={clientesSelecionados.size === clientesFiltrados.length && clientesFiltrados.length > 0}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setClientesSelecionados(new Set(clientesFiltrados.map((c) => c.id)));
+                              } else {
+                                setClientesSelecionados(new Set());
+                              }
+                            }}
+                            data-testid="checkbox-select-all"
+                          />
+                        </TableHead>
+                        <TableHead className="font-semibold">RAZÃO SOCIAL</TableHead>
+                        <TableHead className="font-semibold">CELULAR</TableHead>
+                        <TableHead className="font-semibold text-xs">STATUS</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {clientesFiltrados.map((cliente) => (
+                        <TableRow key={cliente.id} className="border-b hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer transition-colors" data-testid={`row-cliente-${cliente.id}`}>
+                          <TableCell className="text-center w-12" onClick={(e) => {
+                            e.stopPropagation();
+                            toggleClienteSelecionado(cliente.id);
+                          }}>
                             <Checkbox
-                              checked={clientesSelecionados.size === clientesFiltrados.length && clientesFiltrados.length > 0}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setClientesSelecionados(new Set(clientesFiltrados.map((c) => c.id)));
-                                } else {
-                                  setClientesSelecionados(new Set());
-                                }
-                              }}
-                              data-testid="checkbox-select-all"
+                              checked={clientesSelecionados.has(cliente.id)}
+                              onCheckedChange={() => toggleClienteSelecionado(cliente.id)}
+                              data-testid={`checkbox-cliente-${cliente.id}`}
                             />
-                          </TableHead>
-                          <TableHead className="font-semibold">RAZÃO SOCIAL</TableHead>
-                          <TableHead className="font-semibold">CELULAR</TableHead>
-                          <TableHead className="font-semibold text-xs">STATUS</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {clientesFiltrados.map((cliente) => (
-                          <TableRow key={cliente.id} className="border-b hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer transition-colors">
-                            <TableCell className="text-center" onClick={(e) => {
-                              e.stopPropagation();
-                              toggleClienteSelecionado(cliente.id);
-                            }}>
-                              <Checkbox
-                                checked={clientesSelecionados.has(cliente.id)}
-                                onCheckedChange={() => toggleClienteSelecionado(cliente.id)}
-                                data-testid={`checkbox-cliente-${cliente.id}`}
-                              />
-                            </TableCell>
-                            <TableCell className="font-medium">{cliente.razaoSocial || cliente.nome}</TableCell>
-                            <TableCell className="font-mono text-sm font-medium">{cliente.telefone}</TableCell>
-                            <TableCell className="text-xs">
-                              {cliente.ultimaCampanha ? (
-                                cliente.ultimaCampanha.recente ? (
-                                  <Badge variant="destructive" className="text-xs gap-1">
-                                    <AlertTriangle className="h-3 w-3" />
-                                    {cliente.ultimaCampanha.minutosPara}m atrás
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="text-xs">
-                                    {cliente.ultimaCampanha.data}
-                                  </Badge>
-                                )
+                          </TableCell>
+                          <TableCell className="font-medium" data-testid={`text-razaosocial-${cliente.id}`}>{cliente.razaoSocial || cliente.nome}</TableCell>
+                          <TableCell className="font-mono text-sm font-medium" data-testid={`text-celular-${cliente.id}`}>{cliente.telefone}</TableCell>
+                          <TableCell className="text-xs" data-testid={`status-campanha-${cliente.id}`}>
+                            {cliente.ultimaCampanha ? (
+                              cliente.ultimaCampanha.recente ? (
+                                <Badge variant="destructive" className="text-xs gap-1">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  {cliente.ultimaCampanha.minutosPara}m atrás
+                                </Badge>
                               ) : (
-                                <Badge variant="secondary" className="text-xs">Novo</Badge>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </ScrollArea>
+                                <Badge variant="outline" className="text-xs">
+                                  {cliente.ultimaCampanha.data}
+                                </Badge>
+                              )
+                            ) : (
+                              <Badge variant="secondary" className="text-xs">Novo</Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </div>
