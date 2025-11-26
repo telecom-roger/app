@@ -1538,6 +1538,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Mark messages as read
+  app.patch("/api/chat/messages/:conversationId/mark-read", isAuthenticated, async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      const user = (req.user as any);
+
+      // Verificar se a conversa pertence ao usuário
+      const [conversation] = await db
+        .select()
+        .from(conversations)
+        .where(and(eq(conversations.id, conversationId), eq(conversations.userId, user.id)))
+        .limit(1);
+
+      if (!conversation) {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+
+      await storage.markMessagesAsRead(conversationId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error marking messages as read:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Upload file for chat
   app.post("/api/chat/upload", isAuthenticated, async (req, res) => {
     try {

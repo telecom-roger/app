@@ -360,7 +360,6 @@ export const conversations = pgTable("conversations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  whatsappSessionId: varchar("whatsapp_session_id").references(() => whatsappSessions.id),
   canal: varchar("canal", { length: 20 }).notNull().default("whatsapp"),
   assunto: text("assunto"),
   ativa: boolean("ativa").default(true),
@@ -370,7 +369,6 @@ export const conversations = pgTable("conversations", {
 }, (table) => [
   index("idx_conversations_client").on(table.clientId),
   index("idx_conversations_user").on(table.userId),
-  index("idx_conversations_whatsapp_session").on(table.whatsappSessionId),
 ]);
 
 export type Conversation = typeof conversations.$inferSelect;

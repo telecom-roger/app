@@ -598,10 +598,17 @@ export async function getConversations(userId: string): Promise<any[]> {
     .where(eq(conversations.userId, userId))
     .orderBy(desc(conversations.ultimaMensagemEm));
   
-  return result.map(row => ({
-    ...row,
-    client: row.client && row.client.id ? row.client : null
+  // Add unread message counts
+  const withCounts = await Promise.all(result.map(async (row) => {
+    const unreadCount = await countUnreadMessages(row.id);
+    return {
+      ...row,
+      unreadCount,
+      client: row.client && row.client.id ? row.client : null
+    };
   }));
+  
+  return withCounts;
 }
 
 export async function getMessages(conversationId: string, limit: number = 50): Promise<Message[]> {

@@ -27,6 +27,7 @@ interface Conversation {
   ultimaMensagem?: string;
   ultimaMensagemEm?: string;
   createdAt: string;
+  unreadCount?: number;
   client?: {
     id: string;
     nome: string;
@@ -272,14 +273,21 @@ export default function Chat() {
                             {conv.client?.CELULAR_PRINCIPAL || conv.client?.telefone || "Sem telefone"}
                           </p>
                         </div>
-                        {conv.ultimaMensagemEm && (
-                          <p className="text-xs text-muted-foreground whitespace-nowrap">
-                            {new Date(conv.ultimaMensagemEm).toLocaleTimeString("pt-BR", {
-                              hour: "2-digit",
-                              minute: "2-digit"
-                            })}
-                          </p>
-                        )}
+                        <div className="flex items-center gap-2 whitespace-nowrap">
+                          {conv.unreadCount && conv.unreadCount > 0 && (
+                            <span className="bg-red-500 text-white text-xs font-bold rounded-full min-w-[24px] h-6 flex items-center justify-center">
+                              {conv.unreadCount > 99 ? "99+" : conv.unreadCount}
+                            </span>
+                          )}
+                          {conv.ultimaMensagemEm && (
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(conv.ultimaMensagemEm).toLocaleTimeString("pt-BR", {
+                                hour: "2-digit",
+                                minute: "2-digit"
+                              })}
+                            </p>
+                          )}
+                        </div>
                       </div>
                       {conv.ultimaMensagem && (
                         <p className="text-xs text-muted-foreground truncate mt-1">
@@ -342,9 +350,16 @@ export default function Chat() {
                         }`}
                       >
                         <p className="text-sm">{msg.conteudo}</p>
-                        <p className="text-xs opacity-70 mt-1">
-                          {new Date(msg.createdAt).toLocaleTimeString("pt-BR")}
-                        </p>
+                        <div className="flex items-center justify-between gap-2 mt-1">
+                          <p className="text-xs opacity-70">
+                            {new Date(msg.createdAt).toLocaleTimeString("pt-BR")}
+                          </p>
+                          {msg.sender === "user" && (
+                            <span className="text-xs">
+                              {msg.lido ? "✓✓" : "✓"}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))
