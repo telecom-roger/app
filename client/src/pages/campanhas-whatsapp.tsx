@@ -384,6 +384,41 @@ export default function CampanhasWhatsApp() {
 
         {/* ===== ABA MENSAGENS ===== */}
         <TabsContent value="mensagens" className="space-y-4">
+          {/* Campaign Progress Widget */}
+          {campanhasEmProgresso.length > 0 && (
+            <div className="grid gap-4">
+              {campanhasEmProgresso.map((campanha) => (
+                <Card key={campanha.id} className="border-primary/50 bg-gradient-to-r from-primary/5 to-transparent">
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-base">Campanha em Progresso</CardTitle>
+                      <Badge variant={campanha.status === "concluida" ? "outline" : "default"}>
+                        {Math.round((campanha.enviadas / campanha.total) * 100)}%
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Progress value={(campanha.enviadas / campanha.total) * 100} />
+                    <div className="grid grid-cols-3 gap-2 text-sm">
+                      <div className="text-center">
+                        <div className="text-muted-foreground">Enviadas</div>
+                        <div className="font-semibold text-green-600 dark:text-green-400">{campanha.enviadas}/{campanha.total}</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-muted-foreground">Taxa</div>
+                        <div className="font-semibold">{Math.round((campanha.enviadas / campanha.total) * 100)}%</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-muted-foreground">Erros</div>
+                        <div className={`font-semibold ${campanha.erros > 0 ? "text-destructive" : "text-muted-foreground"}`}>{campanha.erros}</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left: Contatos */}
             <div className="lg:col-span-1 space-y-4">
