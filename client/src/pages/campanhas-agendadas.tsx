@@ -54,7 +54,9 @@ export default function CampanhasAgendadas() {
     queryKey: ["/api/campaigns/scheduled"],
     queryFn: async () => {
       const res = await fetch("/api/campaigns/scheduled");
-      return res.json();
+      if (!res.ok) throw new Error("Failed to fetch campaigns");
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
     },
   });
 
@@ -62,7 +64,9 @@ export default function CampanhasAgendadas() {
     queryKey: ["/api/templates"],
     queryFn: async () => {
       const res = await fetch("/api/templates");
-      return res.json();
+      if (!res.ok) throw new Error("Failed to fetch templates");
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
     },
   });
 
@@ -70,7 +74,9 @@ export default function CampanhasAgendadas() {
     queryKey: ["/api/clients/whatsapp-list"],
     queryFn: async () => {
       const res = await fetch("/api/clients/whatsapp-list");
-      return res.json();
+      if (!res.ok) throw new Error("Failed to fetch clients");
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
     },
   });
 
@@ -78,9 +84,9 @@ export default function CampanhasAgendadas() {
     resolver: zodResolver(insertCampaignSchema),
     defaultValues: {
       nome: "",
-      tipo: "whatsapp",
+      tipo: "whatsapp" as const,
       templateId: "",
-      status: "agendada",
+      status: "agendada" as const,
       totalRecipients: 0,
       agendadaPara: new Date().toISOString(),
       filtros: {},

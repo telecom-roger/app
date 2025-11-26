@@ -117,12 +117,12 @@ export default function ModelosMensagens() {
     setEditingId(template.id);
     form.reset({
       nome: template.nome,
-      tipo: template.tipo,
+      tipo: template.tipo as const,
       assunto: template.assunto || "",
       conteudo: template.conteudo,
       imageUrl: template.imageUrl || "",
       variaveis: template.variaveis || [],
-      ativo: template.ativo,
+      ativo: template.ativo ?? true,
     });
     setOpenDialog(true);
   };
@@ -214,7 +214,7 @@ export default function ModelosMensagens() {
                   )}
                 />
 
-                {form.watch("tipo") === "email" && (
+                {(form.watch("tipo") as string) === "email" && (
                   <FormField
                     control={form.control}
                     name="assunto"

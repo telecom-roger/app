@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
 import { eq, and, or, ilike, desc, sql } from "drizzle-orm";
-import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, whatsappSessions, clients, interactions, conversations, messages } from "@shared/schema";
+import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, whatsappSessions, clients, interactions, conversations, messages, campaigns as campaignsTable } from "@shared/schema";
 import * as storage from "./storage";
 import * as whatsappService from "./whatsappService";
 import { setupAuth, isAuthenticated } from "./localAuth";
@@ -407,17 +407,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/campaigns/scheduled", isAuthenticated, async (req, res) => {
     try {
       const user = req.user as any;
-      const { campaigns: campaignsTable } = await import("@shared/schema");
       
       const scheduled = await db
         .select()
-        .from(campaigns)
+        .from(campaignsTable)
         .where(
           user.role === 'admin'
-            ? eq(campaigns.status, 'agendada')
-            : and(eq(campaigns.status, 'agendada'), eq(campaigns.createdBy, user.id))
+            ? eq(campaignsTable.status, 'agendada')
+            : and(eq(campaignsTable.status, 'agendada'), eq(campaignsTable.createdBy, user.id))
         );
-      res.json(scheduled);
+      res.json(scheduled || []);
     } catch (error: any) {
       console.error("Error fetching scheduled campaigns:", error);
       res.status(500).json({ error: "Internal server error" });
