@@ -1,5 +1,5 @@
 import QRCode from "qrcode";
-import { makeWASocket, DisconnectReason, useMultiFileAuthState, Browsers } from "@whiskeysockets/baileys";
+import { makeWASocket, DisconnectReason, useMultiFileAuthState, Browsers, downloadMediaMessage } from "@whiskeysockets/baileys";
 import { Boom } from "@hapi/boom";
 import path from "path";
 import fs from "fs";
@@ -103,6 +103,9 @@ async function processIncomingMessages(sessionId: string, m: any) {
 
       let conteudo = "";
       let tipo = "texto";
+      let arquivo: string | undefined;
+      let nomeArquivo: string | undefined;
+      let mimeType: string | undefined;
 
       if (msg.message?.conversation) {
         conteudo = msg.message.conversation;
@@ -111,15 +114,23 @@ async function processIncomingMessages(sessionId: string, m: any) {
       } else if (msg.message?.imageMessage) {
         tipo = "imagem";
         conteudo = msg.message.imageMessage.caption || "[Imagem]";
+        mimeType = msg.message.imageMessage.mimetype || "image/jpeg";
+        nomeArquivo = `image_${Date.now()}.jpg`;
       } else if (msg.message?.audioMessage) {
         tipo = "audio";
         conteudo = "[Áudio]";
+        mimeType = msg.message.audioMessage.mimetype || "audio/aac";
+        nomeArquivo = `audio_${Date.now()}.m4a`;
       } else if (msg.message?.videoMessage) {
         tipo = "video";
         conteudo = msg.message.videoMessage.caption || "[Vídeo]";
+        mimeType = msg.message.videoMessage.mimetype || "video/mp4";
+        nomeArquivo = `video_${Date.now()}.mp4`;
       } else if (msg.message?.documentMessage) {
         tipo = "documento";
-        conteudo = `[${msg.message.documentMessage.fileName || "Documento"}]`;
+        nomeArquivo = msg.message.documentMessage.fileName || "documento";
+        conteudo = `[${nomeArquivo}]`;
+        mimeType = msg.message.documentMessage.mimetype || "application/octet-stream";
       } else {
         // Ignorar mensagens de protocolo (history sync, etc)
         continue;
@@ -127,6 +138,25 @@ async function processIncomingMessages(sessionId: string, m: any) {
 
       try {
         console.log(`[RECEBIMENTO] 💾 Salvando: tipo=${tipo}, conteudo="${conteudo.substring(0, 50)}"`);
+        
+        // Download media if present
+        if (tipo !== "texto" && msg.message && activeSessions.has(sessionId)) {
+          try {
+            const sock = activeSessions.get(sessionId);
+            const buffer = await downloadMediaMessage(msg, "buffer", {}, {
+              logger: console,
+              reuploadRequest: sock.updateMediaMessage,
+            } as any);
+            
+            if (buffer) {
+              arquivo = "data:" + (mimeType || "application/octet-stream") + ";base64," + buffer.toString("base64");
+              console.log(`✅ Mídia baixada: ${nomeArquivo} (${buffer.length} bytes)`);
+            }
+          } catch (err) {
+            console.warn(`⚠️ Erro ao baixar mídia:`, err);
+            // Continue sem mídia - vai salvar só o texto
+          }
+        }
         
         let conversation = await storage.findConversationByPhoneAndUser(senderPhone, userId);
         
@@ -179,6 +209,9 @@ async function processIncomingMessages(sessionId: string, m: any) {
           sender: "client",
           tipo,
           conteudo,
+          arquivo,
+          nomeArquivo,
+          mimeType,
         });
 
         console.log(`📥 ✅ RECEBIDO E SALVO DE ${senderPhone}: "${conteudo}"`);
