@@ -323,17 +323,14 @@ export default function CampanhasWhatsApp() {
         try {
           const mensagem = substituirVariaveisNoTemplate(template, contato);
           
-          const formData = new FormData();
-          formData.append("telefone", telefone);
-          formData.append("mensagem", mensagem);
-          formData.append("clientId", contato.id || "");
-          if (imagemSelecionada) {
-            formData.append("imagem", imagemSelecionada);
-          }
-
           const response = await fetch("/api/whatsapp/enviar-broadcast", {
             method: "POST",
-            body: formData,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              telefone,
+              mensagem,
+              clientId: contato.id || "",
+            }),
           });
 
           if (response.ok) {
