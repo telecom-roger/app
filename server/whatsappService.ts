@@ -23,20 +23,38 @@ async function handleIncomingMessages(sessionId: string, sock: any) {
       const { messages: msgs } = m;
       const userId = sessionUsers.get(sessionId);
       
-      if (!userId || !msgs) return;
+      console.log(`📨 [${sessionId}] Listener ativado! userId=${userId}, msgs=${msgs?.length || 0}`);
+      
+      if (!userId || !msgs) {
+        console.log(`📨 [${sessionId}] Ignorando: userId=${userId}, msgs=${msgs?.length || 0}`);
+        return;
+      }
       
       for (const msg of msgs) {
         // Ignore sent messages, only process incoming
-        if (msg.key.fromMe) continue;
+        if (msg.key.fromMe) {
+          console.log(`📨 [${sessionId}] Ignorando mensagem enviada por mim`);
+          continue;
+        }
         
         // Get sender phone
         const senderPhone = msg.key.remoteJid?.replace("@s.whatsapp.net", "") || "";
-        if (!senderPhone) continue;
+        if (!senderPhone) {
+          console.log(`📨 [${sessionId}] Nenhum telefone encontrado no remoteJid`);
+          continue;
+        }
+        
+        console.log(`📨 [${sessionId}] Buscando conversa para telefone: ${senderPhone}`);
         
         try {
           // Find conversation by phone
           const conversation = await storage.findConversationByPhoneAndUser(senderPhone, userId);
-          if (!conversation) continue;
+          if (!conversation) {
+            console.log(`📨 [${sessionId}] Nenhuma conversa encontrada para telefone: ${senderPhone}`);
+            continue;
+          }
+          
+          console.log(`📨 [${sessionId}] Conversa encontrada: ${conversation.id}`);
           
           // Extract message content
           let conteudo = "";

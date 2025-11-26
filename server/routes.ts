@@ -686,7 +686,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         console.log("🔄 Reconectando sessão com novo ID:", newSessionId);
-        await whatsappService.initializeWhatsAppSession(newSessionId, session.userId);
+        await whatsappService.initializeWhatsAppSession(newSessionId, session.userId || undefined);
         
         // Wait for QR code to be generated (Baileys needs time)
         for (let i = 0; i < 10; i++) {
