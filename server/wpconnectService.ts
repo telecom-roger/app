@@ -1,6 +1,8 @@
-import { WPPConnect } from "@wppconnect-team/wppconnect";
+import * as WPPConnectModule from "@wppconnect-team/wppconnect";
 import path from "path";
 import * as storage from "./storage";
+
+const WPPConnect = (WPPConnectModule as any).default || WPPConnectModule;
 
 const activeSessions = new Map<string, any>();
 const qrCodes = new Map<string, string>();

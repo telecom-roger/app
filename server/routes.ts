@@ -1152,38 +1152,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
               .limit(1);
 
             if (client && client.CELULAR_PRINCIPAL) {
-              const sock = whatsappService.getActiveSession(session.sessionId);
-              if (sock) {
+              const isAlive = whatsappService.isSessionAlive(session.sessionId);
+              if (isAlive) {
                 // Formata o telefone para WhatsApp
                 let telefone = client.CELULAR_PRINCIPAL.replace(/\D/g, "");
                 if (!telefone.startsWith("55")) {
                   telefone = "55" + telefone;
                 }
-                const jid = telefone + "@s.whatsapp.net";
 
-                // Envia a mensagem
+                // Envia a mensagem via WPConnect
                 if (tipo === "texto") {
-                  await sock.sendMessage(jid, { text: conteudo });
+                  await whatsappService.sendMessage(session.sessionId, telefone, conteudo);
                   console.log(`✅ Mensagem enviada para WhatsApp: ${telefone}`);
-                } else if (tipo === "imagem" && arquivo) {
-                  await sock.sendMessage(jid, {
-                    image: { url: arquivo },
-                    caption: conteudo || "",
-                  });
-                } else if (tipo === "audio" && arquivo) {
-                  await sock.sendMessage(jid, {
-                    audio: { url: arquivo },
-                  });
-                } else if (tipo === "video" && arquivo) {
-                  await sock.sendMessage(jid, {
-                    video: { url: arquivo },
-                    caption: conteudo || "",
-                  });
-                } else if (tipo === "documento" && arquivo) {
-                  await sock.sendMessage(jid, {
-                    document: { url: arquivo },
-                    fileName: nomeArquivo || "documento",
-                  });
+                } else {
+                  console.log(`⚠️ WPConnect suporta apenas texto no chat por enquanto`);
                 }
               }
             }
