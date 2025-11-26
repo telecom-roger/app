@@ -436,14 +436,14 @@ export async function sendImage(sessionId: string, telefone: string, imageBase64
   }
 }
 
-async function convertWebMToOgg(webmBase64: string): Promise<Buffer | null> {
+async function convertWebMToM4A(webmBase64: string): Promise<Buffer | null> {
   try {
     const tempDir = path.join(process.cwd(), "temp_audio");
     if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
     
     const timestamp = Date.now();
     const webmPath = path.join(tempDir, `audio_${timestamp}.webm`);
-    const oggPath = path.join(tempDir, `audio_${timestamp}.ogg`);
+    const m4aPath = path.join(tempDir, `audio_${timestamp}.m4a`);
     
     // Write WebM to temp file
     const base64Data = webmBase64.split(",")[1] || webmBase64;
@@ -451,25 +451,25 @@ async function convertWebMToOgg(webmBase64: string): Promise<Buffer | null> {
     fs.writeFileSync(webmPath, buffer);
     console.log(`📝 WebM temporário salvo (${buffer.length} bytes)`);
     
-    // Convert WebM to OGG/Opus (WhatsApp Web format)
+    // Convert WebM to M4A/AAC (WhatsApp mobile format)
     try {
-      await execAsync(`ffmpeg -i "${webmPath}" -c:a libopus -b:a 128k -ac 1 "${oggPath}" -y 2>/dev/null`, { timeout: 30000 });
-      console.log(`✅ Conversão WebM → OGG/Opus concluída`);
+      await execAsync(`ffmpeg -i "${webmPath}" -c:a aac -b:a 128k -ac 1 "${m4aPath}" -y 2>/dev/null`, { timeout: 30000 });
+      console.log(`✅ Conversão WebM → M4A/AAC concluída`);
     } catch (err) {
       console.warn(`⚠️ ffmpeg warning (ignorando):`, (err as any).message?.substring(0, 100));
     }
     
-    if (fs.existsSync(oggPath)) {
-      const oggBuffer = fs.readFileSync(oggPath);
-      console.log(`📊 OGG gerado (${oggBuffer.length} bytes)`);
+    if (fs.existsSync(m4aPath)) {
+      const m4aBuffer = fs.readFileSync(m4aPath);
+      console.log(`📊 M4A gerado (${m4aBuffer.length} bytes)`);
       
       // Cleanup
       try { fs.unlinkSync(webmPath); } catch (e) {}
-      try { fs.unlinkSync(oggPath); } catch (e) {}
+      try { fs.unlinkSync(m4aPath); } catch (e) {}
       
-      return oggBuffer;
+      return m4aBuffer;
     } else {
-      console.warn(`⚠️ OGG não gerado, usando WebM original`);
+      console.warn(`⚠️ M4A não gerado, usando WebM original`);
       try { fs.unlinkSync(webmPath); } catch (e) {}
       return buffer;
     }
@@ -495,8 +495,8 @@ export async function sendAudio(sessionId: string, telefone: string, audioBase64
 
     console.log(`📤 Enviando áudio para ${jid}...`);
     
-    // Convert WebM to OGG/Opus (WhatsApp Web format)
-    let audioBuffer = await convertWebMToOgg(audioBase64);
+    // Convert WebM to M4A/AAC (WhatsApp mobile format)
+    let audioBuffer = await convertWebMToM4A(audioBase64);
     if (!audioBuffer) {
       const base64Data = audioBase64.split(",")[1] || audioBase64;
       audioBuffer = Buffer.from(base64Data, "base64");
@@ -506,7 +506,7 @@ export async function sendAudio(sessionId: string, telefone: string, audioBase64
     
     const result = await sock.sendMessage(jid, { 
       audio: audioBuffer,
-      mimetype: "audio/ogg",
+      mimetype: "audio/aac",
       ptt: true
     });
     
