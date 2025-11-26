@@ -129,7 +129,14 @@ export default function Chat() {
   };
 
   const handleStartConversation = () => {
-    if (!selectedConversationId) return;
+    if (!selectedConversationId) {
+      toast({
+        title: "Aguarde",
+        description: "Carregando conversa...",
+        variant: "default",
+      });
+      return;
+    }
     // Send initial greeting message
     sendMutation.mutate("Olá! Como vai?");
   };
@@ -213,10 +220,10 @@ export default function Chat() {
                 size="icon"
                 variant="outline"
                 onClick={handleStartConversation}
-                disabled={sendMutation.isPending}
+                disabled={sendMutation.isPending || getConversationMutation.isPending || !selectedConversationId}
                 data-testid="button-start-conversation"
               >
-                {sendMutation.isPending ? (
+                {sendMutation.isPending || getConversationMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   "+"
@@ -267,13 +274,13 @@ export default function Chat() {
             {/* Input */}
             <div className="flex gap-2">
               <Input
+                placeholder="Digite uma mensagem..."
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
-                placeholder="Digite sua mensagem..."
                 onKeyPress={(e) =>
                   e.key === "Enter" && !e.shiftKey && handleSendMessage()
                 }
-                disabled={sendMutation.isPending}
+                disabled={!selectedConversationId || sendMutation.isPending}
                 data-testid="input-message"
               />
               <Button
