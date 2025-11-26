@@ -473,7 +473,7 @@ export default function CampanhasAgendadas() {
                             data-testid="checkbox-select-all"
                           />
                         </TableHead>
-                        <TableHead className="font-semibold py-2 px-3">NOME</TableHead>
+                        <TableHead className="font-semibold py-2 px-3">RAZÃO SOCIAL</TableHead>
                         <TableHead className="font-semibold py-2 px-3">CELULAR</TableHead>
                         <TableHead className="font-semibold py-2 px-3">CARTEIRA</TableHead>
                         <TableHead className="font-semibold text-xs py-2 px-3">STATUS</TableHead>
@@ -492,7 +492,7 @@ export default function CampanhasAgendadas() {
                               data-testid={`checkbox-cliente-${client.id}`}
                             />
                           </TableCell>
-                          <TableCell className="font-medium py-2 px-3" data-testid={`text-nome-${client.id}`}>{client.nome}</TableCell>
+                          <TableCell className="font-medium py-2 px-3" data-testid={`text-razaosocial-${client.id}`}>{client.razaoSocial || "N/A"}</TableCell>
                           <TableCell className="font-mono text-sm font-medium py-2 px-3" data-testid={`text-celular-${client.id}`}>{client.telefone}</TableCell>
                           <TableCell className="py-2 px-3">
                             <Badge variant="outline" className="text-xs">{client.carteira || "N/A"}</Badge>
