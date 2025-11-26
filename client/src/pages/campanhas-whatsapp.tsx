@@ -753,25 +753,20 @@ export default function CampanhasWhatsApp() {
                     />
                   </div>
 
-                  {/* Preview Button */}
-                  <Button
-                    variant={mostrarPreview ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setMostrarPreview(!mostrarPreview)}
-                    className="w-full"
-                    data-testid="button-toggle-preview"
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    {mostrarPreview ? "Ocultar Preview" : "Ver Preview"}
-                  </Button>
-
-                  {/* Live Preview */}
-                  {mostrarPreview && contatos.length > 0 && (
-                    <div className="bg-primary/5 border border-primary/20 p-4 rounded-md text-sm space-y-2">
-                      <div className="font-semibold text-xs text-primary mb-2">Visualização (1º contato):</div>
-                      <div className="whitespace-pre-wrap break-words text-sm font-mono leading-relaxed text-foreground max-h-32 overflow-y-auto">
+                  {/* Live Preview - Auto display when template & contacts */}
+                  {contatos.length > 0 && template.trim() && (
+                    <div className="bg-primary/5 border border-primary/20 rounded-md p-4 space-y-2 animate-in fade-in">
+                      <div className="font-semibold text-xs text-primary mb-2">Visualização do 1º contato:</div>
+                      <div className="whitespace-pre-wrap break-words text-sm font-mono leading-relaxed text-foreground max-h-40 overflow-y-auto bg-background/50 p-3 rounded border border-primary/10">
                         {obterPreview()}
                       </div>
+                    </div>
+                  )}
+                  
+                  {/* Placeholder if no contacts or template */}
+                  {(contatos.length === 0 || !template.trim()) && (
+                    <div className="text-xs text-muted-foreground italic p-3 bg-muted/30 rounded border border-dashed">
+                      💡 {contatos.length === 0 ? "Cole ou importe contatos para ver preview" : "Digite sua mensagem para ver preview"}
                     </div>
                   )}
                 </CardContent>
