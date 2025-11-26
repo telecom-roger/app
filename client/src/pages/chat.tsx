@@ -189,7 +189,7 @@ export default function Chat() {
   return (
     <div className="flex h-full bg-background">
       {/* Left Sidebar - Conversations List */}
-      <div className="w-80 flex flex-col border-r border-border bg-card">
+      <div className="w-full md:w-96 lg:w-2/5 flex flex-col border-r border-border bg-card">
         {/* Search Input */}
         <div className="p-4 space-y-3 border-b border-border">
           <div className="relative">
