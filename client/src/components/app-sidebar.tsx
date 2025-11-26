@@ -58,6 +58,11 @@ const menuItems = [
     icon: MessageSquare,
   },
   {
+    title: "Chat",
+    url: "/chat",
+    icon: MessageCircle,
+  },
+  {
     title: "Importação",
     url: "/importacao",
     icon: FileUp,
