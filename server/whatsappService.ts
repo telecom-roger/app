@@ -451,10 +451,10 @@ async function convertWebMToMp3(webmBase64: string): Promise<Buffer | null> {
     fs.writeFileSync(webmPath, buffer);
     console.log(`📝 WebM temporário: ${webmPath} (${buffer.length} bytes)`);
     
-    // Convert using ffmpeg
+    // Convert using ffmpeg with better quality
     try {
-      await execAsync(`ffmpeg -i "${webmPath}" -q:a 9 -n "${mp3Path}"`, { timeout: 30000 });
-      console.log(`✅ Conversão WebM → MP3 concluída`);
+      await execAsync(`ffmpeg -i "${webmPath}" -b:a 128k -ac 1 -ar 16000 -n "${mp3Path}" 2>/dev/null`, { timeout: 30000 });
+      console.log(`✅ Conversão WebM → MP3 concluída (qualidade: 128kbps)`);
     } catch (err) {
       console.warn(`⚠️ ffmpeg erro (pode ser warning):`, (err as any).message?.substring(0, 200));
       // Continue mesmo com erro, pois ffmpeg pode sair com código 1
