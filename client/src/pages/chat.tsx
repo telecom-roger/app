@@ -62,7 +62,7 @@ export default function Chat() {
   // Fetch all conversations for current user
   const { data: conversations = [], isLoading: conversationsLoading, refetch: refetchConversations } = useQuery<Conversation[]>({
     queryKey: ["/api/chat/conversations"],
-    refetchInterval: 3000,
+    refetchInterval: 500, // Poll a cada 500ms para atualização rápida
   });
 
   // Fetch all clients for search
@@ -70,6 +70,46 @@ export default function Chat() {
     queryKey: ["/api/clients/whatsapp-list"],
     refetchInterval: false,
   });
+
+  // Fetch messages for selected conversation (MUST BE BEFORE WebSocket useEffect that uses refetchMessages)
+  const { data: messages = [], isLoading: messagesLoading, refetch: refetchMessages } = useQuery<Message[]>({
+    queryKey: selectedConversationId ? ["/api/chat/messages", selectedConversationId] : [],
+    enabled: !!selectedConversationId,
+    refetchInterval: 500, // Também reduzido para 500ms
+  });
+
+  // WebSocket para notificações em tempo real de novas mensagens
+  useEffect(() => {
+    const ws = new WebSocket(
+      `ws://${window.location.host}/api/chat/ws`
+    );
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "new_message") {
+          console.log("📬 Nova mensagem recebida em tempo real:", data);
+          refetchConversations();
+          // Se está na conversa que recebeu a mensagem, refetch mensagens também
+          if (selectedConversationId === data.conversationId) {
+            refetchMessages();
+          }
+        }
+      } catch (e) {
+        console.error("Erro ao processar WebSocket:", e);
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.log("⚠️ WebSocket desconectado, usando polling");
+    };
+
+    return () => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+    };
+  }, [selectedConversationId, refetchConversations, refetchMessages]);
 
   // Filter clients by search term
   const filteredClients = searchTerm.trim()
@@ -119,13 +159,6 @@ export default function Chat() {
         variant: "destructive",
       });
     },
-  });
-
-  // Fetch messages for selected conversation
-  const { data: messages = [], isLoading: messagesLoading, refetch: refetchMessages } = useQuery<Message[]>({
-    queryKey: selectedConversationId ? ["/api/chat/messages", selectedConversationId] : [],
-    enabled: !!selectedConversationId,
-    refetchInterval: 3000,
   });
 
   // Mark messages as read when conversation is selected
