@@ -79,6 +79,7 @@ type SendingStatus = {
 type ClientForImport = {
   id: string;
   nome: string;
+  razaoSocial?: string;
   telefone: string;
   email?: string;
   ultimaCampanha?: {
@@ -1137,7 +1138,7 @@ export default function CampanhasWhatsApp() {
                                 data-testid={`checkbox-cliente-${cliente.id}`}
                               />
                             </TableCell>
-                            <TableCell className="font-medium">{cliente.nome}</TableCell>
+                            <TableCell className="font-medium">{cliente.razaoSocial || cliente.nome}</TableCell>
                             <TableCell className="font-mono text-sm font-medium">{cliente.telefone}</TableCell>
                             <TableCell className="text-xs">
                               {cliente.ultimaCampanha ? (
