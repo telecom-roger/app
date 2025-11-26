@@ -63,6 +63,8 @@ export default function Chat() {
   const { data: conversations = [], isLoading: conversationsLoading, refetch: refetchConversations } = useQuery<Conversation[]>({
     queryKey: ["/api/chat/conversations"],
     refetchInterval: 500, // Poll a cada 500ms para atualização rápida
+    staleTime: 0, // Força sempre buscar dados frescos do backend
+    gcTime: 0, // Desabilita cache completo
   });
 
   // Fetch all clients for search
