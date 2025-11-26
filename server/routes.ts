@@ -43,6 +43,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para listar clientes com WhatsApp (MUST be before :id route)
+  app.get("/api/clients/whatsapp-list", isAuthenticated, async (req, res) => {
+    try {
+      const allClients = await db
+        .select({
+          id: clients.id,
+          nome: clients.nome,
+          telefone: clients.CELULAR_PRINCIPAL,
+          email: clients.EMAIL_PRINCIPAL,
+        })
+        .from(clients)
+        .limit(10000);
+
+      const clientsWithPhones = allClients.filter((c) => c.telefone && c.telefone.trim());
+      const result = clientsWithPhones.map((client) => ({
+        ...client,
+        ultimaCampanha: undefined,
+      }));
+
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error fetching WhatsApp client list:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/clients/:id", isAuthenticated, async (req, res) => {
     try {
       const client = await storage.getClientById(req.params.id);
@@ -857,35 +883,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error: any) {
       console.error("Error in whatsapp broadcast:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  // Endpoint para listar clientes com WhatsApp e histórico de campanhas
-  app.get("/api/clients/whatsapp-list", isAuthenticated, async (req, res) => {
-    try {
-      const allClients = await db
-        .select({
-          id: clients.id,
-          nome: clients.nome,
-          telefone: clients.CELULAR_PRINCIPAL,
-          email: clients.EMAIL_PRINCIPAL,
-        })
-        .from(clients)
-        .limit(10000);
-
-      // Filter clients with valid phones
-      const clientsWithPhones = allClients.filter((c) => c.telefone && c.telefone.trim());
-
-      // Return all clients with basic info (histogram can be lazy-loaded if needed)
-      const result = clientsWithPhones.map((client) => ({
-        ...client,
-        ultimaCampanha: undefined,
-      }));
-
-      res.json(result);
-    } catch (error: any) {
-      console.error("Error fetching WhatsApp client list:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
