@@ -289,12 +289,15 @@ export default function CampanhasWhatsApp() {
     setClientesSelecionados(novo);
   };
 
-  // Replace variables in template
+  // Replace variables in template (supports both {variavel} and {{variavel}} syntax)
   const substituirVariaveisNoTemplate = (texto: string, dados: ContactEntry): string => {
     let resultado = texto;
     for (const [chave, valor] of Object.entries(dados)) {
-      const regex = new RegExp(`\\{${chave}\\}`, "g");
-      resultado = resultado.replace(regex, valor || "");
+      // Support both {variavel} and {{variavel}} syntax
+      const regex1 = new RegExp(`\\{\\{${chave}\\}\\}`, "g");
+      const regex2 = new RegExp(`\\{${chave}\\}`, "g");
+      resultado = resultado.replace(regex1, String(valor || ""));
+      resultado = resultado.replace(regex2, String(valor || ""));
     }
     return resultado;
   };
