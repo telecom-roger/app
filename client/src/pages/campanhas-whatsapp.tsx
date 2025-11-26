@@ -716,7 +716,7 @@ export default function CampanhasWhatsApp() {
                         {templates.length > 0 ? (
                           templates.map((t: any) => (
                             <SelectItem key={t.id} value={t.id}>
-                              {t.titulo}
+                              {t.nome}
                             </SelectItem>
                           ))
                         ) : (
