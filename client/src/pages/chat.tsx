@@ -400,11 +400,11 @@ export default function Chat() {
         </div>
 
         {/* ===== AREA CENTRAL - CHAT ===== */}
-        <div className="lg:col-span-2 flex flex-col bg-background">
+        <div className="lg:col-span-2 flex flex-col bg-background h-full overflow-hidden">
           {conversaSelecionada && conversaAtual ? (
             <>
               {/* Header */}
-              <div className="border-b p-4 bg-background">
+              <div className="border-b p-4 bg-background flex-shrink-0">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
                     <AvatarFallback className="bg-primary/20">
@@ -419,7 +419,7 @@ export default function Chat() {
               </div>
 
               {/* Mensagens */}
-              <ScrollArea className="flex-1 px-4 py-6">
+              <ScrollArea className="flex-1 px-4 py-6 overflow-hidden">
                 <div className="space-y-4 max-w-2xl mx-auto w-full">
                   {carregandoMensagens ? (
                     <div className="flex justify-center">
@@ -483,7 +483,7 @@ export default function Chat() {
               </ScrollArea>
 
               {/* Input */}
-              <div className="border-t p-4 space-y-2 bg-muted/30">
+              <div className="border-t p-4 space-y-2 bg-muted/30 flex-shrink-0">
                 {nomeArquivoMostrado && (
                   <div className="flex items-center justify-between bg-primary/10 p-2 rounded max-w-2xl mx-auto w-full">
                     <div className="flex items-center gap-2 text-sm">
