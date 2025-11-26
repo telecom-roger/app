@@ -1210,7 +1210,7 @@ export default function CampanhasWhatsApp() {
               Adicionar à Planilha ({clientesSelecionados.size})
             </Button>
             <Button
-              onClick={() => {
+              onClick={async () => {
                 const contatosFromDB: ContactEntry[] = Array.from(clientesSelecionados)
                   .map((clientId) => {
                     const cliente = clientesDisponiveis.find((c) => c.id === clientId);
@@ -1221,6 +1221,17 @@ export default function CampanhasWhatsApp() {
                     };
                   })
                   .filter((c) => c.whatsapp);
+
+                // Atualizar status dos clientes para ENVIADO
+                const clientIds = Array.from(clientesSelecionados);
+                try {
+                  await apiRequest("POST", "/api/clients/bulk-status", {
+                    clientIds,
+                    status: "ENVIADO",
+                  });
+                } catch (err) {
+                  console.error("Erro ao atualizar status dos clientes:", err);
+                }
 
                 setContatos(contatosFromDB);
                 setVariaveisDisponiveis(["id", "whatsapp", "empresa"]);

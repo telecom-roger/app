@@ -54,8 +54,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Endpoint para listar clientes com WhatsApp (MUST be before :id route)
+  // Filtra apenas clientes que NÃO foram marcados como ENVIADO
   app.get("/api/clients/whatsapp-list", isAuthenticated, async (req, res) => {
     try {
+      const { ne } = require("drizzle-orm");
       const allClients = await db
         .select({
           id: clients.id,
@@ -64,19 +66,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
           telefone: clients.CELULAR_PRINCIPAL,
           email: clients.EMAIL_PRINCIPAL,
           cpfCnpj: clients.cpfCnpj,
+          status: clients.status,
         })
         .from(clients)
+        .where(ne(clients.status, "ENVIADO"))
         .limit(10000);
 
       const clientsWithPhones = allClients.filter((c) => c.telefone && c.telefone.trim());
       const result = clientsWithPhones.map((client) => ({
-        ...client,
+        id: client.id,
+        nome: client.nome,
+        razaoSocial: client.razaoSocial,
+        telefone: client.telefone,
+        email: client.email,
+        cpfCnpj: client.cpfCnpj,
+        status: client.status,
         ultimaCampanha: undefined,
       }));
 
       res.json(result);
     } catch (error: any) {
       console.error("Error fetching WhatsApp client list:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Endpoint para atualizar status em massa de clientes (para campanhas WhatsApp)
+  app.post("/api/clients/bulk-status", isAuthenticated, async (req, res) => {
+    try {
+      const { clientIds, status } = req.body;
+      
+      if (!Array.isArray(clientIds) || clientIds.length === 0) {
+        return res.status(400).json({ error: "clientIds array is required" });
+      }
+      
+      if (!status || typeof status !== "string") {
+        return res.status(400).json({ error: "status is required" });
+      }
+
+      // Update all clients in parallel
+      const updated = await Promise.all(
+        clientIds.map((clientId) =>
+          storage.updateClient(clientId, { status })
+        )
+      );
+
+      res.json({ 
+        success: true, 
+        updated: updated.length,
+        message: `${updated.length} clientes marcados como ${status}` 
+      });
+    } catch (error: any) {
+      console.error("Error updating client status:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
