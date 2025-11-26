@@ -209,7 +209,7 @@ export default function CampanhasWhatsApp() {
         const cliente = clientesDisponiveis.find((c) => c.id === clientId);
         return {
           celular: cliente?.telefone || "",
-          empresa: cliente?.nome || "N/A",
+          razao_social: cliente?.nome || "N/A",
         };
       })
       .filter((c) => c.celular);
@@ -224,7 +224,7 @@ export default function CampanhasWhatsApp() {
     }
 
     setContatos(contatosFromDB);
-    setVariaveisDisponiveis(["celular", "empresa"]);
+    setVariaveisDisponiveis(["celular", "razao_social"]);
     setClientesSelecionados(new Set());
     setMostrarSeletorBD(false);
     setSearchClientes("");

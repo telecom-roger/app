@@ -49,7 +49,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allClients = await db
         .select({
           id: clients.id,
-          nome: clients.nome,
+          nome: clients.razaoSocial || clients.nome,
           telefone: clients.CELULAR_PRINCIPAL,
           email: clients.EMAIL_PRINCIPAL,
         })
