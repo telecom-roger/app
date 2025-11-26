@@ -192,10 +192,9 @@ async function processIncomingMessages(sessionId: string, m: any) {
 }
 
 async function handleIncomingMessages(sessionId: string, sock: any) {
-  if (sessionListeners.get(sessionId)) {
-    return;
-  }
-
+  // Reset listener flag for this socket (important on reconnect)
+  sessionListeners.delete(sessionId);
+  
   sessionListeners.set(sessionId, true);
   console.log(`\n🎯🎯🎯 LISTENER REGISTRADO E ATIVADO PARA: ${sessionId} 🎯🎯🎯\n`);
 
