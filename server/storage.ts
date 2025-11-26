@@ -663,3 +663,26 @@ export async function findConversationByPhoneAndUser(telefone: string, userId: s
   // Find or create conversation
   return await createOrGetConversation(client.id, userId);
 }
+
+export async function markMessagesAsRead(conversationId: string): Promise<void> {
+  await db
+    .update(messages)
+    .set({ lido: true })
+    .where(and(
+      eq(messages.conversationId, conversationId),
+      eq(messages.sender, "client"),
+      eq(messages.lido, false)
+    ));
+}
+
+export async function countUnreadMessages(conversationId: string): Promise<number> {
+  const result = await db
+    .select({ count: sql`COUNT(*)` })
+    .from(messages)
+    .where(and(
+      eq(messages.conversationId, conversationId),
+      eq(messages.sender, "client"),
+      eq(messages.lido, false)
+    ));
+  return result[0]?.count ? Number(result[0].count) : 0;
+}

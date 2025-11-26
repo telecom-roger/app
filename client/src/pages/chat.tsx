@@ -115,11 +115,32 @@ export default function Chat() {
   });
 
   // Fetch messages for selected conversation
-  const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
+  const { data: messages = [], isLoading: messagesLoading, refetch: refetchMessages } = useQuery<Message[]>({
     queryKey: selectedConversationId ? ["/api/chat/messages", selectedConversationId] : [],
     enabled: !!selectedConversationId,
     refetchInterval: 3000,
   });
+
+  // Mark messages as read when conversation is selected
+  const markAsReadMutation = useMutation({
+    mutationFn: async (conversationId: string) => {
+      const res = await apiRequest("PATCH", `/api/chat/messages/${conversationId}/mark-read`, {});
+      return res.json();
+    },
+    onSuccess: () => {
+      if (selectedConversationId) {
+        refetchMessages();
+        refetchConversations();
+      }
+    },
+  });
+
+  // Auto mark as read when conversation is opened
+  useEffect(() => {
+    if (selectedConversationId) {
+      markAsReadMutation.mutate(selectedConversationId);
+    }
+  }, [selectedConversationId]);
 
   // Send message mutation
   const sendMutation = useMutation({
