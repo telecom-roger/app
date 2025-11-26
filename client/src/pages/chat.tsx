@@ -57,7 +57,7 @@ export default function Chat() {
   // Get available clients for new conversation
   const { data: clientesDisponiveis = [] } = useQuery<any[]>({
     queryKey: ["/api/clients/whatsapp-list"],
-    enabled: isAuthenticated && mostrarClientesDisp,
+    enabled: isAuthenticated,
   });
 
   // Send message mutation
@@ -142,8 +142,19 @@ export default function Chat() {
     },
   });
 
+  // Filter clients by search (for new conversations)
+  const clientesFiltrados = useMemo(() => {
+    if (!busca) return [];
+    return (clientesDisponiveis as any[]).filter(
+      (client) =>
+        client.nome?.toLowerCase().includes(busca.toLowerCase()) ||
+        client.razaoSocial?.toLowerCase().includes(busca.toLowerCase())
+    );
+  }, [clientesDisponiveis, busca]);
+
   // Filter conversations by search
   const conversasFiltradas = useMemo(() => {
+    if (!busca) return conversas;
     return (conversas as any[]).filter(
       (conv) =>
         conv.clientNome?.toLowerCase().includes(busca.toLowerCase()) ||
@@ -238,17 +249,59 @@ export default function Chat() {
               </div>
             )}
 
-            {/* Lista de conversas */}
+            {/* Lista de conversas e clientes */}
             <ScrollArea className="flex-1">
               <div className="space-y-1 p-2">
                 {carregandoConversas ? (
                   <div className="flex items-center justify-center h-32">
                     <Loader className="h-6 w-6 animate-spin" />
                   </div>
-                ) : conversasFiltradas.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center p-4">
-                    {busca ? "Nenhuma conversa encontrada" : "Nenhuma conversa"}
-                  </p>
+                ) : busca && clientesFiltrados.length > 0 ? (
+                  <>
+                    {/* Clientes disponíveis para nova conversa */}
+                    <div className="px-2 py-2">
+                      <p className="text-xs text-muted-foreground font-semibold mb-2">Iniciar nova conversa:</p>
+                      {clientesFiltrados.map((cliente: any) => (
+                        <button
+                          key={`new-${cliente.id}`}
+                          onClick={() => iniciarConversa(cliente.id)}
+                          disabled={iniciandoConversa}
+                          className="w-full text-left p-3 rounded-lg transition-all duration-200 hover:bg-muted/50 mb-2"
+                          data-testid={`button-novo-cliente-${cliente.id}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <Avatar className="h-10 w-10 mt-1">
+                              <AvatarFallback className="text-xs font-bold bg-primary/20">
+                                {(cliente.razaoSocial || cliente.nome)?.[0]?.toUpperCase() || "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm truncate text-primary">
+                                {cliente.razaoSocial || cliente.nome}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                Novo chat
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    {conversasFiltradas.length > 0 && (
+                      <>
+                        <div className="px-2 py-2 mt-2">
+                          <p className="text-xs text-muted-foreground font-semibold">Conversas existentes:</p>
+                        </div>
+                      </>
+                    )}
+                  </>
+                ) : null}
+                
+                {/* Conversas existentes */}
+                {conversasFiltradas.length === 0 && !busca ? (
+                  <p className="text-xs text-muted-foreground text-center p-4">Nenhuma conversa</p>
+                ) : conversasFiltradas.length === 0 && busca ? (
+                  <p className="text-xs text-muted-foreground text-center p-4">Nenhuma conversa encontrada</p>
                 ) : (
                   conversasFiltradas.map((conversa: any) => (
                     <button
