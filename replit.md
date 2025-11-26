@@ -181,7 +181,8 @@ Principais entidades no PostgreSQL:
 - ✅ Baileys listeners ativos e processando mensagens
 - ✅ Normalização de telefone (remover sufixos @s.whatsapp.net, @lid, @c.us)
 - ✅ Salvamento de mensagens recebidas
-- ⏳ Auto-criação de conversas para novos contatos
+- ✅ Notas de voz (áudio WebM → M4A/AAC com ffmpeg, `ptt: true`)
+- ✅ Auto-criação de conversas para novos contatos
 
 ### Sistema de Auditoria
 - ✅ Logs completos para criar, editar, deletar
@@ -207,19 +208,24 @@ Isso inicia:
 - Frontend (Vite) em http://0.0.0.0:5000
 - Backend (Express) no mesmo servidor
 
-## Estado Atual - 🔥 PRÓXIMO: Recebimento Bidirecional
+## Estado Atual - ✅ Chat Bidirecional com Voz Funcionando!
 
-**Implementação em andamento:**
-- Mensagens enviadas: ✅ 200+ testadas com sucesso
-- Mensagens recebidas: ✅ Listeners ativos, normalizando telefones
-- Chat UI: ✅ Pronta em `/chat`
-- Auto-criar conversas: ⏳ Próxima implementação
+**Implementação completada:**
+- ✅ Mensagens de texto: Enviadas e recebidas perfeitamente
+- ✅ Notas de voz: Gravação em WebM → Conversão para M4A/AAC → Reprodução em smartphones
+- ✅ Chat UI: Interface bidirecional pronta em `/chat`
+- ✅ Auto-criação de conversas: Funcionando para novos contatos
+- ✅ Listeners Baileys: Ativos e normalizando telefones
 
-**Problema debugado:**
-- Telefones chegando com formato `@lid` (WhatsApp lists)
-- Solução: Limpar prefixos (@s.whatsapp.net, @lid, @c.us) antes de processar
+**Fluxo de áudio funcionando:**
+1. Usuário grava no navegador (MediaRecorder WebM)
+2. Frontend envia base64 para backend
+3. Backend converte WebM → M4A/AAC (128kbps, mono) via ffmpeg
+4. WhatsApp recebe com `mimetype: audio/aac` e `ptt: true`
+5. Reproduz como nota de voz em iOS e Android
 
-**Próximas ações:**
-1. Auto-criar conversa quando mensagem chega de novo contato
-2. Listar conversas recentes com NOT READ badge
-3. Notificações de mensagens novas
+**Próximas ações (Fase 2):**
+1. Página de histórico de campanhas enviadas
+2. Filtros por status em campanhas-agendadas
+3. Relatório detalhado de envios
+4. Testes de fluxo completo
