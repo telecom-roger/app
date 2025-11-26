@@ -494,6 +494,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get campaign details with recipients
+  app.get("/api/campaigns/:id/details", isAuthenticated, async (req, res) => {
+    try {
+      const campaign = await storage.getCampaignById(req.params.id);
+      if (!campaign) {
+        return res.status(404).json({ error: "Campanha não encontrada" });
+      }
+
+      const user = req.user as any;
+      if (campaign.createdBy !== user.id && user.role !== 'admin') {
+        return res.status(403).json({ error: "Não autorizado" });
+      }
+
+      // Get the client IDs from the campaign filter (it's a JSONB object)
+      const clientIds: string[] = campaign.filtros?.clientIds || [];
+      
+      if (clientIds.length === 0) {
+        return res.json([]);
+      }
+
+      // Fetch all clients that match the clientIds
+      const allClients = await db
+        .select({
+          id: clients.id,
+          razaoSocial: clients.razaoSocial,
+          CELULAR_PRINCIPAL: clients.CELULAR_PRINCIPAL,
+          telefone: clients.CELULAR_PRINCIPAL,
+          email: clients.EMAIL_PRINCIPAL,
+          status: clients.status,
+        })
+        .from(clients)
+        .where(clients.id.inArray(clientIds))
+        .limit(10000);
+
+      res.json(allClients);
+    } catch (error: any) {
+      console.error("Error fetching campaign details:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.delete("/api/campaigns/:id", isAuthenticated, async (req, res) => {
     try {
       const campaign = await storage.getCampaignById(req.params.id);
