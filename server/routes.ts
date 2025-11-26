@@ -1080,6 +1080,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/chat/messages/:conversationId", isAuthenticated, async (req, res) => {
     try {
       const { conversationId } = req.params;
+      const user = (req.user as any);
+
+      // Verificar se a conversa pertence ao usuário
+      const [conversation] = await db
+        .select()
+        .from(conversations)
+        .where(and(eq(conversations.id, conversationId), eq(conversations.userId, user.id)))
+        .limit(1);
+
+      if (!conversation) {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+
       const msgs = await storage.getMessages(conversationId);
       res.json(msgs);
     } catch (error: any) {
@@ -1096,6 +1109,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!conteudo && tipo === "texto") {
         return res.status(400).json({ error: "Conteúdo obrigatório" });
+      }
+
+      // Verificar se a conversa pertence ao usuário
+      const [conversation] = await db
+        .select()
+        .from(conversations)
+        .where(and(eq(conversations.id, conversationId), eq(conversations.userId, user.id)))
+        .limit(1);
+
+      if (!conversation) {
+        return res.status(403).json({ error: "Acesso negado" });
       }
 
       const mensagem = await storage.createMessage({
