@@ -541,6 +541,7 @@ export async function getConversations(userId: string): Promise<any[]> {
       ultimaMensagemEm: conversations.ultimaMensagemEm,
       createdAt: conversations.createdAt,
       clientNome: clients.nome,
+      razaoSocial: clients.razaoSocial,
     })
     .from(conversations)
     .leftJoin(clients, eq(conversations.clientId, clients.id))

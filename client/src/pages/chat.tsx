@@ -147,6 +147,7 @@ export default function Chat() {
     return (conversas as any[]).filter(
       (conv) =>
         conv.clientNome?.toLowerCase().includes(busca.toLowerCase()) ||
+        conv.razaoSocial?.toLowerCase().includes(busca.toLowerCase()) ||
         conv.ultimaMensagem?.toLowerCase().includes(busca.toLowerCase())
     );
   }, [conversas, busca]);
@@ -263,12 +264,12 @@ export default function Chat() {
                       <div className="flex items-start gap-3">
                         <Avatar className="h-10 w-10 mt-1">
                           <AvatarFallback className="text-xs font-bold bg-primary/20">
-                            {conversa.clientNome?.[0]?.toUpperCase() || "?"}
+                            {(conversa.razaoSocial || conversa.clientNome)?.[0]?.toUpperCase() || "?"}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-sm truncate">
-                            {conversa.clientNome}
+                            {conversa.razaoSocial || conversa.clientNome}
                           </div>
                           <div className="text-xs text-muted-foreground truncate line-clamp-1">
                             {conversa.ultimaMensagem || "Sem mensagens"}
@@ -298,11 +299,11 @@ export default function Chat() {
                   <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10">
                       <AvatarFallback className="bg-primary/20 font-bold">
-                        {conversaAtual?.clientNome?.[0]?.toUpperCase() || "?"}
+                        {(conversaAtual?.razaoSocial || conversaAtual?.clientNome)?.[0]?.toUpperCase() || "?"}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <h2 className="font-semibold text-sm">{conversaAtual?.clientNome}</h2>
+                      <h2 className="font-semibold text-sm">{conversaAtual?.razaoSocial || conversaAtual?.clientNome}</h2>
                       <p className="text-xs text-muted-foreground">Cliente</p>
                     </div>
                   </div>
