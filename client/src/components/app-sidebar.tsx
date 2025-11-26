@@ -11,6 +11,7 @@ import {
   MessageCircle,
   Clock,
   Edit3,
+  Zap,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -73,6 +74,11 @@ const menuItems = [
     title: "Campanhas Agendadas",
     url: "/campanhas-agendadas",
     icon: Clock,
+  },
+  {
+    title: "Campanhas em Execução",
+    url: "/campanhas-em-execucao",
+    icon: Zap,
   },
   {
     title: "Importação",

@@ -29,6 +29,7 @@ import WhatsAppBroadcast from "@/pages/whatsapp-broadcast";
 import Chat from "@/pages/chat";
 import ModelosMensagens from "@/pages/modelos-mensagens";
 import CampanhasAgendadas from "@/pages/campanhas-agendadas";
+import CampanhasEmExecucao from "@/pages/campanhas-em-execucao";
 import NotFound from "@/pages/not-found";
 
 function Router({ isAuthenticated }: { isAuthenticated: boolean }) {
@@ -51,6 +52,7 @@ function Router({ isAuthenticated }: { isAuthenticated: boolean }) {
       <Route path="/chat" component={Chat} />
       <Route path="/modelos-mensagens" component={ModelosMensagens} />
       <Route path="/campanhas-agendadas" component={CampanhasAgendadas} />
+      <Route path="/campanhas-em-execucao" component={CampanhasEmExecucao} />
       <Route path="/importacao" component={Importacao} />
       <Route path="/admin/usuarios" component={AdminUsuarios} />
       <Route path="/admin/templates" component={AdminTemplates} />

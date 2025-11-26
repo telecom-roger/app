@@ -51,7 +51,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`⏰ SCHEDULER: Encontradas ${dueCampaigns.length} campanhas para executar`);
         
         const allClients = await storage.getClients({ limit: 10000, isAdmin: true });
-        const clientsList = allClients.data || [];
+        const clientsList = allClients.clientes || [];
 
         for (const campaign of dueCampaigns) {
           await whatsappService.executeCampaign(campaign, db, clientsList);
