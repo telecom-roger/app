@@ -1,8 +1,8 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
-import { eq } from "drizzle-orm";
-import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, whatsappSessions, clients, interactions } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
+import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, whatsappSessions, clients, interactions, conversations } from "@shared/schema";
 import * as storage from "./storage";
 import * as whatsappService from "./whatsappService";
 import { setupAuth, isAuthenticated } from "./localAuth";
@@ -1132,6 +1132,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tamanho,
         mimeType,
       });
+
+      // 🚀 ENVIAR MENSAGEM PARA WHATSAPP
+      try {
+        if (conversation && conversation.clientId) {
+          // Pega a sessão do usuário
+          const [session] = await db
+            .select()
+            .from(whatsappSessions)
+            .where(and(eq(whatsappSessions.userId, user.id), eq(whatsappSessions.status, "conectada")))
+            .limit(1);
+
+          if (session) {
+            // Pega o cliente para obter o telefone
+            const [client] = await db
+              .select()
+              .from(clients)
+              .where(eq(clients.id, conversation.clientId))
+              .limit(1);
+
+            if (client && client.CELULAR_PRINCIPAL) {
+              const sock = whatsappService.getActiveSession(session.sessionId);
+              if (sock) {
+                // Formata o telefone para WhatsApp
+                let telefone = client.CELULAR_PRINCIPAL.replace(/\D/g, "");
+                if (!telefone.startsWith("55")) {
+                  telefone = "55" + telefone;
+                }
+                const jid = telefone + "@s.whatsapp.net";
+
+                // Envia a mensagem
+                if (tipo === "texto") {
+                  await sock.sendMessage(jid, { text: conteudo });
+                  console.log(`✅ Mensagem enviada para WhatsApp: ${telefone}`);
+                } else if (tipo === "imagem" && arquivo) {
+                  await sock.sendMessage(jid, {
+                    image: { url: arquivo },
+                    caption: conteudo || "",
+                  });
+                } else if (tipo === "audio" && arquivo) {
+                  await sock.sendMessage(jid, {
+                    audio: { url: arquivo },
+                  });
+                } else if (tipo === "video" && arquivo) {
+                  await sock.sendMessage(jid, {
+                    video: { url: arquivo },
+                    caption: conteudo || "",
+                  });
+                } else if (tipo === "documento" && arquivo) {
+                  await sock.sendMessage(jid, {
+                    document: { url: arquivo },
+                    fileName: nomeArquivo || "documento",
+                  });
+                }
+              }
+            }
+          }
+        }
+      } catch (whatsappError) {
+        console.warn("⚠️ Mensagem salva mas não enviada para WhatsApp:", whatsappError);
+        // Não falha a requisição se WhatsApp falhar
+      }
 
       res.json(mensagem);
     } catch (error: any) {
