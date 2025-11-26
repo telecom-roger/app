@@ -43,6 +43,7 @@ export default function Chat() {
   const [busca, setBusca] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [nomeArquivoMostrado, setNomeArquivoMostrado] = useState<string | null>(null);
+  const [sidebarAberto, setSidebarAberto] = useState(true);
 
   // Get conversations
   const { data: conversas = [], isLoading: carregandoConversas } = useQuery<any[]>({
