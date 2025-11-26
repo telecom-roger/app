@@ -1,10 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Plus, Image as ImageIcon, Loader, Search, X } from "lucide-react";
+import { Send, Plus, Image as ImageIcon, Loader, Search, X, FileText, Volume2, Video, Paperclip, CheckCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
@@ -41,6 +41,8 @@ export default function Chat() {
   const [mostrarClientesDisp, setMostrarClientesDisp] = useState(false);
   const [clientesSelecionaveis, setClientesSelecionaveis] = useState<any[]>([]);
   const [busca, setBusca] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [nomeArquivoMostrado, setNomeArquivoMostrado] = useState<string | null>(null);
 
   // Get conversations
   const { data: conversas = [], isLoading: carregandoConversas } = useQuery<any[]>({
@@ -68,16 +70,22 @@ export default function Chat() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dados),
       });
+      if (!response.ok) throw new Error("Erro ao enviar");
       return response.json();
     },
     onSuccess: () => {
       setMensagemTexto("");
       setArquivoSelecionado(null);
+      setNomeArquivoMostrado(null);
       queryClient.invalidateQueries({
         queryKey: ["/api/chat/messages", conversaSelecionada],
       });
       queryClient.invalidateQueries({
         queryKey: ["/api/chat/conversations"],
+      });
+      toast({
+        title: "Enviado",
+        description: "Mensagem enviada com sucesso",
       });
     },
     onError: () => {
@@ -178,14 +186,60 @@ export default function Chat() {
     return (conversas as any[]).find((c) => c.id === conversaSelecionada);
   }, [conversas, conversaSelecionada]);
 
+  const handleArquivoSelecionado = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setArquivoSelecionado(file);
+    setNomeArquivoMostrado(file.name);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      
+      // Detectar tipo de arquivo
+      let tipo = "documento";
+      if (file.type.startsWith("image/")) tipo = "imagem";
+      else if (file.type.startsWith("audio/")) tipo = "audio";
+      else if (file.type.startsWith("video/")) tipo = "video";
+
+      // Armazenar no estado com metadados
+      setArquivoSelecionado({
+        ...file,
+        base64,
+        tipo,
+      } as any);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleEnviarMensagem = () => {
     if (!conversaSelecionada) return;
     if (!mensagemTexto.trim() && !arquivoSelecionado) return;
 
-    enviarMensagem({
-      conteudo: mensagemTexto || "",
-      tipo: arquivoSelecionado ? "documento" : "texto",
-    });
+    if (arquivoSelecionado && (arquivoSelecionado as any).base64) {
+      // Enviar com arquivo
+      const file = arquivoSelecionado as any;
+      let tipo = "documento";
+      if (file.type.startsWith("image/")) tipo = "imagem";
+      else if (file.type.startsWith("audio/")) tipo = "audio";
+      else if (file.type.startsWith("video/")) tipo = "video";
+
+      enviarMensagem({
+        conteudo: mensagemTexto || `[${tipo.toUpperCase()}]`,
+        tipo,
+        arquivo: file.base64,
+        nomeArquivo: file.name,
+        tamanho: file.size,
+        mimeType: file.type,
+      });
+    } else {
+      // Enviar texto simples
+      enviarMensagem({
+        conteudo: mensagemTexto,
+        tipo: "texto",
+      });
+    }
   };
 
   if (!isAuthenticated) return <div>Carregando...</div>;
@@ -404,20 +458,65 @@ export default function Chat() {
                           data-testid={`message-${msg.id}`}
                         >
                           <div
-                            className={`max-w-xs px-4 py-2 rounded-lg break-words ${
+                            className={`max-w-sm px-4 py-2 rounded-lg break-words ${
                               msg.sender === "user"
                                 ? "bg-primary text-primary-foreground rounded-br-none"
                                 : "bg-muted rounded-bl-none"
                             }`}
                           >
-                            {msg.conteudo && (
+                            {/* Renderizar mídia */}
+                            {msg.tipo === "imagem" && msg.arquivo && (
+                              <div className="mb-2">
+                                <img 
+                                  src={msg.arquivo} 
+                                  alt={msg.nomeArquivo}
+                                  className="rounded-md max-w-xs max-h-64 object-cover"
+                                />
+                              </div>
+                            )}
+                            {msg.tipo === "video" && msg.arquivo && (
+                              <div className="mb-2">
+                                <video 
+                                  controls 
+                                  className="rounded-md max-w-xs max-h-64"
+                                >
+                                  <source src={msg.arquivo} type={msg.mimeType} />
+                                </video>
+                              </div>
+                            )}
+                            {msg.tipo === "audio" && msg.arquivo && (
+                              <div className="mb-2 flex items-center gap-2">
+                                <Volume2 className="h-4 w-4" />
+                                <audio 
+                                  controls 
+                                  className="h-8"
+                                >
+                                  <source src={msg.arquivo} type={msg.mimeType} />
+                                </audio>
+                              </div>
+                            )}
+                            {msg.tipo === "documento" && msg.arquivo && (
+                              <div className="mb-2 flex items-center gap-2 p-2 bg-white/10 rounded">
+                                <FileText className="h-4 w-4" />
+                                <a 
+                                  href={msg.arquivo}
+                                  download={msg.nomeArquivo}
+                                  className="text-xs underline truncate"
+                                >
+                                  {msg.nomeArquivo || "Documento"}
+                                </a>
+                              </div>
+                            )}
+
+                            {/* Texto da mensagem */}
+                            {msg.conteudo && msg.tipo === "texto" && (
                               <p className="text-sm leading-relaxed">{msg.conteudo}</p>
                             )}
-                            {msg.tipo !== "texto" && (
-                              <p className="text-xs opacity-70 mt-1">
-                                [{msg.tipo.toUpperCase()}]
-                              </p>
+                            {msg.conteudo && msg.tipo !== "texto" && (
+                              <p className="text-xs opacity-70">{msg.conteudo}</p>
                             )}
+
+                            {/* Timestamp */}
                             <span className="text-xs opacity-70 block mt-1">
                               {format(new Date(msg.createdAt), "HH:mm", {
                                 locale: ptBR,
@@ -432,15 +531,51 @@ export default function Chat() {
 
                 {/* Input Area */}
                 <div className="border-t p-4 space-y-2 bg-muted/30">
+                  {/* Arquivo selecionado preview */}
+                  {nomeArquivoMostrado && (
+                    <div className="flex items-center justify-between bg-primary/10 p-2 rounded-lg max-w-2xl mx-auto w-full">
+                      <div className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="h-4 w-4 text-primary" />
+                        <span className="truncate">{nomeArquivoMostrado}</span>
+                      </div>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6"
+                        onClick={() => {
+                          setArquivoSelecionado(null);
+                          setNomeArquivoMostrado(null);
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+
                   <div className="flex gap-2 max-w-2xl mx-auto">
+                    {/* File input hidden */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      onChange={handleArquivoSelecionado}
+                      className="hidden"
+                      data-testid="input-arquivo"
+                      accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
+                    />
+
+                    {/* Upload button */}
                     <Button
                       size="icon"
                       variant="ghost"
                       className="h-9 w-9"
+                      onClick={() => fileInputRef.current?.click()}
                       data-testid="button-upload-arquivo"
+                      title="Enviar arquivo (imagem, áudio, vídeo, documento)"
                     >
-                      <ImageIcon className="h-4 w-4" />
+                      <Paperclip className="h-4 w-4" />
                     </Button>
+
+                    {/* Message input */}
                     <Input
                       placeholder="Escreva uma mensagem..."
                       value={mensagemTexto}
@@ -454,6 +589,8 @@ export default function Chat() {
                       className="h-9"
                       data-testid="input-mensagem"
                     />
+
+                    {/* Send button */}
                     <Button
                       onClick={handleEnviarMensagem}
                       disabled={
@@ -463,9 +600,15 @@ export default function Chat() {
                       className="h-9"
                       data-testid="button-enviar-mensagem"
                     >
-                      <Send className="h-4 w-4" />
+                      {enviando ? (
+                        <Loader className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
+
+                  {/* Test button */}
                   <Button
                     variant="outline"
                     size="sm"

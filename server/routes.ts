@@ -1091,7 +1091,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/chat/messages/:conversationId", isAuthenticated, async (req, res) => {
     try {
       const { conversationId } = req.params;
-      const { conteudo, tipo = "texto" } = req.body;
+      const { conteudo, tipo = "texto", arquivo, nomeArquivo, tamanho, mimeType } = req.body;
       const user = (req.user as any);
 
       if (!conteudo && tipo === "texto") {
@@ -1103,11 +1103,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sender: "user",
         tipo,
         conteudo,
+        arquivo,
+        nomeArquivo,
+        tamanho,
+        mimeType,
       });
 
       res.json(mensagem);
     } catch (error: any) {
       console.error("Error creating message:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Upload file for chat
+  app.post("/api/chat/upload", isAuthenticated, async (req, res) => {
+    try {
+      const { arquivo, nomeArquivo, tamanho, mimeType } = req.body;
+
+      if (!arquivo || !nomeArquivo) {
+        return res.status(400).json({ error: "Arquivo e nome obrigatórios" });
+      }
+
+      // Generate unique filename
+      const timestamp = Date.now();
+      const extension = nomeArquivo.split(".").pop() || "file";
+      const uniqueName = `chat_${timestamp}_${Math.random().toString(36).substr(2, 9)}.${extension}`;
+
+      // Return reference (arquivo é base64 ou URL)
+      res.json({
+        arquivo,
+        nomeArquivo,
+        tamanho,
+        mimeType,
+        uniqueName,
+      });
+    } catch (error: any) {
+      console.error("Error uploading file:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
