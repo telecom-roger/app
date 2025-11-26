@@ -53,11 +53,15 @@ export default function CampanhasHistorico() {
 
   const handleViewDetails = async (campaign: CampaignDetail) => {
     setSelectedCampaign(campaign);
+    setDetailsData([]); // Reset dados
     try {
       const res = await fetch(`/api/campaigns/${campaign.id}/details`);
       if (res.ok) {
         const data = await res.json();
+        console.log("Detalhes recebidos:", data);
         setDetailsData(Array.isArray(data) ? data : []);
+      } else {
+        console.error("Erro na resposta:", res.status);
       }
     } catch (err) {
       console.error("Erro ao buscar detalhes:", err);
@@ -221,33 +225,40 @@ export default function CampanhasHistorico() {
                 <h3 className="font-semibold text-sm">Empresas Contatadas</h3>
               </div>
               <ScrollArea className="h-96">
+                <div className="p-4 text-xs text-muted-foreground">
+                  Total de contatos: <strong>{detailsData.length}</strong>
+                </div>
                 <Table className="text-sm">
                   <TableHeader>
-                    <TableRow className="border-b">
-                      <TableHead className="px-4">Empresa</TableHead>
-                      <TableHead className="px-4">Celular</TableHead>
+                    <TableRow className="border-b sticky top-0 bg-muted">
+                      <TableHead className="px-4">Empresa / Razão Social</TableHead>
+                      <TableHead className="px-4">Celular Principal</TableHead>
+                      <TableHead className="px-4">Email</TableHead>
                       <TableHead className="px-4">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {detailsData.length > 0 ? (
+                    {detailsData && detailsData.length > 0 ? (
                       detailsData.map((item: any, idx) => (
-                        <TableRow key={idx} className="border-b">
-                          <TableCell className="px-4 py-2 font-medium">{item.razaoSocial || item.empresa || "-"}</TableCell>
-                          <TableCell className="px-4 py-2 font-mono text-xs">{item.CELULAR_PRINCIPAL || item.telefone || "-"}</TableCell>
+                        <TableRow key={idx} className="border-b hover:bg-muted/50">
+                          <TableCell className="px-4 py-2 font-medium" data-testid={`text-empresa-${idx}`}>
+                            {item.razaoSocial || item.empresa || "-"}
+                          </TableCell>
+                          <TableCell className="px-4 py-2 font-mono text-xs" data-testid={`text-celular-${idx}`}>
+                            {item.CELULAR_PRINCIPAL || item.telefone || "-"}
+                          </TableCell>
+                          <TableCell className="px-4 py-2 text-xs" data-testid={`text-email-${idx}`}>
+                            {item.email || item.EMAIL_PRINCIPAL || "-"}
+                          </TableCell>
                           <TableCell className="px-4 py-2">
-                            {item.enviado ? (
-                              <Badge className="bg-green-100 text-green-800">✓ Enviado</Badge>
-                            ) : (
-                              <Badge variant="secondary">Pendente</Badge>
-                            )}
+                            <Badge className="bg-green-100 text-green-800 text-xs">✓ Enviado</Badge>
                           </TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={3} className="p-4 text-center text-muted-foreground">
-                          Nenhum detalhe disponível
+                        <TableCell colSpan={4} className="p-4 text-center text-muted-foreground">
+                          Carregando dados...
                         </TableCell>
                       </TableRow>
                     )}
