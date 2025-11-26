@@ -16,9 +16,7 @@ const keepAliveIntervals = new Map<string, NodeJS.Timeout>(); // Store intervals
 let reconnectAttempts = new Map<string, number>();
 
 export function setSessionUser(sessionId: string, userId: string) {
-  console.log(`👤 setSessionUser: ${sessionId} → ${userId}`);
   sessionUsers.set(sessionId, userId);
-  console.log(`✅ sessionUsers agora tem ${sessionUsers.size} entradas:`, [...sessionUsers.keys()]);
 }
 
 // Keep-alive function to maintain socket connection
@@ -56,44 +54,33 @@ function stopKeepAlive(sessionId: string) {
 async function handleIncomingMessages(sessionId: string, sock: any) {
   // Prevent duplicate listeners
   if (sessionListeners.get(sessionId)) {
-    console.log(`📨 [${sessionId}] Listener já ativo, ignorando duplicata`);
     return;
   }
 
   sessionListeners.set(sessionId, true);
-  console.log(`✅ [${sessionId}] Listener registrado no messages.upsert`);
 
   sock.ev.on("messages.upsert", async (m: any) => {
     try {
       const { messages: msgs } = m;
       const userId = sessionUsers.get(sessionId);
       
-      console.log(`📨 [${sessionId}] EVENT messages.upsert - userId=${userId}, msgs=${msgs?.length || 0}`);
-      
-      if (!userId) {
-        console.log(`📨 [${sessionId}] ❌ userId VAZIO! sessionUsers:`, [...sessionUsers.entries()]);
-        return;
-      }
-      
-      if (!msgs || msgs.length === 0) {
+      if (!userId || !msgs || msgs.length === 0) {
         return;
       }
       
       for (const msg of msgs) {
         // Ignore sent messages, only process incoming
         if (msg.key.fromMe) {
-          console.log(`📨 [${sessionId}] Ignorando mensagem enviada por mim`);
           continue;
         }
         
         // Get sender phone
         const senderPhone = msg.key.remoteJid?.replace("@s.whatsapp.net", "") || "";
         if (!senderPhone) {
-          console.log(`📨 [${sessionId}] Nenhum telefone encontrado no remoteJid`);
           continue;
         }
         
-        console.log(`📨 [${sessionId}] Recebendo mensagem de ${senderPhone}`);
+        console.log(`📥 Mensagem recebida de: ${senderPhone}`);
         
         try {
           // Extract message content
@@ -124,11 +111,8 @@ async function handleIncomingMessages(sessionId: string, sock: any) {
           let conversation = await storage.findConversationByPhoneAndUser(senderPhone, userId);
           
           if (!conversation) {
-            console.log(`📨 [${sessionId}] ⚠️ NENHUMA CONVERSA ENCONTRADA para ${senderPhone}, ignorando`);
             continue;
           }
-          
-          console.log(`📨 [${sessionId}] ✓ Conversa encontrada: ${conversation.id}`);
           
           // Save message to database
           await storage.createMessage({
@@ -138,13 +122,13 @@ async function handleIncomingMessages(sessionId: string, sock: any) {
             conteudo,
           });
           
-          console.log(`✅ [RECEBIDO] Mensagem de ${senderPhone} salva em ${conversation.id}: "${conteudo}"`);
+          console.log(`✅ RECEBIDO E SALVO: "${conteudo}"`);
         } catch (error) {
-          console.error(`Erro ao processar mensagem recebida:`, error);
+          console.error(`Erro ao processar mensagem:`, error);
         }
       }
     } catch (error) {
-      console.error(`Erro no handler de mensagens recebidas:`, error);
+      console.error(`Erro no listener:`, error);
     }
   });
 }
@@ -189,7 +173,7 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
       }
 
       if (connection === "open") {
-        console.log("🟢 CONNECTION OPEN para sessão:", sessionId, "| userId param:", userId);
+        console.log("✅ Conexão estabelecida:", sessionId);
         activeSessions.set(sessionId, sock);
         sessionStatus.set(sessionId, "conectada");
         qrCodes.delete(sessionId);
@@ -197,19 +181,13 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
         
         startKeepAlive(sessionId, sock);
         
-        // 🎯 SEMPRE ativar listener - userId DEVE estar disponível aqui!
+        // Ativar listener de mensagens recebidas
         const currentUserId = userId || sessionUsers.get(sessionId);
-        console.log(`🔍 currentUserId resolved: ${currentUserId} (userId param: ${userId}, map: ${sessionUsers.get(sessionId)})`);
-        
-        if (!currentUserId) {
-          console.error(`❌❌❌ CRÍTICO: Nenhum userId para ${sessionId}! Não ativando listener!`);
-          console.error(`📌 sessionUsers map:`, [...sessionUsers.entries()]);
-          return;
+        if (currentUserId) {
+          setSessionUser(sessionId, currentUserId);
+          handleIncomingMessages(sessionId, sock);
+          console.log(`📱 Listener ativado para sessão: ${sessionId}`);
         }
-        
-        setSessionUser(sessionId, currentUserId);
-        handleIncomingMessages(sessionId, sock);
-        console.log(`🎯🎯🎯 LISTENER ATIVADO PARA: ${sessionId} | Usuário: ${currentUserId}`);
       }
 
       if (connection === "close") {
