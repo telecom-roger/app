@@ -102,6 +102,8 @@ export default function CampanhasWhatsApp() {
   const [variaveisDisponiveis, setVariaveisDisponiveis] = useState<string[]>([]);
   const [template, setTemplate] = useState("");
   const [tempoDelay, setTempoDelay] = useState(40);
+  const [tempoRandomMin, setTempoRandomMin] = useState(5);
+  const [tempoRandomMax, setTempoRandomMax] = useState(15);
   const [imagemSelecionada, setImagemSelecionada] = useState<File | null>(null);
   const [imagemPreview, setImagemPreview] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -460,9 +462,10 @@ export default function CampanhasWhatsApp() {
             );
           }
 
-          // Wait before next message with random variation (5-15 seconds extra to avoid bot detection)
+          // Wait before next message with random variation to avoid bot detection
           if (i < contatos.length - 1) {
-            const randomExtra = Math.random() * 10000 + 5000; // 5-15 segundos extra em ms
+            const rangeExtra = (tempoRandomMax - tempoRandomMin) * 1000; // intervalo em ms
+            const randomExtra = Math.random() * rangeExtra + (tempoRandomMin * 1000); // min + randomizado
             const totalDelay = (tempoDelay * 1000) + randomExtra;
             await new Promise((resolve) => setTimeout(resolve, totalDelay));
           }
@@ -889,6 +892,40 @@ export default function CampanhasWhatsApp() {
                 <p className="text-xs text-muted-foreground">
                   Quanto maior o delay, mais seguro é o envio. Mínimo de 10 segundos para não ser
                   bloqueado.
+                </p>
+              </div>
+
+              {/* Randomização */}
+              <div className="space-y-3">
+                <Label>Randomização de delay (evita parecer robô)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="random-min" className="text-xs">Tempo mínimo extra (seg)</Label>
+                    <Input
+                      id="random-min"
+                      type="number"
+                      min={0}
+                      max={60}
+                      value={tempoRandomMin}
+                      onChange={(e) => setTempoRandomMin(Math.max(0, parseInt(e.target.value) || 0))}
+                      data-testid="input-random-min"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="random-max" className="text-xs">Tempo máximo extra (seg)</Label>
+                    <Input
+                      id="random-max"
+                      type="number"
+                      min={1}
+                      max={60}
+                      value={tempoRandomMax}
+                      onChange={(e) => setTempoRandomMax(Math.max(1, parseInt(e.target.value) || 15))}
+                      data-testid="input-random-max"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  O delay entre mensagens será: {tempoDelay}s + {tempoRandomMin}s a {tempoRandomMax}s aleatórios = {tempoDelay + tempoRandomMin}s a {tempoDelay + tempoRandomMax}s
                 </p>
               </div>
 
