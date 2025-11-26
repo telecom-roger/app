@@ -17,7 +17,7 @@ export default function CampanhasEmExecucao() {
       const res = await fetch("/api/campaigns");
       if (!res.ok) throw new Error("Failed to fetch campaigns");
       const data = await res.json();
-      return Array.isArray(data) ? data.filter((c: any) => ['enviando', 'concluida', 'pausada'].includes(c.status)) : [];
+      return Array.isArray(data) ? data.filter((c: any) => ['enviando', 'pausada'].includes(c.status)) : [];
     },
     refetchInterval: 2000, // Atualiza a cada 2 segundos
   });
