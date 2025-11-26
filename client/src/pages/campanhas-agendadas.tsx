@@ -249,9 +249,23 @@ export default function CampanhasAgendadas() {
             </DialogHeader>
             <Form {...form}>
               <form
-                onSubmit={form.handleSubmit((data) =>
-                  createMutation.mutate(data)
-                )}
+                onSubmit={form.handleSubmit((data) => {
+                  if (clientesSelecionados.size === 0) {
+                    toast({
+                      title: "Erro",
+                      description: "Selecione pelo menos um cliente",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  createMutation.mutate({
+                    ...data,
+                    filtros: {
+                      clientIds: Array.from(clientesSelecionados),
+                    },
+                    totalRecipients: clientesSelecionados.size,
+                  });
+                })}
                 className="space-y-4"
               >
                 <FormField
