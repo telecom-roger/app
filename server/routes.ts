@@ -1691,7 +1691,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/quick-replies", isAuthenticated, async (req, res) => {
     try {
       const user = req.user as any;
-      const replies = await storage.getQuickRepliesByUserId(user.dbUser.id);
+      const replies = await storage.getQuickRepliesByUserId(user.id);
       res.json(replies);
     } catch (error: any) {
       console.error("Error fetching quick replies:", error);
@@ -1705,7 +1705,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { conteudo, ordem } = req.body;
       
       const reply = await storage.createQuickReply({
-        userId: user.dbUser.id,
+        userId: user.id,
         conteudo,
         ordem: ordem || 0,
       });
