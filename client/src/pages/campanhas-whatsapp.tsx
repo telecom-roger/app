@@ -373,6 +373,8 @@ export default function CampanhasWhatsApp() {
       );
 
       try {
+        const clientesEnviadosComSucesso: string[] = [];
+
         for (let i = 0; i < contatos.length; i++) {
           if (cancelarEnvioRef.current) {
             toast({
@@ -424,6 +426,10 @@ export default function CampanhasWhatsApp() {
                     : s
                 )
               );
+              // Adicionar cliente à lista de enviados com sucesso
+              if (contato.id) {
+                clientesEnviadosComSucesso.push(contato.id);
+              }
             } else {
               const erro = await response.text();
               setStatusEnvio((prev) =>
@@ -457,6 +463,18 @@ export default function CampanhasWhatsApp() {
           // Wait before next message
           if (i < contatos.length - 1) {
             await new Promise((resolve) => setTimeout(resolve, tempoDelay * 1000));
+          }
+        }
+
+        // Atualizar status dos clientes que foram enviados com sucesso
+        if (clientesEnviadosComSucesso.length > 0) {
+          try {
+            await apiRequest("POST", "/api/clients/bulk-status", {
+              clientIds: clientesEnviadosComSucesso,
+              status: "ENVIADO",
+            });
+          } catch (err) {
+            console.error("Erro ao atualizar status dos clientes:", err);
           }
         }
 
@@ -1205,7 +1223,7 @@ export default function CampanhasWhatsApp() {
               Adicionar à Planilha ({clientesSelecionados.size})
             </Button>
             <Button
-              onClick={async () => {
+              onClick={() => {
                 const contatosFromDB: ContactEntry[] = Array.from(clientesSelecionados)
                   .map((clientId) => {
                     const cliente = clientesDisponiveis.find((c) => c.id === clientId);
@@ -1216,17 +1234,6 @@ export default function CampanhasWhatsApp() {
                     };
                   })
                   .filter((c) => c.whatsapp);
-
-                // Atualizar status dos clientes para ENVIADO
-                const clientIds = Array.from(clientesSelecionados);
-                try {
-                  await apiRequest("POST", "/api/clients/bulk-status", {
-                    clientIds,
-                    status: "ENVIADO",
-                  });
-                } catch (err) {
-                  console.error("Erro ao atualizar status dos clientes:", err);
-                }
 
                 setContatos(contatosFromDB);
                 setVariaveisDisponiveis(["id", "whatsapp", "empresa"]);
