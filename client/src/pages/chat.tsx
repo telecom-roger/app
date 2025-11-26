@@ -26,12 +26,14 @@ export default function Chat() {
   const { data: conversas = [], isLoading: carregandoConversas } = useQuery<any[]>({
     queryKey: ["/api/chat/conversations"],
     enabled: isAuthenticated,
+    refetchInterval: 5000, // ✅ Atualiza lista de conversas a cada 5 segundos
   });
 
   // Get messages for selected conversation
   const { data: mensagens = [], isLoading: carregandoMensagens } = useQuery<any[]>({
     queryKey: ["/api/chat/messages", conversaSelecionada],
     enabled: isAuthenticated && !!conversaSelecionada,
+    refetchInterval: 3000, // ✅ Polling automático a cada 3 segundos
   });
 
   // Get available clients for new conversation
