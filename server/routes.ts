@@ -425,7 +425,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/campaigns/schedule", isAuthenticated, async (req, res) => {
     try {
-      const { nome, templateId, agendadaPara, filtros } = req.body;
+      const { nome, templateId, agendadaPara, filtros, totalRecipients } = req.body;
       if (!nome || !templateId || !agendadaPara) {
         return res.status(400).json({ error: "Nome, templateId e agendadaPara são obrigatórios" });
       }
@@ -437,6 +437,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "agendada",
         agendadaPara: new Date(agendadaPara),
         filtros: filtros || {},
+        totalRecipients: totalRecipients || 0,
         createdBy: (req.user as any).id,
       });
 
