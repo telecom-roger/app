@@ -213,16 +213,16 @@ export default function Chat() {
 
       recorder.ondataavailable = (e) => chunks.push(e.data);
       recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: "audio/mp3" });
+        const blob = new Blob(chunks, { type: "audio/ogg" });
         const reader = new FileReader();
         reader.onload = (event) => {
           const base64 = event.target?.result as string;
           sendMutation.mutate({ 
             arquivo: base64, 
             tipo: "audio", 
-            nomeArquivo: `audio_${Date.now()}.mp3`, 
+            nomeArquivo: `audio_${Date.now()}.ogg`, 
             tamanho: blob.size, 
-            mimeType: "audio/mp3" 
+            mimeType: "audio/ogg" 
           } as any);
         };
         reader.readAsDataURL(blob);
