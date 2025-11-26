@@ -803,105 +803,129 @@ export default function CampanhasWhatsApp() {
 
       {/* Dialog: Import from DB with Multi-Select */}
       <Dialog open={mostrarSeletorBD} onOpenChange={setMostrarSeletorBD}>
-        <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>Selecionar Contatos da Base</DialogTitle>
+        <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
+          <DialogHeader className="border-b pb-4">
+            <DialogTitle className="text-2xl">Selecionar Clientes</DialogTitle>
             <DialogDescription>
-              Escolha os clientes para receber as mensagens. RAZÃO_SOCIAL + CELULAR_PRINCIPAL
+              Escolha os clientes para receber a campanha. Você pode adicionar à planilha ou enviar direto.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 flex-1 flex flex-col">
+          <div className="space-y-4 flex-1 flex flex-col overflow-hidden">
             {/* Search Input */}
-            <Input
-              placeholder="Buscar por nome ou telefone..."
-              value={searchClientes}
-              onChange={(e) => setSearchClientes(e.target.value)}
-              data-testid="input-search-clientes"
-            />
+            <div className="flex gap-2">
+              <Input
+                placeholder="🔍 Buscar por nome ou telefone..."
+                value={searchClientes}
+                onChange={(e) => setSearchClientes(e.target.value)}
+                className="flex-1"
+                data-testid="input-search-clientes"
+              />
+              <Badge variant="secondary" className="h-10 px-3 flex items-center gap-2">
+                {clientesFiltrados.length} clientes
+              </Badge>
+            </div>
 
-            {/* Clients Table */}
-            {carregandoClientes ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : clientesFiltrados.length === 0 ? (
-              <div className="flex items-center justify-center py-8 text-muted-foreground">
-                Nenhum cliente encontrado
-              </div>
-            ) : (
-              <ScrollArea className="h-[400px] border rounded-md">
-                <Table className="text-sm">
-                  <TableHeader className="sticky top-0 bg-muted z-10">
-                    <TableRow>
-                      <TableHead className="w-12">
-                        <Checkbox
-                          checked={clientesSelecionados.size === clientesFiltrados.length && clientesFiltrados.length > 0}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setClientesSelecionados(new Set(clientesFiltrados.map((c) => c.id)));
-                            } else {
-                              setClientesSelecionados(new Set());
-                            }
-                          }}
-                          data-testid="checkbox-select-all"
-                        />
-                      </TableHead>
-                      <TableHead>RAZÃO SOCIAL</TableHead>
-                      <TableHead>CELULAR PRINCIPAL</TableHead>
-                      <TableHead className="text-xs">Última Campanha</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {clientesFiltrados.map((cliente) => (
-                      <TableRow key={cliente.id} className="hover-elevate cursor-pointer">
-                        <TableCell onClick={(e) => {
-                          e.stopPropagation();
-                          toggleClienteSelecionado(cliente.id);
-                        }}>
+            {/* Clients Table with better styling */}
+            <div className="flex-1 overflow-hidden flex flex-col border rounded-lg bg-white dark:bg-slate-950">
+              {carregandoClientes ? (
+                <div className="flex items-center justify-center flex-1">
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader className="h-6 w-6 animate-spin text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Carregando clientes...</span>
+                  </div>
+                </div>
+              ) : clientesFiltrados.length === 0 ? (
+                <div className="flex items-center justify-center flex-1 text-muted-foreground">
+                  <div className="text-center">
+                    <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>Nenhum cliente encontrado</p>
+                  </div>
+                </div>
+              ) : (
+                <ScrollArea className="flex-1">
+                  <Table className="text-sm">
+                    <TableHeader className="sticky top-0 bg-slate-100 dark:bg-slate-800 z-10">
+                      <TableRow className="border-b-2">
+                        <TableHead className="w-12 text-center">
                           <Checkbox
-                            checked={clientesSelecionados.has(cliente.id)}
-                            onCheckedChange={() => toggleClienteSelecionado(cliente.id)}
-                            data-testid={`checkbox-cliente-${cliente.id}`}
+                            checked={clientesSelecionados.size === clientesFiltrados.length && clientesFiltrados.length > 0}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setClientesSelecionados(new Set(clientesFiltrados.map((c) => c.id)));
+                              } else {
+                                setClientesSelecionados(new Set());
+                              }
+                            }}
+                            data-testid="checkbox-select-all"
                           />
-                        </TableCell>
-                        <TableCell className="font-medium">{cliente.nome}</TableCell>
-                        <TableCell className="font-mono text-sm">{cliente.telefone}</TableCell>
-                        <TableCell className="text-xs">
-                          {cliente.ultimaCampanha ? (
-                            <div className="flex items-center gap-2">
-                              {cliente.ultimaCampanha.recente ? (
+                        </TableHead>
+                        <TableHead className="font-semibold">RAZÃO SOCIAL</TableHead>
+                        <TableHead className="font-semibold">CELULAR</TableHead>
+                        <TableHead className="font-semibold text-xs">STATUS</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {clientesFiltrados.map((cliente) => (
+                        <TableRow key={cliente.id} className="border-b hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer transition-colors">
+                          <TableCell className="text-center" onClick={(e) => {
+                            e.stopPropagation();
+                            toggleClienteSelecionado(cliente.id);
+                          }}>
+                            <Checkbox
+                              checked={clientesSelecionados.has(cliente.id)}
+                              onCheckedChange={() => toggleClienteSelecionado(cliente.id)}
+                              data-testid={`checkbox-cliente-${cliente.id}`}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">{cliente.nome}</TableCell>
+                          <TableCell className="font-mono text-sm font-medium">{cliente.telefone}</TableCell>
+                          <TableCell className="text-xs">
+                            {cliente.ultimaCampanha ? (
+                              cliente.ultimaCampanha.recente ? (
                                 <Badge variant="destructive" className="text-xs gap-1">
                                   <AlertTriangle className="h-3 w-3" />
-                                  {cliente.ultimaCampanha.minutosPara}m
+                                  {cliente.ultimaCampanha.minutosPara}m atrás
                                 </Badge>
                               ) : (
                                 <Badge variant="outline" className="text-xs">
                                   {cliente.ultimaCampanha.data}
                                 </Badge>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">Nenhuma</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
-            )}
+                              )
+                            ) : (
+                              <Badge variant="secondary" className="text-xs">Novo</Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              )}
+            </div>
 
-            {/* Summary */}
-            <div className="flex justify-between items-center p-3 bg-muted rounded">
-              <span className="text-sm">
-                <strong>{clientesSelecionados.size}</strong> de <strong>{clientesFiltrados.length}</strong> selecionados
-              </span>
+            {/* Summary with Stats */}
+            <div className="flex gap-4 items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border">
+              <div className="flex gap-6">
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Selecionados:</span>
+                  <span className="font-semibold ml-2 text-lg text-primary">{clientesSelecionados.size}</span>
+                </div>
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Total:</span>
+                  <span className="font-semibold ml-2 text-lg">{clientesFiltrados.length}</span>
+                </div>
+              </div>
+              {clientesSelecionados.size > 0 && (
+                <div className="text-xs text-green-600 dark:text-green-400">
+                  ✓ Pronto para enviar
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Buttons */}
-          <div className="flex gap-3 justify-end">
+          {/* Action Buttons - Two options */}
+          <div className="flex gap-3 justify-end border-t pt-4">
             <Button
               variant="outline"
               onClick={() => {
@@ -911,14 +935,50 @@ export default function CampanhasWhatsApp() {
               }}
               data-testid="button-cancelar-seletor"
             >
+              <X className="h-4 w-4 mr-2" />
               Cancelar
             </Button>
             <Button
-              onClick={importarSelecionadosDoBD}
+              variant="secondary"
+              onClick={() => {
+                importarSelecionadosDoBD();
+              }}
               disabled={clientesSelecionados.size === 0}
-              data-testid="button-confirmar-importar"
+              data-testid="button-adicionar-planilha"
             >
-              Importar {clientesSelecionados.size} Contato{clientesSelecionados.size !== 1 ? "s" : ""}
+              <Download className="h-4 w-4 mr-2" />
+              Adicionar à Planilha ({clientesSelecionados.size})
+            </Button>
+            <Button
+              onClick={() => {
+                const contatosFromDB: ContactEntry[] = Array.from(clientesSelecionados)
+                  .map((clientId) => {
+                    const cliente = clientesDisponiveis.find((c) => c.id === clientId);
+                    return {
+                      id: cliente?.id || "",
+                      whatsapp: cliente?.telefone || "",
+                      empresa: cliente?.nome || "N/A",
+                    };
+                  })
+                  .filter((c) => c.whatsapp);
+
+                setContatos(contatosFromDB);
+                setVariaveisDisponiveis(["id", "whatsapp", "empresa"]);
+                setClientesSelecionados(new Set());
+                setMostrarSeletorBD(false);
+                setSearchClientes("");
+                setConfirmarEnvio(true); // Skip to confirmation dialog
+
+                toast({
+                  title: "Pronto para enviar!",
+                  description: `${contatosFromDB.length} contato${contatosFromDB.length !== 1 ? "s" : ""} selecionado${contatosFromDB.length !== 1 ? "s" : ""}`,
+                });
+              }}
+              disabled={clientesSelecionados.size === 0}
+              data-testid="button-enviar-direto"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Enviar Direto ({clientesSelecionados.size})
             </Button>
           </div>
         </DialogContent>
