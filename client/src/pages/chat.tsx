@@ -15,6 +15,7 @@ interface Message {
   sender: "user" | "client";
   tipo: string;
   createdAt: string;
+  lido?: boolean;
 }
 
 interface Conversation {
@@ -308,16 +309,23 @@ export default function Chat() {
         {selectedConversation ? (
           <>
             {/* Header */}
-            <div className="flex items-center gap-2 p-4 border-b border-border bg-card">
-              <Phone className="h-5 w-5 text-primary" />
-              <div className="flex-1">
-                <p className="font-medium text-foreground">
-                  {selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato"}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {selectedConversation.client?.CELULAR_PRINCIPAL || selectedConversation.client?.telefone}
-                </p>
+            <div className="flex items-center gap-2 p-4 border-b border-border bg-card justify-between">
+              <div className="flex items-center gap-2 flex-1">
+                <Phone className="h-5 w-5 text-primary" />
+                <div className="flex-1">
+                  <p className="font-medium text-foreground">
+                    {selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedConversation.client?.CELULAR_PRINCIPAL || selectedConversation.client?.telefone}
+                  </p>
+                </div>
               </div>
+              {selectedConversation.unreadCount && selectedConversation.unreadCount > 0 && (
+                <span className="bg-red-500 text-white text-xs font-bold rounded-full min-w-[28px] h-7 flex items-center justify-center">
+                  {selectedConversation.unreadCount > 99 ? "99+" : selectedConversation.unreadCount}
+                </span>
+              )}
             </div>
 
             {/* Messages */}
