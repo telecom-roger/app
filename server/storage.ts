@@ -27,6 +27,8 @@ import type {
   InsertMessage,
   QuickReply,
   InsertQuickReply,
+  ClientNote,
+  InsertClientNote,
 } from "@shared/schema";
 import {
   clients,
@@ -43,6 +45,7 @@ import {
   conversations,
   messages,
   quickReplies,
+  clientNotes,
 } from "@shared/schema";
 
 // ==================== USER STORAGE ====================
@@ -734,4 +737,31 @@ export async function updateQuickReply(id: string, data: Partial<InsertQuickRepl
 
 export async function deleteQuickReply(id: string): Promise<void> {
   await db.delete(quickReplies).where(eq(quickReplies.id, id));
+}
+
+// ==================== CLIENT NOTES STORAGE ====================
+export async function getClientNotesByUserId(userId: string, clientId: string): Promise<ClientNote[]> {
+  return await db
+    .select()
+    .from(clientNotes)
+    .where(and(eq(clientNotes.userId, userId), eq(clientNotes.clientId, clientId)))
+    .orderBy(desc(clientNotes.createdAt));
+}
+
+export async function createClientNote(data: InsertClientNote): Promise<ClientNote> {
+  const [result] = await db.insert(clientNotes).values(data).returning();
+  return result;
+}
+
+export async function updateClientNote(id: string, data: Partial<InsertClientNote>): Promise<ClientNote | undefined> {
+  const [result] = await db
+    .update(clientNotes)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(clientNotes.id, id))
+    .returning();
+  return result;
+}
+
+export async function deleteClientNote(id: string): Promise<void> {
+  await db.delete(clientNotes).where(eq(clientNotes.id, id));
 }

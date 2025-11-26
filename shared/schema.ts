@@ -424,3 +424,30 @@ export const insertQuickReplySchema = createInsertSchema(quickReplies).omit({
 
 export type QuickReply = typeof quickReplies.$inferSelect;
 export type InsertQuickReply = z.infer<typeof insertQuickReplySchema>;
+
+// ==================== CLIENT NOTES ====================
+export const clientNotes = pgTable("client_notes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  conteudo: text("conteudo").notNull(),
+  cor: varchar("cor", { length: 20 }).default("bg-blue-500"), // color class for badge
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_client_notes_user").on(table.userId),
+  index("idx_client_notes_client").on(table.clientId),
+  index("idx_client_notes_user_client").on(table.userId, table.clientId),
+]);
+
+export const insertClientNoteSchema = createInsertSchema(clientNotes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  conteudo: z.string().min(1, "Nota não pode estar vazia").max(500, "Nota muito longa"),
+  cor: z.string().optional(),
+});
+
+export type ClientNote = typeof clientNotes.$inferSelect;
+export type InsertClientNote = z.infer<typeof insertClientNoteSchema>;
