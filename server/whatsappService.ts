@@ -294,8 +294,11 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
         // Substitui variáveis no template
         let conteudo = template.conteudo;
         conteudo = conteudo.replace(/{{razao_social}}/g, client.razaoSocial || '');
+        conteudo = conteudo.replace(/{{empresa}}/g, client.razaoSocial || '');
         conteudo = conteudo.replace(/{{telefone}}/g, client.telefone || '');
         conteudo = conteudo.replace(/{{email}}/g, client.email || '');
+        conteudo = conteudo.replace(/{{CELULAR_PRINCIPAL}}/g, client.CELULAR_PRINCIPAL || '');
+        conteudo = conteudo.replace(/{{NOME_CONTATO}}/g, client.NOME_CONTATO || '');
 
         // Simula envio (você pode integrar com WhatsApp aqui)
         console.log(`📤 Enviando para ${client.razaoSocial} (${client.telefone})...`);

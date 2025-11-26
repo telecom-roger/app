@@ -1226,16 +1226,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/campaigns/:id/pause", isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
-      const campanha = campanhasEmProgresso.get(id);
       
-      if (!campanha) {
-        return res.status(404).json({ error: "Campanha não encontrada" });
+      // Tenta pausar em memory primeiro
+      const campanha = campanhasEmProgresso.get(id);
+      if (campanha) {
+        campanha.status = "pausada";
       }
 
-      campanha.status = "pausada";
-      console.log(`⏸️  Campanha ${id} pausada`);
+      // Também atualiza no banco de dados
+      const { campaigns: campaignsTable } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
       
-      res.json({ success: true, message: "Campanha pausada", campanha });
+      await db.update(campaignsTable)
+        .set({ status: "pausada" })
+        .where(eq(campaignsTable.id, id));
+      
+      console.log(`⏸️  Campanha ${id} pausada`);
+      res.json({ success: true, message: "Campanha pausada", campaignId: id });
     } catch (error: any) {
       console.error("Error pausing campaign:", error);
       res.status(500).json({ error: "Erro ao pausar campanha" });
@@ -1246,15 +1253,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/campaigns/:id/cancel", isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
-      const campanha = campanhasEmProgresso.get(id);
       
-      if (!campanha) {
-        return res.status(404).json({ error: "Campanha não encontrada" });
-      }
-
+      // Remove do memory
       campanhasEmProgresso.delete(id);
-      console.log(`❌ Campanha ${id} cancelada e removida`);
+
+      // Também deleta do banco de dados
+      const { campaigns: campaignsTable } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
       
+      await db.delete(campaignsTable)
+        .where(eq(campaignsTable.id, id));
+      
+      console.log(`❌ Campanha ${id} cancelada e removida`);
       res.json({ success: true, message: "Campanha cancelada", campaignId: id });
     } catch (error: any) {
       console.error("Error canceling campaign:", error);
