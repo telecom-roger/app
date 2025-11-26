@@ -609,7 +609,7 @@ export default function Chat() {
       </Dialog>
 
             {/* Input */}
-            <div className="p-4 border-t border-border bg-card flex gap-2">
+            <div className="p-6 border-t border-border bg-card flex gap-3 items-end">
               <Input
                 placeholder="Digite uma mensagem..."
                 value={messageText}
@@ -622,6 +622,7 @@ export default function Chat() {
                 }}
                 disabled={sendMutation.isPending}
                 data-testid="input-message"
+                className="h-12 text-base"
               />
               <input
                 type="file"
@@ -631,37 +632,37 @@ export default function Chat() {
                 data-testid="input-file-upload"
               />
               <Button
-                size="icon"
+                size="lg"
                 variant="ghost"
                 onClick={() => document.getElementById("file-upload")?.click()}
                 disabled={sendMutation.isPending || isRecording}
                 data-testid="button-file-upload"
               >
-                <Paperclip className="h-4 w-4" />
+                <Paperclip className="h-5 w-5" />
               </Button>
               <Button
-                size="icon"
+                size="lg"
                 variant={isRecording ? "destructive" : "ghost"}
                 onClick={isRecording ? handleStopRecording : handleStartRecording}
                 disabled={sendMutation.isPending}
                 data-testid="button-voice-record"
               >
                 {isRecording ? (
-                  <StopCircle className="h-4 w-4 animate-pulse" />
+                  <StopCircle className="h-5 w-5 animate-pulse" />
                 ) : (
-                  <Mic className="h-4 w-4" />
+                  <Mic className="h-5 w-5" />
                 )}
               </Button>
               <Button
                 onClick={handleSendMessage}
                 disabled={!messageText.trim() || sendMutation.isPending}
-                size="icon"
+                size="lg"
                 data-testid="button-send-message"
               >
                 {sendMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
-                  <Send className="h-4 w-4" />
+                  <Send className="h-5 w-5" />
                 )}
               </Button>
             </div>
