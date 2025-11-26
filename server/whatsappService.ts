@@ -4,6 +4,9 @@ import { Boom } from "@hapi/boom";
 import path from "path";
 import fs from "fs";
 import * as storage from "./storage";
+import { db } from "./db";
+import { or, ilike } from "drizzle-orm";
+import { clients as clientsTable } from "@shared/schema";
 
 const activeSessions = new Map<string, any>();
 const qrCodes = new Map<string, string>();
@@ -103,13 +106,37 @@ async function processIncomingMessages(sessionId: string, m: any) {
       try {
         console.log(`[RECEBIMENTO] Telefone recebido: ${senderPhone}`);
         
-        const conversation = await storage.findConversationByPhoneAndUser(senderPhone, userId);
+        let conversation = await storage.findConversationByPhoneAndUser(senderPhone, userId);
+        
         if (!conversation) {
-          console.warn(`[RECEBIMENTO] ⚠️ Conversa não encontrada para ${senderPhone} e usuário ${userId}`);
-          continue;
+          console.warn(`[RECEBIMENTO] ⚠️ Conversa não encontrada, procurando cliente...`);
+          
+          // Normalize phone for lookup
+          let normalizado = senderPhone.replace(/\D/g, "");
+          if (normalizado.startsWith("55")) {
+            normalizado = normalizado.substring(2);
+          }
+          
+          const [client] = await db
+            .select()
+            .from(clientsTable)
+            .where(or(
+              ilike(clientsTable.CELULAR_PRINCIPAL, `%${normalizado}%`),
+              ilike(clientsTable.telefone, `%${normalizado}%`)
+            ))
+            .limit(1);
+          
+          if (client) {
+            console.log(`✅ Cliente encontrado: ${client.id} (${client.nome})`);
+            conversation = await storage.createOrGetConversation(client.id, userId);
+            console.log(`✨ Conversa criada automaticamente: ${conversation.id}`);
+          } else {
+            console.warn(`[RECEBIMENTO] ❌ Cliente não encontrado para ${senderPhone}, descartando mensagem`);
+            continue;
+          }
         }
 
-        console.log(`[RECEBIMENTO] Conversa encontrada: ${conversation.id}`);
+        console.log(`[RECEBIMENTO] Conversa encontrada/criada: ${conversation.id}`);
         
         await storage.createMessage({
           conversationId: conversation.id,
