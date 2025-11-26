@@ -460,9 +460,9 @@ export default function CampanhasWhatsApp() {
             );
           }
 
-          // Wait before next message with random variation (5-10 seconds extra to avoid bot detection)
+          // Wait before next message with random variation (5-15 seconds extra to avoid bot detection)
           if (i < contatos.length - 1) {
-            const randomExtra = Math.random() * 5000 + 5000; // 5-10 segundos extra em ms
+            const randomExtra = Math.random() * 10000 + 5000; // 5-15 segundos extra em ms
             const totalDelay = (tempoDelay * 1000) + randomExtra;
             await new Promise((resolve) => setTimeout(resolve, totalDelay));
           }
