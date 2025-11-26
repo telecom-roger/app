@@ -1653,7 +1653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         normalizado = normalizado.substring(2);
       }
       
-      const [client] = await db
+      let [client] = await db
         .select()
         .from(clients)
         .where(or(
@@ -1662,11 +1662,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ))
         .limit(1);
       
+      // Se não encontrar, criar novo cliente automaticamente
       if (!client) {
-        return res.status(404).json({ error: "Cliente não encontrado" });
+        console.log(`[CHAT] 🆕 Auto-criando cliente para telefone: ${phone}`);
+        const newClient = await storage.createClient({
+          nome: `Novo contato ${phone}`,
+          telefone: phone,
+          CELULAR_PRINCIPAL: phone,
+          cpfCnpj: "",
+          status: "Lead",
+          carteira: "Dominio",
+          score: 0,
+        });
+        client = newClient;
+        console.log(`[CHAT] ✅ Cliente criado: ${client.id}`);
       }
       
       const conv = await storage.createOrGetConversation(client.id, userId);
+      console.log(`[CHAT] ✨ Conversa criada/carregada: ${conv.id}`);
       res.json(conv);
     } catch (error: any) {
       console.error("Error getting conversation:", error);
