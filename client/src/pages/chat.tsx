@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File } from "lucide-react";
+import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
@@ -53,6 +53,8 @@ export default function Chat() {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [messageText, setMessageText] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
 
   // Fetch all conversations for current user
   const { data: conversations = [], isLoading: conversationsLoading, refetch: refetchConversations } = useQuery<Conversation[]>({
@@ -201,6 +203,51 @@ export default function Chat() {
       sendMutation.mutate({ arquivo: base64, tipo, nomeArquivo: file.name, tamanho: file.size, mimeType: file.type } as any);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleStartRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+
+      recorder.ondataavailable = (e) => chunks.push(e.data);
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: "audio/mp3" });
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const base64 = event.target?.result as string;
+          sendMutation.mutate({ 
+            arquivo: base64, 
+            tipo: "audio", 
+            nomeArquivo: `audio_${Date.now()}.mp3`, 
+            tamanho: blob.size, 
+            mimeType: "audio/mp3" 
+          } as any);
+        };
+        reader.readAsDataURL(blob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+      toast({ title: "Gravando áudio...", variant: "default" });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao acessar microfone",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleStopRecording = () => {
+    if (mediaRecorder) {
+      mediaRecorder.stop();
+      setIsRecording(false);
+      setMediaRecorder(null);
+    }
   };
 
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);
@@ -442,10 +489,23 @@ export default function Chat() {
                 size="icon"
                 variant="ghost"
                 onClick={() => document.getElementById("file-upload")?.click()}
-                disabled={sendMutation.isPending}
+                disabled={sendMutation.isPending || isRecording}
                 data-testid="button-file-upload"
               >
                 <Paperclip className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant={isRecording ? "destructive" : "ghost"}
+                onClick={isRecording ? handleStopRecording : handleStartRecording}
+                disabled={sendMutation.isPending}
+                data-testid="button-voice-record"
+              >
+                {isRecording ? (
+                  <StopCircle className="h-4 w-4 animate-pulse" />
+                ) : (
+                  <Mic className="h-4 w-4" />
+                )}
               </Button>
               <Button
                 onClick={handleSendMessage}
