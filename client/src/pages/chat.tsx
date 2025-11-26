@@ -407,7 +407,7 @@ export default function Chat() {
                         </div>
                         <div className="flex items-center gap-2 whitespace-nowrap">
                           {(conv.unreadCount ?? 0) > 0 && conv.unreadCount && (
-                            <span className="bg-red-500 text-white text-xs font-bold rounded-full min-w-[24px] h-6 flex items-center justify-center">
+                            <span className="bg-primary text-white text-xs font-bold rounded-full min-w-[24px] h-6 flex items-center justify-center">
                               {conv.unreadCount > 99 ? "99+" : conv.unreadCount}
                             </span>
                           )}
@@ -486,7 +486,7 @@ export default function Chat() {
                 </PopoverContent>
               </Popover>
               {(selectedConversation.unreadCount ?? 0) > 0 && selectedConversation.unreadCount && (
-                <span className="bg-red-500 text-white text-xs font-bold rounded-full min-w-[28px] h-7 flex items-center justify-center">
+                <span className="bg-primary text-white text-xs font-bold rounded-full min-w-[28px] h-7 flex items-center justify-center">
                   {selectedConversation.unreadCount > 99 ? "99+" : selectedConversation.unreadCount}
                 </span>
               )}
