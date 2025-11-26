@@ -110,6 +110,7 @@ export default function CampanhasWhatsApp() {
   const [searchClientes, setSearchClientes] = useState("");
   const [clientesSelecionados, setClientesSelecionados] = useState<Set<string>>(new Set());
   const [mostrarHistorico, setMostrarHistorico] = useState(false);
+  const [quantidadeSelecar, setQuantidadeSelecar] = useState(10);
 
   // Fetch clients with campaign history
   const { data: clientesDisponiveis = [], isLoading: carregandoClientes } = useQuery<ClientForImport[]>({
@@ -827,7 +828,7 @@ export default function CampanhasWhatsApp() {
             </div>
 
             {/* Quick Select Buttons */}
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap items-center">
               <Button
                 size="sm"
                 variant="outline"
@@ -860,6 +861,37 @@ export default function CampanhasWhatsApp() {
               >
                 ⭐ Apenas Novos
               </Button>
+              
+              {/* Divider */}
+              <div className="h-6 w-px bg-border" />
+              
+              {/* Random Selection */}
+              <div className="flex gap-2 items-center">
+                <Label className="text-xs font-medium whitespace-nowrap">Selecionar aleatoriamente:</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={clientesFiltrados.length}
+                  value={quantidadeSelecar}
+                  onChange={(e) => setQuantidadeSelecar(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-16 h-9"
+                  data-testid="input-quantidade-selecionar"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const shuffled = [...clientesFiltrados].sort(() => Math.random() - 0.5);
+                    const quantidadeReal = Math.min(quantidadeSelecar, clientesFiltrados.length);
+                    const selecionados = shuffled.slice(0, quantidadeReal).map((c) => c.id);
+                    setClientesSelecionados(new Set(selecionados));
+                  }}
+                  disabled={clientesFiltrados.length === 0}
+                  data-testid="button-random-select"
+                >
+                  🎲 Selecionar
+                </Button>
+              </div>
             </div>
 
             {/* Clients Table with better styling */}
