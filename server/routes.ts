@@ -1,8 +1,8 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
-import { eq, and, or, ilike } from "drizzle-orm";
-import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, whatsappSessions, clients, interactions, conversations } from "@shared/schema";
+import { eq, and, or, ilike, desc } from "drizzle-orm";
+import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, whatsappSessions, clients, interactions, conversations, messages } from "@shared/schema";
 import * as storage from "./storage";
 import * as whatsappService from "./whatsappService";
 import { setupAuth, isAuthenticated } from "./localAuth";
@@ -1284,7 +1284,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         normalizado = normalizado.substring(2);
       }
       
-      // Find client by phone
       const [client] = await db
         .select()
         .from(clients)
@@ -1299,10 +1298,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const conv = await storage.createOrGetConversation(client.id, userId);
-      console.log("✅ Conversa criada/obtida:", conv);
-      res.json({ id: conv.id, ...conv });
+      res.json(conv);
     } catch (error: any) {
       console.error("Error getting conversation:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Get messages for a conversation
+  app.get("/api/chat/messages/:conversationId", isAuthenticated, async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      const msgs = await db
+        .select()
+        .from(messages)
+        .where(eq(messages.conversationId, conversationId))
+        .orderBy(desc(messages.createdAt))
+        .limit(100);
+      
+      res.json(msgs.reverse());
+    } catch (error: any) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Send message
+  app.post("/api/chat/messages/:conversationId", isAuthenticated, async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      const { conteudo, tipo = "texto" } = req.body;
+      
+      if (!conteudo) {
+        return res.status(400).json({ error: "Message content required" });
+      }
+      
+      const msg = await storage.createMessage({
+        conversationId,
+        sender: "user",
+        tipo,
+        conteudo,
+      });
+      
+      // Also try to send via WhatsApp
+      const conv = await db.select().from(conversations).where(eq(conversations.id, conversationId)).limit(1);
+      if (conv && conv[0]) {
+        const client = await db.select().from(clients).where(eq(clients.id, conv[0].clientId)).limit(1);
+        if (client && client[0]) {
+          const telefone = client[0].CELULAR_PRINCIPAL || client[0].telefone;
+          const sessions = await storage.getAllWhatsappSessions((req.user as any).id);
+          const sessaoAtiva = sessions.find((s) => s.status === "conectada");
+          
+          if (sessaoAtiva && telefone) {
+            try {
+              await whatsappService.sendMessage(sessaoAtiva.sessionId, telefone, conteudo);
+              console.log(`✅ Mensagem enviada via WhatsApp para ${telefone}`);
+            } catch (err) {
+              console.error(`⚠️ Erro ao enviar via WhatsApp: ${err}`);
+            }
+          }
+        }
+      }
+      
+      res.json(msg);
+    } catch (error: any) {
+      console.error("Error sending message:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });

@@ -457,11 +457,10 @@ export async function getWhatsappSessionBySessionId(sessionId: string) {
 }
 
 export async function getAllWhatsappSessions(userId?: string) {
-  let query = db.select().from(whatsappSessions);
+  const query = db.select().from(whatsappSessions);
   
-  // If userId is provided, filter by that user (non-admins only see their sessions)
   if (userId) {
-    query = query.where(eq(whatsappSessions.userId, userId));
+    return await query.where(eq(whatsappSessions.userId, userId)).orderBy(desc(whatsappSessions.createdAt));
   }
   
   return await query.orderBy(desc(whatsappSessions.createdAt));
