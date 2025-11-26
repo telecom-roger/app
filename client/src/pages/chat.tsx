@@ -105,6 +105,16 @@ export default function Chat() {
     gcTime: 5000, // Cache por 5 segundos apenas
   });
 
+  // Get the current conversation's client ID
+  const selectedConversation = conversations.find(c => c.id === selectedConversationId);
+  const currentClientId = selectedConversation?.clientId;
+
+  // Fetch client notes for selected conversation
+  const { data: clientNotes = [], isLoading: notesLoading, refetch: refetchNotes } = useQuery<ClientNote[]>({
+    queryKey: currentClientId ? ["/api/client-notes", currentClientId] : [],
+    enabled: !!currentClientId,
+  });
+
   // Fetch all clients for search
   const { data: clients = [], isLoading: clientsLoading, refetch: refetchClients } = useQuery<Client[]>({
     queryKey: ["/api/clients/whatsapp-list"],
