@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useWhatsAppStatus } from "@/hooks/useWhatsAppStatus";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -94,6 +95,7 @@ type ClientForImport = {
 export default function CampanhasWhatsApp() {
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const { connected: whatsappConnected } = useWhatsAppStatus();
   
   // ===== STATE =====
   const [tabAtivo, setTabAtivo] = useState("mensagens");
@@ -846,18 +848,29 @@ export default function CampanhasWhatsApp() {
                 </Button>
               )}
               <Button
-                onClick={() => setConfirmarEnvio(true)}
+                onClick={() => {
+                  if (!whatsappConnected) {
+                    toast({
+                      title: "WhatsApp não conectado",
+                      description: "Por favor, conecte seu WhatsApp em /whatsapp antes de enviar campanhas.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  setConfirmarEnvio(true);
+                }}
                 disabled={
                   enviando ||
                   contatosProcessados === 0 ||
                   !template.trim() ||
-                  tempoDelay < 10
+                  tempoDelay < 10 ||
+                  !whatsappConnected
                 }
                 size="lg"
                 data-testid="button-enviar-campanha"
               >
                 <Send className="h-4 w-4 mr-2" />
-                {enviando ? "Enviando..." : "Enviar Campanha"}
+                {!whatsappConnected ? "WhatsApp Desconectado" : enviando ? "Enviando..." : "Enviar Campanha"}
               </Button>
             </div>
           </div>

@@ -840,6 +840,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check WhatsApp connection status
+  app.get("/api/whatsapp/status", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const sessions = await storage.getAllWhatsappSessions(user.id);
+      const connectedSession = sessions.find((s: any) => s.status === "conectada");
+      
+      res.json({
+        connected: !!connectedSession,
+        sessionId: connectedSession?.sessionId || null,
+        message: connectedSession ? "WhatsApp conectado" : "WhatsApp não conectado. Por favor, conecte antes de enviar campanhas.",
+      });
+    } catch (error: any) {
+      console.error("Error checking WhatsApp status:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.post("/api/whatsapp/connect", isAuthenticated, async (req, res) => {
     try {
       const { nome } = req.body;

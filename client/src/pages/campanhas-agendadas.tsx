@@ -35,6 +35,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Clock, X, Download, AlertCircle, Loader } from "lucide-react";
 import { useState } from "react";
+import { useWhatsAppStatus } from "@/hooks/useWhatsAppStatus";
 import {
   Form,
   FormControl,
@@ -88,6 +89,7 @@ const convertFromSaoPauloDate = (dateTimeLocal: string) => {
 
 export default function CampanhasAgendadas() {
   const { toast } = useToast();
+  const { connected: whatsappConnected } = useWhatsAppStatus();
   const [openDialog, setOpenDialog] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showClientSelector, setShowClientSelector] = useState(false);
@@ -183,6 +185,9 @@ export default function CampanhasAgendadas() {
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
+      if (!whatsappConnected) {
+        throw new Error("WhatsApp não está conectado. Por favor, conecte antes de agendar.");
+      }
       return apiRequest("POST", "/api/campaigns/schedule", data);
     },
     onSuccess: () => {
