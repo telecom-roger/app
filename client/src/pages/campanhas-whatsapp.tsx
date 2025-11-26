@@ -1157,7 +1157,7 @@ export default function CampanhasWhatsApp() {
                               data-testid={`checkbox-cliente-${cliente.id}`}
                             />
                           </TableCell>
-                          <TableCell className="font-medium" data-testid={`text-razaosocial-${cliente.id}`}>{cliente.razaoSocial || cliente.nome}</TableCell>
+                          <TableCell className="font-medium" data-testid={`text-razaosocial-${cliente.id}`}>{cliente.razaoSocial || "N/A"}</TableCell>
                           <TableCell className="font-mono text-sm font-medium" data-testid={`text-celular-${cliente.id}`}>{cliente.telefone}</TableCell>
                           <TableCell className="text-xs" data-testid={`status-campanha-${cliente.id}`}>
                             {cliente.status === "ENVIADO" ? (
@@ -1230,7 +1230,7 @@ export default function CampanhasWhatsApp() {
                     return {
                       id: cliente?.id || "",
                       celular: cliente?.telefone || "",
-                      razao_social: cliente?.razaoSocial || cliente?.nome || "N/A",
+                      razao_social: cliente?.razaoSocial || "N/A",
                     };
                   })
                   .filter((c) => c.celular);
