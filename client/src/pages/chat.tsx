@@ -265,7 +265,8 @@ export default function Chat() {
           const base64 = event.target?.result as string;
           sendMutation.mutate({ 
             arquivo: base64, 
-            tipo: "audio", 
+            tipo: "audio",
+            conteudo: "",
             nomeArquivo: `audio_${Date.now()}.opus`, 
             tamanho: blob.size, 
             mimeType: "audio/webm" 
