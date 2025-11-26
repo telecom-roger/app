@@ -436,6 +436,49 @@ export async function sendImage(sessionId: string, telefone: string, imageBase64
   }
 }
 
+async function convertWebMToOgg(webmBase64: string): Promise<Buffer | null> {
+  try {
+    const tempDir = path.join(process.cwd(), "temp_audio");
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+    
+    const timestamp = Date.now();
+    const webmPath = path.join(tempDir, `audio_${timestamp}.webm`);
+    const oggPath = path.join(tempDir, `audio_${timestamp}.ogg`);
+    
+    // Write WebM to temp file
+    const base64Data = webmBase64.split(",")[1] || webmBase64;
+    const buffer = Buffer.from(base64Data, "base64");
+    fs.writeFileSync(webmPath, buffer);
+    console.log(`📝 WebM temporário salvo (${buffer.length} bytes)`);
+    
+    // Convert WebM to OGG/Opus (WhatsApp Web format)
+    try {
+      await execAsync(`ffmpeg -i "${webmPath}" -c:a libopus -b:a 128k -ac 1 "${oggPath}" -y 2>/dev/null`, { timeout: 30000 });
+      console.log(`✅ Conversão WebM → OGG/Opus concluída`);
+    } catch (err) {
+      console.warn(`⚠️ ffmpeg warning (ignorando):`, (err as any).message?.substring(0, 100));
+    }
+    
+    if (fs.existsSync(oggPath)) {
+      const oggBuffer = fs.readFileSync(oggPath);
+      console.log(`📊 OGG gerado (${oggBuffer.length} bytes)`);
+      
+      // Cleanup
+      try { fs.unlinkSync(webmPath); } catch (e) {}
+      try { fs.unlinkSync(oggPath); } catch (e) {}
+      
+      return oggBuffer;
+    } else {
+      console.warn(`⚠️ OGG não gerado, usando WebM original`);
+      try { fs.unlinkSync(webmPath); } catch (e) {}
+      return buffer;
+    }
+  } catch (error) {
+    console.error(`❌ Erro na conversão:`, error);
+    return null;
+  }
+}
+
 export async function sendAudio(sessionId: string, telefone: string, audioBase64: string): Promise<boolean> {
   try {
     const sock = activeSessions.get(sessionId);
@@ -452,15 +495,18 @@ export async function sendAudio(sessionId: string, telefone: string, audioBase64
 
     console.log(`📤 Enviando áudio para ${jid}...`);
     
-    // Send WebM/Opus raw (Baileys handles conversion)
-    const base64Data = audioBase64.split(",")[1] || audioBase64;
-    const audioBuffer = Buffer.from(base64Data, "base64");
+    // Convert WebM to OGG/Opus (WhatsApp Web format)
+    let audioBuffer = await convertWebMToOgg(audioBase64);
+    if (!audioBuffer) {
+      const base64Data = audioBase64.split(",")[1] || audioBase64;
+      audioBuffer = Buffer.from(base64Data, "base64");
+    }
     
-    console.log(`📊 Áudio (WebM Opus): ${audioBuffer.length} bytes`);
+    console.log(`📊 Áudio final: ${audioBuffer.length} bytes`);
     
     const result = await sock.sendMessage(jid, { 
       audio: audioBuffer,
-      mimetype: "audio/ogg; codecs=opus",
+      mimetype: "audio/ogg",
       ptt: true
     });
     
