@@ -11,10 +11,9 @@ import { useToast } from "@/hooks/use-toast";
 interface Message {
   id: string;
   conversationId: string;
-  content: string;
-  fromPhoneNumber: string;
-  toPhoneNumber: string;
-  direction: "inbound" | "outbound";
+  conteudo: string;
+  sender: "user" | "client";
+  tipo: string;
   createdAt: string;
 }
 
@@ -63,9 +62,10 @@ export default function Chat() {
   // Get or create conversation by phone
   const getConversationMutation = useMutation({
     mutationFn: async (phone: string) => {
-      return apiRequest("POST", "/api/chat/conversation-by-phone", {
+      const res = await apiRequest("POST", "/api/chat/conversation-by-phone", {
         phone,
       });
+      return res.json();
     },
     onSuccess: (data: any) => {
       console.log("✅ Conversa recebida do servidor:", data);
@@ -94,10 +94,11 @@ export default function Chat() {
   const sendMutation = useMutation({
     mutationFn: async (content: string) => {
       if (!selectedConversationId) return;
-      return apiRequest("POST", `/api/chat/messages/${selectedConversationId}`, {
+      const res = await apiRequest("POST", `/api/chat/messages/${selectedConversationId}`, {
         conteudo: content,
         tipo: "texto",
       });
+      return res.json();
     },
     onSuccess: () => {
       setMessageText("");
@@ -249,7 +250,7 @@ export default function Chat() {
                     <div
                       key={msg.id}
                       className={`flex ${
-                        msg.direction === "outbound"
+                        msg.sender === "user"
                           ? "justify-end"
                           : "justify-start"
                       }`}
@@ -257,12 +258,12 @@ export default function Chat() {
                     >
                       <div
                         className={`max-w-xs px-4 py-2 rounded-lg ${
-                          msg.direction === "outbound"
+                          msg.sender === "user"
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted text-foreground"
                         }`}
                       >
-                        <p className="text-sm">{msg.content}</p>
+                        <p className="text-sm">{msg.conteudo}</p>
                         <p className="text-xs opacity-70 mt-1">
                           {new Date(msg.createdAt).toLocaleTimeString("pt-BR")}
                         </p>
