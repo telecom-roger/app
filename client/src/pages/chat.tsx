@@ -632,37 +632,37 @@ export default function Chat() {
                 data-testid="input-file-upload"
               />
               <Button
-                size="lg"
+                size="icon"
                 variant="ghost"
                 onClick={() => document.getElementById("file-upload")?.click()}
                 disabled={sendMutation.isPending || isRecording}
                 data-testid="button-file-upload"
               >
-                <Paperclip className="h-5 w-5" />
+                <Paperclip className="h-4 w-4" />
               </Button>
               <Button
-                size="lg"
+                size="icon"
                 variant={isRecording ? "destructive" : "ghost"}
                 onClick={isRecording ? handleStopRecording : handleStartRecording}
                 disabled={sendMutation.isPending}
                 data-testid="button-voice-record"
               >
                 {isRecording ? (
-                  <StopCircle className="h-5 w-5 animate-pulse" />
+                  <StopCircle className="h-4 w-4 animate-pulse" />
                 ) : (
-                  <Mic className="h-5 w-5" />
+                  <Mic className="h-4 w-4" />
                 )}
               </Button>
               <Button
                 onClick={handleSendMessage}
                 disabled={!messageText.trim() || sendMutation.isPending}
-                size="lg"
+                size="icon"
                 data-testid="button-send-message"
               >
                 {sendMutation.isPending ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Send className="h-5 w-5" />
+                  <Send className="h-4 w-4" />
                 )}
               </Button>
             </div>
