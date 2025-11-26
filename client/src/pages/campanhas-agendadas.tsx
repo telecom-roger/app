@@ -156,18 +156,19 @@ export default function CampanhasAgendadas() {
       return;
     }
 
-    // Store selected clients in filtros
+    const quantidadeSelecionada = clientesSelecionados.size;
     const clientIds = Array.from(clientesSelecionados);
+    
+    // Store selected clients in filtros
     form.setValue("filtros", { clientIds });
-    form.setValue("totalRecipients", clientesSelecionados.size);
+    form.setValue("totalRecipients", quantidadeSelecionada);
     
     setShowClientSelector(false);
-    setClientesSelecionados(new Set());
     setSearchClientes("");
 
     toast({
       title: "Sucesso",
-      description: `${clientesSelecionados.size} cliente${clientesSelecionados.size !== 1 ? "s" : ""} selecionado${clientesSelecionados.size !== 1 ? "s" : ""}`,
+      description: `${quantidadeSelecionada} cliente${quantidadeSelecionada !== 1 ? "s" : ""} selecionado${quantidadeSelecionada !== 1 ? "s" : ""}`,
     });
   };
 
