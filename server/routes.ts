@@ -1742,6 +1742,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== CLIENT NOTES ROUTES ====================
+  app.get("/api/client-notes/:clientId", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const { clientId } = req.params;
+      const notes = await storage.getClientNotesByUserId(user.id, clientId);
+      res.json(notes);
+    } catch (error: any) {
+      console.error("Error fetching client notes:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/client-notes/:clientId", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const { clientId } = req.params;
+      const { conteudo, cor } = req.body;
+      
+      const note = await storage.createClientNote({
+        userId: user.id,
+        clientId,
+        conteudo,
+        cor: cor || "bg-blue-500",
+      });
+      res.json(note);
+    } catch (error: any) {
+      console.error("Error creating client note:", error);
+      res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
+  app.patch("/api/client-notes/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { conteudo, cor } = req.body;
+      
+      const note = await storage.updateClientNote(id, { conteudo, cor });
+      if (!note) return res.status(404).json({ error: "Note not found" });
+      res.json(note);
+    } catch (error: any) {
+      console.error("Error updating client note:", error);
+      res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
+  app.delete("/api/client-notes/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteClientNote(id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting client note:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // ==================== ADMIN ROUTES ====================
   app.get("/api/admin/users", isAuthenticated, requireAdmin, async (req, res) => {
     try {
