@@ -51,19 +51,28 @@ function stopKeepAlive(sessionId: string) {
 async function processIncomingMessages(sessionId: string, m: any) {
   try {
     const { messages: msgs } = m || {};
-    if (!msgs || msgs.length === 0) return;
-
-    const userId = sessionUsers.get(sessionId);
-    if (!userId) {
-      console.log(`[RECEBIMENTO] userId não encontrado para ${sessionId}`);
+    if (!msgs || msgs.length === 0) {
+      console.log(`[RECEBIMENTO] ⚠️ Nenhuma mensagem para processar`);
       return;
     }
 
-    console.log(`[RECEBIMENTO] Processando ${msgs.length} mensagens para ${sessionId}`);
+    const userId = sessionUsers.get(sessionId);
+    if (!userId) {
+      console.log(`[RECEBIMENTO] ⚠️ userId não encontrado para ${sessionId}`);
+      return;
+    }
+
+    console.log(`[RECEBIMENTO] 🎯 Processando ${msgs.length} mensagens para ${sessionId}`);
 
     for (const msg of msgs) {
-      if (msg.key.fromMe) continue;
-      if (msg.key.remoteJid?.includes("@g.us")) continue;
+      if (msg.key.fromMe) {
+        console.log(`[RECEBIMENTO] ➡️ Pulando msg enviada por mim (fromMe)`);
+        continue;
+      }
+      if (msg.key.remoteJid?.includes("@g.us")) {
+        console.log(`[RECEBIMENTO] ➡️ Pulando msg de grupo`);
+        continue;
+      }
 
       // Extract phone number from WhatsApp identifiers
       // Priority: participant > remoteJidAlt > remoteJid
@@ -85,9 +94,12 @@ async function processIncomingMessages(sessionId: string, m: any) {
         .replace("@c.us", "")
         .trim();
       
-      if (!senderPhone) continue;
+      if (!senderPhone) {
+        console.log(`[RECEBIMENTO] ⚠️ Telefone vazio após limpeza`);
+        continue;
+      }
       
-      console.log(`[RECEBIMENTO] ✅ Telefone extraído: "${senderPhone}"`);
+      console.log(`[RECEBIMENTO] 📱 Telefone extraído: "${senderPhone}"`);
 
       let conteudo = "";
       let tipo = "texto";
@@ -109,11 +121,12 @@ async function processIncomingMessages(sessionId: string, m: any) {
         tipo = "documento";
         conteudo = `[${msg.message.documentMessage.fileName || "Documento"}]`;
       } else {
+        console.log(`[RECEBIMENTO] ⚠️ Tipo de msg desconhecida, pulando`);
         continue;
       }
 
       try {
-        console.log(`[RECEBIMENTO] Telefone recebido: ${senderPhone}`);
+        console.log(`[RECEBIMENTO] 💾 Salvando: tipo=${tipo}, conteudo="${conteudo.substring(0, 50)}"`);
         
         let conversation = await storage.findConversationByPhoneAndUser(senderPhone, userId);
         
