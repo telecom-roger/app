@@ -208,12 +208,11 @@ export default function CampanhasWhatsApp() {
       .map((clientId) => {
         const cliente = clientesDisponiveis.find((c) => c.id === clientId);
         return {
-          id: cliente?.id || "",
-          whatsapp: cliente?.telefone || "",
+          celular: cliente?.telefone || "",
           empresa: cliente?.nome || "N/A",
         };
       })
-      .filter((c) => c.whatsapp);
+      .filter((c) => c.celular);
 
     if (contatosFromDB.length === 0) {
       toast({
@@ -225,7 +224,7 @@ export default function CampanhasWhatsApp() {
     }
 
     setContatos(contatosFromDB);
-    setVariaveisDisponiveis(["id", "whatsapp", "empresa"]);
+    setVariaveisDisponiveis(["celular", "empresa"]);
     setClientesSelecionados(new Set());
     setMostrarSeletorBD(false);
     setSearchClientes("");
@@ -911,64 +910,66 @@ export default function CampanhasWhatsApp() {
                   </div>
                 </div>
               ) : (
-                <ScrollArea className="flex-1">
-                  <Table className="text-sm">
-                    <TableHeader className="sticky top-0 bg-slate-100 dark:bg-slate-800 z-10">
-                      <TableRow className="border-b-2">
-                        <TableHead className="w-12 text-center">
-                          <Checkbox
-                            checked={clientesSelecionados.size === clientesFiltrados.length && clientesFiltrados.length > 0}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setClientesSelecionados(new Set(clientesFiltrados.map((c) => c.id)));
-                              } else {
-                                setClientesSelecionados(new Set());
-                              }
-                            }}
-                            data-testid="checkbox-select-all"
-                          />
-                        </TableHead>
-                        <TableHead className="font-semibold">RAZÃO SOCIAL</TableHead>
-                        <TableHead className="font-semibold">CELULAR</TableHead>
-                        <TableHead className="font-semibold text-xs">STATUS</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {clientesFiltrados.map((cliente) => (
-                        <TableRow key={cliente.id} className="border-b hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer transition-colors">
-                          <TableCell className="text-center" onClick={(e) => {
-                            e.stopPropagation();
-                            toggleClienteSelecionado(cliente.id);
-                          }}>
+                <div className="flex-1 overflow-hidden">
+                  <ScrollArea className="h-full">
+                    <Table className="text-sm">
+                      <TableHeader className="sticky top-0 bg-slate-100 dark:bg-slate-800 z-10">
+                        <TableRow className="border-b-2">
+                          <TableHead className="w-12 text-center">
                             <Checkbox
-                              checked={clientesSelecionados.has(cliente.id)}
-                              onCheckedChange={() => toggleClienteSelecionado(cliente.id)}
-                              data-testid={`checkbox-cliente-${cliente.id}`}
+                              checked={clientesSelecionados.size === clientesFiltrados.length && clientesFiltrados.length > 0}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setClientesSelecionados(new Set(clientesFiltrados.map((c) => c.id)));
+                                } else {
+                                  setClientesSelecionados(new Set());
+                                }
+                              }}
+                              data-testid="checkbox-select-all"
                             />
-                          </TableCell>
-                          <TableCell className="font-medium">{cliente.nome}</TableCell>
-                          <TableCell className="font-mono text-sm font-medium">{cliente.telefone}</TableCell>
-                          <TableCell className="text-xs">
-                            {cliente.ultimaCampanha ? (
-                              cliente.ultimaCampanha.recente ? (
-                                <Badge variant="destructive" className="text-xs gap-1">
-                                  <AlertTriangle className="h-3 w-3" />
-                                  {cliente.ultimaCampanha.minutosPara}m atrás
-                                </Badge>
-                              ) : (
-                                <Badge variant="outline" className="text-xs">
-                                  {cliente.ultimaCampanha.data}
-                                </Badge>
-                              )
-                            ) : (
-                              <Badge variant="secondary" className="text-xs">Novo</Badge>
-                            )}
-                          </TableCell>
+                          </TableHead>
+                          <TableHead className="font-semibold">RAZÃO SOCIAL</TableHead>
+                          <TableHead className="font-semibold">CELULAR</TableHead>
+                          <TableHead className="font-semibold text-xs">STATUS</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
+                      </TableHeader>
+                      <TableBody>
+                        {clientesFiltrados.map((cliente) => (
+                          <TableRow key={cliente.id} className="border-b hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer transition-colors">
+                            <TableCell className="text-center" onClick={(e) => {
+                              e.stopPropagation();
+                              toggleClienteSelecionado(cliente.id);
+                            }}>
+                              <Checkbox
+                                checked={clientesSelecionados.has(cliente.id)}
+                                onCheckedChange={() => toggleClienteSelecionado(cliente.id)}
+                                data-testid={`checkbox-cliente-${cliente.id}`}
+                              />
+                            </TableCell>
+                            <TableCell className="font-medium">{cliente.nome}</TableCell>
+                            <TableCell className="font-mono text-sm font-medium">{cliente.telefone}</TableCell>
+                            <TableCell className="text-xs">
+                              {cliente.ultimaCampanha ? (
+                                cliente.ultimaCampanha.recente ? (
+                                  <Badge variant="destructive" className="text-xs gap-1">
+                                    <AlertTriangle className="h-3 w-3" />
+                                    {cliente.ultimaCampanha.minutosPara}m atrás
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-xs">
+                                    {cliente.ultimaCampanha.data}
+                                  </Badge>
+                                )
+                              ) : (
+                                <Badge variant="secondary" className="text-xs">Novo</Badge>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </div>
               )}
             </div>
 
