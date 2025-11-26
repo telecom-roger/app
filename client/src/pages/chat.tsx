@@ -66,9 +66,9 @@ export default function Chat() {
   });
 
   // Fetch all clients for search
-  const { data: clients = [], isLoading: clientsLoading } = useQuery<Client[]>({
+  const { data: clients = [], isLoading: clientsLoading, refetch: refetchClients } = useQuery<Client[]>({
     queryKey: ["/api/clients/whatsapp-list"],
-    refetchInterval: false,
+    refetchInterval: 10000, // Atualiza a cada 10s para pegar mudanças
   });
 
   // Fetch messages for selected conversation (MUST BE BEFORE WebSocket useEffect that uses refetchMessages)
@@ -215,6 +215,7 @@ export default function Chat() {
 
   const handleSelectClient = (client: Client) => {
     const phone = client.CELULAR_PRINCIPAL || client.telefone;
+    refetchClients(); // Força atualização de cache antes de criar conversa
     getConversationMutation.mutate(phone);
   };
 
