@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle, Download } from "lucide-react";
+import { SiWhatsapp } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
@@ -422,7 +423,7 @@ export default function Chat() {
             {/* Header */}
             <div className="flex items-center gap-2 p-4 border-b border-border bg-card justify-between">
               <div className="flex items-center gap-2 flex-1">
-                <Phone className="h-5 w-5 text-primary" />
+                <SiWhatsapp className="h-5 w-5 text-green-500" />
                 <div className="flex-1">
                   <p className="font-medium text-foreground">
                     {selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato"}
