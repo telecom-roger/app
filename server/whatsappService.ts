@@ -65,34 +65,19 @@ async function processIncomingMessages(sessionId: string, m: any) {
       if (msg.key.fromMe) continue;
       if (msg.key.remoteJid?.includes("@g.us")) continue;
 
-      // DEBUG: Log estrutura completa se contém @lid
-      if (msg.key.remoteJid?.includes("@lid")) {
-        console.log(`\n🔍 DEBUG BROADCAST LIST MESSAGE:`, JSON.stringify({
-          key: msg.key,
-          message_keys: Object.keys(msg.message || {}),
-          pushName: msg.pushName,
-          notifyName: msg.notifyName,
-          participant: msg.participant,
-          verifiedBizName: msg.verifiedBizName,
-          messageTimestamp: msg.messageTimestamp,
-        }, null, 2));
-      }
-
       // Extract phone number from WhatsApp identifiers
-      // For broadcast lists (@lid), remoteJid is NOT the real phone - it's a list ID
-      // We need to skip these for now or find another way
+      // Priority: participant > remoteJidAlt > remoteJid
       let senderPhone = "";
       
       if (msg.key.participant) {
         // Group messages have participant
         senderPhone = msg.key.participant;
-      } else if (!msg.key.remoteJid?.includes("@lid")) {
+      } else if (msg.key.remoteJidAlt) {
+        // Broadcast list messages have the real phone in remoteJidAlt
+        senderPhone = msg.key.remoteJidAlt;
+      } else {
         // Individual messages (non-broadcast)
         senderPhone = msg.key.remoteJid || "";
-      } else {
-        // Broadcast list - skip for now (need to find real phone)
-        console.log(`[RECEBIMENTO] ⏭️ Pulando broadcast list message - remoteJid=${msg.key.remoteJid}`);
-        continue;
       }
       
       senderPhone = senderPhone
