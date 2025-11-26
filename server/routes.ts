@@ -821,6 +821,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para enviar campanha em background (retorna imediatamente)
+  app.post("/api/whatsapp/enviar-campanha-background", isAuthenticated, async (req, res) => {
+    try {
+      const { contatos, template, tempoDelay } = req.body;
+      
+      if (!contatos || !Array.isArray(contatos) || contatos.length === 0) {
+        return res.status(400).json({ error: "contatos é obrigatório" });
+      }
+      
+      if (!template) {
+        return res.status(400).json({ error: "template é obrigatório" });
+      }
+
+      const user = (req.user as any);
+      const sessions = await storage.getAllWhatsappSessions(user.role === 'admin' ? undefined : user.id);
+      const sessaoConectada = sessions.find((s) => s.status === 'conectada');
+      
+      if (!sessaoConectada) {
+        return res.status(400).json({ error: "Nenhuma sessão WhatsApp conectada" });
+      }
+
+      // Return immediately - processing happens in background
+      res.json({ 
+        success: true,
+        mensagem: "Campanha iniciada em background",
+        total: contatos.length
+      });
+
+      // Process messages in background (don't wait for response)
+      (async () => {
+        for (let i = 0; i < contatos.length; i++) {
+          try {
+            const contato = contatos[i];
+            const telefone = contato.celular || "";
+            const clientId = contato.id || "";
+            
+            if (!telefone) continue;
+
+            // Replace variables in template
+            let mensagem = template;
+            for (const [chave, valor] of Object.entries(contato)) {
+              const regex = new RegExp(`\\{${chave}\\}`, "g");
+              mensagem = mensagem.replace(regex, String(valor || ""));
+            }
+
+            // Send message
+            try {
+              const isAlive = await whatsappService.isSessionAlive(sessaoConectada.sessionId);
+              if (!isAlive) {
+                console.error("Sessão WhatsApp não está mais conectada");
+                break;
+              }
+
+              await whatsappService.sendMessage(sessaoConectada.sessionId, telefone, mensagem);
+              
+              // Record interaction in timeline
+              if (clientId) {
+                try {
+                  await storage.createInteraction({
+                    clientId,
+                    tipo: "whatsapp_enviado",
+                    origem: "system",
+                    titulo: "Mensagem WhatsApp enviada",
+                    texto: mensagem.substring(0, 200),
+                    meta: {
+                      telefone,
+                      sessionId: sessaoConectada.sessionId,
+                      timestamp: new Date().toISOString(),
+                    } as any,
+                    createdBy: user.id,
+                  });
+                } catch (err) {
+                  console.warn("Erro ao registrar interação:", err);
+                }
+              }
+            } catch (err) {
+              console.error(`Erro ao enviar para ${telefone}:`, err);
+            }
+
+            // Wait before next message
+            if (i < contatos.length - 1) {
+              await new Promise((resolve) => setTimeout(resolve, (tempoDelay || 40) * 1000));
+            }
+          } catch (err) {
+            console.error("Erro processando contato:", err);
+          }
+        }
+        console.log("Campanha de fundo concluída");
+      })().catch((err) => console.error("Erro na campanha de background:", err));
+    } catch (error: any) {
+      console.error("Error in background campaign:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // New endpoint for single message sending from campaigns page
   app.post("/api/whatsapp/enviar-broadcast", isAuthenticated, async (req, res) => {
     try {
