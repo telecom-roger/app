@@ -574,3 +574,26 @@ export async function createMessage(data: InsertMessage): Promise<Message> {
   
   return created;
 }
+
+export async function findConversationByPhoneAndUser(telefone: string, userId: string): Promise<Conversation | undefined> {
+  // Normalize phone number
+  let normalizado = telefone.replace(/\D/g, "");
+  if (normalizado.startsWith("55")) {
+    normalizado = normalizado.substring(2);
+  }
+  
+  // Find client by phone number
+  const [client] = await db
+    .select()
+    .from(clients)
+    .where(or(
+      ilike(clients.CELULAR_PRINCIPAL, `%${normalizado}%`),
+      ilike(clients.telefone, `%${normalizado}%`)
+    ))
+    .limit(1);
+  
+  if (!client) return undefined;
+  
+  // Find or create conversation
+  return await createOrGetConversation(client.id, userId);
+}

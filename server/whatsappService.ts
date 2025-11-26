@@ -3,13 +3,83 @@ import { makeWASocket, DisconnectReason, useMultiFileAuthState, Browsers } from 
 import { Boom } from "@hapi/boom";
 import path from "path";
 import fs from "fs";
+import * as storage from "./storage";
 
 // Map to store active connections and QR codes
 const activeSessions = new Map<string, any>();
 const qrCodes = new Map<string, string>();
 const sessionStatus = new Map<string, string>(); // Track session status: conectada/desconectada
+const sessionUsers = new Map<string, string>(); // Map sessionId to userId
 
 let reconnectAttempts = new Map<string, number>();
+
+export function setSessionUser(sessionId: string, userId: string) {
+  sessionUsers.set(sessionId, userId);
+}
+
+async function handleIncomingMessages(sessionId: string, sock: any) {
+  sock.ev.on("messages.upsert", async (m: any) => {
+    try {
+      const { messages: msgs } = m;
+      const userId = sessionUsers.get(sessionId);
+      
+      if (!userId || !msgs) return;
+      
+      for (const msg of msgs) {
+        // Ignore sent messages, only process incoming
+        if (msg.key.fromMe) continue;
+        
+        // Get sender phone
+        const senderPhone = msg.key.remoteJid?.replace("@s.whatsapp.net", "") || "";
+        if (!senderPhone) continue;
+        
+        try {
+          // Find conversation by phone
+          const conversation = await storage.findConversationByPhoneAndUser(senderPhone, userId);
+          if (!conversation) continue;
+          
+          // Extract message content
+          let conteudo = "";
+          let tipo = "texto";
+          
+          if (msg.message?.conversation) {
+            conteudo = msg.message.conversation;
+          } else if (msg.message?.extendedTextMessage?.text) {
+            conteudo = msg.message.extendedTextMessage.text;
+          } else if (msg.message?.imageMessage) {
+            tipo = "imagem";
+            conteudo = msg.message.imageMessage.caption || "[Imagem]";
+          } else if (msg.message?.audioMessage) {
+            tipo = "audio";
+            conteudo = "[Áudio]";
+          } else if (msg.message?.videoMessage) {
+            tipo = "video";
+            conteudo = msg.message.videoMessage.caption || "[Vídeo]";
+          } else if (msg.message?.documentMessage) {
+            tipo = "documento";
+            conteudo = `[${msg.message.documentMessage.fileName || "Documento"}]`;
+          } else {
+            continue;
+          }
+          
+          // Save message to database
+          await storage.createMessage({
+            conversationId: conversation.id,
+            sender: "cliente",
+            tipo,
+            conteudo,
+          });
+          
+          console.log(`✅ Mensagem recebida de ${senderPhone} e salva na conversa`);
+        } catch (error) {
+          console.error(`Erro ao processar mensagem recebida:`, error);
+        }
+      }
+    } catch (error) {
+      console.error(`Erro no handler de mensagens recebidas:`, error);
+    }
+  });
+}
 
 export async function initializeWhatsAppSession(sessionId: string): Promise<void> {
   try {
