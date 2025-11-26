@@ -524,7 +524,7 @@ export async function createOrGetConversation(clientId: string, userId: string):
   
   const [created] = await db
     .insert(conversations)
-    .values({ clientId, userId, ativa: true })
+    .values({ clientId, userId, canal: "whatsapp", ativa: true })
     .returning();
   return created;
 }
