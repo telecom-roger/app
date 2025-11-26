@@ -62,9 +62,18 @@ async function processIncomingMessages(sessionId: string, m: any) {
       if (msg.key.fromMe) continue;
       if (msg.key.remoteJid?.includes("@g.us")) continue;
 
-      // Clean phone number - remove all WhatsApp suffixes
-      let senderPhone = msg.key.remoteJid || "";
-      senderPhone = senderPhone.replace("@s.whatsapp.net", "").replace("@lid", "").replace("@c.us", "").trim();
+      // Extract phone number from WhatsApp identifiers
+      let senderPhone = "";
+      
+      // If it's a broadcast list (@lid), try to get the real phone from participant
+      if (msg.key.remoteJid?.includes("@lid") && msg.key.participant) {
+        senderPhone = msg.key.participant.replace("@s.whatsapp.net", "").replace("@c.us", "").trim();
+        console.log(`[RECEBIMENTO] @lid detectado, usando participant: ${msg.key.participant} → ${senderPhone}`);
+      } else {
+        // Normal message - extract phone from remoteJid
+        senderPhone = msg.key.remoteJid || "";
+        senderPhone = senderPhone.replace("@s.whatsapp.net", "").replace("@lid", "").replace("@c.us", "").trim();
+      }
       
       if (!senderPhone) continue;
 
