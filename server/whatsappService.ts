@@ -291,14 +291,24 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
     // Simula envio (em produção, usaria WhatsApp API)
     for (const client of recipientClients) {
       try {
-        // Substitui variáveis no template
+        // Substitui variáveis no template (suporta {variavel} e {{variavel}})
         let conteudo = template.conteudo;
+        
+        // Com duas chaves {{variavel}}
         conteudo = conteudo.replace(/{{razao_social}}/g, client.razaoSocial || '');
         conteudo = conteudo.replace(/{{empresa}}/g, client.razaoSocial || '');
         conteudo = conteudo.replace(/{{telefone}}/g, client.telefone || '');
         conteudo = conteudo.replace(/{{email}}/g, client.email || '');
         conteudo = conteudo.replace(/{{CELULAR_PRINCIPAL}}/g, client.CELULAR_PRINCIPAL || '');
         conteudo = conteudo.replace(/{{NOME_CONTATO}}/g, client.NOME_CONTATO || '');
+        
+        // Com uma chave {variavel} - igual a campanhas WhatsApp
+        conteudo = conteudo.replace(/{razao_social}/g, client.razaoSocial || '');
+        conteudo = conteudo.replace(/{empresa}/g, client.razaoSocial || '');
+        conteudo = conteudo.replace(/{telefone}/g, client.telefone || '');
+        conteudo = conteudo.replace(/{email}/g, client.email || '');
+        conteudo = conteudo.replace(/{CELULAR_PRINCIPAL}/g, client.CELULAR_PRINCIPAL || '');
+        conteudo = conteudo.replace(/{NOME_CONTATO}/g, client.NOME_CONTATO || '');
 
         // Simula envio (você pode integrar com WhatsApp aqui)
         console.log(`📤 Enviando para ${client.razaoSocial} (${client.telefone})...`);
