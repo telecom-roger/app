@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
-import { eq, and, or, ilike, desc, sql, lte } from "drizzle-orm";
+import { eq, and, or, ilike, desc, sql, lte, inArray } from "drizzle-orm";
 import cron from "node-cron";
 import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, whatsappSessions, clients, interactions, conversations, messages, campaigns as campaignsTable, templates as templatesTable } from "@shared/schema";
 import * as storage from "./storage";
@@ -534,7 +534,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: clients.status,
         })
         .from(clients)
-        .where(clients.id.inArray(clientIds))
+        .where(inArray(clients.id, clientIds))
         .limit(10000);
 
       res.json(allClients);
