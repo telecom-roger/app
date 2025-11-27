@@ -431,30 +431,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Cleanup orphan opportunities (etapas inválidas)
-  app.post("/api/opportunities/cleanup/orphans", isAuthenticated, async (req, res) => {
-    try {
-      const user = req.user as any;
-      const allOpportunities = await storage.getOpportunities({ userId: user.id });
-      const allTags = await db.select().from(tags).where(eq(tags.createdBy, user.id));
-      
-      const validEtapas = new Set(allTags.map(t => t.nome));
-      validEtapas.add("fechado");
-      validEtapas.add("perdido");
-      
-      const orphanOpps = allOpportunities.filter(opp => !validEtapas.has(opp.etapa));
-      
-      for (const opp of orphanOpps) {
-        await storage.deleteOpportunity(opp.id);
-      }
-      
-      res.json({ deleted: orphanOpps.length, opportunities: orphanOpps });
-    } catch (error: any) {
-      console.error("Error cleaning orphan opportunities:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
   // ==================== CAMPAIGN ROUTES ====================
   app.get("/api/campaigns", isAuthenticated, async (req, res) => {
     try {

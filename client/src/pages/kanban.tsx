@@ -202,24 +202,6 @@ export default function Kanban() {
     .filter(op => op.etapa && op.etapa !== 'fechado' && op.etapa !== 'perdido')
     .reduce((sum, op) => sum + parseValue(op.valorEstimado), 0);
 
-  // Cleanup mutation
-  const cleanupMutation = useMutation({
-    mutationFn: async () => {
-      return await apiRequest("POST", "/api/opportunities/cleanup/orphans", {});
-    },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
-      if (data.deleted > 0) {
-        toast({ title: `${data.deleted} oportunidade(s) órfã(s) removida(s)`, variant: "default" });
-      } else {
-        toast({ title: "Nenhuma oportunidade órfã encontrada", variant: "default" });
-      }
-    },
-    onError: () => {
-      toast({ title: "Erro ao limpar oportunidades", variant: "destructive" });
-    },
-  });
-
   if (authLoading || !isAuthenticated) {
     return <KanbanSkeleton />;
   }
@@ -320,15 +302,6 @@ export default function Kanban() {
             >
               <Plus className="h-4 w-4 mr-2" />
               Nova Oportunidade
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => cleanupMutation.mutate()}
-              disabled={cleanupMutation.isPending}
-              className="w-full sm:w-auto"
-              data-testid="button-cleanup-orphans"
-            >
-              {cleanupMutation.isPending ? "Limpando..." : "Limpar Órfãs"}
             </Button>
           </div>
 
