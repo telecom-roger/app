@@ -512,15 +512,30 @@ export default function Chat() {
       // 1. Adicionar tag ao cliente
       const tagRes = await apiRequest("POST", `/api/clients/${currentClientId}/tags`, { tagName, valorEstimado: valorEstimado * 100 });
       
-      // 2. Criar oportunidade automaticamente
+      // 2. Gerenciar oportunidade - cliente tem apenas 1
       if (valorEstimado > 0 || businessValue) {
-        await apiRequest("POST", "/api/opportunities", {
-          clientId: currentClientId,
-          titulo: `${detailedClient.razaoSocial || detailedClient.nome}`,
-          etapa: tagName,
-          valorEstimado: valorEstimado * 100,
-          responsavelId: detailedClient.createdBy,
-        });
+        try {
+          // Buscar oportunidade existente do cliente
+          const oppsRes = await fetch(`/api/opportunities`);
+          const opps = await oppsRes.json();
+          const existingOp = opps.find((op: any) => op.clientId === currentClientId);
+          
+          if (existingOp) {
+            // Mover oportunidade para nova etapa
+            await apiRequest("PATCH", `/api/opportunities/${existingOp.id}/move`, { etapa: tagName });
+          } else {
+            // Criar oportunidade apenas se não existir
+            await apiRequest("POST", "/api/opportunities", {
+              clientId: currentClientId,
+              titulo: `${detailedClient.razaoSocial || detailedClient.nome}`,
+              etapa: tagName,
+              valorEstimado: valorEstimado * 100,
+              responsavelId: detailedClient.createdBy,
+            });
+          }
+        } catch (err) {
+          console.error("Erro ao gerenciar oportunidade:", err);
+        }
       }
       
       return tagRes.json();
@@ -530,7 +545,7 @@ export default function Chat() {
       refetchConversations();
       refetchDetailedClient();
       setBusinessValue("");
-      toast({ title: "Etiqueta adicionada e oportunidade criada", variant: "default" });
+      toast({ title: "Etiqueta adicionada", variant: "default" });
     },
     onError: (error: any) => {
       toast({ title: "Erro ao adicionar etiqueta", description: error.message, variant: "destructive" });
