@@ -325,6 +325,9 @@ export default function Chat() {
   // Delete message mutation
   const deleteMutation = useMutation({
     mutationFn: async (messageId: string) => {
+      if (!isWhatsappConnected) {
+        throw new Error("WhatsApp não está conectado. Conecte uma sessão antes de deletar mensagens.");
+      }
       const res = await apiRequest("DELETE", `/api/chat/messages/${messageId}`, {});
       return res.json();
     },

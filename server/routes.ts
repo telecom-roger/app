@@ -1590,6 +1590,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { messageId } = req.params;
       const user = (req.user as any);
 
+      // Check if WhatsApp is connected
+      const [session] = await db
+        .select()
+        .from(whatsappSessions)
+        .where(and(eq(whatsappSessions.userId, user.id), eq(whatsappSessions.status, "conectada")))
+        .limit(1);
+
+      if (!session || !whatsappService.isSessionAlive(session.sessionId)) {
+        return res.status(403).json({ error: "WhatsApp não está conectado. Conecte uma sessão antes de deletar mensagens." });
+      }
+
       const success = await storage.deleteMessage(messageId, user.id);
       
       if (!success) {
@@ -1600,18 +1611,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const [msg] = await db.select().from(messages).where(eq(messages.id, messageId));
         if (msg) {
-          const [session] = await db
-            .select()
-            .from(whatsappSessions)
-            .where(and(eq(whatsappSessions.userId, user.id), eq(whatsappSessions.status, "conectada")))
-            .limit(1);
-
-          if (session) {
-            const isAlive = whatsappService.isSessionAlive(session.sessionId);
-            if (isAlive) {
-              await whatsappService.deleteMessage(session.sessionId, msg.conteudo);
-            }
-          }
+          await whatsappService.deleteMessage(session.sessionId, msg.conteudo);
         }
       } catch (err) {
         console.warn("⚠️ Aviso: Mensagem deletada localmente mas falhou no WhatsApp:", err);
