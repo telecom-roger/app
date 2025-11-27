@@ -43,7 +43,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertCampaignSchema, type Campaign, type Template } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Plus, Trash2, Clock, X, AlertCircle, Loader2, Calendar, CheckCircle } from "lucide-react";
+import { Plus, Trash2, Clock, X, AlertCircle, Loader2, Calendar, CheckCircle, Users, Loader } from "lucide-react";
 import { useWhatsAppStatus } from "@/hooks/useWhatsAppStatus";
 import {
   Form,
@@ -57,6 +57,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { MultiSelectFilter } from "@/components/multi-select-filter";
+import { DateRangeFilter } from "@/components/date-range-filter";
 
 // Conversão de fuso horário para São Paulo (UTC-3)
 const convertToSaoPauloDate = (isoDate: string) => {
@@ -101,6 +103,15 @@ export default function CampanhasAgendadas() {
   const [orderBy, setOrderBy] = useState<"recent" | "oldest">("recent");
   const [quantidadeAleatoria, setQuantidadeAleatoria] = useState("");
   const [tipoFiltro, setTipoFiltro] = useState("all");
+  const [filtroStatus, setFiltroStatus] = useState("todos");
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [dataEnvioInicio, setDataEnvioInicio] = useState<Date | undefined>();
+  const [dataEnvioFim, setDataEnvioFim] = useState<Date | undefined>();
+  const [selectedTiposFilter, setSelectedTiposFilter] = useState<Set<string>>(new Set());
+  const [selectedCarteirasFilter, setSelectedCarteirasFilter] = useState<Set<string>>(new Set());
+  const [selectedCidadesFilter, setSelectedCidadesFilter] = useState<Set<string>>(new Set());
+  const [selectedSendStatusFilter, setSelectedSendStatusFilter] = useState<Set<string>>(new Set());
+  const [filtersInitiated, setFiltersInitiated] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -137,7 +148,31 @@ export default function CampanhasAgendadas() {
     },
   });
 
-  const { data: clients = [] } = useQuery<any[]>({
+  // Fetch tags
+  const { data: tagsDisponiveis = [] } = useQuery<any[]>({
+    queryKey: ["/api/tags"],
+    enabled: isAuthenticated && showClientSelector,
+  });
+
+  // Fetch tipos
+  const { data: tiposDisponiveis = [] } = useQuery<string[]>({
+    queryKey: ["/api/clients/tipos"],
+    enabled: isAuthenticated && showClientSelector,
+  });
+
+  // Fetch carteiras
+  const { data: carteirasDisponiveis = [] } = useQuery<string[]>({
+    queryKey: ["/api/clients/carteiras"],
+    enabled: isAuthenticated && showClientSelector,
+  });
+
+  // Fetch cidades
+  const { data: cidadesDisponiveis = [] } = useQuery<string[]>({
+    queryKey: ["/api/clients/cidades"],
+    enabled: isAuthenticated && showClientSelector,
+  });
+
+  const { data: clients = [], isLoading: carregandoClientes } = useQuery<any[]>({
     queryKey: ["/api/clients/whatsapp-list"],
     queryFn: async () => {
       const res = await fetch("/api/clients/whatsapp-list");
@@ -145,15 +180,39 @@ export default function CampanhasAgendadas() {
       const data = await res.json();
       return Array.isArray(data) ? data : [];
     },
+    enabled: isAuthenticated && showClientSelector && filtersInitiated,
   });
 
-  // Filter clients by search, tipo, and apply ordering
+  // Detect when filters are initiated
+  useEffect(() => {
+    if (
+      searchClientes ||
+      filtroStatus !== "todos" ||
+      selectedTag ||
+      selectedTiposFilter.size > 0 ||
+      selectedCarteirasFilter.size > 0 ||
+      selectedCidadesFilter.size > 0 ||
+      selectedSendStatusFilter.size > 0 ||
+      dataEnvioInicio ||
+      dataEnvioFim
+    ) {
+      setFiltersInitiated(true);
+    }
+  }, [searchClientes, filtroStatus, selectedTag, selectedTiposFilter, selectedCarteirasFilter, selectedCidadesFilter, selectedSendStatusFilter, dataEnvioInicio, dataEnvioFim]);
+
+  // Filter clients by all criteria
   const clientesFiltrados = clients
     .filter((c) => {
-      const matchSearch = c.nome.toLowerCase().includes(searchClientes.toLowerCase()) ||
-                         c.telefone.includes(searchClientes);
-      const matchTipo = tipoFiltro === "all" || c.tipo === tipoFiltro;
-      return matchSearch && matchTipo;
+      const searchMatch = c.nome.toLowerCase().includes(searchClientes.toLowerCase()) ||
+        c.razaoSocial?.toLowerCase().includes(searchClientes.toLowerCase()) ||
+        c.telefone.includes(searchClientes);
+      const statusMatch = filtroStatus === "todos" || c.status?.toLowerCase() === filtroStatus.toLowerCase();
+      const tagMatch = selectedTag === null || (c.tags && c.tags.some((t: any) => t.nome === selectedTag));
+      const tipoMatch = selectedTiposFilter.size === 0 || (c.tipo && selectedTiposFilter.has(c.tipo));
+      const carteiraMatch = selectedCarteirasFilter.size === 0 || (c.carteira && selectedCarteirasFilter.has(c.carteira));
+      const cidadeMatch = selectedCidadesFilter.size === 0 || (c.cidade && selectedCidadesFilter.has(c.cidade));
+      const sendStatusMatch = selectedSendStatusFilter.size === 0 || (c.sendStatus && selectedSendStatusFilter.has(c.sendStatus));
+      return searchMatch && statusMatch && tagMatch && tipoMatch && carteiraMatch && cidadeMatch && sendStatusMatch;
     })
     .sort((a, b) => {
       if (orderBy === "recent") {
@@ -163,8 +222,6 @@ export default function CampanhasAgendadas() {
       }
     });
 
-  // Get unique tipos for filter dropdown
-  const tiposUnicos = Array.from(new Set(clients.map((c) => c.tipo).filter(Boolean)));
 
   // Toggle client selection
   const toggleClienteSelecionado = (clientId: string) => {
@@ -511,190 +568,206 @@ export default function CampanhasAgendadas() {
           <DialogHeader className="border-b pb-4">
             <DialogTitle className="text-2xl">Selecionar Clientes</DialogTitle>
             <DialogDescription>
-              Escolha os clientes que receberão a campanha agendada. Use a busca para filtrar.
+              Use os filtros para segmentar clientes, depois selecione e importe para sua campanha
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 flex-1 flex flex-col overflow-hidden">
-            {/* Search Input + Counter */}
-            <div className="flex gap-2 items-center">
-              <Input
-                placeholder="🔍 Buscar por nome ou telefone..."
-                value={searchClientes}
-                onChange={(e) => setSearchClientes(e.target.value)}
-                className="flex-1"
-                data-testid="input-search-clients"
-              />
-              <Badge variant="secondary" className="h-10 px-3 flex items-center gap-2 whitespace-nowrap">
-                {clientesFiltrados.length} clientes
-              </Badge>
-            </div>
-
-            {/* Quick Select Buttons */}
-            <div className="flex gap-2 flex-wrap items-center">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setClientesSelecionados(new Set(clientesFiltrados.map((c) => c.id)))}
-                disabled={clientesFiltrados.length === 0}
-                data-testid="button-select-all-quick"
-              >
-                ✓ Selecionar Todos
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setClientesSelecionados(new Set())}
-                disabled={clientesSelecionados.size === 0}
-                data-testid="button-deselect-all"
-              >
-                ✕ Desselecionar Todos
-              </Button>
-
-              {/* Divider */}
-              <div className="h-6 w-px bg-border" />
-
-              {/* Tipo Filter */}
-              <Select value={tipoFiltro} onValueChange={(value) => setTipoFiltro(value)}>
-                <SelectTrigger className="w-40 h-9" data-testid="select-tipo-filtro">
-                  <SelectValue placeholder="Filtrar por tipo..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os tipos</SelectItem>
-                  {tiposUnicos.map((tipo) => (
-                    <SelectItem key={tipo} value={tipo}>
-                      {tipo}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Divider */}
-              <div className="h-6 w-px bg-border" />
-
-              {/* Ordering */}
-              <Select value={orderBy} onValueChange={(value: any) => setOrderBy(value)}>
-                <SelectTrigger className="w-32 h-9" data-testid="select-orderBy">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="recent">Mais Recentes</SelectItem>
-                  <SelectItem value="oldest">Mais Antigos</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Divider */}
-              <div className="h-6 w-px bg-border" />
-
-              {/* Random Selection */}
-              <div className="flex gap-2 items-center">
-                <Label className="text-xs font-medium whitespace-nowrap">Aleatório:</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={clientesFiltrados.length}
-                  value={quantidadeSelecar}
-                  onChange={(e) => setQuantidadeSelecar(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-16 h-9"
-                  data-testid="input-quantidade-selecionar"
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    const shuffled = [...clientesFiltrados].sort(() => Math.random() - 0.5);
-                    const quantidadeReal = Math.min(quantidadeSelecar, clientesFiltrados.length);
-                    const selecionados = shuffled.slice(0, quantidadeReal).map((c) => c.id);
-                    setClientesSelecionados(new Set(selecionados));
-                  }}
-                  disabled={clientesFiltrados.length === 0}
-                  data-testid="button-random-select"
-                >
-                  🎲 Selecionar
-                </Button>
-              </div>
-            </div>
-
-            {/* Clients Table with better styling */}
-            <div className="flex-1 overflow-hidden flex flex-col border rounded-lg bg-white dark:bg-slate-950 min-h-[400px]">
-              {clientesFiltrados.length === 0 ? (
-                <div className="flex items-center justify-center flex-1 text-muted-foreground">
-                  <div className="text-center">
-                    <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>Nenhum cliente encontrado</p>
+          <div className="flex-1 overflow-hidden flex flex-col gap-4 py-4">
+            {/* Filters Section */}
+            <div className="bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-700 rounded-lg p-4 space-y-3">
+              <div className="flex flex-col gap-3">
+                {/* Busca e Status */}
+                <div className="flex gap-2 items-end flex-wrap">
+                  <div className="flex-1 min-w-64">
+                    <Input
+                      placeholder="Buscar por razão social ou telefone..."
+                      value={searchClientes}
+                      onChange={(e) => setSearchClientes(e.target.value)}
+                      className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+                      data-testid="input-search-clientes-db"
+                    />
                   </div>
+                  <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+                    <SelectTrigger className="w-44 border-slate-200 dark:border-slate-700" data-testid="select-status-filter">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos os Status</SelectItem>
+                      <SelectItem value="lead">Lead</SelectItem>
+                      <SelectItem value="ativo">Ativo</SelectItem>
+                      <SelectItem value="proposta">Proposta</SelectItem>
+                      <SelectItem value="fechado">Fechado</SelectItem>
+                      <SelectItem value="perdido">Perdido</SelectItem>
+                      <SelectItem value="inativo">Inativo</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              ) : (
-                <div className="flex-1 overflow-y-auto border-t">
-                  <Table className="text-sm w-full">
-                    <TableHeader className="sticky top-0 bg-slate-100 dark:bg-slate-800 z-10">
-                      <TableRow className="border-b-2">
-                        <TableHead className="w-12 text-center py-2 px-3">
-                          <Checkbox
-                            checked={clientesSelecionados.size === clientesFiltrados.length && clientesFiltrados.length > 0}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setClientesSelecionados(new Set(clientesFiltrados.map((c) => c.id)));
-                              } else {
-                                setClientesSelecionados(new Set());
-                              }
-                            }}
-                            data-testid="checkbox-select-all"
-                          />
-                        </TableHead>
-                        <TableHead className="font-semibold py-2 px-3">RAZÃO SOCIAL</TableHead>
-                        <TableHead className="font-semibold py-2 px-3">CELULAR</TableHead>
-                        <TableHead className="font-semibold py-2 px-3">CARTEIRA</TableHead>
-                        <TableHead className="font-semibold text-xs py-2 px-3">STATUS</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {clientesFiltrados.map((client) => (
-                        <TableRow key={client.id} className="border-b hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer transition-colors" data-testid={`row-cliente-${client.id}`}>
-                          <TableCell className="text-center w-12 py-2 px-3" onClick={(e) => {
-                            e.stopPropagation();
-                            toggleClienteSelecionado(client.id);
-                          }}>
-                            <Checkbox
-                              checked={clientesSelecionados.has(client.id)}
-                              onCheckedChange={() => toggleClienteSelecionado(client.id)}
-                              data-testid={`checkbox-cliente-${client.id}`}
-                            />
-                          </TableCell>
-                          <TableCell className="font-medium py-2 px-3" data-testid={`text-razaosocial-${client.id}`}>{client.razaoSocial || "N/A"}</TableCell>
-                          <TableCell className="font-mono text-sm font-medium py-2 px-3" data-testid={`text-celular-${client.id}`}>{client.telefone}</TableCell>
-                          <TableCell className="py-2 px-3">
-                            <Badge variant="outline" className="text-xs">{client.carteira || "N/A"}</Badge>
-                          </TableCell>
-                          <TableCell className="text-xs py-2 px-3" data-testid={`status-cliente-${client.id}`}>
-                            <Badge variant="secondary" className="text-xs">{client.status || "Lead"}</Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </div>
 
-            {/* Summary with Stats */}
-            <div className="flex gap-4 items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border">
-              <div className="flex gap-6">
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Selecionados:</span>
-                  <span className="font-semibold ml-2 text-lg text-primary">{clientesSelecionados.size}</span>
+                {/* Período de Envio */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Período:</span>
+                  <DateRangeFilter
+                    startDate={dataEnvioInicio}
+                    endDate={dataEnvioFim}
+                    onStartDateChange={setDataEnvioInicio}
+                    onEndDateChange={setDataEnvioFim}
+                  />
                 </div>
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Total:</span>
-                  <span className="font-semibold ml-2 text-lg">{clientesFiltrados.length}</span>
+
+                {/* Tipo, Carteira, Cidade, Status Envio */}
+                <div className="flex gap-2 flex-wrap items-center">
+                  <MultiSelectFilter
+                    label="Tipo"
+                    options={tiposDisponiveis}
+                    selectedValues={selectedTiposFilter}
+                    onSelectionChange={setSelectedTiposFilter}
+                  />
+
+                  <MultiSelectFilter
+                    label="Carteira"
+                    options={carteirasDisponiveis}
+                    selectedValues={selectedCarteirasFilter}
+                    onSelectionChange={setSelectedCarteirasFilter}
+                  />
+
+                  <MultiSelectFilter
+                    label="Cidade"
+                    options={cidadesDisponiveis.slice(0, 100)}
+                    selectedValues={selectedCidadesFilter}
+                    onSelectionChange={setSelectedCidadesFilter}
+                  />
+
+                  <MultiSelectFilter
+                    label="Status Envio"
+                    options={["enviado", "nao_enviado", "erro"]}
+                    selectedValues={selectedSendStatusFilter}
+                    onSelectionChange={setSelectedSendStatusFilter}
+                  />
+                </div>
+
+                {/* Tag Filters */}
+                <div className="flex gap-2 flex-wrap items-center">
+                  <Button
+                    variant={selectedTag === null ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedTag(null)}
+                    data-testid="button-filter-all-tags"
+                    className="h-8 px-3 text-xs rounded-full"
+                  >
+                    Todas Etiquetas
+                  </Button>
+                  {tagsDisponiveis.length > 0 && tagsDisponiveis.map((tag) => (
+                    <Button
+                      key={tag.id}
+                      variant={selectedTag === tag.nome ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedTag(tag.nome)}
+                      data-testid={`button-filter-tag-${tag.id}`}
+                      className={`h-8 px-3 text-xs rounded-full ${
+                        selectedTag === tag.nome ? `text-white` : ""
+                      }`}
+                      style={selectedTag === tag.nome ? { backgroundColor: tag.cor } : {}}
+                    >
+                      {tag.nome}
+                    </Button>
+                  ))}
+                </div>
+
+                {/* Counter */}
+                <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  <span className="text-blue-600 dark:text-blue-400">{clientesFiltrados.length}</span>
+                  {" cliente" + (clientesFiltrados.length !== 1 ? "s" : "")} encontrado{clientesFiltrados.length !== 1 ? "s" : ""}
+                  {clientesSelecionados.size > 0 && <span className="ml-4">• <span className="text-green-600 dark:text-green-400">{clientesSelecionados.size}</span> selecionado{clientesSelecionados.size !== 1 ? "s" : ""}</span>}
                 </div>
               </div>
-              {clientesSelecionados.size > 0 && (
-                <div className="text-xs text-green-600 dark:text-green-400">
-                  ✓ Pronto para agendar
-                </div>
-              )}
             </div>
+
+            {/* Clients List - Expanded */}
+            {!filtersInitiated ? (
+              <div className="flex-1 flex items-center justify-center text-slate-600 dark:text-slate-400">
+                <div className="text-center">
+                  <Users className="h-12 w-12 mx-auto mb-4 opacity-40" />
+                  <div className="text-lg font-medium mb-2">Selecione filtros para começar</div>
+                  <p className="text-sm">Clique em um filtro acima para carregar clientes</p>
+                </div>
+              </div>
+            ) : carregandoClientes ? (
+              <div className="flex-1 flex items-center justify-center text-slate-600 dark:text-slate-400">
+                <div className="text-center">
+                  <Loader className="h-8 w-8 animate-spin mx-auto mb-2" />
+                  Carregando clientes...
+                </div>
+              </div>
+            ) : (
+              <ScrollArea className="flex-1 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-950">
+                <div className="p-6">
+                  {clientesFiltrados.length > 0 ? (
+                    <div className="space-y-3">
+                      {clientesFiltrados.map((client) => (
+                        <div
+                          key={client.id}
+                          className="flex items-start gap-3 p-4 rounded-lg bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800/70 transition-colors border border-slate-100 dark:border-slate-800"
+                          data-testid={`card-cliente-${client.id}`}
+                        >
+                          <Checkbox
+                            checked={clientesSelecionados.has(client.id)}
+                            onCheckedChange={() => toggleClienteSelecionado(client.id)}
+                            data-testid={`checkbox-cliente-${client.id}`}
+                            className="mt-1"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-slate-900 dark:text-white text-base">{client.razaoSocial || client.nome}</div>
+                            <div className="text-sm text-slate-600 dark:text-slate-400 mt-1 space-y-1">
+                              <div>📞 {client.telefone}</div>
+                              {client.email && <div>✉️ {client.email}</div>}
+                              {client.status && <div>Status: <span className="font-medium capitalize text-slate-700 dark:text-slate-300">{client.status}</span></div>}
+                              {client.cidade && <div>📍 {client.cidade}</div>}
+                              {client.tipo && <div>Tipo: <span className="font-medium text-slate-700 dark:text-slate-300">{client.tipo}</span></div>}
+                              {client.carteira && <div>Carteira: <span className="font-medium text-slate-700 dark:text-slate-300">{client.carteira}</span></div>}
+                              {client.sendStatus && <div>Envio: <span className="font-medium text-slate-700 dark:text-slate-300 capitalize">{client.sendStatus === 'nao_enviado' ? 'Não Enviado' : client.sendStatus}</span></div>}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-16 text-slate-600 dark:text-slate-400">
+                      <div className="text-lg font-medium mb-2">Nenhum cliente encontrado</div>
+                      <p className="text-sm">Ajuste os filtros e tente novamente</p>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            )}
+
+            {/* Quick Actions */}
+            {clientesFiltrados.length > 0 && filtersInitiated && (
+              <div className="bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-700 rounded-lg p-4 space-y-3">
+                <div className="flex gap-2 flex-wrap items-center">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setClientesSelecionados(new Set(clientesFiltrados.map((c) => c.id)))}
+                    disabled={clientesFiltrados.length === 0}
+                    data-testid="button-select-all-quick"
+                  >
+                    ✓ Selecionar Todos ({clientesFiltrados.length})
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setClientesSelecionados(new Set())}
+                    disabled={clientesSelecionados.size === 0}
+                    data-testid="button-deselect-all"
+                  >
+                    ✕ Desselecionar
+                  </Button>
+                </div>
+                <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Selecionados: <span className="text-green-600 dark:text-green-400">{clientesSelecionados.size}</span> / {clientesFiltrados.length}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}
