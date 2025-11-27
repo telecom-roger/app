@@ -494,15 +494,29 @@ export default function Chat() {
   // Add tag to client mutation
   const addTagMutation = useMutation({
     mutationFn: async (tagName: string) => {
-      if (!currentClientId) return;
-      const valorEstimado = businessValue ? parseInt(businessValue.replace(/\D/g, "")) * 100 : 0;
-      const res = await apiRequest("POST", `/api/clients/${currentClientId}/tags`, { tagName, valorEstimado });
-      return res.json();
+      if (!currentClientId || !detailedClient) return;
+      const valorEstimado = businessValue ? parseInt(businessValue.replace(/\D/g, "")) : 0;
+      
+      // 1. Adicionar tag ao cliente
+      const tagRes = await apiRequest("POST", `/api/clients/${currentClientId}/tags`, { tagName, valorEstimado: valorEstimado * 100 });
+      
+      // 2. Criar oportunidade automaticamente
+      if (valorEstimado > 0 || businessValue) {
+        await apiRequest("POST", "/api/opportunities", {
+          clientId: currentClientId,
+          titulo: `${detailedClient.razaoSocial || detailedClient.nome}`,
+          etapa: tagName,
+          valorEstimado: valorEstimado * 100,
+          responsavelId: detailedClient.createdBy,
+        });
+      }
+      
+      return tagRes.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
       refetchConversations();
       refetchDetailedClient();
-      setShowNoteInput(false);
       setBusinessValue("");
       toast({ title: "Etiqueta adicionada e oportunidade criada", variant: "default" });
     },
