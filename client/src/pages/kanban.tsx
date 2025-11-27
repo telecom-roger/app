@@ -89,7 +89,7 @@ export default function Kanban() {
   // Combinar colunas padrão com tags
   useEffect(() => {
     const tagsAsColunas = tags.map((tag: any) => ({
-      id: tag.id,
+      id: tag.nome,  // Usar nome como id (match com op.etapa)
       titulo: tag.nome,
       cor: tag.cor,
     }));
