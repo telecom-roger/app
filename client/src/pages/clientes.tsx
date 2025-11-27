@@ -217,7 +217,7 @@ export default function Clientes() {
                       size="sm"
                       onClick={() => setSelectedTag(tag.nome)}
                       data-testid={`button-filter-tag-${tag.id}`}
-                      className={`h-7 px-3 text-xs text-white whitespace-nowrap ${
+                      className={`h-7 px-3 text-xs whitespace-nowrap rounded-full ${
                         selectedTag === tag.nome ? tag.cor : ""
                       }`}
                       style={{
