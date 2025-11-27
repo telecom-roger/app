@@ -71,7 +71,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/clients", isAuthenticated, async (req, res) => {
     try {
       const user = req.user as any;
-      const { search, status, tagName, tipo, page = "1", limit = "10000" } = req.query;
+      const { search, status, tagName, tipo, carteira, page = "1", limit = "10000" } = req.query;
       // Adicionar userId para filtrar apenas clientes do usuário
       const result = await storage.getClients({
         userId: user.id,
@@ -79,6 +79,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: status as string,
         tagName: tagName as string,
         tipo: tipo as string,
+        carteira: carteira as string,
         page: parseInt(page as string),
         limit: parseInt(limit as string),
         isAdmin: user.role === 'admin',
@@ -112,6 +113,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(tipos);
     } catch (error: any) {
       console.error("Error fetching tipos:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Endpoint para listar todas as carteiras únicas
+  app.get("/api/clients/carteiras", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const whereCondition = user.role === 'admin' ? undefined : or(
+        eq(clients.createdBy, user.id),
+        sql`${clients.createdBy} IS NULL`
+      );
+      
+      const carteirasResult = await db
+        .selectDistinct({ carteira: clients.carteira })
+        .from(clients)
+        .where(whereCondition);
+      
+      const carteiras = carteirasResult
+        .map(r => r.carteira)
+        .filter((c): c is string => c !== null && c !== undefined && c !== '')
+        .sort();
+      
+      res.json(carteiras);
+    } catch (error: any) {
+      console.error("Error fetching carteiras:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });

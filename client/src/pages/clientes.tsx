@@ -248,6 +248,7 @@ export default function Clientes() {
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [tipoFiltro, setTipoFiltro] = useState<string>("all");
+  const [carteiraFiltro, setCarteiraFiltro] = useState<string>("all");
   const [orderBy, setOrderBy] = useState<string>("recent");
   const [quantidadeSelecar, setQuantidadeSelecar] = useState<number>(10);
   const [page, setPage] = useState(1);
@@ -256,7 +257,7 @@ export default function Clientes() {
   const [bulkShareDialogOpen, setBulkShareDialogOpen] = useState(false);
 
   // Check if any filter is active
-  const hasActiveFilter = searchTerm || statusFilter !== "todos" || selectedTag || tipoFiltro !== "all";
+  const hasActiveFilter = searchTerm || statusFilter !== "todos" || selectedTag || tipoFiltro !== "all" || carteiraFiltro !== "all";
   
   // Use high limit when filters are active, otherwise use pagination limit
   const limit = hasActiveFilter ? 10000 : 10;
@@ -274,6 +275,12 @@ export default function Clientes() {
     enabled: isAuthenticated,
   });
 
+  // Fetch all carteiras
+  const { data: carteirasDoDb = [] } = useQuery<string[]>({
+    queryKey: ["/api/clients/carteiras"],
+    enabled: isAuthenticated,
+  });
+
   // Fetch clients with stats
   const { data, isLoading } = useQuery<{ clientes: Client[]; total: number }>({
     queryKey: [
@@ -283,6 +290,7 @@ export default function Clientes() {
         ...(statusFilter !== "todos" && { status: statusFilter }),
         ...(selectedTag && { tagName: selectedTag }),
         ...(tipoFiltro !== "all" && { tipo: tipoFiltro }),
+        ...(carteiraFiltro !== "all" && { carteira: carteiraFiltro }),
         page: effectivePage,
         limit,
       }
@@ -510,6 +518,23 @@ export default function Clientes() {
                     {tiposUnicos.map((tipo) => (
                       <SelectItem key={tipo} value={tipo}>
                         {tipo}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <div className="h-6 w-px bg-border" />
+
+                {/* Carteira Filter */}
+                <Select value={carteiraFiltro} onValueChange={(value) => setCarteiraFiltro(value)}>
+                  <SelectTrigger className="w-40 h-8 text-xs" data-testid="select-carteira-filtro">
+                    <SelectValue placeholder="Filtrar por carteira..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as carteiras</SelectItem>
+                    {carteirasDoDb.map((carteira) => (
+                      <SelectItem key={carteira} value={carteira}>
+                        {carteira}
                       </SelectItem>
                     ))}
                   </SelectContent>
