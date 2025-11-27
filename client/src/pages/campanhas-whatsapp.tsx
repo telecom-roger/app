@@ -1386,6 +1386,53 @@ export default function CampanhasWhatsApp() {
                 ))}
               </div>
 
+              {/* Linha 4: Quick Actions */}
+              {clientesFiltrados.length > 0 && filtersInitiated && (
+                <div className="flex gap-2 items-center flex-wrap">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={selecionarTodos}
+                    disabled={clientesFiltrados.length === 0}
+                    data-testid="button-select-all-filters"
+                    className="h-8 text-xs"
+                  >
+                    ✓ Selecionar Todos
+                  </Button>
+                  <div className="flex gap-1 items-center">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={clientesFiltrados.length}
+                      value={quantidadeAleatoria}
+                      onChange={(e) => setQuantidadeAleatoria(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 h-8 w-14 text-xs"
+                      data-testid="input-quantidade-aleatoria-filters"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={selecionarAleatorios}
+                      disabled={clientesFiltrados.length === 0}
+                      className="h-8 text-xs"
+                      data-testid="button-selecionar-aleatorios-filters"
+                    >
+                      🎲 Aleatórios
+                    </Button>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setClientesSelecionados(new Set())}
+                    disabled={clientesSelecionados.size === 0}
+                    data-testid="button-deselect-all-filters"
+                    className="h-8 text-xs"
+                  >
+                    ✕ Limpar
+                  </Button>
+                </div>
+              )}
+
               {/* Info Line: Counter */}
               <div className="text-xs font-medium text-slate-700 dark:text-slate-300 pt-1">
                 <span className="text-blue-600 dark:text-blue-400">{clientesFiltrados.length}</span>
