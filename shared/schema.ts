@@ -526,3 +526,55 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+// ==================== CAMPAIGN SENDINGS (Histórico de Envios por Cliente) ====================
+export const campaignSendings = pgTable("campaign_sendings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  campaignId: varchar("campaign_id").references(() => campaigns.id, { onDelete: "cascade" }),
+  campaignName: text("campaign_name").notNull(), // Store campaign name for reference
+  clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  status: varchar("status", { length: 20 }).notNull().default("enviado"), // enviado, erro, etc
+  erroMensagem: text("erro_mensagem"), // Error details if failed
+  dataSending: timestamp("data_sending").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_campaign_sendings_user").on(table.userId),
+  index("idx_campaign_sendings_campaign").on(table.campaignId),
+  index("idx_campaign_sendings_client").on(table.clientId),
+  index("idx_campaign_sendings_date").on(table.dataSending),
+  index("idx_campaign_sendings_user_client").on(table.userId, table.clientId),
+]);
+
+export const insertCampaignSendingSchema = createInsertSchema(campaignSendings).omit({
+  id: true,
+  createdAt: true,
+  dataSending: true,
+});
+
+export type CampaignSending = typeof campaignSendings.$inferSelect;
+export type InsertCampaignSending = z.infer<typeof insertCampaignSendingSchema>;
+
+// ==================== CAMPAIGN GROUPS (Grupos/Templates de Filtros) ====================
+export const campaignGroups = pgTable("campaign_groups", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  nome: text("nome").notNull(),
+  descricao: text("descricao"),
+  filtros: jsonb("filtros").notNull().default(sql`'{}'::jsonb`), // { diasDesdeEnvio, tags, cidades, tipos, carteiras, semEtiqueta }
+  clientCount: integer("client_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_campaign_groups_user").on(table.userId),
+]);
+
+export const insertCampaignGroupSchema = createInsertSchema(campaignGroups).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  clientCount: true,
+});
+
+export type CampaignGroup = typeof campaignGroups.$inferSelect;
+export type InsertCampaignGroup = z.infer<typeof insertCampaignGroupSchema>;

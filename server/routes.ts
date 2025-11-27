@@ -1,9 +1,9 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
-import { eq, and, or, ilike, desc, sql, lte, inArray, isNull } from "drizzle-orm";
+import { eq, and, or, ilike, desc, sql, lte, inArray, isNull, gte, between } from "drizzle-orm";
 import cron from "node-cron";
-import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, insertClientSharingSchema, whatsappSessions, clients, interactions, conversations, messages, campaigns as campaignsTable, templates as templatesTable, tags, clientSharing, notifications, users } from "@shared/schema";
+import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, insertClientSharingSchema, whatsappSessions, clients, interactions, conversations, messages, campaigns as campaignsTable, templates as templatesTable, tags, clientSharing, notifications, users, campaignSendings, campaignGroups } from "@shared/schema";
 import * as storage from "./storage";
 import * as whatsappService from "./whatsappService";
 import { setupAuth, isAuthenticated } from "./localAuth";
@@ -2258,6 +2258,138 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(users);
     } catch (error: any) {
       console.error("Error fetching users:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // ==================== CAMPAIGN SENDINGS ROUTES ====================
+  app.post("/api/campaigns/record-sending", isAuthenticated, async (req, res) => {
+    try {
+      const user = (req.user as any);
+      const { clientId, campaignId, campaignName, status = "enviado", erroMensagem } = req.body;
+      
+      if (!clientId || !campaignName) {
+        return res.status(400).json({ error: "clientId e campaignName são obrigatórios" });
+      }
+
+      const sending = await storage.recordCampaignSending({
+        userId: user.id,
+        campaignId,
+        campaignName,
+        clientId,
+        status,
+        erroMensagem,
+      });
+      
+      res.json(sending);
+    } catch (error: any) {
+      console.error("Error recording campaign sending:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/campaigns/record-multiple-sendings", isAuthenticated, async (req, res) => {
+    try {
+      const user = (req.user as any);
+      const { sendings } = req.body;
+      
+      if (!Array.isArray(sendings) || sendings.length === 0) {
+        return res.status(400).json({ error: "sendings array é obrigatório" });
+      }
+
+      const records = sendings.map((s: any) => ({
+        ...s,
+        userId: user.id,
+      }));
+
+      const results = await storage.recordMultipleCampaignSendings(records);
+      res.json(results);
+    } catch (error: any) {
+      console.error("Error recording multiple campaign sendings:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/campaigns/client-sending-history/:clientId", isAuthenticated, async (req, res) => {
+    try {
+      const user = (req.user as any);
+      const { clientId } = req.params;
+      
+      const history = await storage.getCampaignSendingHistory(user.id, clientId);
+      res.json(history);
+    } catch (error: any) {
+      console.error("Error fetching campaign sending history:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // ==================== CAMPAIGN GROUPS ROUTES ====================
+  app.post("/api/campaign-groups", isAuthenticated, async (req, res) => {
+    try {
+      const user = (req.user as any);
+      const { nome, descricao, filtros } = req.body;
+      
+      if (!nome) {
+        return res.status(400).json({ error: "Nome do grupo é obrigatório" });
+      }
+
+      const group = await storage.createCampaignGroup({
+        userId: user.id,
+        nome,
+        descricao,
+        filtros,
+      });
+      
+      res.json(group);
+    } catch (error: any) {
+      console.error("Error creating campaign group:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/campaign-groups", isAuthenticated, async (req, res) => {
+    try {
+      const user = (req.user as any);
+      const groups = await storage.getCampaignGroups(user.id);
+      res.json(groups);
+    } catch (error: any) {
+      console.error("Error fetching campaign groups:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.patch("/api/campaign-groups/:id", isAuthenticated, async (req, res) => {
+    try {
+      const user = (req.user as any);
+      const { id } = req.params;
+      const { nome, descricao, filtros } = req.body;
+
+      const group = await storage.updateCampaignGroup(id, user.id, {
+        nome,
+        descricao,
+        filtros,
+      });
+      
+      if (!group) {
+        return res.status(404).json({ error: "Grupo não encontrado" });
+      }
+
+      res.json(group);
+    } catch (error: any) {
+      console.error("Error updating campaign group:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/campaign-groups/:id", isAuthenticated, async (req, res) => {
+    try {
+      const user = (req.user as any);
+      const { id } = req.params;
+
+      await storage.deleteCampaignGroup(id, user.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting campaign group:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });

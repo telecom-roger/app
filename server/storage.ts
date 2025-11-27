@@ -35,6 +35,10 @@ import type {
   InsertClientSharing,
   Notification,
   InsertNotification,
+  CampaignSending,
+  InsertCampaignSending,
+  CampaignGroup,
+  InsertCampaignGroup,
 } from "@shared/schema";
 import {
   clients,
@@ -55,6 +59,8 @@ import {
   tags,
   clientSharing,
   notifications,
+  campaignSendings,
+  campaignGroups,
 } from "@shared/schema";
 
 // ==================== USER STORAGE ====================
@@ -958,4 +964,58 @@ export async function shareClientsWithUser(clientIds: string[], sharedWithUserId
   }));
   
   return await db.insert(clientSharing).values(sharings).returning();
+}
+
+// ==================== CAMPAIGN SENDINGS STORAGE ====================
+export async function recordCampaignSending(data: InsertCampaignSending): Promise<CampaignSending> {
+  const [result] = await db.insert(campaignSendings).values(data).returning();
+  return result;
+}
+
+export async function recordMultipleCampaignSendings(records: InsertCampaignSending[]): Promise<CampaignSending[]> {
+  if (records.length === 0) return [];
+  return await db.insert(campaignSendings).values(records).returning();
+}
+
+export async function getCampaignSendingHistory(userId: string, clientId: string): Promise<CampaignSending[]> {
+  return await db
+    .select()
+    .from(campaignSendings)
+    .where(and(eq(campaignSendings.userId, userId), eq(campaignSendings.clientId, clientId)))
+    .orderBy(desc(campaignSendings.dataSending));
+}
+
+// ==================== CAMPAIGN GROUPS STORAGE ====================
+export async function createCampaignGroup(data: InsertCampaignGroup): Promise<CampaignGroup> {
+  const [result] = await db.insert(campaignGroups).values(data).returning();
+  return result;
+}
+
+export async function getCampaignGroups(userId: string): Promise<CampaignGroup[]> {
+  return await db
+    .select()
+    .from(campaignGroups)
+    .where(eq(campaignGroups.userId, userId));
+}
+
+export async function getCampaignGroupById(id: string, userId: string): Promise<CampaignGroup | undefined> {
+  const [result] = await db
+    .select()
+    .from(campaignGroups)
+    .where(and(eq(campaignGroups.id, id), eq(campaignGroups.userId, userId)))
+    .limit(1);
+  return result;
+}
+
+export async function updateCampaignGroup(id: string, userId: string, data: Partial<InsertCampaignGroup>): Promise<CampaignGroup | undefined> {
+  const [result] = await db
+    .update(campaignGroups)
+    .set({ ...data, updatedAt: new Date() })
+    .where(and(eq(campaignGroups.id, id), eq(campaignGroups.userId, userId)))
+    .returning();
+  return result;
+}
+
+export async function deleteCampaignGroup(id: string, userId: string): Promise<void> {
+  await db.delete(campaignGroups).where(and(eq(campaignGroups.id, id), eq(campaignGroups.userId, userId)));
 }
