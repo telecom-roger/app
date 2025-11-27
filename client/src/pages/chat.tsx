@@ -553,15 +553,20 @@ export default function Chat() {
       // 1. Adicionar tag ao cliente
       const tagRes = await apiRequest("POST", `/api/clients/${currentClientId}/tags`, { tagName, valorEstimado: businessValue });
       
-      // 2. Gerenciar oportunidade - busca por cliente E etiqueta
+      // 2. Gerenciar oportunidade - cada cliente tem apenas 1 oportunidade por vez
       try {
         const oppsRes = await fetch(`/api/opportunities`);
         const opps = await oppsRes.json();
-        // Buscar oportunidade existente do cliente NESTA etiqueta específica
-        const existingOp = opps.find((op: any) => op.clientId === currentClientId && op.etapa === tagName);
+        // Buscar oportunidades do cliente
+        const clientOpps = opps.filter((op: any) => op.clientId === currentClientId);
         
-        if (!existingOp && businessValue) {
-          // Criar oportunidade apenas se não existir nesta etiqueta
+        // Remover todas as oportunidades antigas do cliente
+        for (const opp of clientOpps) {
+          await apiRequest("DELETE", `/api/opportunities/${opp.id}`, {});
+        }
+        
+        // Criar nova oportunidade na etiqueta selecionada
+        if (businessValue) {
           await apiRequest("POST", "/api/opportunities", {
             clientId: currentClientId,
             titulo: `${detailedClient.razaoSocial || detailedClient.nome}`,
