@@ -181,6 +181,18 @@ export default function Chat() {
     enabled: !!currentClientId,
   });
 
+  // Load saved business value when popup opens or client changes
+  useEffect(() => {
+    if (showClientInfo && detailedClient?.camposCustom?.valorEstimado) {
+      const valorEmCentavos = detailedClient.camposCustom.valorEstimado;
+      const formatted = new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL"
+      }).format(valorEmCentavos / 100);
+      setBusinessValue(formatted);
+    }
+  }, [showClientInfo, detailedClient?.camposCustom?.valorEstimado]);
+
   // Fetch WhatsApp sessions to check connection status
   const { data: whatsappSessions = [] } = useQuery<any[]>({
     queryKey: ["/api/whatsapp/sessions"],
@@ -545,6 +557,25 @@ export default function Chat() {
   const handleDeleteTag = (tagName: string) => {
     removeTagMutation.mutate(tagName);
   };
+
+  // Save business value mutation
+  const saveBusinessValueMutation = useMutation({
+    mutationFn: async () => {
+      if (!currentClientId) return;
+      const valorEstimado = businessValue ? parseInt(businessValue.replace(/\D/g, "")) : 0;
+      await apiRequest("PATCH", `/api/clients/${currentClientId}`, { 
+        camposCustom: { valorEstimado: valorEstimado * 100 } 
+      });
+      return valorEstimado;
+    },
+    onSuccess: () => {
+      refetchDetailedClient();
+      toast({ title: "Valor salvo com sucesso", variant: "default" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro ao salvar valor", description: error.message, variant: "destructive" });
+    },
+  });
 
   const handleSelectQuickReply = (reply: string) => {
     setMessageText(reply);
@@ -1045,21 +1076,37 @@ export default function Chat() {
                 {/* Valor do Negócio */}
                 <div>
                   <label className="text-sm font-semibold text-slate-900 dark:text-slate-100">Valor do Negócio</label>
-                  <Input
-                    type="text"
-                    placeholder="R$ 0,00"
-                    value={businessValue}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, "");
-                      const formatted = new Intl.NumberFormat("pt-BR", {
-                        style: "currency",
-                        currency: "BRL"
-                      }).format(parseInt(value || "0") / 100);
-                      setBusinessValue(formatted);
-                    }}
-                    className="mt-2"
-                    data-testid="input-business-value"
-                  />
+                  <div className="flex gap-2 mt-2">
+                    <Input
+                      type="text"
+                      placeholder="R$ 0,00"
+                      value={businessValue}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, "");
+                        const formatted = new Intl.NumberFormat("pt-BR", {
+                          style: "currency",
+                          currency: "BRL"
+                        }).format(parseInt(value || "0") / 100);
+                        setBusinessValue(formatted);
+                      }}
+                      className="flex-1"
+                      data-testid="input-business-value"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => saveBusinessValueMutation.mutate()}
+                      disabled={saveBusinessValueMutation.isPending || businessValue === "R$ 0,00" || businessValue === ""}
+                      className="whitespace-nowrap"
+                      data-testid="button-save-value"
+                    >
+                      {saveBusinessValueMutation.isPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        "Salvar"
+                      )}
+                    </Button>
+                  </div>
                 </div>
                 
                 {/* Etapas */}
