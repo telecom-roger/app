@@ -717,35 +717,41 @@ export async function createMessage(data: InsertMessage): Promise<Message> {
 }
 
 export async function findConversationByPhoneAndUser(telefone: string, userId: string): Promise<Conversation | undefined> {
-  // Normalize phone number to SEM-55 format (last 11 digits for Brazilian numbers)
-  // All phones in DB are stored without 55 prefix
-  let normalizado = telefone.replace(/\D/g, "");
+  // Normalize phone - remove non-digits and create both versions
+  let cleaned = telefone.replace(/\D/g, "");
   
-  // Remove 55 prefix if present - we always store/search without it
-  if (normalizado.startsWith("55")) {
-    normalizado = normalizado.substring(2);
+  // Version without 55 (e.g., "19971180707")
+  let sem55 = cleaned;
+  if (sem55.startsWith("55")) {
+    sem55 = sem55.substring(2);
   }
   
-  console.log(`🔍 findConversationByPhoneAndUser: buscando por "${normalizado}" (original: "${telefone}")`);
+  // Version with 55 (e.g., "5519971180707")
+  let com55 = sem55.startsWith("55") ? sem55 : `55${sem55}`;
   
-  // Find client by phone number - search only in normalized format (SEM 55)
+  console.log(`🔍 findConversationByPhoneAndUser: buscando por sem55="${sem55}" OU com55="${com55}"`);
+  
+  // Find client by phone number - search BOTH formats (with and without 55)
+  // because some clients may be stored with 55 and others without
   const [client] = await db
     .select()
     .from(clients)
     .where(or(
-      eq(clients.CELULAR_PRINCIPAL, normalizado),
-      eq(clients.telefone, normalizado),
-      ilike(clients.CELULAR_PRINCIPAL, `%${normalizado}%`),
-      ilike(clients.telefone, `%${normalizado}%`)
+      eq(clients.CELULAR_PRINCIPAL, sem55),
+      eq(clients.CELULAR_PRINCIPAL, com55),
+      eq(clients.telefone, sem55),
+      eq(clients.telefone, com55),
+      ilike(clients.CELULAR_PRINCIPAL, `%${sem55}%`),
+      ilike(clients.telefone, `%${sem55}%`)
     ))
     .limit(1);
   
   if (!client) {
-    console.log(`⚠️ Cliente não encontrado: "${normalizado}"`);
+    console.log(`⚠️ Cliente não encontrado: "${sem55}" ou "${com55}"`);
     return undefined;
   }
   
-  console.log(`✅ Cliente encontrado: ${client.id} (${client.nome})`);
+  console.log(`✅ Cliente encontrado: ${client.id} (${client.nome}) - telefone armazenado: ${client.CELULAR_PRINCIPAL}`);
   
   // Find or create conversation
   return await createOrGetConversation(client.id, userId);

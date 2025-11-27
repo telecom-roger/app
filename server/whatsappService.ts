@@ -233,41 +233,41 @@ async function processIncomingMessages(sessionId: string, m: any) {
         if (!conversation) {
           console.warn(`[RECEBIMENTO] ⚠️ Conversa não encontrada via findConversationByPhoneAndUser`);
           
-          // Normalize phone for lookup - remove all non-digits and strip 55 prefix
-          // Standard: always store and search WITHOUT 55 (just the 11 Brazilian digits)
-          let normalizado = senderPhone.replace(/\D/g, "");
-          if (normalizado.startsWith("55")) {
-            normalizado = normalizado.substring(2);
+          // Normalize phone - create both versions
+          let cleaned = senderPhone.replace(/\D/g, "");
+          let sem55 = cleaned;
+          if (sem55.startsWith("55")) {
+            sem55 = sem55.substring(2);
           }
+          let com55 = sem55.startsWith("55") ? sem55 : `55${sem55}`;
           
-          console.log(`🔍 Buscando cliente com telefone normalizado (SEM 55): "${normalizado}"`);
+          console.log(`🔍 Buscando cliente com: sem55="${sem55}" OU com55="${com55}"`);
           
-          // Search for existing client by normalized phone
+          // Search for existing client by BOTH phone formats
           const [client] = await db
             .select()
             .from(clientsTable)
             .where(or(
-              eq(clientsTable.CELULAR_PRINCIPAL, normalizado),
-              eq(clientsTable.telefone, normalizado),
-              ilike(clientsTable.CELULAR_PRINCIPAL, `%${normalizado}%`),
-              ilike(clientsTable.telefone, `%${normalizado}%`)
+              eq(clientsTable.CELULAR_PRINCIPAL, sem55),
+              eq(clientsTable.CELULAR_PRINCIPAL, com55),
+              eq(clientsTable.telefone, sem55),
+              eq(clientsTable.telefone, com55),
+              ilike(clientsTable.CELULAR_PRINCIPAL, `%${sem55}%`),
+              ilike(clientsTable.telefone, `%${sem55}%`)
             ))
             .limit(1);
           
           if (client) {
-            console.log(`✅ Cliente encontrado: ${client.id} (${client.nome})`);
+            console.log(`✅ Cliente encontrado: ${client.id} (${client.nome}) - telefone: ${client.CELULAR_PRINCIPAL}`);
             conversation = await storage.createOrGetConversation(client.id, userId);
             console.log(`✨ Conversa criada automaticamente: ${conversation.id}`);
           } else {
             console.warn(`[RECEBIMENTO] ⚠️ Cliente não encontrado, criando novo...`);
             
-            // Normalize phone for creation - store WITHOUT 55 prefix (standard format)
-            let telefoneFinal = senderPhone.replace(/\D/g, "");
-            if (telefoneFinal.startsWith("55")) {
-              telefoneFinal = telefoneFinal.substring(2);
-            }
+            // Store new client WITHOUT 55 prefix (standard format)
+            let telefoneFinal = sem55;
             
-            // Auto-create new client for this phone number (SEM 55)
+            // Auto-create new client for this phone number
             const novoCliente = await storage.createClient({
               nome: `Novo contato ${telefoneFinal}`,
               telefone: telefoneFinal,
