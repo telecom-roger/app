@@ -1388,6 +1388,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               await whatsappService.sendMessage(sessaoConectada.sessionId, telefone, mensagem);
               enviadas++;
               
+              // Update client status to "enviado"
+              if (clientId) {
+                try {
+                  await storage.updateClient(clientId, { status: "Enviado" });
+                  console.log(`✅ Status do cliente ${clientId} atualizado para "Enviado"`);
+                } catch (err) {
+                  console.warn("Erro ao atualizar status do cliente:", err);
+                }
+              }
+              
               // Record interaction in timeline
               if (clientId) {
                 try {
@@ -1437,6 +1447,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         console.log(`Campanha ${campanhaId} concluída: ${enviadas} enviadas, ${erros} erros`);
+        
+        // Also update in database to persist status
+        try {
+          const { campaigns: campaignsTable } = await import("@shared/schema");
+          const { eq } = await import("drizzle-orm");
+          
+          await db.update(campaignsTable)
+            .set({ status: "concluida" })
+            .where(eq(campaignsTable.id, campanhaId));
+          
+          console.log(`✅ Status da campanha atualizado no BD: ${campanhaId}`);
+        } catch (err) {
+          console.warn(`⚠️ Erro ao atualizar status da campanha no BD:`, err);
+        }
         
         // Clean up after 1 hour
         setTimeout(() => campanhasEmProgresso.delete(campanhaId), 3600000);
@@ -1545,6 +1569,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send the message
       try {
         await whatsappService.sendMessage(sessaoConectada.sessionId, telefone, mensagem);
+        
+        // Update client status to "Enviado" if clientId is provided
+        if (clientId) {
+          try {
+            await storage.updateClient(clientId, { status: "Enviado" });
+            console.log(`✅ Status do cliente ${clientId} atualizado para "Enviado"`);
+          } catch (err) {
+            console.warn("Erro ao atualizar status do cliente:", err);
+          }
+        }
         
         // Record interaction in timeline if clientId is provided
         if (clientId) {
@@ -1715,6 +1749,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 } else if (tipo === "documento" && arquivo) {
                   await whatsappService.sendDocument(session.sessionId, telefone, arquivo, nomeArquivo);
                   console.log(`✅ Documento enviado para WhatsApp: ${telefone}`);
+                }
+                
+                // Update client status to "Enviado"
+                if (conversation.clientId) {
+                  try {
+                    await storage.updateClient(conversation.clientId, { status: "Enviado" });
+                    console.log(`✅ Status do cliente ${conversation.clientId} atualizado para "Enviado"`);
+                  } catch (err) {
+                    console.warn("Erro ao atualizar status do cliente:", err);
+                  }
                 }
               }
             }
