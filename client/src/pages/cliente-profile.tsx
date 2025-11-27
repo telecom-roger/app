@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useParams, Link } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -26,6 +26,7 @@ import type { Client, Interaction } from "@shared/schema";
 
 export default function ClienteProfile() {
   const { id } = useParams<{ id: string }>();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
@@ -121,7 +122,12 @@ export default function ClienteProfile() {
                 </>
               )}
             </div>
-            <Button size="icon" variant="outline" data-testid="button-edit-cliente">
+            <Button 
+              size="icon" 
+              variant="outline" 
+              data-testid="button-edit-cliente"
+              onClick={() => navigate(`/clientes/editar/${id}`)}
+            >
               <Edit className="h-4 w-4" />
             </Button>
           </div>
