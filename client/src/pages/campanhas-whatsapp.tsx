@@ -61,6 +61,10 @@ import {
   X,
   Calendar,
   AlertTriangle,
+  MessageSquare,
+  TrendingUp,
+  Users,
+  Zap,
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 // @ts-ignore
@@ -527,864 +531,684 @@ export default function CampanhasWhatsApp() {
   const erros = statusEnvio.filter((s) => s.status === "erro").length;
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Campanhas WhatsApp</h1>
-        <p className="text-muted-foreground mt-1">
-          Envie mensagens em massa personalizadas via WhatsApp
-        </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+      {/* Header Section */}
+      <div className="px-6 py-8 md:py-12">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-3 bg-green-500/10 rounded-xl">
+                  <MessageSquare className="h-6 w-6 text-green-600 dark:text-green-400" />
+                </div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent">
+                  Campanhas WhatsApp
+                </h1>
+              </div>
+              <p className="text-slate-600 dark:text-slate-400 mt-2">
+                Envie mensagens em massa personalizadas via WhatsApp
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <Tabs value={tabAtivo} onValueChange={setTabAtivo} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
-          <TabsTrigger value="configuracao">Configuração</TabsTrigger>
-          <TabsTrigger value="progresso">Campanhas em Progresso {campanhasEmProgresso.length > 0 && `(${campanhasEmProgresso.length})`}</TabsTrigger>
-          <TabsTrigger value="historico">Histórico</TabsTrigger>
-        </TabsList>
+      {/* Main Content */}
+      <div className="px-6 pb-12">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Stats Cards */}
+          {contatosProcessados > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="p-6 border-0 shadow-sm bg-white dark:bg-slate-800/50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Contatos Carregados</p>
+                    <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">{contatosProcessados}</p>
+                  </div>
+                  <div className="p-3 bg-blue-500/10 rounded-lg">
+                    <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                </div>
+              </Card>
 
-        {/* ===== ABA MENSAGENS ===== */}
-        <TabsContent value="mensagens" className="space-y-4">
-          {/* Campaign Progress Widget */}
-          {campanhasEmProgresso.length > 0 && (
-            <div className="grid gap-4">
-              {campanhasEmProgresso.map((campanha) => (
-                <Card key={campanha.id} className="border-primary/50 bg-gradient-to-r from-primary/5 to-transparent">
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="text-base">Campanha em Progresso</CardTitle>
-                      <Badge variant={campanha.status === "concluida" ? "outline" : "default"}>
-                        {Math.round((campanha.enviadas / campanha.total) * 100)}%
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <Progress value={(campanha.enviadas / campanha.total) * 100} />
-                    <div className="grid grid-cols-3 gap-2 text-sm">
-                      <div className="text-center">
-                        <div className="text-muted-foreground">Enviadas</div>
-                        <div className="font-semibold text-green-600 dark:text-green-400">{campanha.enviadas}/{campanha.total}</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-muted-foreground">Taxa</div>
-                        <div className="font-semibold">{Math.round((campanha.enviadas / campanha.total) * 100)}%</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-muted-foreground">Erros</div>
-                        <div className={`font-semibold ${campanha.erros > 0 ? "text-destructive" : "text-muted-foreground"}`}>{campanha.erros}</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              <Card className="p-6 border-0 shadow-sm bg-white dark:bg-slate-800/50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Enviadas</p>
+                    <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">{sucessos}</p>
+                  </div>
+                  <div className="p-3 bg-emerald-500/10 rounded-lg">
+                    <CheckCircle className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-6 border-0 shadow-sm bg-white dark:bg-slate-800/50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Erros</p>
+                    <p className="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{erros}</p>
+                  </div>
+                  <div className="p-3 bg-red-500/10 rounded-lg">
+                    <AlertCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
+                  </div>
+                </div>
+              </Card>
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Section: Contatos + Preview */}
-            <div className="space-y-6">
-              {/* Input Card */}
-              <Card className="border hover-elevate transition-all">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg">Contatos</CardTitle>
-                      <CardDescription className="mt-1">Cole seus dados ou importe da base</CardDescription>
-                    </div>
-                    {contatosProcessados > 0 && (
-                      <Badge className="text-sm px-3 py-1" variant="secondary">
-                        {contatosProcessados} contato{contatosProcessados !== 1 ? "s" : ""}
-                      </Badge>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Textarea
-                    placeholder="Cole aqui (Tab para separar colunas, Enter para linhas)..."
-                    value={textoPlanilha}
-                    onChange={(e) => setTextoPlanilha(e.target.value)}
-                    className="font-mono text-sm h-56 resize-none"
-                    data-testid="textarea-contatos"
-                  />
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant="default"
-                      onClick={() => setMostrarSeletorBD(true)}
-                      className="w-full"
-                      data-testid="button-importar-db"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Base de Dados
-                    </Button>
-                    {contatos.length > 0 && (
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setContatos([]);
-                          setTextoPlanilha("");
-                          setVariaveisDisponiveis([]);
-                        }}
-                        className="w-full"
-                        data-testid="button-limpar-contatos"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Limpar
-                      </Button>
-                    )}
-                  </div>
-                  {variaveisDisponiveis.length > 0 && (
-                    <div className="pt-2 border-t">
-                      <div className="text-xs font-semibold text-muted-foreground mb-2">Variáveis Disponíveis:</div>
-                      <div className="flex flex-wrap gap-2">
-                        {variaveisDisponiveis.map((v) => (
-                          <Badge key={v} variant="outline" className="text-xs font-mono">
-                            {"{"}
-                            {v}
-                            {"}"}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+          {/* Tabs */}
+          <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50 overflow-hidden">
+            <Tabs value={tabAtivo} onValueChange={setTabAtivo} className="space-y-4 p-6">
+              <TabsList className="grid grid-cols-4 bg-slate-100 dark:bg-slate-900">
+                <TabsTrigger value="mensagens" className="text-slate-700 dark:text-slate-300">Mensagens</TabsTrigger>
+                <TabsTrigger value="configuracao" className="text-slate-700 dark:text-slate-300">Configuração</TabsTrigger>
+                <TabsTrigger value="progresso" className="text-slate-700 dark:text-slate-300">
+                  Progresso {campanhasEmProgresso.length > 0 && `(${campanhasEmProgresso.length})`}
+                </TabsTrigger>
+                <TabsTrigger value="historico" className="text-slate-700 dark:text-slate-300">Histórico</TabsTrigger>
+              </TabsList>
 
-              {/* Preview Card */}
-              {contatos.length > 0 && (
-                <Card className="border">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm">Visualização de Contatos</CardTitle>
-                  </CardHeader>
-                  <CardContent className="overflow-hidden">
-                    <div className="border rounded-md overflow-auto max-h-64">
-                      <Table className="text-xs">
-                        <TableHeader className="sticky top-0 bg-muted">
-                          <TableRow>
-                            {variaveisDisponiveis.slice(0, 4).map((v) => (
-                              <TableHead key={v} className="py-3 px-4 font-semibold text-xs">
-                                {v}
-                              </TableHead>
-                            ))}
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {contatos.slice(0, 8).map((contato, idx) => (
-                            <TableRow key={idx} className="hover:bg-muted/50">
-                              {variaveisDisponiveis.slice(0, 4).map((v) => (
-                                <TableCell key={`${idx}-${v}`} className="py-3 px-4 font-mono text-xs truncate">
-                                  {contato[v] || "-"}
-                                </TableCell>
+              {/* ===== ABA MENSAGENS ===== */}
+              <TabsContent value="mensagens" className="space-y-4">
+                {/* Campaign Progress Widget */}
+                {campanhasEmProgresso.length > 0 && (
+                  <div className="grid gap-4">
+                    {campanhasEmProgresso.map((campanha) => (
+                      <Card key={campanha.id} className="border-0 shadow-sm bg-gradient-to-r from-blue-500/5 to-transparent dark:from-blue-500/10">
+                        <CardHeader>
+                          <div className="flex justify-between items-center">
+                            <CardTitle className="text-base text-slate-900 dark:text-white">Campanha em Progresso</CardTitle>
+                            <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                              {Math.round((campanha.enviadas / campanha.total) * 100)}%
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <Progress value={(campanha.enviadas / campanha.total) * 100} />
+                          <div className="grid grid-cols-3 gap-2 text-sm">
+                            <div className="text-center">
+                              <div className="text-slate-600 dark:text-slate-400">Enviadas</div>
+                              <div className="font-semibold text-emerald-600 dark:text-emerald-400">{campanha.enviadas}/{campanha.total}</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-slate-600 dark:text-slate-400">Taxa</div>
+                              <div className="font-semibold text-slate-900 dark:text-white">{Math.round((campanha.enviadas / campanha.total) * 100)}%</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-slate-600 dark:text-slate-400">Erros</div>
+                              <div className={`font-semibold ${campanha.erros > 0 ? "text-red-600 dark:text-red-400" : "text-slate-600 dark:text-slate-400"}`}>{campanha.erros}</div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Left Section: Contatos + Preview */}
+                  <div className="space-y-6">
+                    {/* Input Card */}
+                    <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle className="text-lg text-slate-900 dark:text-white">Contatos</CardTitle>
+                            <CardDescription className="mt-1 text-slate-600 dark:text-slate-400">Cole seus dados ou importe da base</CardDescription>
+                          </div>
+                          {contatosProcessados > 0 && (
+                            <Badge className="text-sm px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                              {contatosProcessados} contato{contatosProcessados !== 1 ? "s" : ""}
+                            </Badge>
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <Textarea
+                          placeholder="Cole aqui (Tab para separar colunas, Enter para linhas)..."
+                          value={textoPlanilha}
+                          onChange={(e) => setTextoPlanilha(e.target.value)}
+                          className="font-mono text-sm h-56 resize-none border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"
+                          data-testid="textarea-contatos"
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            variant="default"
+                            onClick={() => setMostrarSeletorBD(true)}
+                            className="w-full bg-green-600 hover:bg-green-700 text-white"
+                            data-testid="button-importar-db"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Base de Dados
+                          </Button>
+                          {contatos.length > 0 && (
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setContatos([]);
+                                setTextoPlanilha("");
+                                setVariaveisDisponiveis([]);
+                              }}
+                              className="w-full text-slate-700 dark:text-slate-200"
+                              data-testid="button-limpar-contatos"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Limpar
+                            </Button>
+                          )}
+                        </div>
+                        {variaveisDisponiveis.length > 0 && (
+                          <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+                            <div className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">Variáveis Disponíveis:</div>
+                            <div className="flex flex-wrap gap-2">
+                              {variaveisDisponiveis.map((v) => (
+                                <Badge key={v} variant="outline" className="text-xs font-mono border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+                                  {"{"}
+                                  {v}
+                                  {"}"}
+                                </Badge>
                               ))}
-                            </TableRow>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Preview Card */}
+                    {contatos.length > 0 && (
+                      <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm text-slate-900 dark:text-white">Visualização de Contatos</CardTitle>
+                        </CardHeader>
+                        <CardContent className="overflow-hidden">
+                          <div className="border border-slate-200 dark:border-slate-700 rounded-md overflow-auto max-h-64">
+                            <Table className="text-xs">
+                              <TableHeader className="sticky top-0 bg-slate-50 dark:bg-slate-900">
+                                <TableRow>
+                                  {variaveisDisponiveis.slice(0, 4).map((v) => (
+                                    <TableHead key={v} className="py-3 px-4 font-semibold text-xs text-slate-900 dark:text-white">
+                                      {v}
+                                    </TableHead>
+                                  ))}
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {contatos.slice(0, 8).map((contato, idx) => (
+                                  <TableRow key={idx} className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/30">
+                                    {variaveisDisponiveis.slice(0, 4).map((v) => (
+                                      <TableCell key={`${idx}-${v}`} className="py-3 px-4 font-mono text-xs truncate text-slate-700 dark:text-slate-300">
+                                        {contato[v] || "-"}
+                                      </TableCell>
+                                    ))}
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                            {contatos.length > 8 && (
+                              <div className="text-xs text-slate-600 dark:text-slate-400 p-3 border-t border-slate-200 dark:border-slate-700 text-center bg-slate-50 dark:bg-slate-900/30">
+                                +{contatos.length - 8} contatos
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+
+                  {/* Right Section: Template Editor */}
+                  <div className="space-y-6">
+                    <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
+                      <CardHeader className="pb-4">
+                        <CardTitle className="text-lg text-slate-900 dark:text-white">Mensagem</CardTitle>
+                        <CardDescription className="mt-1 text-slate-600 dark:text-slate-400">Use {"{variável}"} para personalizar</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-5">
+                        {/* Template Selector */}
+                        <div className="space-y-2">
+                          <Label htmlFor="template-select" className="text-sm font-semibold text-slate-900 dark:text-white">Usar Modelo</Label>
+                          <Select 
+                            value={templateSelecionado}
+                            onValueChange={(value) => {
+                              setTemplateSelecionado(value);
+                              const templ = templates.find((t: any) => t.id === value);
+                              if (templ) {
+                                setTemplate(templ.conteudo);
+                              }
+                            }}
+                          >
+                            <SelectTrigger id="template-select" className="border-slate-200 dark:border-slate-700" data-testid="select-template">
+                              <SelectValue placeholder="Selecionar modelo (opcional)..." />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-72">
+                              {templates.length > 0 ? (
+                                templates.map((t: any) => (
+                                  <SelectItem key={t.id} value={t.id}>
+                                    {t.nome}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <SelectItem value="vazio" disabled>
+                                  Nenhum modelo disponível
+                                </SelectItem>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Divider */}
+                        <div className="relative">
+                          <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
+                          </div>
+                          <div className="relative flex justify-center text-xs">
+                            <span className="px-2 bg-white dark:bg-slate-800/50 text-slate-600 dark:text-slate-400">ou escreva aqui</span>
+                          </div>
+                        </div>
+
+                        {/* Template Textarea */}
+                        <div className="space-y-2">
+                          <Textarea
+                            placeholder="Olá {empresa}! Temos uma promoção especial para você..."
+                            value={template}
+                            onChange={(e) => setTemplate(e.target.value)}
+                            className="flex-1 font-mono text-sm h-48 resize-none border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"
+                            data-testid="textarea-template"
+                          />
+                        </div>
+
+                        {/* Live Preview - Auto display when template & contacts */}
+                        {contatos.length > 0 && template.trim() && (
+                          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-4 space-y-2 animate-in fade-in">
+                            <div className="font-semibold text-xs text-blue-600 dark:text-blue-400 mb-2">Visualização do 1º contato:</div>
+                            <div className="whitespace-pre-wrap break-words text-sm font-mono leading-relaxed text-slate-900 dark:text-slate-100 max-h-40 overflow-y-auto bg-white dark:bg-slate-950 p-3 rounded border border-blue-200 dark:border-blue-800">
+                              {obterPreview()}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Placeholder if no contacts or template */}
+                        {(contatos.length === 0 || !template.trim()) && (
+                          <div className="text-xs text-slate-600 dark:text-slate-400 italic p-3 bg-slate-100 dark:bg-slate-900/30 rounded border border-dashed border-slate-300 dark:border-slate-700">
+                            💡 {contatos.length === 0 ? "Cole ou importe contatos para ver preview" : "Digite sua mensagem para ver preview"}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+
+                {/* Status Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  {/* Status Summary */}
+                  <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
+                    <CardHeader>
+                      <CardTitle className="text-sm text-slate-900 dark:text-white">Resumo</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {statusEnvio.length > 0 ? (
+                        <>
+                          <div className="flex justify-between items-center text-sm text-slate-700 dark:text-slate-300">
+                            <span>Enviados:</span>
+                            <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">{sucessos}</Badge>
+                          </div>
+                          <div className="flex justify-between items-center text-sm text-slate-700 dark:text-slate-300">
+                            <span>Erros:</span>
+                            <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">{erros}</Badge>
+                          </div>
+                          <div className="flex justify-between items-center text-sm text-slate-700 dark:text-slate-300">
+                            <span>Pendentes:</span>
+                            <Badge className="bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200">
+                              {statusEnvio.filter((s) => s.status === "pendente" || s.status === "enviando")
+                                .length}
+                            </Badge>
+                          </div>
+                          <Progress
+                            value={
+                              statusEnvio.length > 0
+                                ? (sucessos / statusEnvio.length) * 100
+                                : 0
+                            }
+                            className="h-2"
+                          />
+                        </>
+                      ) : (
+                        <div className="text-slate-600 dark:text-slate-400 text-sm">Aguardando envio...</div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Status list */}
+                  <Card className="lg:col-span-2 border-0 shadow-sm bg-white dark:bg-slate-800/50">
+                    <CardHeader>
+                      <CardTitle className="text-sm text-slate-900 dark:text-white">Status de Envio</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {statusEnvio.length > 0 ? (
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                          {statusEnvio.map((s, idx) => (
+                            <div key={idx} className="flex items-start gap-2 text-sm p-2 bg-slate-100 dark:bg-slate-900/50 rounded">
+                              <div className="flex-1 min-w-0">
+                                <div className="font-mono text-xs truncate text-slate-900 dark:text-slate-100">{s.telefone}</div>
+                                {s.erro && (
+                                  <div className="text-xs text-red-600 dark:text-red-400 truncate">{s.erro}</div>
+                                )}
+                                {s.timestamp && (
+                                  <div className="text-xs text-slate-600 dark:text-slate-400">{s.timestamp}</div>
+                                )}
+                              </div>
+                              {s.status === "sucesso" && (
+                                <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-1" />
+                              )}
+                              {s.status === "erro" && (
+                                <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-1" />
+                              )}
+                              {s.status === "enviando" && (
+                                <Loader className="h-4 w-4 text-blue-500 flex-shrink-0 mt-1 animate-spin" />
+                              )}
+                              {s.status === "pendente" && (
+                                <Clock className="h-4 w-4 text-slate-400 flex-shrink-0 mt-1" />
+                              )}
+                            </div>
                           ))}
-                        </TableBody>
-                      </Table>
-                      {contatos.length > 8 && (
-                        <div className="text-xs text-muted-foreground p-3 border-t text-center bg-muted/30">
-                          +{contatos.length - 8} contatos
+                        </div>
+                      ) : (
+                        <div className="text-slate-600 dark:text-slate-400 text-sm text-center py-4">
+                          Nenhum envio realizado
                         </div>
                       )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-between items-center gap-4">
+                  <div className="flex gap-4 items-center">
+                    <div className="text-sm text-slate-700 dark:text-slate-300">
+                      {contatosProcessados > 0 ? (
+                        <>
+                          <strong>{contatosProcessados}</strong> contato
+                          {contatosProcessados !== 1 ? "s" : ""} prontos para envio
+                        </>
+                      ) : (
+                        "Cole seus contatos para começar"
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 pl-4 border-l border-slate-200 dark:border-slate-700">
+                      <Label className="text-sm font-medium cursor-pointer flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                        <input
+                          type="checkbox"
+                          checked={modoBackground}
+                          onChange={(e) => setModoBackground(e.target.checked)}
+                          disabled={enviando}
+                          className="h-4 w-4 rounded border-slate-300 dark:border-slate-600"
+                        />
+                        Enviar em Background
+                      </Label>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {enviando && !modoBackground && (
+                      <Button
+                        onClick={() => {
+                          cancelarEnvioRef.current = true;
+                        }}
+                        variant="destructive"
+                        size="lg"
+                        data-testid="button-cancelar-envio"
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Cancelar Envio
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() => {
+                        if (!whatsappConnected) {
+                          toast({
+                            title: "WhatsApp não conectado",
+                            description: "Por favor, conecte seu WhatsApp em /whatsapp antes de enviar campanhas.",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                        setConfirmarEnvio(true);
+                      }}
+                      disabled={
+                        enviando ||
+                        contatosProcessados === 0 ||
+                        !template.trim() ||
+                        tempoDelay < 10 ||
+                        !whatsappConnected
+                      }
+                      size="lg"
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      data-testid="button-enviar-campanha"
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      {!whatsappConnected ? "WhatsApp Desconectado" : enviando ? "Enviando..." : "Enviar Campanha"}
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* ===== ABA CONFIGURAÇÃO ===== */}
+              <TabsContent value="configuracao" className="space-y-4">
+                <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
+                  <CardHeader>
+                    <CardTitle className="text-slate-900 dark:text-white">Configurações da Campanha</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Delay */}
+                    <div className="space-y-3">
+                      <Label htmlFor="delay" className="text-slate-900 dark:text-white">Tempo de delay entre mensagens (segundos)</Label>
+                      <div className="flex gap-4 items-end">
+                        <div className="flex-1">
+                          <Input
+                            id="delay"
+                            type="number"
+                            min={10}
+                            max={300}
+                            value={tempoDelay}
+                            onChange={(e) => setTempoDelay(Math.max(10, parseInt(e.target.value) || 10))}
+                            className="border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"
+                            data-testid="input-delay"
+                          />
+                        </div>
+                        <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">{tempoDelay}s</span>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">Recomendado: 30-60 segundos</p>
+                    </div>
+
+                    {/* Random Delay */}
+                    <div className="space-y-3 border-t border-slate-200 dark:border-slate-700 pt-6">
+                      <Label htmlFor="random-min" className="text-slate-900 dark:text-white">Variação aleatória (segundos)</Label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="random-min" className="text-sm text-slate-700 dark:text-slate-300">Mínimo</Label>
+                          <Input
+                            id="random-min"
+                            type="number"
+                            min={0}
+                            max={30}
+                            value={tempoRandomMin}
+                            onChange={(e) => setTempoRandomMin(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="mt-1 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"
+                            data-testid="input-random-min"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="random-max" className="text-sm text-slate-700 dark:text-slate-300">Máximo</Label>
+                          <Input
+                            id="random-max"
+                            type="number"
+                            min={0}
+                            max={60}
+                            value={tempoRandomMax}
+                            onChange={(e) => setTempoRandomMax(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="mt-1 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"
+                            data-testid="input-random-max"
+                          />
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">Adiciona variação para parecer mais natural</p>
                     </div>
                   </CardContent>
                 </Card>
-              )}
-            </div>
+              </TabsContent>
 
-            {/* Right Section: Template Editor */}
-            <div className="space-y-6">
-              <Card className="border flex flex-col h-auto md:h-fit lg:h-auto hover-elevate transition-all">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-lg">Mensagem</CardTitle>
-                  <CardDescription className="mt-1">Use {"{variável}"} para personalizar</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-5">
-                  {/* Template Selector */}
-                  <div className="space-y-2">
-                    <Label htmlFor="template-select" className="text-sm font-semibold">Usar Modelo</Label>
-                    <Select 
-                      value={templateSelecionado}
-                      onValueChange={(value) => {
-                        setTemplateSelecionado(value);
-                        const templ = templates.find((t: any) => t.id === value);
-                        if (templ) {
-                          setTemplate(templ.conteudo);
-                        }
-                      }}
-                    >
-                      <SelectTrigger id="template-select" data-testid="select-template">
-                        <SelectValue placeholder="Selecionar modelo (opcional)..." />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-72">
-                        {templates.length > 0 ? (
-                          templates.map((t: any) => (
-                            <SelectItem key={t.id} value={t.id}>
-                              {t.nome}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem value="vazio" disabled>
-                            Nenhum modelo disponível
-                          </SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Divider */}
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-muted"></div>
-                    </div>
-                    <div className="relative flex justify-center text-xs">
-                      <span className="px-2 bg-white dark:bg-slate-950 text-muted-foreground">ou escreva aqui</span>
-                    </div>
-                  </div>
-
-                  {/* Template Textarea */}
-                  <div className="space-y-2">
-                    <Textarea
-                      placeholder="Olá {empresa}! Temos uma promoção especial para você..."
-                      value={template}
-                      onChange={(e) => setTemplate(e.target.value)}
-                      className="flex-1 font-mono text-sm h-48 resize-none"
-                      data-testid="textarea-template"
-                    />
-                  </div>
-
-                  {/* Live Preview - Auto display when template & contacts */}
-                  {contatos.length > 0 && template.trim() && (
-                    <div className="bg-primary/5 border border-primary/20 rounded-md p-4 space-y-2 animate-in fade-in">
-                      <div className="font-semibold text-xs text-primary mb-2">Visualização do 1º contato:</div>
-                      <div className="whitespace-pre-wrap break-words text-sm font-mono leading-relaxed text-foreground max-h-40 overflow-y-auto bg-background/50 p-3 rounded border border-primary/10">
-                        {obterPreview()}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Placeholder if no contacts or template */}
-                  {(contatos.length === 0 || !template.trim()) && (
-                    <div className="text-xs text-muted-foreground italic p-3 bg-muted/30 rounded border border-dashed">
-                      💡 {contatos.length === 0 ? "Cole ou importe contatos para ver preview" : "Digite sua mensagem para ver preview"}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Status Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Status Summary */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Resumo</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {statusEnvio.length > 0 ? (
-                  <>
-                    <div className="flex justify-between items-center text-sm">
-                      <span>Enviados:</span>
-                      <Badge variant="default">{sucessos}</Badge>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span>Erros:</span>
-                      <Badge variant="destructive">{erros}</Badge>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span>Pendentes:</span>
-                      <Badge variant="secondary">
-                        {statusEnvio.filter((s) => s.status === "pendente" || s.status === "enviando")
-                          .length}
-                      </Badge>
-                    </div>
-                    <Progress
-                      value={
-                        statusEnvio.length > 0
-                          ? (sucessos / statusEnvio.length) * 100
-                          : 0
-                      }
-                      className="h-2"
-                    />
-                  </>
-                ) : (
-                  <div className="text-muted-foreground text-sm">Aguardando envio...</div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Status list */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="text-sm">Status de Envio</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {statusEnvio.length > 0 ? (
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {statusEnvio.map((s, idx) => (
-                      <div key={idx} className="flex items-start gap-2 text-sm p-2 bg-muted rounded">
-                        <div className="flex-1 min-w-0">
-                          <div className="font-mono text-xs truncate">{s.telefone}</div>
-                          {s.erro && (
-                            <div className="text-xs text-destructive truncate">{s.erro}</div>
-                          )}
-                          {s.timestamp && (
-                            <div className="text-xs text-muted-foreground">{s.timestamp}</div>
-                          )}
-                        </div>
-                        {s.status === "sucesso" && (
-                          <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-1" />
-                        )}
-                        {s.status === "erro" && (
-                          <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0 mt-1" />
-                        )}
-                        {s.status === "enviando" && (
-                          <Loader className="h-4 w-4 text-blue-500 flex-shrink-0 mt-1 animate-spin" />
-                        )}
-                        {s.status === "pendente" && (
-                          <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-1" />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-muted-foreground text-sm text-center py-4">
-                    Nenhum envio realizado
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex justify-between items-center gap-4">
-            <div className="flex gap-4 items-center">
-              <div className="text-sm text-muted-foreground">
-                {contatosProcessados > 0 ? (
-                  <>
-                    <strong>{contatosProcessados}</strong> contato
-                    {contatosProcessados !== 1 ? "s" : ""} prontos para envio
-                  </>
-                ) : (
-                  "Cole seus contatos para começar"
-                )}
-              </div>
-              <div className="flex items-center gap-2 pl-4 border-l">
-                <Label className="text-sm font-medium cursor-pointer flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={modoBackground}
-                    onChange={(e) => setModoBackground(e.target.checked)}
-                    disabled={enviando}
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                  Enviar em Background
-                </Label>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              {enviando && !modoBackground && (
-                <Button
-                  onClick={() => {
-                    cancelarEnvioRef.current = true;
-                  }}
-                  variant="destructive"
-                  size="lg"
-                  data-testid="button-cancelar-envio"
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Cancelar Envio
-                </Button>
-              )}
-              <Button
-                onClick={() => {
-                  if (!whatsappConnected) {
-                    toast({
-                      title: "WhatsApp não conectado",
-                      description: "Por favor, conecte seu WhatsApp em /whatsapp antes de enviar campanhas.",
-                      variant: "destructive",
-                    });
-                    return;
-                  }
-                  setConfirmarEnvio(true);
-                }}
-                disabled={
-                  enviando ||
-                  contatosProcessados === 0 ||
-                  !template.trim() ||
-                  tempoDelay < 10 ||
-                  !whatsappConnected
-                }
-                size="lg"
-                data-testid="button-enviar-campanha"
-              >
-                <Send className="h-4 w-4 mr-2" />
-                {!whatsappConnected ? "WhatsApp Desconectado" : enviando ? "Enviando..." : "Enviar Campanha"}
-              </Button>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* ===== ABA CONFIGURAÇÃO ===== */}
-        <TabsContent value="configuracao" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Configurações da Campanha</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Delay */}
-              <div className="space-y-3">
-                <Label htmlFor="delay">Tempo de delay entre mensagens (segundos)</Label>
-                <div className="flex gap-4 items-end">
-                  <div className="flex-1">
-                    <Input
-                      id="delay"
-                      type="number"
-                      min={10}
-                      max={300}
-                      value={tempoDelay}
-                      onChange={(e) => setTempoDelay(Math.max(10, parseInt(e.target.value) || 10))}
-                      data-testid="input-delay"
-                    />
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Min: 10s | Recomendado: 15-30s
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Quanto maior o delay, mais seguro é o envio. Mínimo de 10 segundos para não ser
-                  bloqueado.
-                </p>
-              </div>
-
-              {/* Randomização */}
-              <div className="space-y-3">
-                <Label>Randomização de delay (evita parecer robô)</Label>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="random-min" className="text-xs">Tempo mínimo extra (seg)</Label>
-                    <Input
-                      id="random-min"
-                      type="number"
-                      min={0}
-                      max={60}
-                      value={tempoRandomMin}
-                      onChange={(e) => setTempoRandomMin(Math.max(0, parseInt(e.target.value) || 0))}
-                      data-testid="input-random-min"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="random-max" className="text-xs">Tempo máximo extra (seg)</Label>
-                    <Input
-                      id="random-max"
-                      type="number"
-                      min={1}
-                      max={60}
-                      value={tempoRandomMax}
-                      onChange={(e) => setTempoRandomMax(Math.max(1, parseInt(e.target.value) || 15))}
-                      data-testid="input-random-max"
-                    />
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  O delay entre mensagens será: {tempoDelay}s + {tempoRandomMin}s a {tempoRandomMax}s aleatórios = {tempoDelay + tempoRandomMin}s a {tempoDelay + tempoRandomMax}s
-                </p>
-              </div>
-
-              {/* Imagem */}
-              <div className="space-y-3">
-                <Label>Imagem (opcional)</Label>
-                <div
-                  className="border-2 border-dashed rounded-lg p-6 text-center hover-elevate cursor-pointer transition-colors"
-                  onClick={() => document.getElementById("upload-imagem")?.click()}
-                >
-                  {imagemPreview ? (
-                    <div className="space-y-3">
-                      <img
-                        src={imagemPreview}
-                        alt="Preview"
-                        className="h-32 w-auto mx-auto rounded"
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setImagemSelecionada(null);
-                          setImagemPreview(null);
-                        }}
-                        data-testid="button-remover-imagem"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Remover
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground" />
-                      <div className="font-medium">Clique ou arraste uma imagem</div>
-                      <p className="text-xs text-muted-foreground">JPG, PNG - Máx 5MB</p>
-                    </div>
-                  )}
-                  <input
-                    id="upload-imagem"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImagemSelecionada}
-                    className="hidden"
-                    data-testid="input-imagem"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ===== ABA CAMPANHAS EM PROGRESSO ===== */}
-        <TabsContent value="progresso" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Campanhas em Progresso</CardTitle>
-              <CardDescription>Acompanhe o status de suas campanhas em tempo real</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {campanhasEmProgresso.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Nenhuma campanha em progresso no momento
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {campanhasEmProgresso.map((campanha) => (
-                    <div key={campanha.id} className="border rounded-lg p-4 space-y-3">
-                      <div className="flex justify-between items-center">
-                        <div className="font-mono text-sm">{campanha.id}</div>
-                        <Badge variant={campanha.status === "concluida" ? "outline" : "secondary"}>
-                          {campanha.status === "em_progresso" ? "Em Progresso" : "Concluída"}
-                        </Badge>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <div className="text-sm text-muted-foreground">
-                          {campanha.enviadas} / {campanha.total} mensagens enviadas
-                        </div>
-                        <Progress value={(campanha.enviadas / campanha.total) * 100} />
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">Enviadas:</span>
-                          <div className="font-semibold text-green-600 dark:text-green-400">{campanha.enviadas}</div>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Erros:</span>
-                          <div className={`font-semibold ${campanha.erros > 0 ? "text-destructive" : ""}`}>{campanha.erros}</div>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Taxa de Sucesso:</span>
-                          <div className="font-semibold">{Math.round((campanha.enviadas / campanha.total) * 100)}%</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ===== ABA HISTÓRICO ===== */}
-        <TabsContent value="historico" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Histórico de Campanhas por Cliente</CardTitle>
-              <CardDescription>Veja quando cada cliente recebeu mensagens</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                onClick={() => setMostrarHistorico(true)}
-                variant="outline"
-                size="sm"
-                data-testid="button-abrir-historico"
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                Visualizar Histórico
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      {/* Dialog: Import from DB with Multi-Select */}
-      <Dialog open={mostrarSeletorBD} onOpenChange={setMostrarSeletorBD}>
-        <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
-          <DialogHeader className="border-b pb-4">
-            <DialogTitle className="text-2xl">Selecionar Clientes</DialogTitle>
-            <DialogDescription>
-              Escolha os clientes para receber a campanha. Você pode adicionar à planilha ou enviar direto.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-3 flex-1 flex flex-col overflow-hidden">
-            {/* Search Input */}
-            <div className="flex gap-2 items-center">
-              <Input
-                placeholder="🔍 Buscar por nome ou telefone..."
-                value={searchClientes}
-                onChange={(e) => setSearchClientes(e.target.value)}
-                className="flex-1"
-                data-testid="input-search-clientes"
-              />
-              <Badge variant="secondary" className="h-10 px-3 flex items-center gap-2 whitespace-nowrap">
-                {clientesFiltrados.length} clientes
-              </Badge>
-            </div>
-
-            {/* Quick Select Buttons */}
-            <div className="flex gap-2 flex-wrap items-center">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setClientesSelecionados(new Set(clientesFiltrados.map((c) => c.id)))}
-                disabled={clientesFiltrados.length === 0}
-                data-testid="button-select-all-quick"
-              >
-                ✓ Selecionar Todos
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setClientesSelecionados(new Set())}
-                disabled={clientesSelecionados.size === 0}
-                data-testid="button-deselect-all"
-              >
-                ✕ Desselecionar Todos
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  const novos = clientesFiltrados
-                    .filter((c) => !c.ultimaCampanha)
-                    .map((c) => c.id);
-                  setClientesSelecionados(new Set(novos));
-                }}
-                disabled={clientesFiltrados.every((c) => c.ultimaCampanha)}
-                data-testid="button-select-news"
-              >
-                ⭐ Apenas Novos
-              </Button>
-              
-              {/* Divider */}
-              <div className="h-6 w-px bg-border" />
-              
-              {/* Random Selection */}
-              <div className="flex gap-2 items-center">
-                <Label className="text-xs font-medium whitespace-nowrap">Selecionar aleatoriamente:</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={clientesFiltrados.length}
-                  value={quantidadeSelecar}
-                  onChange={(e) => setQuantidadeSelecar(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-16 h-9"
-                  data-testid="input-quantidade-selecionar"
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    const shuffled = [...clientesFiltrados].sort(() => Math.random() - 0.5);
-                    const quantidadeReal = Math.min(quantidadeSelecar, clientesFiltrados.length);
-                    const selecionados = shuffled.slice(0, quantidadeReal).map((c) => c.id);
-                    setClientesSelecionados(new Set(selecionados));
-                  }}
-                  disabled={clientesFiltrados.length === 0}
-                  data-testid="button-random-select"
-                >
-                  🎲 Selecionar
-                </Button>
-              </div>
-            </div>
-
-            {/* Clients Table with better styling - Scroll enabled */}
-            <div className="flex-1 overflow-hidden flex flex-col border rounded-lg bg-white dark:bg-slate-950 min-h-[500px]">
-              {carregandoClientes ? (
-                <div className="flex items-center justify-center flex-1">
-                  <div className="flex flex-col items-center gap-2">
-                    <Loader className="h-6 w-6 animate-spin text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Carregando clientes...</span>
-                  </div>
-                </div>
-              ) : clientesFiltrados.length === 0 ? (
-                <div className="flex items-center justify-center flex-1 text-muted-foreground">
-                  <div className="text-center">
-                    <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>Nenhum cliente encontrado</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex-1 overflow-y-auto border-t">
-                  <Table className="text-sm w-full">
-                    <TableHeader className="sticky top-0 bg-slate-100 dark:bg-slate-800 z-10">
-                      <TableRow className="border-b-2">
-                        <TableHead className="w-12 text-center">
-                          <Checkbox
-                            checked={clientesSelecionados.size === clientesFiltrados.length && clientesFiltrados.length > 0}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setClientesSelecionados(new Set(clientesFiltrados.map((c) => c.id)));
-                              } else {
-                                setClientesSelecionados(new Set());
-                              }
-                            }}
-                            data-testid="checkbox-select-all"
-                          />
-                        </TableHead>
-                        <TableHead className="font-semibold">RAZÃO SOCIAL</TableHead>
-                        <TableHead className="font-semibold">CELULAR</TableHead>
-                        <TableHead className="font-semibold text-xs">STATUS</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {clientesFiltrados.map((cliente) => (
-                        <TableRow key={cliente.id} className="border-b hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer transition-colors" data-testid={`row-cliente-${cliente.id}`}>
-                          <TableCell className="text-center w-12" onClick={(e) => {
-                            e.stopPropagation();
-                            toggleClienteSelecionado(cliente.id);
-                          }}>
-                            <Checkbox
-                              checked={clientesSelecionados.has(cliente.id)}
-                              onCheckedChange={() => toggleClienteSelecionado(cliente.id)}
-                              data-testid={`checkbox-cliente-${cliente.id}`}
-                            />
-                          </TableCell>
-                          <TableCell className="font-medium" data-testid={`text-razaosocial-${cliente.id}`}>{cliente.razaoSocial || "N/A"}</TableCell>
-                          <TableCell className="font-mono text-sm font-medium" data-testid={`text-celular-${cliente.id}`}>{cliente.telefone}</TableCell>
-                          <TableCell className="text-xs" data-testid={`status-campanha-${cliente.id}`}>
-                            {cliente.status === "ENVIADO" ? (
-                              <Badge variant="destructive" className="text-xs gap-1">
-                                <AlertTriangle className="h-3 w-3" />
-                                Enviado
+              {/* ===== ABA PROGRESSO ===== */}
+              <TabsContent value="progresso" className="space-y-4">
+                <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
+                  <CardHeader>
+                    <CardTitle className="text-slate-900 dark:text-white">Campanhas em Progresso</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {campanhasEmProgresso.length > 0 ? (
+                      <div className="space-y-4">
+                        {campanhasEmProgresso.map((campanha) => (
+                          <div key={campanha.id} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4">
+                            <div className="flex justify-between items-center mb-3">
+                              <h4 className="font-medium text-slate-900 dark:text-white">Campanha {campanha.id.slice(0, 8)}</h4>
+                              <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                {Math.round((campanha.enviadas / campanha.total) * 100)}%
                               </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="text-xs">{cliente.status || "Lead"}</Badge>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </div>
+                            </div>
+                            <Progress value={(campanha.enviadas / campanha.total) * 100} className="mb-3" />
+                            <div className="grid grid-cols-3 gap-4 text-sm">
+                              <div className="text-center">
+                                <div className="text-slate-600 dark:text-slate-400">Enviadas</div>
+                                <div className="font-bold text-slate-900 dark:text-white">{campanha.enviadas}/{campanha.total}</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-slate-600 dark:text-slate-400">Taxa</div>
+                                <div className="font-bold text-slate-900 dark:text-white">{Math.round((campanha.enviadas / campanha.total) * 100)}%</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-slate-600 dark:text-slate-400">Erros</div>
+                                <div className={`font-bold ${campanha.erros > 0 ? "text-red-600 dark:text-red-400" : "text-slate-600 dark:text-slate-400"}`}>
+                                  {campanha.erros}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-slate-600 dark:text-slate-400">
+                        Nenhuma campanha em progresso
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-            {/* Summary with Stats */}
-            <div className="flex gap-4 items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border">
-              <div className="flex gap-6">
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Selecionados:</span>
-                  <span className="font-semibold ml-2 text-lg text-primary">{clientesSelecionados.size}</span>
-                </div>
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Total:</span>
-                  <span className="font-semibold ml-2 text-lg">{clientesFiltrados.length}</span>
-                </div>
-              </div>
-              {clientesSelecionados.size > 0 && (
-                <div className="text-xs text-green-600 dark:text-green-400">
-                  ✓ Pronto para enviar
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Action Buttons - Two options */}
-          <div className="flex gap-3 justify-end border-t pt-4">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setMostrarSeletorBD(false);
-                setClientesSelecionados(new Set());
-                setSearchClientes("");
-              }}
-              data-testid="button-cancelar-seletor"
-            >
-              <X className="h-4 w-4 mr-2" />
-              Cancelar
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                importarSelecionadosDoBD();
-              }}
-              disabled={clientesSelecionados.size === 0}
-              data-testid="button-adicionar-planilha"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Adicionar à Planilha ({clientesSelecionados.size})
-            </Button>
-            <Button
-              onClick={() => {
-                const contatosFromDB: ContactEntry[] = Array.from(clientesSelecionados)
-                  .map((clientId) => {
-                    const cliente = clientesDisponiveis.find((c) => c.id === clientId);
-                    return {
-                      id: cliente?.id || "",
-                      celular: cliente?.telefone || "",
-                      razao_social: cliente?.razaoSocial || "N/A",
-                    };
-                  })
-                  .filter((c) => c.celular);
-
-                setContatos(contatosFromDB);
-                setVariaveisDisponiveis(["celular", "razao_social"]);
-                setClientesSelecionados(new Set());
-                setMostrarSeletorBD(false);
-                setSearchClientes("");
-                setConfirmarEnvio(true); // Skip to confirmation dialog
-
-                toast({
-                  title: "Pronto para enviar!",
-                  description: `${contatosFromDB.length} contato${contatosFromDB.length !== 1 ? "s" : ""} selecionado${contatosFromDB.length !== 1 ? "s" : ""}`,
-                });
-              }}
-              disabled={clientesSelecionados.size === 0}
-              data-testid="button-enviar-direto"
-            >
-              <Send className="h-4 w-4 mr-2" />
-              Enviar Direto ({clientesSelecionados.size})
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+              {/* ===== ABA HISTÓRICO ===== */}
+              <TabsContent value="historico" className="space-y-4">
+                <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
+                  <CardHeader>
+                    <CardTitle className="text-slate-900 dark:text-white">Histórico de Campanhas</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-8 text-slate-600 dark:text-slate-400">
+                      Histórico em breve
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </Card>
+        </div>
+      </div>
 
       {/* Confirmation Dialog */}
       <AlertDialog open={confirmarEnvio} onOpenChange={setConfirmarEnvio}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar envio</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar envio?</AlertDialogTitle>
             <AlertDialogDescription>
-              Você está prestes a enviar {contatosProcessados} mensagens com delay de {tempoDelay}
-              s. Isso pode levar {Math.ceil((contatosProcessados * tempoDelay) / 60)} minutos.
-              Você tem certeza?
+              Você está prestes a enviar {contatosProcessados} mensagem{contatosProcessados !== 1 ? "s" : ""} via WhatsApp.
+              {modoBackground ? " A campanha será enviada em background." : " Você será notificado do progresso em tempo real."}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="my-4 p-3 bg-muted rounded text-sm">
-            <strong>Preview:</strong>
-            <div className="mt-2 text-xs whitespace-pre-wrap max-h-40 overflow-y-auto">{obterPreview()}</div>
-          </div>
-          <div className="flex gap-3">
-            <AlertDialogCancel data-testid="button-cancelar-envio">Cancelar</AlertDialogCancel>
+          <div className="flex gap-3 justify-end">
+            <AlertDialogCancel className="text-slate-700 dark:text-slate-200">Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={enviarCampanha}
-              disabled={enviando}
+              onClick={() => enviarCampanha()}
+              className="bg-green-600 hover:bg-green-700 text-white"
               data-testid="button-confirmar-envio"
             >
-              {enviando ? "Enviando..." : "Confirmar"}
+              Confirmar
             </AlertDialogAction>
           </div>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Database Selector Dialog */}
+      <Dialog open={mostrarSeletorBD} onOpenChange={setMostrarSeletorBD}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-slate-900 dark:text-white">Selecionar Clientes da Base de Dados</DialogTitle>
+            <DialogDescription className="text-slate-600 dark:text-slate-400">
+              Escolha os clientes que deseja incluir na campanha
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <Input
+              placeholder="Buscar por nome ou telefone..."
+              value={searchClientes}
+              onChange={(e) => setSearchClientes(e.target.value)}
+              className="border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"
+              data-testid="input-search-clientes-db"
+            />
+
+            {carregandoClientes ? (
+              <div className="text-center py-8 text-slate-600 dark:text-slate-400">
+                Carregando clientes...
+              </div>
+            ) : (
+              <ScrollArea className="h-80 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
+                <div className="space-y-2">
+                  {clientesFiltrados.map((client) => (
+                    <div
+                      key={client.id}
+                      className="flex items-center gap-3 p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-900"
+                    >
+                      <Checkbox
+                        checked={clientesSelecionados.has(client.id)}
+                        onCheckedChange={() => toggleClienteSelecionado(client.id)}
+                        data-testid={`checkbox-cliente-${client.id}`}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-slate-900 dark:text-white truncate">{client.nome}</div>
+                        <div className="text-sm text-slate-600 dark:text-slate-400">{client.telefone}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+
+            <div className="flex gap-3 justify-end pt-4 border-t border-slate-200 dark:border-slate-700">
+              <Button
+                variant="outline"
+                onClick={() => setMostrarSeletorBD(false)}
+                className="text-slate-700 dark:text-slate-200"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={importarSelecionadosDoBD}
+                disabled={clientesSelecionados.size === 0}
+                className="bg-green-600 hover:bg-green-700 text-white"
+                data-testid="button-importar-selecionados"
+              >
+                Importar {clientesSelecionados.size > 0 && `(${clientesSelecionados.size})`}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
