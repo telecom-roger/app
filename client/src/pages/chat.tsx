@@ -338,8 +338,8 @@ export default function Chat() {
         });
       }
       toast({
-        title: "Mensagem removida para todos",
-        description: "A mensagem foi deletada com sucesso",
+        title: "Mensagem removida do app",
+        description: "A mensagem foi removida (nota: não é deletada do WhatsApp)",
       });
     },
     onError: (error: any) => {
