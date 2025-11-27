@@ -783,6 +783,13 @@ export async function getUnreadNotificationsCount(userId: string): Promise<numbe
   return result[0]?.count ? Number(result[0].count) : 0;
 }
 
+export async function markAllNotificationsAsRead(userId: string): Promise<void> {
+  await db
+    .update(notifications)
+    .set({ lida: true })
+    .where(and(eq(notifications.userId, userId), eq(notifications.lida, false)));
+}
+
 export async function markNotificationAsRead(notificationId: string): Promise<void> {
   await db
     .update(notifications)
