@@ -1584,6 +1584,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete message for all (soft delete)
+  app.delete("/api/chat/messages/:messageId", isAuthenticated, async (req, res) => {
+    try {
+      const { messageId } = req.params;
+      const user = (req.user as any);
+
+      const success = await storage.deleteMessage(messageId, user.id);
+      
+      if (!success) {
+        return res.status(403).json({ error: "Acesso negado ou mensagem não encontrada" });
+      }
+
+      // Try to delete on WhatsApp too (best effort)
+      try {
+        const [msg] = await db.select().from(messages).where(eq(messages.id, messageId));
+        if (msg) {
+          const [session] = await db
+            .select()
+            .from(whatsappSessions)
+            .where(and(eq(whatsappSessions.userId, user.id), eq(whatsappSessions.status, "conectada")))
+            .limit(1);
+
+          if (session) {
+            const isAlive = whatsappService.isSessionAlive(session.sessionId);
+            if (isAlive) {
+              await whatsappService.deleteMessage(session.sessionId, msg.conteudo);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("⚠️ Aviso: Mensagem deletada localmente mas falhou no WhatsApp:", err);
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting message:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Upload file for chat
   app.post("/api/chat/upload", isAuthenticated, async (req, res) => {
     try {

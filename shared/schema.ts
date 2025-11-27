@@ -391,6 +391,7 @@ export const messages = pgTable("messages", {
   tamanho: integer("tamanho"), // em bytes
   mimeType: text("mime_type"),
   lido: boolean("lido").default(false),
+  deletado: boolean("deletado").default(false), // Soft delete for "removed for all"
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
   index("idx_messages_conversation").on(table.conversationId),
