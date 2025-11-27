@@ -637,7 +637,9 @@ export default function Chat() {
       return tagRes.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] }).then(() => {
+        queryClient.refetchQueries({ queryKey: ["/api/opportunities"] });
+      });
       refetchConversations();
       refetchDetailedClient();
       setBusinessValue("");
@@ -673,7 +675,9 @@ export default function Chat() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] }).then(() => {
+        queryClient.refetchQueries({ queryKey: ["/api/opportunities"] });
+      });
       refetchConversations();
       refetchDetailedClient();
       toast({ title: "Etiqueta e oportunidade removidas", variant: "default" });
