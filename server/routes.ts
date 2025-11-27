@@ -1130,41 +1130,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Queue messages for sending (async, non-blocking)
       let enfileiradas = 0;
-      const userId = (req.user as any).id;
-      
       for (const cliente of clientes) {
         const telefone = cliente.CELULAR_PRINCIPAL || cliente.telefone;
-        const clienteId = cliente.id;
-        
         if (telefone) {
           // Queue message asynchronously (don't wait)
-          console.log(`⏱️ [BROADCAST-ASYNC] Enfileirando envio para ${telefone}...`);
-          
-          (async () => {
-            try {
-              console.log(`📨 [BROADCAST-ASYNC] Iniciando envio para ${telefone}...`);
-              
-              // Send via WhatsApp
-              await whatsappService.sendMessage(session.sessionId, telefone, mensagem);
-              console.log(`✅ [BROADCAST-ASYNC] Enviado via WhatsApp para ${telefone}`);
-              
-              // Save to chat
-              console.log(`💾 [BROADCAST-ASYNC] Salvando no chat para cliente ${clienteId}...`);
-              const conversa = await storage.createOrGetConversation(clienteId, userId);
-              console.log(`✅ [BROADCAST-ASYNC] Conversa: ${conversa.id}`);
-              
-              const msg = await storage.createMessage({
-                conversationId: conversa.id,
-                sender: "client",
-                tipo: "texto",
-                conteudo: mensagem,
-              });
-              console.log(`💬 ✅ [BROADCAST-ASYNC] Mensagem ${msg.id} salva no chat`);
-            } catch (err) {
-              console.error(`❌ [BROADCAST-ASYNC] Erro:`, err);
-            }
-          })().catch(err => console.error(`❌ [BROADCAST-ASYNC] Promise Error:`, err));
-          
+          whatsappService.sendMessage(session.sessionId, telefone, mensagem).catch(err => {
+            console.error(`Erro ao enviar para ${telefone}:`, err);
+          });
           enfileiradas++;
         }
       }
@@ -1249,27 +1221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
 
               await whatsappService.sendMessage(sessaoConectada.sessionId, telefone, mensagem);
-              console.log(`✅ [CAMPANHA-BG] Enviado via WhatsApp para ${telefone}`);
               enviadas++;
-              
-              // Save message to chat
-              if (clientId) {
-                try {
-                  console.log(`💾 [CAMPANHA-BG] Salvando no chat para cliente ${clientId}...`);
-                  const conversa = await storage.createOrGetConversation(clientId, user.id);
-                  console.log(`✅ [CAMPANHA-BG] Conversa: ${conversa.id}`);
-                  
-                  const msg = await storage.createMessage({
-                    conversationId: conversa.id,
-                    sender: "client",
-                    tipo: "texto",
-                    conteudo: mensagem,
-                  });
-                  console.log(`💬 ✅ [CAMPANHA-BG] Mensagem ${msg.id} salva no chat`);
-                } catch (chatErr) {
-                  console.error(`❌ [CAMPANHA-BG] Erro ao salvar no chat:`, chatErr);
-                }
-              }
               
               // Record interaction in timeline
               if (clientId) {
