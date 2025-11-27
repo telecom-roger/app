@@ -196,6 +196,11 @@ export default function Kanban() {
 
   const totalOportunidades = oportunidades?.length || 0;
   const oportunidadesFechadas = oportunidades?.filter(op => op.etapa === 'fechado').length || 0;
+  
+  // Calcular soma de valores em negociação
+  const totalValueNegotiation = (oportunidades || [])
+    .filter(op => op.etapa && op.etapa !== 'fechado' && op.etapa !== 'perdido')
+    .reduce((sum, op) => sum + parseValue(op.valorEstimado), 0);
 
   if (authLoading || !isAuthenticated) {
     return <KanbanSkeleton />;
@@ -244,8 +249,8 @@ export default function Kanban() {
             <Card className="p-6 border-0 shadow-sm bg-white dark:bg-slate-800/50">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Você controla os valores</p>
-                  <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">Qualquer formato</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total em Negociação</p>
+                  <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">R$ {formatValue(totalValueNegotiation)}</p>
                 </div>
                 <div className="p-3 bg-emerald-500/10 rounded-lg">
                   <DollarSign className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
