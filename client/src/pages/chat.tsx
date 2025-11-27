@@ -1005,7 +1005,7 @@ export default function Chat() {
                           </button>
                         )}
                         
-                        <div className="flex items-center justify-between gap-3 mt-2 pt-2 border-t border-opacity-20 border-current">
+                        <div className="flex items-center justify-between gap-3 mt-2 pt-1">
                           <p className="text-xs opacity-70 font-medium">
                             {new Date(msg.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                           </p>
