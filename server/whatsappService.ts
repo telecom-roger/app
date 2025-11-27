@@ -120,7 +120,7 @@ async function processIncomingMessages(sessionId: string, m: any) {
         return cleaned.length >= 10 && cleaned.length <= 15;
       };
       
-      // Helper to clean phone number
+      // Helper to clean phone number (remove WhatsApp suffixes)
       const cleanPhone = (phone: string): string => {
         return phone
           .replace("@s.whatsapp.net", "")
@@ -128,6 +128,15 @@ async function processIncomingMessages(sessionId: string, m: any) {
           .replace("@iid", "")
           .replace("@lid", "")
           .trim();
+      };
+      
+      // Helper to normalize phone (remove 55 prefix if present)
+      const normalizePhone = (phone: string): string => {
+        let normalized = phone.replace(/\D/g, ""); // Remove non-digits
+        if (normalized.startsWith("55")) {
+          normalized = normalized.substring(2); // Remove 55 prefix
+        }
+        return normalized;
       };
       
       // IMPORTANT: If addressingMode is "lid", the remoteJid is a Line ID (not a phone)
@@ -168,7 +177,10 @@ async function processIncomingMessages(sessionId: string, m: any) {
         continue;
       }
       
-      console.log(`[RECEBIMENTO] 📱 Telefone extraído: "${senderPhone}"`);
+      // NORMALIZE IMMEDIATELY - remove 55 prefix if present (all stored without 55)
+      senderPhone = normalizePhone(senderPhone);
+      
+      console.log(`[RECEBIMENTO] 📱 Telefone extraído (normalizado): "${senderPhone}"`);
 
       let conteudo = "";
       let tipo = "texto";
@@ -232,24 +244,17 @@ async function processIncomingMessages(sessionId: string, m: any) {
         
         if (!conversation) {
           console.warn(`[RECEBIMENTO] ⚠️ Conversa não encontrada via findConversationByPhoneAndUser`);
+          console.log(`🔍 Buscando cliente com: "${senderPhone}"`);
           
-          // Normalize phone to SEM 55 format (all clients stored without 55)
-          let normalizado = senderPhone.replace(/\D/g, "");
-          if (normalizado.startsWith("55")) {
-            normalizado = normalizado.substring(2);
-          }
-          
-          console.log(`🔍 Buscando cliente com: "${normalizado}"`);
-          
-          // Search for existing client by SEM 55 format
+          // Search for existing client (senderPhone is already normalized without 55)
           const [client] = await db
             .select()
             .from(clientsTable)
             .where(or(
-              eq(clientsTable.CELULAR_PRINCIPAL, normalizado),
-              eq(clientsTable.telefone, normalizado),
-              ilike(clientsTable.CELULAR_PRINCIPAL, `%${normalizado}%`),
-              ilike(clientsTable.telefone, `%${normalizado}%`)
+              eq(clientsTable.CELULAR_PRINCIPAL, senderPhone),
+              eq(clientsTable.telefone, senderPhone),
+              ilike(clientsTable.CELULAR_PRINCIPAL, `%${senderPhone}%`),
+              ilike(clientsTable.telefone, `%${senderPhone}%`)
             ))
             .limit(1);
           
@@ -260,18 +265,18 @@ async function processIncomingMessages(sessionId: string, m: any) {
           } else {
             console.warn(`[RECEBIMENTO] ⚠️ Cliente não encontrado, criando novo...`);
             
-            // Auto-create new client - store WITHOUT 55 prefix
+            // Auto-create new client - store WITHOUT 55 prefix (senderPhone already normalized)
             const novoCliente = await storage.createClient({
-              nome: `Novo contato ${normalizado}`,
-              telefone: normalizado,
-              CELULAR_PRINCIPAL: normalizado,
+              nome: `Novo contato ${senderPhone}`,
+              telefone: senderPhone,
+              CELULAR_PRINCIPAL: senderPhone,
               cpfCnpj: "",
               status: "Lead",
               carteira: "Dominio",
               score: 0,
             });
             
-            console.log(`✅ Novo cliente criado: ${novoCliente.id} (${normalizado})`);
+            console.log(`✅ Novo cliente criado: ${novoCliente.id} (${senderPhone})`);
             conversation = await storage.createOrGetConversation(novoCliente.id, userId);
             console.log(`✨ Conversa criada para novo contato: ${conversation.id}`);
           }
