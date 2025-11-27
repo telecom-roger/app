@@ -7,7 +7,7 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import * as storage from "./storage";
 import { db } from "./db";
-import { or, ilike } from "drizzle-orm";
+import { or, ilike, eq } from "drizzle-orm";
 import { clients as clientsTable } from "@shared/schema";
 
 const execAsync = promisify(exec);
