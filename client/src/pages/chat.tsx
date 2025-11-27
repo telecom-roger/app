@@ -979,143 +979,62 @@ export default function Chat() {
             </div>
           ) : detailedClient ? (
             <div className="space-y-4">
-              {/* Valor do Negócio + Tags */}
-              <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-4">
-                <div>
-                  <label className="text-sm font-semibold text-slate-900 dark:text-slate-100">Valor do Negócio</label>
-                  <Input
-                    type="text"
-                    placeholder="R$ 0,00"
-                    value={businessValue}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, "");
-                      const formatted = new Intl.NumberFormat("pt-BR", {
-                        style: "currency",
-                        currency: "BRL"
-                      }).format(parseInt(value || "0") / 100);
-                      setBusinessValue(formatted);
-                    }}
-                    className="mt-2"
-                    data-testid="input-business-value"
-                  />
-                </div>
-                
-                {/* Tag Selection */}
-                <div>
-                  <label className="text-sm font-semibold text-slate-900 dark:text-slate-100">Selecione uma Etapa</label>
-                  {allTags && allTags.length > 0 ? (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {allTags.map((tag) => {
-                        const isCurrentTag = detailedClient?.tags?.[0] === tag.nome;
-                        return (
-                          <Button
-                            key={tag.id}
-                            size="sm"
-                            variant={isCurrentTag ? "default" : "outline"}
-                            className={`${isCurrentTag ? `${tag.cor}` : ""} rounded-full`}
-                            onClick={() => {
+              {/* Valor do Negócio */}
+              <div>
+                <label className="text-sm font-semibold text-slate-900 dark:text-slate-100">Valor do Negócio</label>
+                <Input
+                  type="text"
+                  placeholder="R$ 0,00"
+                  value={businessValue}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, "");
+                    const formatted = new Intl.NumberFormat("pt-BR", {
+                      style: "currency",
+                      currency: "BRL"
+                    }).format(parseInt(value || "0") / 100);
+                    setBusinessValue(formatted);
+                  }}
+                  className="mt-2"
+                  data-testid="input-business-value"
+                />
+              </div>
+              
+              {/* Etapas */}
+              <div>
+                <label className="text-sm font-semibold text-slate-900 dark:text-slate-100">Etapas</label>
+                {allTags && allTags.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {allTags.map((tag) => {
+                      const isCurrentTag = detailedClient?.tags?.[0] === tag.nome;
+                      return (
+                        <Button
+                          key={tag.id}
+                          size="sm"
+                          variant={isCurrentTag ? "default" : "outline"}
+                          className={`${isCurrentTag ? `${tag.cor}` : ""} rounded-full`}
+                          onClick={() => {
+                            if (isCurrentTag) {
+                              handleDeleteTag(tag.nome);
+                            } else {
                               addTagMutation.mutate(tag.nome);
-                            }}
-                            disabled={addTagMutation.isPending}
-                            data-testid={`button-tag-${tag.id}`}
-                          >
-                            {addTagMutation.isPending ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : isCurrentTag ? (
-                              `✓ ${tag.nome}`
-                            ) : (
-                              tag.nome
-                            )}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">Nenhuma etapa criada. Crie em "Etiquetas"</p>
-                  )}
-                </div>
-              </div>
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800/50">
-                <div className="flex items-center gap-3 mb-3">
-                  <Avatar className="h-12 w-12">
-                    <AvatarFallback className="bg-purple-200 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-bold text-lg">
-                      {(detailedClient.nome || detailedClient.razaoSocial || "C")
-                        .split(" ")
-                        .slice(0, 2)
-                        .map((w: string) => w[0])
-                        .join("")
-                        .toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-semibold text-slate-900 dark:text-white">
-                      {detailedClient.razaoSocial || detailedClient.nome || "Sem nome"}
-                    </p>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                      {detailedClient.CELULAR_PRINCIPAL || detailedClient.telefone || "Sem contato"}
-                    </p>
+                            }
+                          }}
+                          disabled={addTagMutation.isPending || removeTagMutation.isPending}
+                          data-testid={`button-tag-${tag.id}`}
+                        >
+                          {addTagMutation.isPending || removeTagMutation.isPending ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : isCurrentTag ? (
+                            `✓ ${tag.nome}`
+                          ) : (
+                            tag.nome
+                          )}
+                        </Button>
+                      );
+                    })}
                   </div>
-                </div>
-                {detailedClient.tags?.[0] && (() => {
-                  const tagName = detailedClient.tags[0];
-                  const tag = allTags.find(t => t.nome === tagName);
-                  return (
-                    <Badge 
-                      className={`${tag?.cor || "bg-gray-500"} cursor-pointer hover-elevate flex items-center gap-1`}
-                      onClick={() => handleDeleteTag(tagName)}
-                      data-testid="badge-tag-removable"
-                    >
-                      {tagName}
-                      <X className="h-3 w-3 opacity-70 hover:opacity-100" />
-                    </Badge>
-                  );
-                })()}
-              </div>
-
-              <div className="space-y-3">
-                {detailedClient.email && (
-                  <div className="border-b border-slate-200 dark:border-slate-700 pb-3">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase">Email</p>
-                    <p className="text-sm text-slate-900 dark:text-white mt-1">{detailedClient.email}</p>
-                  </div>
-                )}
-                
-                {detailedClient.carteira && (
-                  <div className="border-b border-slate-200 dark:border-slate-700 pb-3">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase">Carteira</p>
-                    <p className="text-sm text-slate-900 dark:text-white mt-1">{detailedClient.carteira}</p>
-                  </div>
-                )}
-                
-                {detailedClient.status && (
-                  <div className="border-b border-slate-200 dark:border-slate-700 pb-3">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase">Status</p>
-                    <Badge variant="outline" className="mt-1">
-                      {detailedClient.status}
-                    </Badge>
-                  </div>
-                )}
-                
-                {detailedClient.leadScore && (
-                  <div className="border-b border-slate-200 dark:border-slate-700 pb-3">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase">Lead Score</p>
-                    <div className="mt-2 flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-purple-500 to-purple-600" 
-                          style={{ width: `${(detailedClient.leadScore / 100) * 100}%` }}
-                        />
-                      </div>
-                      <span className="text-sm font-semibold text-slate-900 dark:text-white">{detailedClient.leadScore}</span>
-                    </div>
-                  </div>
-                )}
-
-                {detailedClient.cpfCnpj && (
-                  <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase">CPF/CNPJ</p>
-                    <p className="text-sm text-slate-900 dark:text-white mt-1 font-mono">{detailedClient.cpfCnpj}</p>
-                  </div>
+                ) : (
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">Nenhuma etapa criada. Crie em "Etiquetas"</p>
                 )}
               </div>
             </div>
