@@ -330,6 +330,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const opportunity = await storage.updateOpportunity(req.params.id, { etapa });
 
+      // Atualizar tag do cliente para manter sincronizado
+      if (oldOpportunity.clientId) {
+        const client = await storage.getClientById(oldOpportunity.clientId);
+        if (client) {
+          const oldTags = client.tags || [];
+          // Remover tag antiga, adicionar tag nova
+          const newTags = oldTags.filter((t: string) => !oldOpportunity.etapa.includes(t));
+          if (!newTags.includes(etapa)) {
+            newTags.push(etapa);
+          }
+          await storage.updateClient(oldOpportunity.clientId, { tags: newTags });
+        }
+      }
+
       // Create audit log
       await storage.createAuditLog({
         userId: (req.user as any).id,

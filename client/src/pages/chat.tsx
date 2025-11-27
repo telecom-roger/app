@@ -541,13 +541,31 @@ export default function Chat() {
   const removeTagMutation = useMutation({
     mutationFn: async (tagName: string) => {
       if (!currentClientId) return;
+      
+      // 1. Remover tag do cliente
       const res = await apiRequest("DELETE", `/api/clients/${currentClientId}/tags/${tagName}`, {});
+      
+      // 2. Remover oportunidade correspondente
+      if (detailedClient?.id) {
+        try {
+          const oppsRes = await fetch(`/api/opportunities`);
+          const opps = await oppsRes.json();
+          const opToDelete = opps.find((op: any) => op.clientId === detailedClient.id && op.etapa === tagName);
+          if (opToDelete) {
+            await apiRequest("DELETE", `/api/opportunities/${opToDelete.id}`, {});
+          }
+        } catch (err) {
+          console.error("Erro ao remover oportunidade:", err);
+        }
+      }
+      
       return res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
       refetchConversations();
       refetchDetailedClient();
-      toast({ title: "Etiqueta removida", variant: "default" });
+      toast({ title: "Etiqueta e oportunidade removidas", variant: "default" });
     },
     onError: (error: any) => {
       toast({ title: "Erro ao remover etiqueta", description: error.message, variant: "destructive" });
