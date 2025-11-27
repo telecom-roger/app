@@ -344,6 +344,7 @@ export default function Chat() {
       setSearchTerm("");
       setShowSearchResults(false);
       refetchConversations();
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
       toast({ title: "Conversa carregada", variant: "default" });
     },
     onError: (error: any) => {
@@ -417,6 +418,7 @@ export default function Chat() {
 
   const handleSelectConversation = (conversationId: string) => {
     setSelectedConversationId(conversationId);
+    queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
   };
 
   const handleSendMessage = () => {
