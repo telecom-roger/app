@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useWhatsAppStatus } from "@/hooks/useWhatsAppStatus";
-import { CampaignFiltersBuilder, type CampaignFilters } from "@/components/campaign-filters-builder";
+import { DateRangeFilter } from "@/components/date-range-filter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -136,7 +136,11 @@ export default function CampanhasWhatsApp() {
   const [templateSelecionado, setTemplateSelecionado] = useState("");
   const [quantidadeAleatoria, setQuantidadeAleatoria] = useState(50);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [campaignFilters, setCampaignFilters] = useState<CampaignFilters>({});
+  const [dataEnvioInicio, setDataEnvioInicio] = useState<Date | undefined>();
+  const [dataEnvioFim, setDataEnvioFim] = useState<Date | undefined>();
+  const [selectedTiposFilter, setSelectedTiposFilter] = useState<Set<string>>(new Set());
+  const [selectedCarteirasFilter, setSelectedCarteirasFilter] = useState<Set<string>>(new Set());
+  const [selectedCidadesFilter, setSelectedCidadesFilter] = useState<Set<string>>(new Set());
   const [nomeCampanha, setNomeCampanha] = useState("");
 
   // Fetch templates
@@ -704,9 +708,8 @@ export default function CampanhasWhatsApp() {
           {/* Tabs */}
           <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50 overflow-hidden">
             <Tabs value={tabAtivo} onValueChange={setTabAtivo} className="space-y-4 p-6">
-              <TabsList className="grid grid-cols-5 bg-slate-100 dark:bg-slate-900">
+              <TabsList className="grid grid-cols-4 bg-slate-100 dark:bg-slate-900">
                 <TabsTrigger value="mensagens" className="text-slate-700 dark:text-slate-300">Mensagens</TabsTrigger>
-                <TabsTrigger value="filtros" className="text-slate-700 dark:text-slate-300">Filtros</TabsTrigger>
                 <TabsTrigger value="configuracao" className="text-slate-700 dark:text-slate-300">Configuração</TabsTrigger>
                 <TabsTrigger value="progresso" className="text-slate-700 dark:text-slate-300">
                   Progresso {campanhasEmProgresso.length > 0 && `(${campanhasEmProgresso.length})`}
@@ -1096,17 +1099,6 @@ export default function CampanhasWhatsApp() {
                 </div>
               </TabsContent>
 
-              {/* ===== ABA FILTROS ===== */}
-              <TabsContent value="filtros" className="space-y-4">
-                <CampaignFiltersBuilder
-                  onFiltersChange={setCampaignFilters}
-                  allTags={tagsDisponiveis.map((t) => t.nome)}
-                  allTipos={tiposDisponiveis}
-                  allCarteiras={carteirasDisponiveis}
-                  allCidades={cidadesDisponiveis}
-                />
-              </TabsContent>
-
               {/* ===== ABA CONFIGURAÇÃO ===== */}
               <TabsContent value="configuracao" className="space-y-4">
                 <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
@@ -1284,20 +1276,10 @@ export default function CampanhasWhatsApp() {
           </DialogHeader>
 
           <div className="flex-1 overflow-hidden flex flex-col gap-4 py-4">
-            {/* Campaign Filters - Novo */}
-            <div className="flex-shrink-0">
-              <CampaignFiltersBuilder
-                onFiltersChange={setCampaignFilters}
-                allTags={tagsDisponiveis.map((t) => t.nome)}
-                allTipos={tiposDisponiveis}
-                allCarteiras={carteirasDisponiveis}
-                allCidades={cidadesDisponiveis}
-              />
-            </div>
-
             {/* Filters Section */}
             <div className="bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-700 rounded-lg p-4 space-y-3">
               <div className="flex flex-col gap-3">
+                {/* Busca e Status */}
                 <div className="flex gap-2 items-end flex-wrap">
                   <div className="flex-1 min-w-64">
                     <Input
@@ -1322,6 +1304,17 @@ export default function CampanhasWhatsApp() {
                       <SelectItem value="inativo">Inativo</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Período de Envio */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Período:</span>
+                  <DateRangeFilter
+                    startDate={dataEnvioInicio}
+                    endDate={dataEnvioFim}
+                    onStartDateChange={setDataEnvioInicio}
+                    onEndDateChange={setDataEnvioFim}
+                  />
                 </div>
                 
                 {/* Tag Filters */}
