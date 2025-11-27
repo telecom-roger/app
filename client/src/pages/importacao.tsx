@@ -291,9 +291,6 @@ export default function Importacao() {
         ))}
       </div>
 
-          {/* Steps Container */}
-        </div>
-
         {/* Step 1: Upload */}
         {currentStep === 1 && (
         <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50 overflow-hidden">
@@ -476,12 +473,11 @@ export default function Importacao() {
               </div>
             </div>
 
-              {fileData.rows.length > 5 && (
-                <p className="text-sm text-slate-600 dark:text-slate-400 px-4 py-2">
-                  ... e mais {fileData.rows.length - 5} registros
-                </p>
-              )}
-            </div>
+            {fileData.rows.length > 5 && (
+              <p className="text-sm text-slate-600 dark:text-slate-400 px-4 py-2">
+                ... e mais {fileData.rows.length - 5} registros
+              </p>
+            )}
 
             {/* Actions */}
             <div className="flex gap-2 pt-4 border-t border-slate-200 dark:border-slate-700 mt-4">
@@ -573,6 +569,7 @@ export default function Importacao() {
     </div>
   );
 }
+
 
 function ImportacaoSkeleton() {
   return (
