@@ -1874,22 +1874,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { tagName, valorEstimado } = req.body;
       const user = req.user as any;
       
+      console.log(`🏷️ Adicionando tag ao cliente:`, { clientId, tagName, valorEstimado });
+      
       const client = await storage.addTagToClient(clientId, tagName);
       if (!client) return res.status(404).json({ error: "Client not found" });
       
+      console.log(`✅ Cliente atualizado com tag: ${tagName}`);
+      
       // Criar oportunidade automaticamente com a tag como etapa
-      if (tagName && valorEstimado) {
+      if (tagName && valorEstimado && valorEstimado > 0) {
         try {
-          await storage.createOpportunity({
+          console.log(`📌 Criando oportunidade com valor: ${valorEstimado / 100}`);
+          const opp = await storage.createOpportunity({
             clientId,
             titulo: `Oportunidade - ${client.razaoSocial || client.nome}`,
             valorEstimado,
             etapa: tagName,
             responsavelId: user.id,
           });
+          console.log(`✅ Oportunidade criada:`, opp.id);
+          queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
         } catch (err) {
-          console.warn("Erro ao criar oportunidade:", err);
+          console.error(`❌ Erro ao criar oportunidade:`, err);
         }
+      } else {
+        console.log(`⚠️ Oportunidade não criada - valorEstimado:`, valorEstimado);
       }
       
       res.json(client);

@@ -1059,10 +1059,10 @@ export default function Chat() {
             </div>
           ) : detailedClient ? (
             <div className="space-y-4">
-              {/* Valor do Negócio */}
-              <div className="border-b border-slate-200 dark:border-slate-700 pb-3">
-                <label className="text-sm font-semibold text-slate-900 dark:text-slate-100">Valor do Negócio</label>
-                <div className="flex gap-2 mt-2">
+              {/* Valor do Negócio + Tags */}
+              <div className="space-y-3 border-b border-slate-200 dark:border-slate-700 pb-3">
+                <div>
+                  <label className="text-sm font-semibold text-slate-900 dark:text-slate-100">Valor do Negócio</label>
                   <Input
                     type="text"
                     placeholder="R$ 0,00"
@@ -1075,19 +1075,43 @@ export default function Chat() {
                       }).format(parseInt(value || "0") / 100);
                       setBusinessValue(formatted);
                     }}
-                    className="flex-1"
+                    className="mt-2"
                     data-testid="input-business-value"
                   />
-                  <Button
-                    onClick={() => {
-                      toast({ title: "Valor salvo", description: businessValue || "R$ 0,00", variant: "default" });
-                    }}
-                    disabled={!businessValue || businessValue === "R$ 0,00"}
-                    data-testid="button-save-business-value"
-                  >
-                    Salvar
-                  </Button>
                 </div>
+                
+                {/* Tag Selection */}
+                {allTags.length > 0 && (
+                  <div>
+                    <label className="text-sm font-semibold text-slate-900 dark:text-slate-100">Selecione uma Etapa</label>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {allTags.map((tag) => {
+                        const isCurrentTag = detailedClient?.tags?.[0] === tag.nome;
+                        return (
+                          <Button
+                            key={tag.id}
+                            size="sm"
+                            variant={isCurrentTag ? "default" : "outline"}
+                            className={`${isCurrentTag ? `${tag.cor}` : ""} rounded-full`}
+                            onClick={() => {
+                              addTagMutation.mutate(tag.nome);
+                            }}
+                            disabled={addTagMutation.isPending || !businessValue || businessValue === "R$ 0,00"}
+                            data-testid={`button-tag-${tag.id}`}
+                          >
+                            {addTagMutation.isPending ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : isCurrentTag ? (
+                              `✓ ${tag.nome}`
+                            ) : (
+                              tag.nome
+                            )}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800/50">
                 <div className="flex items-center gap-3 mb-3">
