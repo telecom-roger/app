@@ -45,7 +45,6 @@ export default function ClienteForm() {
       status: "lead",
       carteira: "",
       categoria: "",
-      score: 0,
       planoAtual: "",
       produtoAtual: "",
       telefone: "",
@@ -98,7 +97,6 @@ export default function ClienteForm() {
         status: cliente.status || "lead",
         carteira: cliente.carteira || "",
         categoria: cliente.categoria || "",
-        score: cliente.score || 0,
         planoAtual: cliente.planoAtual || "",
         produtoAtual: cliente.produtoAtual || "",
         telefone: cliente.telefone || "",
@@ -325,26 +323,6 @@ export default function ClienteForm() {
                           placeholder="Categoria"
                           {...field}
                           data-testid="input-categoria"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="score"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Score (0-100)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="100"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
-                          data-testid="input-score"
                         />
                       </FormControl>
                       <FormMessage />

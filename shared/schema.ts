@@ -51,7 +51,6 @@ export const clients = pgTable("clients", {
   status: varchar("status", { length: 50 }).notNull().default("lead"), // lead, ativo, inativo, proposta, fechado, perdido
   carteira: varchar("carteira", { length: 100 }), // Vivo, Claro, Tim, etc
   categoria: varchar("categoria", { length: 100 }),
-  score: integer("score").default(0), // 0-100 lead scoring
   planoAtual: text("plano_atual"),
   produtoAtual: text("produto_atual"),
   // Contact fields
