@@ -134,7 +134,7 @@ export default function CampanhasWhatsApp() {
   const [modoBackground, setModoBackground] = useState(true);
   const [templateSelecionado, setTemplateSelecionado] = useState("");
   const [quantidadeAleatoria, setQuantidadeAleatoria] = useState(50);
-  const [filtroTag, setFiltroTag] = useState("todos");
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   // Fetch templates
   const { data: templates = [] } = useQuery<any[]>({
@@ -188,8 +188,8 @@ export default function CampanhasWhatsApp() {
     // Status filter
     const statusMatch = filtroStatus === "todos" || c.status?.toLowerCase() === filtroStatus.toLowerCase();
     
-    // Tag filter
-    const tagMatch = filtroTag === "todos" || (c.tags && c.tags.some(t => t.id === filtroTag));
+    // Tag filter - using tag NAME like in clientes.tsx
+    const tagMatch = selectedTag === null || (c.tags && c.tags.some(t => t.nome === selectedTag));
     
     return searchMatch && statusMatch && tagMatch;
   });
@@ -1242,31 +1242,34 @@ export default function CampanhasWhatsApp() {
                     <SelectItem value="inativo">Inativo</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={filtroTag} onValueChange={setFiltroTag}>
-                  <SelectTrigger className="w-40 border-slate-200 dark:border-slate-700" data-testid="select-tag-filter">
-                    <SelectValue placeholder="Etiqueta" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todas as Etiquetas</SelectItem>
-                    {tagsDisponiveis.length > 0 ? (
-                      tagsDisponiveis.map((tag) => (
-                        <SelectItem key={tag.id} value={tag.id}>
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: tag.cor || "#999" }}
-                            ></div>
-                            {tag.nome}
-                          </div>
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="vazio" disabled>
-                        Nenhuma etiqueta disponível
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
+                <Button
+                  variant={selectedTag === null ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedTag(null)}
+                  data-testid="button-filter-all-tags"
+                  className="h-9 px-4 whitespace-nowrap rounded-md"
+                >
+                  Todas as Etiquetas
+                </Button>
+                {tagsDisponiveis.length > 0 && (
+                  <div className="flex gap-2">
+                    {tagsDisponiveis.map((tag) => (
+                      <Button
+                        key={tag.id}
+                        variant={selectedTag === tag.nome ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedTag(tag.nome)}
+                        data-testid={`button-filter-tag-${tag.id}`}
+                        className={`h-9 px-3 text-xs whitespace-nowrap rounded-full ${
+                          selectedTag === tag.nome ? `text-white` : ""
+                        }`}
+                        style={selectedTag === tag.nome ? { backgroundColor: tag.cor } : {}}
+                      >
+                        {tag.nome}
+                      </Button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="text-xs text-slate-600 dark:text-slate-400">
                 {clientesFiltrados.length} cliente{clientesFiltrados.length !== 1 ? "s" : ""} encontrado{clientesFiltrados.length !== 1 ? "s" : ""}
