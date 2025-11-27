@@ -678,11 +678,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const templates = await db
         .select()
         .from(templatesTable)
-        .where(
-          user.role === 'admin'
-            ? undefined
-            : eq(templatesTable.createdBy, user.id)
-        );
+        .where(eq(templatesTable.createdBy, user.id));
       res.json(templates || []);
     } catch (error: any) {
       console.error("Error fetching templates:", error);
