@@ -1962,7 +1962,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 📢 CREATE NOTIFICATION FOR RECIPIENT
       const [recipient] = await db.select().from(users).where(eq(users.id, sharedWithUserId)).limit(1);
-      const senderName = (user.firstName || user.email).split('@')[0];
+      const senderName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email.split('@')[0];
       
       if (recipient) {
         await storage.createNotification({
