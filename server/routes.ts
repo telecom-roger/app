@@ -857,6 +857,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== ADOPT OLD CLIENTS ====================
+  app.post("/api/import/adopt-old-clients", isAuthenticated, async (req, res) => {
+    try {
+      const user = (req.user as any);
+      
+      // Update all clients without a creator to be owned by this user
+      const result = await db
+        .update(clients)
+        .set({ createdBy: user.id })
+        .where(isNull(clients.createdBy))
+        .returning();
+
+      res.json({
+        success: true,
+        adoptedCount: result.length,
+        message: `${result.length} clientes adotados com sucesso`,
+      });
+    } catch (error: any) {
+      console.error("Error adopting old clients:", error);
+      res.status(500).json({ error: "Erro ao adotar clientes" });
+    }
+  });
+
   // ==================== STATS ROUTES ====================
   app.get("/api/stats/dashboard", isAuthenticated, async (req, res) => {
     try {
