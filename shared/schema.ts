@@ -476,3 +476,27 @@ export const insertTagSchema = createInsertSchema(tags).omit({
 
 export type Tag = typeof tags.$inferSelect;
 export type InsertTag = z.infer<typeof insertTagSchema>;
+
+// ==================== CLIENT SHARING ====================
+export const clientSharing = pgTable("client_sharing", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  ownerId: varchar("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  sharedWithUserId: varchar("shared_with_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  permissao: varchar("permissao", { length: 20 }).notNull().default("visualizar"), // visualizar, editar
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_client_sharing_client").on(table.clientId),
+  index("idx_client_sharing_owner").on(table.ownerId),
+  index("idx_client_sharing_shared_with").on(table.sharedWithUserId),
+]);
+
+export const insertClientSharingSchema = createInsertSchema(clientSharing).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  permissao: z.enum(["visualizar", "editar"]),
+});
+
+export type ClientSharing = typeof clientSharing.$inferSelect;
+export type InsertClientSharing = z.infer<typeof insertClientSharingSchema>;

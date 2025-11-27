@@ -31,6 +31,8 @@ import type {
   InsertClientNote,
   Tag,
   InsertTag,
+  ClientSharing,
+  InsertClientSharing,
 } from "@shared/schema";
 import {
   clients,
@@ -49,6 +51,7 @@ import {
   quickReplies,
   clientNotes,
   tags,
+  clientSharing,
 } from "@shared/schema";
 
 // ==================== USER STORAGE ====================
@@ -126,16 +129,16 @@ export async function getClients(params: {
 
   let conditions = [];
   
-  // Se não é admin, filtra apenas clientes do usuário
-  if (userId && !isAdmin) {
+  // Se é admin, vê todos os clientes
+  if (!isAdmin && userId) {
+    // Se não é admin, filtra clientes do usuário OU compartilhados com ele
     conditions.push(
       or(
         eq(clients.createdBy, userId),
-        sql`${clients.createdBy} IS NULL` // Também vê clientes sem proprietário definido
+        sql`${clients.id} IN (SELECT ${clientSharing.clientId} FROM ${clientSharing} WHERE ${clientSharing.sharedWithUserId} = ${userId})`
       )
     );
   }
-  // Se é admin, não filtra - vê todos os clientes
   
   if (search) {
     conditions.push(
@@ -850,4 +853,30 @@ export async function removeTagFromClient(clientId: string, tagName: string): Pr
   }
   
   return client;
+}
+
+// ==================== CLIENT SHARING STORAGE ====================
+export async function shareClientWithUser(data: InsertClientSharing): Promise<ClientSharing> {
+  const [result] = await db.insert(clientSharing).values(data).returning();
+  return result;
+}
+
+export async function unshareClientWithUser(clientId: string, sharedWithUserId: string): Promise<void> {
+  await db.delete(clientSharing).where(
+    and(eq(clientSharing.clientId, clientId), eq(clientSharing.sharedWithUserId, sharedWithUserId))
+  );
+}
+
+export async function getClientSharings(clientId: string): Promise<ClientSharing[]> {
+  return await db
+    .select()
+    .from(clientSharing)
+    .where(eq(clientSharing.clientId, clientId));
+}
+
+export async function getSharedClientsForUser(userId: string): Promise<ClientSharing[]> {
+  return await db
+    .select()
+    .from(clientSharing)
+    .where(eq(clientSharing.sharedWithUserId, userId));
 }

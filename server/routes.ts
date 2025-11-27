@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { z } from "zod";
 import { eq, and, or, ilike, desc, sql, lte, inArray } from "drizzle-orm";
 import cron from "node-cron";
-import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, whatsappSessions, clients, interactions, conversations, messages, campaigns as campaignsTable, templates as templatesTable, tags } from "@shared/schema";
+import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, insertClientSharingSchema, whatsappSessions, clients, interactions, conversations, messages, campaigns as campaignsTable, templates as templatesTable, tags, clientSharing } from "@shared/schema";
 import * as storage from "./storage";
 import * as whatsappService from "./whatsappService";
 import { setupAuth, isAuthenticated } from "./localAuth";
@@ -1934,6 +1934,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(client);
     } catch (error: any) {
       console.error("Error removing tag from client:", error);
+      res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
+  // ==================== CLIENT SHARING ROUTES ====================
+  // Share client with another user
+  app.post("/api/clients/:clientId/share", isAuthenticated, async (req, res) => {
+    try {
+      const { clientId } = req.params;
+      const { sharedWithUserId, permissao = "visualizar" } = req.body;
+      const user = req.user as any;
+
+      // Verify client ownership
+      const client = await storage.getClientById(clientId);
+      if (!client) return res.status(404).json({ error: "Client not found" });
+      if (client.createdBy !== user.id) {
+        return res.status(403).json({ error: "Você só pode compartilhar seus próprios clientes" });
+      }
+
+      const sharing = await storage.shareClientWithUser({
+        clientId,
+        ownerId: user.id,
+        sharedWithUserId,
+        permissao,
+      });
+
+      res.json(sharing);
+    } catch (error: any) {
+      console.error("Error sharing client:", error);
+      res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
+  // Unshare client from user
+  app.delete("/api/clients/:clientId/share/:sharedWithUserId", isAuthenticated, async (req, res) => {
+    try {
+      const { clientId, sharedWithUserId } = req.params;
+      const user = req.user as any;
+
+      // Verify client ownership
+      const client = await storage.getClientById(clientId);
+      if (!client) return res.status(404).json({ error: "Client not found" });
+      if (client.createdBy !== user.id) {
+        return res.status(403).json({ error: "Você só pode desfazer compartilhamento dos seus clientes" });
+      }
+
+      await storage.unshareClientWithUser(clientId, sharedWithUserId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error unsharing client:", error);
+      res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
+  // Get sharing info for a client
+  app.get("/api/clients/:clientId/sharing", isAuthenticated, async (req, res) => {
+    try {
+      const { clientId } = req.params;
+      const user = req.user as any;
+
+      // Verify ownership or admin
+      const client = await storage.getClientById(clientId);
+      if (!client) return res.status(404).json({ error: "Client not found" });
+      if (client.createdBy !== user.id && user.role !== 'admin') {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+
+      const sharing = await storage.getClientSharings(clientId);
+      
+      // Get user details for each sharing
+      const sharingWithDetails = await Promise.all(
+        sharing.map(async (s) => ({
+          ...s,
+          sharedWithUser: await storage.getUserById(s.sharedWithUserId),
+        }))
+      );
+
+      res.json(sharingWithDetails);
+    } catch (error: any) {
+      console.error("Error fetching sharing info:", error);
+      res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
+  // Get all users (for sharing dropdown)
+  app.get("/api/users-list", isAuthenticated, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      // Filter out current user
+      const user = req.user as any;
+      const filtered = users.filter(u => u.id !== user.id);
+      res.json(filtered);
+    } catch (error: any) {
+      console.error("Error fetching users list:", error);
       res.status(500).json({ error: error.message || "Internal server error" });
     }
   });
