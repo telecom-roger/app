@@ -86,7 +86,7 @@ export async function createUser(data: any): Promise<User> {
 }
 
 export async function getAllUsers(): Promise<User[]> {
-  return await db.select().from(users).orderBy(desc(users.createdAt));
+  return await db.select().from(users).orderBy(users.createdAt.desc());
 }
 
 // ==================== CLIENT STORAGE ====================
@@ -146,7 +146,7 @@ export async function getClients(params: {
     query = query.where(sql`clients.tags @> ARRAY[${params.tagName}]`);
   }
 
-  query = query.orderBy(desc(clients.createdAt));
+  query = query.orderBy(clients.createdAt.desc());
 
   const total = await db.select({ count: sql<number>`count(*)` }).from(clients).then(r => r[0]?.count || 0);
 
@@ -208,7 +208,7 @@ export async function createCampaign(data: InsertCampaign): Promise<Campaign> {
 }
 
 export async function getCampaigns(): Promise<Campaign[]> {
-  return await db.select().from(campaigns).orderBy(desc(campaigns.createdAt));
+  return await db.select().from(campaigns).orderBy(campaigns.createdAt.desc());
 }
 
 export async function getCampaignById(id: string): Promise<Campaign | undefined> {
@@ -239,7 +239,7 @@ export async function createTemplate(data: InsertTemplate): Promise<Template> {
 }
 
 export async function getTemplates(): Promise<Template[]> {
-  return await db.select().from(templates).orderBy(desc(templates.createdAt));
+  return await db.select().from(templates).orderBy(templates.createdAt.desc());
 }
 
 export async function getTemplateById(id: string): Promise<Template | undefined> {
@@ -274,7 +274,7 @@ export async function getInteractionsByClientId(clientId: string): Promise<Inter
     .select()
     .from(interactions)
     .where(eq(interactions.clientId, clientId))
-    .orderBy(desc(interactions.createdAt));
+    .orderBy(interactions.createdAt.desc());
 }
 
 // ==================== CONTACT STORAGE ====================
@@ -321,7 +321,7 @@ export async function createWhatsAppSession(data: any): Promise<any> {
 }
 
 export async function getWhatsAppSessions(): Promise<any[]> {
-  return await db.select().from(whatsappSessions).orderBy(desc(whatsappSessions.createdAt));
+  return await db.select().from(whatsappSessions).orderBy(whatsappSessions.createdAt.desc());
 }
 
 export async function getAllWhatsappSessions(userIdFilter?: string): Promise<any[]> {
@@ -329,7 +329,7 @@ export async function getAllWhatsappSessions(userIdFilter?: string): Promise<any
   if (userIdFilter) {
     query = query.where(eq(whatsappSessions.userId, userIdFilter));
   }
-  return await query.orderBy(desc(whatsappSessions.createdAt));
+  return await query.orderBy(whatsappSessions.createdAt.desc());
 }
 
 export async function getWhatsappSessionById(id: string): Promise<any | undefined> {
@@ -368,7 +368,7 @@ export async function getConversations(): Promise<Conversation[]> {
   return await db
     .select()
     .from(conversations)
-    .orderBy(desc(conversations.updatedAt));
+    .orderBy(conversations.updatedAt.desc());
 }
 
 export async function getConversationById(id: string): Promise<Conversation | undefined> {
@@ -482,7 +482,7 @@ export async function getClientNotes(clientId: string): Promise<ClientNote[]> {
     .select()
     .from(clientNotes)
     .where(eq(clientNotes.clientId, clientId))
-    .orderBy(desc(clientNotes.createdAt));
+    .orderBy(clientNotes.createdAt.desc());
 }
 
 export async function deleteClientNote(id: string): Promise<void> {
