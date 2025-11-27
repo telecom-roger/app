@@ -1033,27 +1033,6 @@ export default function Chat() {
                   ) : (
                     <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">Nenhuma etapa criada. Crie em "Etiquetas"</p>
                   )}
-                  
-                  {/* Remove Tag Button */}
-                  {detailedClient?.tags?.[0] && (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDeleteTag(detailedClient.tags[0])}
-                      disabled={removeTagMutation.isPending}
-                      className="w-full mt-3"
-                      data-testid="button-remove-tag"
-                    >
-                      {removeTagMutation.isPending ? (
-                        <Loader2 className="h-3 w-3 animate-spin mr-2" />
-                      ) : (
-                        <>
-                          <X className="h-3 w-3 mr-2" />
-                          Remover Etapa
-                        </>
-                      )}
-                    </Button>
-                  )}
                 </div>
               </div>
               <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800/50">
@@ -1081,8 +1060,13 @@ export default function Chat() {
                   const tagName = detailedClient.tags[0];
                   const tag = allTags.find(t => t.nome === tagName);
                   return (
-                    <Badge className={`${tag?.cor || "bg-gray-500"}`}>
+                    <Badge 
+                      className={`${tag?.cor || "bg-gray-500"} cursor-pointer hover-elevate flex items-center gap-1`}
+                      onClick={() => handleDeleteTag(tagName)}
+                      data-testid="badge-tag-removable"
+                    >
                       {tagName}
+                      <X className="h-3 w-3 opacity-70 hover:opacity-100" />
                     </Badge>
                   );
                 })()}
