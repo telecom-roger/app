@@ -2004,6 +2004,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Share multiple clients with a user
+  app.post("/api/clients/share-bulk", isAuthenticated, async (req, res) => {
+    try {
+      const { clientIds, sharedWithUserId } = req.body;
+      const user = req.user as any;
+
+      if (!clientIds || !Array.isArray(clientIds) || clientIds.length === 0) {
+        return res.status(400).json({ error: "Selecione pelo menos um cliente" });
+      }
+
+      // Verify ownership of all clients
+      const clientsToShare = await db
+        .select()
+        .from(clients)
+        .where(inArray(clients.id, clientIds));
+
+      const allOwned = clientsToShare.every(c => c.createdBy === user.id);
+      if (!allOwned) {
+        return res.status(403).json({ error: "Você só pode compartilhar seus próprios clientes" });
+      }
+
+      const sharings = await storage.shareClientsWithUser(clientIds, sharedWithUserId, user.id);
+
+      // Create notifications for recipient
+      const [recipient] = await db.select().from(users).where(eq(users.id, sharedWithUserId)).limit(1);
+      const senderName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email.split('@')[0];
+      
+      if (recipient) {
+        for (const client of clientsToShare) {
+          await storage.createNotification({
+            userId: sharedWithUserId,
+            tipo: "client_shared",
+            titulo: "Cliente compartilhado",
+            descricao: `${senderName} compartilhou o cliente "${client.nome}" com você`,
+            clientId: client.id,
+            fromUserId: user.id,
+            lida: false,
+          });
+        }
+      }
+
+      res.json({ success: true, count: sharings.length });
+    } catch (error: any) {
+      console.error("Error sharing clients:", error);
+      res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
   // Get sharing info for a client
   app.get("/api/clients/:clientId/sharing", isAuthenticated, async (req, res) => {
     try {

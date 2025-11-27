@@ -928,3 +928,15 @@ export async function getSharedClientsForUser(userId: string): Promise<ClientSha
     .from(clientSharing)
     .where(eq(clientSharing.sharedWithUserId, userId));
 }
+
+// Share multiple clients with a user
+export async function shareClientsWithUser(clientIds: string[], sharedWithUserId: string, ownerId: string): Promise<ClientSharing[]> {
+  const sharings = clientIds.map(clientId => ({
+    clientId,
+    ownerId,
+    sharedWithUserId,
+    permissao: "visualizar",
+  }));
+  
+  return await db.insert(clientSharing).values(sharings).returning();
+}

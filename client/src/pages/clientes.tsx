@@ -54,6 +54,7 @@ import {
   TrendingUp,
   Zap,
   Share2,
+  Check,
 } from "lucide-react";
 import {
   Dialog,
@@ -152,6 +153,79 @@ function ShareClientDialog({ clientId, clientName }: { clientId: string; clientN
   );
 }
 
+interface BulkShareDialogProps {
+  selectedClientIds: string[];
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+}
+
+function BulkShareDialog({ selectedClientIds, onOpenChange, open }: BulkShareDialogProps) {
+  const { toast } = useToast();
+  const [selectedUserId, setSelectedUserId] = useState("");
+  
+  const { data: users = [] } = useQuery<User[]>({
+    queryKey: ["/api/users-list"],
+    enabled: open,
+  });
+
+  const bulkShareMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      await apiRequest("POST", "/api/clients/share-bulk", { clientIds: selectedClientIds, sharedWithUserId: userId });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Sucesso",
+        description: `${selectedClientIds.length} cliente(s) compartilhado(s) com sucesso`,
+      });
+      onOpenChange(false);
+      setSelectedUserId("");
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Falha ao compartilhar clientes",
+        variant: "destructive",
+      });
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Compartilhar {selectedClientIds.length} cliente(s)</DialogTitle>
+          <DialogDescription>Selecione um usuário para compartilhar</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+            <SelectTrigger data-testid="select-bulk-share-user">
+              <SelectValue placeholder="Escolha um usuário..." />
+            </SelectTrigger>
+            <SelectContent>
+              {users.map(user => (
+                <SelectItem key={user.id} value={user.id}>
+                  {user.email}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex gap-3 justify-end">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <Button 
+              onClick={() => selectedUserId && bulkShareMutation.mutate(selectedUserId)}
+              disabled={!selectedUserId || bulkShareMutation.isPending}
+              data-testid="button-confirm-bulk-share"
+            >
+              {bulkShareMutation.isPending ? "Compartilhando..." : "Compartilhar"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Clientes() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -160,6 +234,8 @@ export default function Clientes() {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
+  const [selectedClientIds, setSelectedClientIds] = useState<Set<string>>(new Set());
+  const [bulkShareDialogOpen, setBulkShareDialogOpen] = useState(false);
   const limit = 10;
 
   // Fetch predefined tags
@@ -382,12 +458,57 @@ export default function Clientes() {
             </div>
           </Card>
 
+          {/* Bulk Actions Bar */}
+          {selectedClientIds.size > 0 && (
+            <Card className="border-0 shadow-sm bg-blue-50 dark:bg-blue-950/20 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Check className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                    {selectedClientIds.size} cliente(s) selecionado(s)
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSelectedClientIds(new Set())}
+                    data-testid="button-clear-selection"
+                  >
+                    Limpar
+                  </Button>
+                  <Button 
+                    size="sm"
+                    onClick={() => setBulkShareDialogOpen(true)}
+                    data-testid="button-bulk-share"
+                  >
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Compartilhar
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          )}
+
           {/* Table */}
           <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50 overflow-hidden">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
                   <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-12">
+                      <Checkbox 
+                        checked={selectedClientIds.size === data?.clientes?.length && data?.clientes?.length > 0}
+                        onCheckedChange={(checked) => {
+                          if (checked && data?.clientes) {
+                            setSelectedClientIds(new Set(data.clientes.map(c => c.id)));
+                          } else {
+                            setSelectedClientIds(new Set());
+                          }
+                        }}
+                        data-testid="checkbox-select-all"
+                      />
+                    </TableHead>
                     <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Nome / Razão Social</TableHead>
                     <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">CPF/CNPJ</TableHead>
                     <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Status</TableHead>
@@ -399,6 +520,7 @@ export default function Clientes() {
                   {isLoading ? (
                     Array.from({ length: 5 }).map((_, i) => (
                       <TableRow key={i} className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/30">
+                        <TableCell><Skeleton className="h-4 w-4" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-48" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-20" /></TableCell>
@@ -410,10 +532,25 @@ export default function Clientes() {
                     data.clientes.map((cliente) => (
                       <TableRow 
                         key={cliente.id} 
-                        className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/30 cursor-pointer transition-colors"
+                        className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors"
                         data-testid={`row-cliente-${cliente.id}`}
                       >
-                        <TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Checkbox 
+                            checked={selectedClientIds.has(cliente.id)}
+                            onCheckedChange={(checked) => {
+                              const newSelected = new Set(selectedClientIds);
+                              if (checked) {
+                                newSelected.add(cliente.id);
+                              } else {
+                                newSelected.delete(cliente.id);
+                              }
+                              setSelectedClientIds(newSelected);
+                            }}
+                            data-testid={`checkbox-cliente-${cliente.id}`}
+                          />
+                        </TableCell>
+                        <TableCell className="cursor-pointer">
                           <Link href={`/clientes/${cliente.id}`}>
                             <div>
                               <div className="font-medium text-slate-900 dark:text-white">{cliente.nome}</div>
@@ -469,7 +606,7 @@ export default function Clientes() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-12">
+                      <TableCell colSpan={6} className="text-center py-12">
                         <div className="text-slate-500 dark:text-slate-400">
                           <Users className="h-12 w-12 mx-auto mb-3 opacity-40" />
                           <p className="font-medium">Nenhum cliente encontrado</p>
