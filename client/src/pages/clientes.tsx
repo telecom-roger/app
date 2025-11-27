@@ -78,6 +78,80 @@ interface User {
   lastName?: string;
 }
 
+function ShareClientDialog({ clientId, clientName }: { clientId: string; clientName: string }) {
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState("");
+  
+  const { data: users = [] } = useQuery<User[]>({
+    queryKey: ["/api/users-list"],
+    enabled: open,
+  });
+
+  const shareMutation = useMutation({
+    mutationFn: async (sharedWithUserId: string) => {
+      await apiRequest("POST", `/api/clients/${clientId}/share`, { sharedWithUserId });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Sucesso",
+        description: "Cliente compartilhado com sucesso",
+      });
+      setOpen(false);
+      setSelectedUserId("");
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Falha ao compartilhar cliente",
+        variant: "destructive",
+      });
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <DropdownMenuItem onClick={(e) => { e.preventDefault(); setOpen(true); }}>
+          <Share2 className="h-4 w-4 mr-2" />
+          Compartilhar
+        </DropdownMenuItem>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Compartilhar "{clientName}"</DialogTitle>
+          <DialogDescription>Selecione um usuário para compartilhar este cliente</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+            <SelectTrigger data-testid="select-share-user">
+              <SelectValue placeholder="Escolha um usuário..." />
+            </SelectTrigger>
+            <SelectContent>
+              {users.map(user => (
+                <SelectItem key={user.id} value={user.id}>
+                  {user.email}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex gap-3 justify-end">
+            <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+            <Button 
+              onClick={() => selectedUserId && shareMutation.mutate(selectedUserId)}
+              disabled={!selectedUserId || shareMutation.isPending}
+              data-testid="button-confirm-share"
+            >
+              {shareMutation.isPending ? "Compartilhando..." : "Compartilhar"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Clientes() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -482,79 +556,6 @@ export default function Clientes() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
-}
-
-function ShareClientDialog({ clientId, clientName }: { clientId: string; clientName: string }) {
-  const { toast } = useToast();
-  const [open, setOpen] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState("");
-  
-  const { data: users = [] } = useQuery<User[]>({
-    queryKey: ["/api/users-list"],
-    enabled: open,
-  });
-
-  const shareMutation = useMutation({
-    mutationFn: async (sharedWithUserId: string) => {
-      await apiRequest("POST", `/api/clients/${clientId}/share`, { sharedWithUserId });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Sucesso",
-        description: "Cliente compartilhado com sucesso",
-      });
-      setOpen(false);
-      setSelectedUserId("");
-    },
-    onError: () => {
-      toast({
-        title: "Erro",
-        description: "Falha ao compartilhar cliente",
-        variant: "destructive",
-      });
-    },
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <DropdownMenuItem onClick={(e) => { e.preventDefault(); setOpen(true); }}>
-          <Share2 className="h-4 w-4 mr-2" />
-          Compartilhar
-        </DropdownMenuItem>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Compartilhar "{clientName}"</DialogTitle>
-          <DialogDescription>Selecione um usuário para compartilhar este cliente</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-            <SelectTrigger data-testid="select-share-user">
-              <SelectValue placeholder="Escolha um usuário..." />
-            </SelectTrigger>
-            <SelectContent>
-              {users.map(user => (
-                <SelectItem key={user.id} value={user.id}>
-                  {user.email}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="flex gap-3 justify-end">
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button 
-              onClick={() => selectedUserId && shareMutation.mutate(selectedUserId)}
-              disabled={!selectedUserId || shareMutation.isPending}
-              data-testid="button-confirm-share"
-            >
-              {shareMutation.isPending ? "Compartilhando..." : "Compartilhar"}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }
 
