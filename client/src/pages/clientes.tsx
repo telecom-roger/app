@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
   TableBody,
@@ -52,14 +53,27 @@ import {
 } from "lucide-react";
 import type { Client } from "@shared/schema";
 
+interface Tag {
+  id: string;
+  nome: string;
+  cor: string;
+}
+
 export default function Clientes() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
   const limit = 10;
+
+  // Fetch predefined tags
+  const { data: tags = [] } = useQuery<Tag[]>({
+    queryKey: ["/api/tags"],
+    refetchInterval: 5000,
+  });
 
   // Delete mutation
   const deleteMutation = useMutation({
@@ -102,6 +116,7 @@ export default function Clientes() {
       { 
         ...(searchTerm && { search: searchTerm }),
         ...(statusFilter !== "todos" && { status: statusFilter }),
+        ...(selectedTagId && { tagId: selectedTagId }),
         page,
         limit,
       }
@@ -148,35 +163,74 @@ export default function Clientes() {
 
       {/* Filters */}
       <Card className="p-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nome, razão social ou CNPJ..."
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              data-testid="input-search-clientes"
-            />
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome, razão social ou CNPJ..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                data-testid="input-search-clientes"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full md:w-48" data-testid="select-status">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os status</SelectItem>
+                <SelectItem value="lead">Lead</SelectItem>
+                <SelectItem value="ativo">Ativo</SelectItem>
+                <SelectItem value="proposta">Proposta</SelectItem>
+                <SelectItem value="fechado">Fechado</SelectItem>
+                <SelectItem value="perdido">Perdido</SelectItem>
+                <SelectItem value="inativo">Inativo</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" data-testid="button-filtros-avancados">
+              <Filter className="h-4 w-4 mr-2" />
+              Filtros
+            </Button>
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full md:w-48" data-testid="select-status">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos os status</SelectItem>
-              <SelectItem value="lead">Lead</SelectItem>
-              <SelectItem value="ativo">Ativo</SelectItem>
-              <SelectItem value="proposta">Proposta</SelectItem>
-              <SelectItem value="fechado">Fechado</SelectItem>
-              <SelectItem value="perdido">Perdido</SelectItem>
-              <SelectItem value="inativo">Inativo</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" data-testid="button-filtros-avancados">
-            <Filter className="h-4 w-4 mr-2" />
-            Filtros
-          </Button>
+
+          {/* Tag Filter */}
+          {tags.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground">FILTRAR POR ETIQUETA</p>
+              <ScrollArea className="w-full">
+                <div className="flex gap-2 pb-2">
+                  <Button
+                    variant={selectedTagId === null ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedTagId(null)}
+                    data-testid="button-filter-all-tags"
+                    className="h-7 px-3 text-xs whitespace-nowrap"
+                  >
+                    Todas
+                  </Button>
+                  {tags.map((tag) => (
+                    <Button
+                      key={tag.id}
+                      variant={selectedTagId === tag.id ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedTagId(tag.id)}
+                      data-testid={`button-filter-tag-${tag.id}`}
+                      className={`h-7 px-3 text-xs text-white whitespace-nowrap ${
+                        selectedTagId === tag.id ? tag.cor : ""
+                      }`}
+                      style={{
+                        backgroundColor: selectedTagId === tag.id ? undefined : "transparent",
+                      }}
+                    >
+                      {tag.nome}
+                    </Button>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
         </div>
       </Card>
 
