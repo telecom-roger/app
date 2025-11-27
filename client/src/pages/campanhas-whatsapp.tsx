@@ -1275,15 +1275,26 @@ export default function CampanhasWhatsApp() {
 
       {/* Database Selector Dialog */}
       <Dialog open={mostrarSeletorBD} onOpenChange={setMostrarSeletorBD}>
-        <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
+        <DialogContent className="max-w-7xl h-[95vh] flex flex-col">
           <DialogHeader className="pb-4 border-b border-slate-200 dark:border-slate-700">
             <DialogTitle className="text-xl text-slate-900 dark:text-white">Selecionar Clientes da Base de Dados</DialogTitle>
             <DialogDescription className="text-slate-600 dark:text-slate-400 mt-1">
-              Filtro, selecione e importe clientes para sua campanha
+              Use os filtros de campanha para segmentar clientes, depois selecione e importe para sua campanha
             </DialogDescription>
           </DialogHeader>
 
           <div className="flex-1 overflow-hidden flex flex-col gap-4 py-4">
+            {/* Campaign Filters - Novo */}
+            <div className="flex-shrink-0">
+              <CampaignFiltersBuilder
+                onFiltersChange={setCampaignFilters}
+                allTags={tagsDisponiveis.map((t) => t.nome)}
+                allTipos={tiposDisponiveis}
+                allCarteiras={carteirasDisponiveis}
+                allCidades={cidadesDisponiveis}
+              />
+            </div>
+
             {/* Filters Section */}
             <div className="bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-700 rounded-lg p-4 space-y-3">
               <div className="flex flex-col gap-3">

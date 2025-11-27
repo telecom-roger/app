@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar, AlertCircle } from "lucide-react";
 import { DayPicker } from "react-day-picker";
 
@@ -25,6 +24,7 @@ interface CampaignFiltersBuilderProps {
   allCidades?: string[];
   allTipos?: string[];
   allCarteiras?: string[];
+  compact?: boolean;
 }
 
 export function CampaignFiltersBuilder({
@@ -34,6 +34,7 @@ export function CampaignFiltersBuilder({
   allCidades = [],
   allTipos = [],
   allCarteiras = [],
+  compact = false,
 }: CampaignFiltersBuilderProps) {
   const [filters, setFilters] = useState<CampaignFilters>({});
   const [dataEnvioInicio, setDataEnvioInicio] = useState<Date | undefined>();
@@ -157,81 +158,69 @@ export function CampaignFiltersBuilder({
       </CardHeader>
 
       <CardContent className="pt-6 space-y-6">
-        {/* Data de Envio - Range Picker */}
+        {/* Data de Envio - Lado a Lado */}
         <div className="space-y-3">
-          <Label className="font-semibold">📅 Período de Envio</Label>
-          <div className="flex gap-3 items-center flex-wrap">
+          <Label className="font-semibold flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            Período de Envio
+          </Label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Data Inicial */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full sm:w-auto justify-start text-left font-normal border-slate-200 dark:border-slate-700 hover-elevate"
-                  data-testid="button-data-inicio"
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {dataEnvioInicio ? formatData(dataEnvioInicio) : "Data Inicial"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700" align="start">
-                <div className="p-4">
-                  <Label className="text-sm font-semibold mb-3 block">Selecione a data inicial:</Label>
-                  <DayPicker
-                    mode="single"
-                    selected={dataEnvioInicio}
-                    onSelect={setDataEnvioInicio}
-                    disabled={(date) => date > new Date()}
-                    className="[&_.rdp]:bg-transparent [&_.rdp-months]:m-0 [&_.rdp-month_table]:w-full [&_.rdp-cell]:w-full"
-                  />
+            <div className="space-y-2">
+              <Label htmlFor="data-inicio" className="text-sm text-slate-600 dark:text-slate-400">
+                De:
+              </Label>
+              <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-white dark:bg-slate-900 space-y-3">
+                <div className="text-sm font-medium text-slate-900 dark:text-white">
+                  {dataEnvioInicio ? formatData(dataEnvioInicio) : "Selecione uma data"}
                 </div>
-              </PopoverContent>
-            </Popover>
-
-            <span className="text-slate-400">→</span>
+                <DayPicker
+                  mode="single"
+                  selected={dataEnvioInicio}
+                  onSelect={setDataEnvioInicio}
+                  disabled={(date) => date > new Date()}
+                  className="[&_.rdp]:bg-transparent [&_.rdp-months]:m-0 [&_.rdp-month_table]:w-full [&_.rdp-cell]:w-auto [&_.rdp-cell]:p-0 [&_.rdp-cell_button]:w-7 [&_.rdp_cell_button]:h-7 [&_.rdp-day_selected]:bg-blue-600 [&_.rdp-day]:rounded-md"
+                />
+              </div>
+            </div>
 
             {/* Data Final */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full sm:w-auto justify-start text-left font-normal border-slate-200 dark:border-slate-700 hover-elevate"
-                  data-testid="button-data-fim"
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {dataEnvioFim ? formatData(dataEnvioFim) : "Data Final"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700" align="start">
-                <div className="p-4">
-                  <Label className="text-sm font-semibold mb-3 block">Selecione a data final:</Label>
-                  <DayPicker
-                    mode="single"
-                    selected={dataEnvioFim}
-                    onSelect={setDataEnvioFim}
-                    disabled={(date) => date > new Date() || (dataEnvioInicio ? date < dataEnvioInicio : false)}
-                    className="[&_.rdp]:bg-transparent [&_.rdp-months]:m-0 [&_.rdp-month_table]:w-full [&_.rdp-cell]:w-full"
-                  />
+            <div className="space-y-2">
+              <Label htmlFor="data-fim" className="text-sm text-slate-600 dark:text-slate-400">
+                Até:
+              </Label>
+              <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-white dark:bg-slate-900 space-y-3">
+                <div className="text-sm font-medium text-slate-900 dark:text-white">
+                  {dataEnvioFim ? formatData(dataEnvioFim) : "Selecione uma data"}
                 </div>
-              </PopoverContent>
-            </Popover>
-
-            {(dataEnvioInicio || dataEnvioFim) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setDataEnvioInicio(undefined);
-                  setDataEnvioFim(undefined);
-                }}
-                className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-                data-testid="button-limpar-data"
-              >
-                ✕ Limpar
-              </Button>
-            )}
+                <DayPicker
+                  mode="single"
+                  selected={dataEnvioFim}
+                  onSelect={setDataEnvioFim}
+                  disabled={(date) => date > new Date() || (dataEnvioInicio ? date < dataEnvioInicio : false)}
+                  className="[&_.rdp]:bg-transparent [&_.rdp-months]:m-0 [&_.rdp-month_table]:w-full [&_.rdp-cell]:w-auto [&_.rdp-cell]:p-0 [&_.rdp-cell_button]:w-7 [&_.rdp_cell_button]:h-7 [&_.rdp-day_selected]:bg-blue-600 [&_.rdp-day]:rounded-md"
+                />
+              </div>
+            </div>
           </div>
+
+          {(dataEnvioInicio || dataEnvioFim) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setDataEnvioInicio(undefined);
+                setDataEnvioFim(undefined);
+              }}
+              className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 mt-2"
+              data-testid="button-limpar-data"
+            >
+              ✕ Limpar Datas
+            </Button>
+          )}
+
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-            Filtra clientes que receberam campanhas dentro do período selecionado
+            Clientes que receberam campanhas dentro do período selecionado
           </p>
         </div>
 
@@ -249,7 +238,7 @@ export function CampaignFiltersBuilder({
                 🔍 Sem Etiqueta (Sem Retorno)
               </Label>
               <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
-                Seleciona clientes que receberam campanha mas não responderam
+                Clientes que receberam campanha mas não responderam
               </p>
             </div>
           </div>
@@ -344,7 +333,7 @@ export function CampaignFiltersBuilder({
                 Filtros Aplicados: {activeFilterCount} critério{activeFilterCount !== 1 ? "s" : ""}
               </p>
               <p className="text-xs text-blue-800 dark:text-blue-300 mt-1">
-                Os filtros serão usados para segmentar os clientes. Combinando múltiplos filtros você terá resultados mais específicos.
+                Clique em "Base de Dados" para filtrar automaticamente os clientes
               </p>
             </div>
           </div>
