@@ -681,6 +681,11 @@ export default function Clientes() {
       </AlertDialog>
     </div>
   );
+    <BulkShareDialog 
+      selectedClientIds={Array.from(selectedClientIds)} 
+      onOpenChange={setBulkShareDialogOpen} 
+      open={bulkShareDialogOpen}
+    />
 }
 
 function ClientesSkeleton() {
