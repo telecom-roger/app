@@ -2063,11 +2063,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/notifications/unread-count", isAuthenticated, async (req, res) => {
     try {
       const user = req.user as any;
-      const unreadNotifications = await storage.getUnreadNotificationsCount(user.id);
-      const unreadMessages = await storage.countAllUnreadMessages(user.id);
-      res.json({ count: unreadNotifications + unreadMessages });
+      const count = await storage.countAllUnreadMessages(user.id);
+      res.json({ count });
     } catch (error: any) {
-      console.error("Error fetching unread count:", error);
+      console.error("Error fetching unread messages count:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
