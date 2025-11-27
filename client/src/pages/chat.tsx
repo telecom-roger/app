@@ -87,6 +87,7 @@ export default function Chat() {
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [recordedAudio, setRecordedAudio] = useState<{ base64: string; blob: Blob } | null>(null);
   const shouldDiscardAudioRef = useRef(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [showNoteInput, setShowNoteInput] = useState(false);
@@ -109,6 +110,15 @@ export default function Chat() {
   useEffect(() => {
     localStorage.setItem("closedConversations", JSON.stringify(Array.from(closedConversations)));
   }, [closedConversations]);
+
+  // Scroll to bottom when messages change or conversation is selected
+  useEffect(() => {
+    if (messagesEndRef.current && (messages.length > 0 || selectedConversationId)) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+      }, 0);
+    }
+  }, [messages, selectedConversationId]);
 
   const { data: quickReplies = [] } = useQuery<QuickReply[]>({
     queryKey: ["/api/quick-replies"],
@@ -981,6 +991,7 @@ export default function Chat() {
                     </div>
                   ))
                 )}
+                <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
 
