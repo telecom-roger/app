@@ -637,19 +637,9 @@ export default function Chat() {
                                 {initials}
                               </AvatarFallback>
                             </Avatar>
-                            {conv.client?.tags?.[0] && (() => {
-                              const tagName = conv.client.tags[0];
-                              const tag = allTags.find(t => t.nome === tagName);
-                              return (
-                                <div
-                                  className={`w-2 h-2 rounded-full flex-shrink-0 ${tag?.cor || "bg-gray-500"}`}
-                                  data-testid={`dot-tag-${conv.id}`}
-                                />
-                              );
-                            })()}
                             <p className="text-sm font-medium truncate">
-                              {clientName.length > 47
-                                ? clientName.substring(0, 47) + "..."
+                              {clientName.length > 30
+                                ? clientName.substring(0, 30) + "..."
                                 : clientName}
                             </p>
                           </div>
@@ -658,6 +648,16 @@ export default function Chat() {
                           </p>
                         </div>
                         <div className="flex items-center gap-2 whitespace-nowrap">
+                          {conv.client?.tags?.[0] && (() => {
+                            const tagName = conv.client.tags[0];
+                            const tag = allTags.find(t => t.nome === tagName);
+                            return (
+                              <div
+                                className={`w-2 h-2 rounded-full flex-shrink-0 ${tag?.cor || "bg-gray-500"}`}
+                                data-testid={`dot-tag-${conv.id}`}
+                              />
+                            );
+                          })()}
                           {(conv.unreadCount ?? 0) > 0 && conv.unreadCount && (
                             <span className="bg-primary text-white text-xs font-bold rounded-full min-w-[24px] h-6 flex items-center justify-center">
                               {conv.unreadCount > 99 ? "99+" : conv.unreadCount}
@@ -675,8 +675,8 @@ export default function Chat() {
                       </div>
                       {conv.ultimaMensagem && (
                         <p className="text-xs text-muted-foreground truncate mt-1">
-                          {conv.ultimaMensagem.length > 47
-                            ? conv.ultimaMensagem.substring(0, 47) + "..."
+                          {conv.ultimaMensagem.length > 30
+                            ? conv.ultimaMensagem.substring(0, 30) + "..."
                             : conv.ultimaMensagem}
                         </p>
                       )}
@@ -711,8 +711,8 @@ export default function Chat() {
                       );
                     })()}
                     <p className="font-medium text-foreground truncate">
-                      {(selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato").length > 47
-                        ? (selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato").substring(0, 47) + "..."
+                      {(selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato").length > 30
+                        ? (selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato").substring(0, 30) + "..."
                         : selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato"}
                     </p>
                   </div>
