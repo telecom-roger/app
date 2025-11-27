@@ -50,6 +50,7 @@ export const clients = pgTable("clients", {
   cpfCnpj: varchar("cpf_cnpj", { length: 50 }),
   status: varchar("status", { length: 50 }).notNull().default("lead"), // lead, ativo, inativo, proposta, fechado, perdido
   carteira: varchar("carteira", { length: 100 }), // Vivo, Claro, Tim, etc
+  tipo: varchar("tipo", { length: 100 }), // Client type
   categoria: varchar("categoria", { length: 100 }),
   planoAtual: text("plano_atual"),
   produtoAtual: text("produto_atual"),
@@ -104,6 +105,7 @@ export const insertClientSchema = createInsertSchema(clients)
     cep: z.string().regex(/^\d{5}-?\d{3}$|^$/, "CEP inválido").optional().nullable(),
     email: z.string().email("Email inválido").optional().nullable(),
     telefone: z.string().min(10, "Telefone inválido").optional().nullable(),
+    tipo: z.string().optional().nullable(),
     // Telecom fields - make all optional
     APARELHO_LIBERADO: z.string().optional().nullable(),
     PEDIDO_MOVEL: z.string().optional().nullable(),
