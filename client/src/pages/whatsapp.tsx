@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MessageSquare, Plus, Trash2, RotateCw, CheckCircle, AlertCircle, Send } from "lucide-react";
+import { MessageSquare, Plus, Trash2, RotateCw, CheckCircle, AlertCircle, Send, Zap, Clock } from "lucide-react";
 import { useLocation } from "wouter";
 
 export default function WhatsApp() {
@@ -42,47 +42,40 @@ export default function WhatsApp() {
   const { data: sessions, isLoading } = useQuery<any[]>({
     queryKey: ["/api/whatsapp/sessions"],
     enabled: isAuthenticated,
-    refetchInterval: 1000, // Poll every 1 second for real-time status updates
+    refetchInterval: 1000,
   });
 
-  // Monitor session status changes and show alerts
   useEffect(() => {
     if (sessions && sessions.length > 0) {
-      // Compare current sessions with previous ones to detect status changes
       sessions.forEach((currentSession) => {
         const previousSession = previousSessionsRef.current.find(
           (s) => s.id === currentSession.id
         );
         
-        // Detect connection
         if (previousSession && previousSession.status !== "conectada" && currentSession.status === "conectada") {
           toast({
-            title: "Conectado!",
-            description: `WhatsApp ${currentSession.nome} conectado com sucesso ✓`,
+            title: "Conectado com sucesso",
+            description: `${currentSession.nome} está pronto para enviar mensagens`,
           });
         }
         
-        // Detect disconnection
         if (previousSession && previousSession.status === "conectada" && currentSession.status !== "conectada") {
           toast({
             title: "Desconectado",
-            description: `WhatsApp ${currentSession.nome} foi desconectado`,
+            description: `${currentSession.nome} foi desconectado`,
             variant: "destructive",
           });
         }
       });
 
-      // Update ref with current sessions
       previousSessionsRef.current = sessions;
     }
   }, [sessions, toast]);
 
-  // Auto-close modal when any session connects
   useEffect(() => {
     if (sessions && sessions.length > 0 && openDialog) {
       const connectedSession = sessions.find((s) => s.status === "conectada");
       if (connectedSession) {
-        console.log("✅ Sessão conectada! Fechando modal...");
         setOpenDialog(false);
         setQrCode(null);
       }
@@ -91,41 +84,31 @@ export default function WhatsApp() {
 
   const connectMutation = useMutation({
     mutationFn: async (nome: string) => {
-      console.log("📤 Enviando requisição para conectar WhatsApp:", nome);
       const response = await apiRequest("POST", "/api/whatsapp/connect", { nome });
       const result = await response.json();
-      console.log("📥 Resposta recebida:", result);
       return result;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/sessions"] });
       
-      console.log("✅ Resposta da conexão processada:", data);
-      console.log("✅ QR Code disponível?", !!data?.qrCode, "Length:", data?.qrCode?.length);
-      
       if (data?.qrCode && data.qrCode.length > 0) {
-        console.log("🎯 Exibindo QR code na tela");
         setQrCode(data.qrCode);
-        setOpenDialog(true); // ✅ ABRIR DIÁLOGO COM QR CODE
-        console.log("✓ QR Code (imagem) recebido do servidor");
+        setOpenDialog(true);
         toast({
-          title: "Sucesso",
-          description: "Sessão criada! Escaneie o QR code com seu WhatsApp",
+          title: "Pronto para conectar",
+          description: "Escaneie o código QR com seu celular",
         });
       } else if (data?.sessionId) {
-        // Fallback: mostrar ID se QR code não foi gerado
         setQrCode("fallback:" + data.sessionId);
-        setOpenDialog(true); // ✅ ABRIR DIÁLOGO COM FALLBACK
-        console.log("⚠️ QR Code não disponível, usando fallback com ID:", data.sessionId);
+        setOpenDialog(true);
         toast({
-          title: "Atenção",
-          description: "Sessão criada, mas QR code não pôde ser gerado. Tente novamente.",
+          title: "Sessão criada",
+          description: "Tente criar uma nova sessão ou recarregue a página",
           variant: "destructive",
         });
       } else {
         setQrCode("error");
-        setOpenDialog(true); // ✅ ABRIR DIÁLOGO COM ERRO
-        console.log("❌ Erro: sem qrCode e sem sessionId");
+        setOpenDialog(true);
         toast({
           title: "Erro",
           description: "Falha ao criar sessão",
@@ -135,7 +118,6 @@ export default function WhatsApp() {
       setSessionName("");
     },
     onError: (error: any) => {
-      console.error("❌ Erro na mutation:", error.message);
       toast({
         title: "Erro",
         description: error.message || "Falha ao conectar WhatsApp",
@@ -152,8 +134,8 @@ export default function WhatsApp() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/sessions"] });
       toast({
-        title: "Sucesso",
-        description: "Sessão deletada",
+        title: "Removido",
+        description: "Sessão foi deletada com sucesso",
       });
       setDeleteSessionId(null);
     },
@@ -178,13 +160,13 @@ export default function WhatsApp() {
         setQrCode(data.qrCode);
         setOpenDialog(true);
         toast({
-          title: "Sucesso",
-          description: "Sessão reconectada! Escaneie o novo QR code",
+          title: "Reconecte seu WhatsApp",
+          description: "Escaneie o novo código QR",
         });
       } else {
         toast({
-          title: "Atenção",
-          description: "Sessão preparada para reconectar, mas QR code não disponível",
+          title: "Aviso",
+          description: "Código QR não disponível no momento",
         });
       }
       setReconnectSessionId(null);
@@ -192,236 +174,337 @@ export default function WhatsApp() {
     onError: (error: any) => {
       toast({
         title: "Erro",
-        description: error.message || "Falha ao reconectar sessão",
+        description: error.message || "Falha ao reconectar",
         variant: "destructive",
       });
     },
   });
 
-  const getStatusDot = (status: string) => {
-    if (status === "conectada") {
-      return "bg-green-400";
-    } else if (status === "erro") {
-      return "bg-red-500";
-    } else {
-      return "bg-red-500";
-    }
+  const getStatusColor = (status: string) => {
+    if (status === "conectada") return "bg-emerald-500/80";
+    return "bg-amber-500/80";
   };
 
-  return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <MessageSquare className="h-8 w-8" />
-          WhatsApp Business
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Conecte e envie mensagens em massa via WhatsApp
-        </p>
-      </div>
+  const getStatusLabel = (status: string) => {
+    if (status === "conectada") return "Online";
+    return "Offline";
+  };
 
-      <Card className="bg-white border-2 border-[#776BFF]">
-        <div className="p-6">
-          <div className="flex items-center justify-between gap-3">
+  const connectedCount = sessions?.filter((s: any) => s.status === "conectada").length || 0;
+  const hasConnectedSession = connectedCount > 0;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+      {/* Header Section */}
+      <div className="px-6 py-8 md:py-12">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-xl font-semibold">Sessões Conectadas</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                {sessions?.length || 0} sessão(ões) criada(s)
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setLocation("/whatsapp/broadcast")}
-                disabled={!sessions?.some((s: any) => s.status === "conectada")}
-                data-testid="button-broadcast"
-              >
-                <Send className="h-4 w-4 mr-2" />
-                Enviar em Massa
-              </Button>
-              <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-              <DialogTrigger asChild>
-                <Button
-                  className="bg-[#776BFF] text-white hover:bg-[#6658DD]"
-                  data-testid="button-new-session"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nova Sessão
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Conectar WhatsApp</DialogTitle>
-                  <DialogDescription>
-                    Digite um nome para a sessão e escaneie o QR code com seu celular
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <Input
-                    placeholder="Nome da sessão (ex: Vendas)"
-                    value={sessionName}
-                    onChange={(e) => setSessionName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && sessionName && !connectMutation.isPending) {
-                        connectMutation.mutate(sessionName);
-                      }
-                    }}
-                    data-testid="input-session-name"
-                  />
-                  <Button
-                    onClick={() => connectMutation.mutate(sessionName)}
-                    disabled={!sessionName || connectMutation.isPending}
-                    className="w-full bg-[#776BFF] text-white hover:bg-[#6658DD]"
-                    data-testid="button-connect"
-                  >
-                    {connectMutation.isPending ? "Gerando QR Code..." : "Conectar"}
-                  </Button>
-                  {qrCode && !qrCode.startsWith("error") && !qrCode.startsWith("fallback:") && (
-                    <div className="flex flex-col items-center gap-4 p-6 bg-gradient-to-b from-purple-50 to-blue-50 dark:from-purple-950 dark:to-blue-950 rounded-xl border-3 border-[#776BFF] shadow-lg">
-                      <img
-                        src={qrCode}
-                        alt="QR Code WhatsApp"
-                        className="w-80 h-80 rounded-lg p-2 bg-white border-2 border-gray-200 dark:border-gray-700 shadow-md"
-                        onError={() => console.error("Erro ao carregar imagem QR")}
-                      />
-                      <div className="text-center space-y-2">
-                        <p className="text-lg font-bold text-foreground">
-                          📱 Escaneie o Código QR
-                        </p>
-                        <p className="text-sm text-muted-foreground max-w-xs">
-                          Abra o WhatsApp → Configurações → Dispositivos Vinculados → Vincular Dispositivo
-                        </p>
-                        <p className="text-xs text-green-600 dark:text-green-400 font-medium">
-                          ✓ Código válido por 5 minutos
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  {qrCode?.startsWith("fallback:") && (
-                    <div className="text-center p-4 bg-yellow-50 rounded-lg dark:bg-yellow-950 space-y-2 border-2 border-yellow-200 dark:border-yellow-800">
-                      <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                        ⚠️ QR Code não pôde ser gerado
-                      </p>
-                      <p className="text-xs text-yellow-700 dark:text-yellow-300 break-all font-mono">
-                        ID: {qrCode.replace("fallback:", "")}
-                      </p>
-                      <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                        A sessão foi criada. Tente criar uma nova sessão.
-                      </p>
-                    </div>
-                  )}
-                  {qrCode === "error" && (
-                    <div className="text-center p-3 bg-red-50 rounded-lg dark:bg-red-950 border border-red-200 dark:border-red-800">
-                      <p className="text-sm text-red-700 dark:text-red-200">
-                        ❌ Erro ao criar sessão. Tente novamente.
-                      </p>
-                    </div>
-                  )}
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-3 bg-green-500/10 rounded-xl">
+                  <MessageSquare className="h-6 w-6 text-green-600 dark:text-green-400" />
                 </div>
-              </DialogContent>
-              </Dialog>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent">
+                  WhatsApp Business
+                </h1>
+              </div>
+              <p className="text-slate-600 dark:text-slate-400 mt-2">
+                Gerencie sessões e envie mensagens em massa para seus clientes
+              </p>
             </div>
           </div>
         </div>
-      </Card>
+      </div>
 
-      <div className="space-y-3">
-        {isLoading ? (
-          Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="p-4">
-              <Skeleton className="h-12 w-full" />
-            </Card>
-          ))
-        ) : sessions && sessions.length > 0 ? (
-          sessions.map((session: any) => (
-            <Card
-              key={session.id}
-              className="p-4 bg-white border-2 border-[#776BFF] hover:shadow-md transition-shadow dark:bg-gray-950"
-              data-testid={`card-session-${session.id}`}
-            >
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div
-                    className={`h-3 w-3 rounded-full flex-shrink-0 ${getStatusDot(
-                      session.status
-                    )}`}
-                    data-testid={`status-dot-${session.id}`}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold truncate">{session.nome}</h3>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {session.status === "conectada"
-                        ? `✓ Conectada`
-                        : session.telefone 
-                        ? `📱 ${session.telefone}` 
-                        : "Não conectado"}
-                    </p>
-                  </div>
+      {/* Main Content */}
+      <div className="px-6 pb-12">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="p-6 border-0 shadow-sm bg-white dark:bg-slate-800/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                    Total de Sessões
+                  </p>
+                  <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">
+                    {sessions?.length || 0}
+                  </p>
                 </div>
-
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Badge
-                    variant="secondary"
-                    className={`${
-                      session.status === "conectada"
-                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                        : session.status === "erro"
-                        ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                        : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
-                    }`}
-                    data-testid={`badge-status-${session.id}`}
-                  >
-                    {session.status === "conectada"
-                      ? "Online"
-                      : session.status === "desconectada"
-                      ? "Offline"
-                      : "Erro"}
-                  </Badge>
-                  {session.status === "desconectada" && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setReconnectSessionId(session.id);
-                        reconnectMutation.mutate(session.id);
-                      }}
-                      disabled={reconnectMutation.isPending}
-                      data-testid={`button-reconnect-${session.id}`}
-                      className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950"
-                    >
-                      <RotateCw className="h-4 w-4" />
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDeleteSessionId(session.id)}
-                    data-testid={`button-delete-${session.id}`}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                <div className="p-3 bg-blue-500/10 rounded-lg">
+                  <MessageSquare className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
             </Card>
-          ))
-        ) : (
-          <Card className="p-12 text-center bg-white border-2 border-[#776BFF] dark:bg-gray-950">
-            <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-40" />
-            <p className="font-medium">Nenhuma sessão conectada</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Crie uma nova sessão para começar a enviar mensagens
-            </p>
-          </Card>
-        )}
+
+            <Card className="p-6 border-0 shadow-sm bg-white dark:bg-slate-800/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                    Conectadas
+                  </p>
+                  <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">
+                    {connectedCount}
+                  </p>
+                </div>
+                <div className="p-3 bg-emerald-500/10 rounded-lg">
+                  <CheckCircle className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6 border-0 shadow-sm bg-white dark:bg-slate-800/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                    Status
+                  </p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white mt-2">
+                    {hasConnectedSession ? (
+                      <span className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                        <span className="w-2 h-2 bg-emerald-600 dark:bg-emerald-400 rounded-full animate-pulse" />
+                        Pronto para usar
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                        <span className="w-2 h-2 bg-amber-600 dark:bg-amber-400 rounded-full animate-pulse" />
+                        Aguardando conexão
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <div className="p-3 bg-slate-500/10 rounded-lg">
+                  <Zap className="h-6 w-6 text-slate-600 dark:text-slate-400" />
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+              <DialogTrigger asChild>
+                <Button
+                  size="lg"
+                  className="bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white shadow-lg"
+                  data-testid="button-new-session"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  Nova Sessão
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader className="space-y-3">
+                  <DialogTitle className="text-2xl">Conectar WhatsApp</DialogTitle>
+                  <DialogDescription>
+                    Digite um nome para sua sessão e escaneie o código QR com seu celular
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-900 dark:text-white">
+                      Nome da Sessão
+                    </label>
+                    <Input
+                      placeholder="Ex: Vendas, Suporte, etc..."
+                      value={sessionName}
+                      onChange={(e) => setSessionName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && sessionName && !connectMutation.isPending) {
+                          connectMutation.mutate(sessionName);
+                        }
+                      }}
+                      data-testid="input-session-name"
+                      className="text-base"
+                    />
+                  </div>
+
+                  {qrCode && !qrCode.startsWith("error") && !qrCode.startsWith("fallback:") && (
+                    <div className="flex flex-col items-center gap-4 p-6 bg-gradient-to-b from-emerald-50 to-blue-50 dark:from-emerald-950/20 dark:to-blue-950/20 rounded-2xl border border-emerald-200 dark:border-emerald-900">
+                      <img
+                        src={qrCode}
+                        alt="QR Code WhatsApp"
+                        className="w-64 h-64 rounded-2xl p-3 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 shadow-lg"
+                        onError={() => console.error("Erro ao carregar imagem QR")}
+                      />
+                      <div className="text-center space-y-3">
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                          Escaneie o Código QR
+                        </h3>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 max-w-xs leading-relaxed">
+                          Abra WhatsApp → Configurações → Dispositivos Vinculados → Vincular Dispositivo
+                        </p>
+                        <div className="flex items-center justify-center gap-2 text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-2 rounded-lg">
+                          <Clock className="h-3 w-3" />
+                          Código válido por 5 minutos
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {qrCode?.startsWith("fallback:") && (
+                    <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg space-y-2 text-center">
+                      <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-500 mx-auto" />
+                      <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+                        QR Code não pôde ser gerado
+                      </p>
+                      <p className="text-xs text-amber-800 dark:text-amber-300 break-all font-mono bg-white dark:bg-slate-900 px-3 py-2 rounded mt-2">
+                        ID: {qrCode.replace("fallback:", "")}
+                      </p>
+                    </div>
+                  )}
+
+                  {qrCode === "error" && (
+                    <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg">
+                      <p className="text-sm text-red-700 dark:text-red-400 text-center">
+                        Erro ao criar sessão. Tente novamente.
+                      </p>
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={() => connectMutation.mutate(sessionName)}
+                    disabled={!sessionName || connectMutation.isPending}
+                    size="lg"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    data-testid="button-connect"
+                  >
+                    {connectMutation.isPending ? "Gerando código..." : "Conectar"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => setLocation("/whatsapp/broadcast")}
+              disabled={!hasConnectedSession}
+              data-testid="button-broadcast"
+              className="text-slate-700 dark:text-slate-200"
+            >
+              <Send className="h-5 w-5 mr-2" />
+              Enviar em Massa
+            </Button>
+          </div>
+
+          {/* Sessions List */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                Suas Sessões
+              </h2>
+              {sessions && sessions.length > 0 && (
+                <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800">
+                  {sessions.length} sessão{sessions.length !== 1 ? "s" : ""}
+                </Badge>
+              )}
+            </div>
+
+            {isLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Card key={i} className="p-4 border-0 shadow-sm">
+                    <Skeleton className="h-16 w-full" />
+                  </Card>
+                ))}
+              </div>
+            ) : sessions && sessions.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {sessions.map((session: any) => (
+                  <Card
+                    key={session.id}
+                    className="p-5 border-0 shadow-sm hover:shadow-md transition-shadow duration-200 bg-white dark:bg-slate-800/50 group"
+                    data-testid={`card-session-${session.id}`}
+                  >
+                    <div className="space-y-4">
+                      {/* Header */}
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-slate-900 dark:text-white truncate text-lg">
+                            {session.nome}
+                          </h3>
+                          <p className="text-sm text-slate-600 dark:text-slate-400 truncate mt-1">
+                            {session.status === "conectada"
+                              ? session.telefone ? `📱 ${session.telefone}` : "✓ Conectado"
+                              : "Não conectado"}
+                          </p>
+                        </div>
+                        <div
+                          className={`h-3 w-3 rounded-full flex-shrink-0 animate-pulse ${getStatusColor(session.status)}`}
+                          data-testid={`status-dot-${session.id}`}
+                        />
+                      </div>
+
+                      {/* Status Badge */}
+                      <div>
+                        <Badge
+                          className={`text-xs font-medium ${
+                            session.status === "conectada"
+                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+                              : "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+                          }`}
+                          data-testid={`badge-status-${session.id}`}
+                        >
+                          {session.status === "conectada" ? "Online" : "Offline"}
+                        </Badge>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                        {session.status === "desconectada" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setReconnectSessionId(session.id);
+                              reconnectMutation.mutate(session.id);
+                            }}
+                            disabled={reconnectMutation.isPending}
+                            data-testid={`button-reconnect-${session.id}`}
+                            className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 flex-1"
+                          >
+                            <RotateCw className="h-4 w-4 mr-1" />
+                            Reconectar
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeleteSessionId(session.id)}
+                          data-testid={`button-delete-${session.id}`}
+                          className={`text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 ${session.status !== "desconectada" ? "flex-1" : ""}`}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Deletar
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card className="p-12 text-center border-0 shadow-sm bg-white dark:bg-slate-800/50">
+                <MessageSquare className="h-12 w-12 mx-auto mb-4 text-slate-400 dark:text-slate-600" />
+                <h3 className="font-semibold text-slate-900 dark:text-white mb-2 text-lg">
+                  Nenhuma sessão conectada
+                </h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Clique em "Nova Sessão" para conectar seu WhatsApp Business
+                </p>
+              </Card>
+            )}
+          </div>
+        </div>
       </div>
 
+      {/* Delete Dialog */}
       <AlertDialog open={!!deleteSessionId} onOpenChange={(open) => !open && setDeleteSessionId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Deletar Sessão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja deletar esta sessão? Esta ação não pode ser desfeita.
+              Tem certeza que deseja remover esta sessão? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex gap-3 justify-end">
@@ -435,7 +518,7 @@ export default function WhatsApp() {
                 }
               }}
               disabled={deleteMutation.isPending}
-              className="bg-red-500 hover:bg-red-600"
+              className="bg-red-600 hover:bg-red-700"
               data-testid="button-confirm-delete"
             >
               {deleteMutation.isPending ? "Deletando..." : "Deletar"}
