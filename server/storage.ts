@@ -638,10 +638,14 @@ export async function getMessages(conversationId: string, limit: number = 50): P
       tamanho: messages.tamanho,
       mimeType: messages.mimeType,
       lido: messages.lido,
+      deletado: messages.deletado,
       createdAt: messages.createdAt,
     })
     .from(messages)
-    .where(eq(messages.conversationId, conversationId))
+    .where(and(
+      eq(messages.conversationId, conversationId),
+      eq(messages.deletado, false)
+    ))
     .orderBy(asc(messages.createdAt))
     .limit(limit);
 }
