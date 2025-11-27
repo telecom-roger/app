@@ -413,6 +413,8 @@ export async function getDashboardStats(userId?: string) {
     .select({
       total: sql<number>`count(*)::int`,
       ativos: sql<number>`count(*) FILTER (WHERE status = 'ativo')::int`,
+      importados: sql<number>`count(*) FILTER (WHERE created_by IS NOT NULL)::int`,
+      antigos: sql<number>`count(*) FILTER (WHERE created_by IS NULL)::int`,
     })
     .from(clients)
     .where(clientWhereClause);
@@ -434,6 +436,8 @@ export async function getDashboardStats(userId?: string) {
   return {
     totalClientes: clientStats?.total || 0,
     clientesAtivos: clientStats?.ativos || 0,
+    clientesImportados: clientStats?.importados || 0,
+    clientesAntigos: clientStats?.antigos || 0,
     oportunidades: opportunityCount?.total || 0,
     campanhasAtivas: campaignStats?.ativas || 0,
     taxaConversao: 21.5,

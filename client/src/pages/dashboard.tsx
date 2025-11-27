@@ -34,6 +34,8 @@ import {
 interface DashboardStats {
   totalClientes: number;
   clientesAtivos: number;
+  clientesImportados: number;
+  clientesAntigos: number;
   oportunidades: number;
   campanhasAtivas: number;
   taxaConversao: number;
@@ -172,6 +174,38 @@ export default function Dashboard() {
               iconColor="text-purple-600 dark:text-purple-400"
             />
           </div>
+
+          {/* Breakdown Card */}
+          <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
+            <CardHeader className="border-b border-slate-200 dark:border-slate-700">
+              <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
+                Total: {stats?.totalClientes?.toLocaleString('pt-BR')} ({stats?.clientesImportados?.toLocaleString('pt-BR')} importados + {stats?.clientesAntigos?.toLocaleString('pt-BR')} antigos)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {statsLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 border border-blue-200 dark:border-blue-800/50">
+                    <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Clientes Importados</p>
+                    <p className="text-2xl font-bold text-blue-700 dark:text-blue-300 mt-1">
+                      {stats?.clientesImportados?.toLocaleString('pt-BR')}
+                    </p>
+                  </div>
+                  <div className="bg-slate-100 dark:bg-slate-700/30 rounded-lg p-4 border border-slate-300 dark:border-slate-600/50">
+                    <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Clientes Antigos</p>
+                    <p className="text-2xl font-bold text-slate-700 dark:text-slate-300 mt-1">
+                      {stats?.clientesAntigos?.toLocaleString('pt-BR')}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Charts Row */}
           <div className="grid gap-6 lg:grid-cols-2">
