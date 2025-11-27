@@ -189,21 +189,15 @@ export default function Chat() {
       [
         // Tags from conversations
         ...(conversations || [])
-          .filter(conv => conv.client?.tags && Array.isArray(conv.client.tags))
+          .filter(conv => conv.client?.tags && Array.isArray(conv.client.tags) && (conv.client.tags as string[]).length > 0)
           .flatMap(conv => conv.client?.tags || []),
         // Tags from all clients
         ...(clients || [])
-          .filter(client => client.tags && Array.isArray(client.tags))
+          .filter(client => client.tags && Array.isArray(client.tags) && (client.tags as string[]).length > 0)
           .flatMap(client => client.tags || []),
       ].filter(tag => tag && typeof tag === 'string')
     )
   ).sort();
-  
-  console.log("🔍 DEBUG - allUniqueTags:", allUniqueTags);
-  console.log("🔍 DEBUG - conversations length:", conversations?.length);
-  console.log("🔍 DEBUG - clients length:", clients?.length);
-  console.log("🔍 DEBUG - First conversation client tags:", conversations?.[0]?.client?.tags);
-  console.log("🔍 DEBUG - First client tags:", clients?.[0]?.tags);
 
   // Sort conversations by last message date (most recent first)
   const sortedConversations = [...conversations]

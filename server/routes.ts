@@ -105,6 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: clients.EMAIL_PRINCIPAL,
           cpfCnpj: clients.cpfCnpj,
           status: clients.status,
+          tags: clients.tags,
         })
         .from(clients)
         .where(whereCondition)
@@ -119,6 +120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: client.email,
         cpfCnpj: client.cpfCnpj,
         status: client.status,
+        tags: client.tags,
         ultimaCampanha: undefined,
       }));
 
