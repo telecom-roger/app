@@ -989,9 +989,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Sessão não encontrada" });
       }
 
-      // Verify ownership
-      if (session.userId !== (req.user as any).id && (req.user as any).role !== "admin") {
-        return res.status(403).json({ error: "Não autorizado" });
+      // Verify ownership - only owner can reconnect
+      if (session.userId !== (req.user as any).id) {
+        return res.status(403).json({ error: "Não autorizado - essa sessão não é sua" });
       }
 
       // Close old session
@@ -1050,9 +1050,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Sessão não encontrada" });
       }
 
-      // Verify ownership
-      if (session.userId !== (req.user as any).id && (req.user as any).role !== "admin") {
-        return res.status(403).json({ error: "Não autorizado" });
+      // Verify ownership - only owner can delete
+      if (session.userId !== (req.user as any).id) {
+        return res.status(403).json({ error: "Não autorizado - essa sessão não é sua" });
       }
 
       // Close WhatsApp connection
@@ -1081,14 +1081,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "sessionId é obrigatório" });
       }
 
-      // Verify session ownership
+      // Verify session ownership - only owner can use
       const session = await storage.getWhatsappSessionById(sessionId);
       if (!session) {
         return res.status(404).json({ error: "Sessão não encontrada" });
       }
 
-      if (session.userId !== (req.user as any).id && (req.user as any).role !== "admin") {
-        return res.status(403).json({ error: "Não autorizado" });
+      if (session.userId !== (req.user as any).id) {
+        return res.status(403).json({ error: "Não autorizado - essa sessão não é sua" });
       }
 
       // Get stats
@@ -1109,14 +1109,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "sessionId e mensagem são obrigatórios" });
       }
 
-      // Verify session ownership
+      // Verify session ownership - only owner can use
       const session = await storage.getWhatsappSessionById(sessionId);
       if (!session) {
         return res.status(404).json({ error: "Sessão não encontrada" });
       }
 
-      if (session.userId !== (req.user as any).id && (req.user as any).role !== "admin") {
-        return res.status(403).json({ error: "Não autorizado" });
+      if (session.userId !== (req.user as any).id) {
+        return res.status(403).json({ error: "Não autorizado - essa sessão não é sua" });
       }
 
       // Verify session is connected
