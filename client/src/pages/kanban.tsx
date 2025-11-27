@@ -713,7 +713,7 @@ function EditarOportunidadeDialog({
       titulo: oportunidade?.titulo || "",
       clientId: oportunidade?.clientId || "",
       etapa: oportunidade?.etapa || "lead",
-      valorEstimado: oportunidade?.valorEstimado || 0,
+      valorEstimado: oportunidade?.valorEstimado || "",
       responsavelId: oportunidade?.responsavelId || user?.id,
     },
   });
@@ -724,7 +724,7 @@ function EditarOportunidadeDialog({
         titulo: oportunidade.titulo,
         clientId: oportunidade.clientId,
         etapa: oportunidade.etapa,
-        valorEstimado: oportunidade.valorEstimado || 0,
+        valorEstimado: oportunidade.valorEstimado || "",
         responsavelId: oportunidade.responsavelId || user?.id,
       });
       setSearchCliente("");
