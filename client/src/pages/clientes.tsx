@@ -64,7 +64,7 @@ export default function Clientes() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
-  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
   const limit = 10;
@@ -116,13 +116,18 @@ export default function Clientes() {
       { 
         ...(searchTerm && { search: searchTerm }),
         ...(statusFilter !== "todos" && { status: statusFilter }),
-        ...(selectedTagId && { tagId: selectedTagId }),
         page,
         limit,
       }
     ],
     enabled: isAuthenticated,
   });
+
+  // Filter clients by selected tag on frontend
+  const filteredClients = data?.clientes?.filter(client => {
+    if (!selectedTag) return true;
+    return (client.tags || []).includes(selectedTag);
+  }) || [];
 
   const statusColors: Record<string, string> = {
     lead: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
@@ -202,9 +207,9 @@ export default function Clientes() {
               <ScrollArea className="w-full">
                 <div className="flex gap-2 pb-2">
                   <Button
-                    variant={selectedTagId === null ? "default" : "outline"}
+                    variant={selectedTag === null ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setSelectedTagId(null)}
+                    onClick={() => setSelectedTag(null)}
                     data-testid="button-filter-all-tags"
                     className="h-7 px-3 text-xs whitespace-nowrap"
                   >
@@ -213,15 +218,15 @@ export default function Clientes() {
                   {tags.map((tag) => (
                     <Button
                       key={tag.id}
-                      variant={selectedTagId === tag.id ? "default" : "outline"}
+                      variant={selectedTag === tag.nome ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setSelectedTagId(tag.id)}
+                      onClick={() => setSelectedTag(tag.nome)}
                       data-testid={`button-filter-tag-${tag.id}`}
                       className={`h-7 px-3 text-xs text-white whitespace-nowrap ${
-                        selectedTagId === tag.id ? tag.cor : ""
+                        selectedTag === tag.nome ? tag.cor : ""
                       }`}
                       style={{
-                        backgroundColor: selectedTagId === tag.id ? undefined : "transparent",
+                        backgroundColor: selectedTag === tag.nome ? undefined : "transparent",
                       }}
                     >
                       {tag.nome}
@@ -259,8 +264,8 @@ export default function Clientes() {
                   <TableCell><Skeleton className="h-4 w-8" /></TableCell>
                 </TableRow>
               ))
-            ) : data?.clientes && data.clientes.length > 0 ? (
-              data.clientes.map((cliente) => (
+            ) : filteredClients.length > 0 ? (
+              filteredClients.map((cliente) => (
                 <TableRow 
                   key={cliente.id} 
                   className="border-b border-[#776BFF]/10 hover:bg-[#776BFF]/5 cursor-pointer transition-colors"
