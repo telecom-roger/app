@@ -339,6 +339,17 @@ export default function Chat() {
     const file = e.target.files?.[0];
     if (!file || !selectedConversationId) return;
 
+    // Check if WhatsApp is connected
+    if (!isWhatsappConnected) {
+      toast({
+        title: "WhatsApp desconectado",
+        description: "Conecte uma sessão do WhatsApp antes de enviar arquivos",
+        variant: "destructive",
+      });
+      e.target.value = "";
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = async (event) => {
       const base64 = event.target?.result as string;
@@ -354,6 +365,16 @@ export default function Chat() {
   };
 
   const handleStartRecording = async () => {
+    // Check if WhatsApp is connected
+    if (!isWhatsappConnected) {
+      toast({
+        title: "WhatsApp desconectado",
+        description: "Conecte uma sessão do WhatsApp antes de enviar áudio",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
