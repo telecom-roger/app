@@ -970,7 +970,7 @@ export default function Chat() {
           ) : detailedClient ? (
             <div className="space-y-4">
               {/* Valor do Negócio + Tags */}
-              <div className="space-y-3 border-b border-slate-200 dark:border-slate-700 pb-3">
+              <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-4">
                 <div>
                   <label className="text-sm font-semibold text-slate-900 dark:text-slate-100">Valor do Negócio</label>
                   <Input
@@ -991,10 +991,10 @@ export default function Chat() {
                 </div>
                 
                 {/* Tag Selection */}
-                {allTags.length > 0 && (
-                  <div>
-                    <label className="text-sm font-semibold text-slate-900 dark:text-slate-100">Selecione uma Etapa</label>
-                    <div className="flex flex-wrap gap-2 mt-2">
+                <div>
+                  <label className="text-sm font-semibold text-slate-900 dark:text-slate-100">Selecione uma Etapa</label>
+                  {allTags && allTags.length > 0 ? (
+                    <div className="flex flex-wrap gap-2 mt-3">
                       {allTags.map((tag) => {
                         const isCurrentTag = detailedClient?.tags?.[0] === tag.nome;
                         return (
@@ -1020,8 +1020,10 @@ export default function Chat() {
                         );
                       })}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">Nenhuma etapa criada. Crie em "Etiquetas"</p>
+                  )}
+                </div>
               </div>
               <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800/50">
                 <div className="flex items-center gap-3 mb-3">
