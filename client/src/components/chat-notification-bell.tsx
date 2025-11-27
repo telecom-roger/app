@@ -1,14 +1,17 @@
 import { useState } from "react";
-import { Bell } from "lucide-react";
+import { Bell, ExternalLink } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useLocation } from "wouter";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface Notification {
   id: string;
@@ -16,10 +19,13 @@ interface Notification {
   descricao: string;
   lida: boolean;
   createdAt: string;
+  clientId?: string;
 }
 
 export function ChatNotificationBell() {
   const [open, setOpen] = useState(false);
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
 
   const { data: notifications = [] } = useQuery<Notification[]>({
     queryKey: ["/api/notifications"],
@@ -27,6 +33,29 @@ export function ChatNotificationBell() {
   });
 
   const unreadCount = notifications.filter(n => !n.lida).length;
+
+  const handleMarkAsRead = async (notifId: string) => {
+    try {
+      await fetch(`/api/notifications/${notifId}/read`, {
+        method: "POST",
+      });
+      // Invalidate queries to refresh badge
+      await queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível marcar como lida",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleViewClient = (clientId: string | undefined) => {
+    if (clientId) {
+      navigate(`/clientes/${clientId}`);
+      setOpen(false);
+    }
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -80,10 +109,34 @@ export function ChatNotificationBell() {
                         <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">
                           {new Date(notif.createdAt).toLocaleDateString('pt-BR')}
                         </p>
+                        {notif.clientId && (
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="h-auto p-0 mt-2 text-xs"
+                            onClick={() => handleViewClient(notif.clientId)}
+                            data-testid={`button-view-client-${notif.id}`}
+                          >
+                            Ver cliente <ExternalLink className="h-3 w-3 ml-1" />
+                          </Button>
+                        )}
                       </div>
-                      {!notif.lida && (
-                        <div className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0 mt-2" />
-                      )}
+                      <div className="flex flex-col gap-2">
+                        {!notif.lida && (
+                          <div className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" />
+                        )}
+                        {!notif.lida && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-auto p-1 text-xs"
+                            onClick={() => handleMarkAsRead(notif.id)}
+                            data-testid={`button-mark-read-${notif.id}`}
+                          >
+                            Marcar como lida
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}

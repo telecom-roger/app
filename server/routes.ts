@@ -2060,6 +2060,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/notifications/:notifId/read", isAuthenticated, async (req, res) => {
+    try {
+      const { notifId } = req.params;
+      const user = req.user as any;
+
+      // Verify notification belongs to user
+      const notif = await db.select().from(notifications).where(eq(notifications.id, notifId)).limit(1);
+      if (!notif.length) return res.status(404).json({ error: "Notification not found" });
+      if (notif[0].userId !== user.id) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
+      await storage.markNotificationAsRead(notifId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/notifications/unread-count", isAuthenticated, async (req, res) => {
     try {
       const user = req.user as any;
