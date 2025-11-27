@@ -332,6 +332,11 @@ export async function getAllWhatsappSessions(userIdFilter?: string): Promise<any
   return await query.orderBy(desc(whatsappSessions.createdAt));
 }
 
+export async function getWhatsappSessionById(id: string): Promise<any | undefined> {
+  const [result] = await db.select().from(whatsappSessions).where(eq(whatsappSessions.id, id)).limit(1);
+  return result;
+}
+
 export async function updateWhatsAppSession(id: string, data: any): Promise<any | undefined> {
   const [result] = await db
     .update(whatsappSessions)
@@ -341,8 +346,16 @@ export async function updateWhatsAppSession(id: string, data: any): Promise<any 
   return result;
 }
 
+export async function updateWhatsappSession(id: string, data: any): Promise<any | undefined> {
+  return updateWhatsAppSession(id, data);
+}
+
 export async function deleteWhatsAppSession(id: string): Promise<void> {
   await db.delete(whatsappSessions).where(eq(whatsappSessions.id, id));
+}
+
+export async function deleteWhatsappSession(id: string): Promise<void> {
+  return deleteWhatsAppSession(id);
 }
 
 // ==================== CONVERSATION STORAGE ====================
@@ -355,7 +368,7 @@ export async function getConversations(): Promise<Conversation[]> {
   return await db
     .select()
     .from(conversations)
-    .orderBy(sql`${conversations.updatedAt} DESC`);
+    .orderBy(desc(conversations.updatedAt));
 }
 
 export async function getConversationById(id: string): Promise<Conversation | undefined> {
