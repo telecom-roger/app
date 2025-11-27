@@ -3,7 +3,6 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useWhatsAppStatus } from "@/hooks/useWhatsAppStatus";
-import { DateRangeFilter } from "@/components/date-range-filter";
 import { MultiSelectFilter } from "@/components/multi-select-filter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -139,8 +138,8 @@ export default function CampanhasWhatsApp() {
   const [templateSelecionado, setTemplateSelecionado] = useState("");
   const [quantidadeAleatoria, setQuantidadeAleatoria] = useState(50);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [dataEnvioInicio, setDataEnvioInicio] = useState<Date | undefined>();
-  const [dataEnvioFim, setDataEnvioFim] = useState<Date | undefined>();
+  const [dataEnvioInicio, setDataEnvioInicio] = useState("");
+  const [dataEnvioFim, setDataEnvioFim] = useState("");
   const [selectedTiposFilter, setSelectedTiposFilter] = useState<Set<string>>(new Set());
   const [selectedCarteirasFilter, setSelectedCarteirasFilter] = useState<Set<string>>(new Set());
   const [selectedCidadesFilter, setSelectedCidadesFilter] = useState<Set<string>>(new Set());
@@ -1319,11 +1318,21 @@ export default function CampanhasWhatsApp() {
 
                 {/* Período */}
                 <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">Período:</span>
-                <DateRangeFilter
-                  startDate={dataEnvioInicio}
-                  endDate={dataEnvioFim}
-                  onStartDateChange={setDataEnvioInicio}
-                  onEndDateChange={setDataEnvioFim}
+                <Input
+                  type="date"
+                  value={dataEnvioInicio}
+                  onChange={(e) => setDataEnvioInicio(e.target.value)}
+                  placeholder="Data início"
+                  className="w-40 border-slate-200 dark:border-slate-700 h-9"
+                  data-testid="input-filtro-data-inicio"
+                />
+                <Input
+                  type="date"
+                  value={dataEnvioFim}
+                  onChange={(e) => setDataEnvioFim(e.target.value)}
+                  placeholder="Data fim"
+                  className="w-40 border-slate-200 dark:border-slate-700 h-9"
+                  data-testid="input-filtro-data-fim"
                 />
               </div>
 

@@ -58,7 +58,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MultiSelectFilter } from "@/components/multi-select-filter";
-import { DateRangeFilter } from "@/components/date-range-filter";
 
 // Conversão de fuso horário para São Paulo (UTC-3)
 const convertToSaoPauloDate = (isoDate: string) => {
@@ -105,8 +104,8 @@ export default function CampanhasAgendadas() {
   const [tipoFiltro, setTipoFiltro] = useState("all");
   const [filtroStatus, setFiltroStatus] = useState("todos");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [dataEnvioInicio, setDataEnvioInicio] = useState<Date | undefined>();
-  const [dataEnvioFim, setDataEnvioFim] = useState<Date | undefined>();
+  const [dataEnvioInicio, setDataEnvioInicio] = useState("");
+  const [dataEnvioFim, setDataEnvioFim] = useState("");
   const [selectedTiposFilter, setSelectedTiposFilter] = useState<Set<string>>(new Set());
   const [selectedCarteirasFilter, setSelectedCarteirasFilter] = useState<Set<string>>(new Set());
   const [selectedCidadesFilter, setSelectedCidadesFilter] = useState<Set<string>>(new Set());
@@ -606,11 +605,21 @@ export default function CampanhasAgendadas() {
 
                 {/* Período */}
                 <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">Período:</span>
-                <DateRangeFilter
-                  startDate={dataEnvioInicio}
-                  endDate={dataEnvioFim}
-                  onStartDateChange={setDataEnvioInicio}
-                  onEndDateChange={setDataEnvioFim}
+                <Input
+                  type="date"
+                  value={dataEnvioInicio}
+                  onChange={(e) => setDataEnvioInicio(e.target.value)}
+                  placeholder="Data início"
+                  className="w-40 border-slate-200 dark:border-slate-700 h-9"
+                  data-testid="input-filtro-data-inicio"
+                />
+                <Input
+                  type="date"
+                  value={dataEnvioFim}
+                  onChange={(e) => setDataEnvioFim(e.target.value)}
+                  placeholder="Data fim"
+                  className="w-40 border-slate-200 dark:border-slate-700 h-9"
+                  data-testid="input-filtro-data-fim"
                 />
               </div>
 
