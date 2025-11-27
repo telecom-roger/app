@@ -67,6 +67,18 @@ import {
 } from "@/components/ui/dialog";
 import type { Client } from "@shared/schema";
 
+// Format phone number
+function formatPhoneNumber(phone: string | undefined): string {
+  if (!phone) return '-';
+  const cleaned = phone.replace(/\D/g, '');
+  if (cleaned.length === 11) {
+    return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`;
+  } else if (cleaned.length === 10) {
+    return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 6)}-${cleaned.slice(6)}`;
+  }
+  return phone;
+}
+
 interface Tag {
   id: string;
   nome: string;
@@ -569,7 +581,7 @@ export default function Clientes() {
                           {cliente.cpfCnpj || '-'}
                         </TableCell>
                         <TableCell className="text-sm text-slate-700 dark:text-slate-300">
-                          {cliente.CELULAR_PRINCIPAL || cliente.telefone || '-'}
+                          {formatPhoneNumber(cliente.CELULAR_PRINCIPAL || cliente.telefone)}
                         </TableCell>
                         <TableCell className="text-sm text-slate-700 dark:text-slate-300">
                           {cliente.EMAIL_PRINCIPAL || cliente.email || '-'}
