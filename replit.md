@@ -180,9 +180,11 @@ Principais entidades no PostgreSQL:
 ### Sistema de WhatsApp
 - ✅ Baileys listeners ativos e processando mensagens
 - ✅ Normalização de telefone (remover sufixos @s.whatsapp.net, @lid, @c.us)
+- ✅ Normalização DO 55 PREFIX - **CRÍTICO**: Remove 55 IMEDIATAMENTE após receber (todos clientes armazenados SEM 55)
 - ✅ Salvamento de mensagens recebidas
-- ✅ Notas de voz (áudio WebM → M4A/AAC com ffmpeg, `ptt: true`)
-- ✅ Auto-criação de conversas para novos contatos
+- ✅ Notas de voz (áudio WebM → M4A/AAC com ffmpeg, `ppt: true`)
+- ✅ Auto-criação de conversas para novos contatos (sempre SEM 55)
+- ✅ Sem duplicatas de clientes (mesmo número COM/SEM 55 = mesmo cliente)
 
 ### Sistema de Auditoria
 - ✅ Logs completos para criar, editar, deletar
