@@ -443,7 +443,7 @@ export default function Chat() {
                   onClick={() => setSelectedTag(tag.nome)}
                   data-testid={`button-filter-tag-${tag.id}`}
                   className={`h-7 px-2 text-xs rounded-full ${
-                    selectedTag === tag.nome ? `${tag.cor} border border-gray-400` : ""
+                    selectedTag === tag.nome ? `${tag.cor} border ${tag.cor.replace('bg-', 'border-')}` : ""
                   }`}
                 >
                   {tag.nome}
