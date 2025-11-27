@@ -34,7 +34,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, GripVertical, User, DollarSign, Trash2, Edit2 } from "lucide-react";
+import { Plus, GripVertical, User, DollarSign, Trash2, Edit2, TrendingUp, Zap } from "lucide-react";
 import type { Opportunity } from "@shared/schema";
 import { insertOpportunitySchema } from "@shared/schema";
 
@@ -120,8 +120,8 @@ export default function Kanban() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
       toast({
-        title: "Sucesso",
-        description: "Oportunidade excluída",
+        title: "Removida",
+        description: "Oportunidade excluída com sucesso",
       });
     },
     onError: () => {
@@ -138,56 +138,123 @@ export default function Kanban() {
     oportunidades: (oportunidades || []).filter(op => op.etapa === coluna.id),
   }));
 
+  const totalOportunidades = oportunidades?.length || 0;
+  const valorTotal = (oportunidades || []).reduce((sum, op) => sum + (op.valorEstimado || 0), 0);
+  const oportunidadesFechadas = oportunidades?.filter(op => op.etapa === 'fechado').length || 0;
+
   if (authLoading || !isAuthenticated) {
     return <KanbanSkeleton />;
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Oportunidades</h1>
-          <p className="text-muted-foreground mt-1">
-            Gerencie seu funil de vendas
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Select value={filtroResponsavel} onValueChange={setFiltroResponsavel}>
-            <SelectTrigger className="w-48" data-testid="select-responsavel">
-              <SelectValue placeholder="Responsável" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos</SelectItem>
-              <SelectItem value={user?.id ? String(user.id) : ""}>Minhas oportunidades</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button data-testid="button-nova-oportunidade" onClick={() => setShowNovaOportunidade(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Oportunidade
-          </Button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+      {/* Header Section */}
+      <div className="px-6 py-8 md:py-12">
+        <div className="max-w-full mx-auto">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-3 bg-purple-500/10 rounded-xl">
+                  <TrendingUp className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                </div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent">
+                  Oportunidades
+                </h1>
+              </div>
+              <p className="text-slate-600 dark:text-slate-400 mt-2">
+                Gerencie seu funil de vendas com drag and drop
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Kanban Board */}
-      <div className="overflow-x-auto pb-4">
-        <div className="flex gap-4 min-w-max">
-          {oportunidadesPorEtapa.map((coluna) => (
-            <KanbanColumn
-              key={coluna.id}
-              coluna={coluna}
-              isLoading={isLoading}
-              clientes={clientes}
-              onMoveCard={(id, etapa) => {
-                setDraggedCard(null);
-                moveCardMutation.mutate({ id, etapa });
-              }}
-              onDeleteCard={(id) => deleteCardMutation.mutate(id)}
-              onEditCard={setEditingOportunidade}
-              draggedCard={draggedCard}
-              setDraggedCard={setDraggedCard}
-            />
-          ))}
+      {/* Main Content */}
+      <div className="px-6 pb-12">
+        <div className="max-w-full mx-auto space-y-6">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="p-6 border-0 shadow-sm bg-white dark:bg-slate-800/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total de Oportunidades</p>
+                  <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">{totalOportunidades}</p>
+                </div>
+                <div className="p-3 bg-purple-500/10 rounded-lg">
+                  <TrendingUp className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6 border-0 shadow-sm bg-white dark:bg-slate-800/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Valor Total</p>
+                  <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">
+                    R$ {(valorTotal / 1000).toFixed(0)}k
+                  </p>
+                </div>
+                <div className="p-3 bg-emerald-500/10 rounded-lg">
+                  <DollarSign className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6 border-0 shadow-sm bg-white dark:bg-slate-800/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Fechadas</p>
+                  <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">{oportunidadesFechadas}</p>
+                </div>
+                <div className="p-3 bg-blue-500/10 rounded-lg">
+                  <Zap className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Controls */}
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <Select value={filtroResponsavel} onValueChange={setFiltroResponsavel}>
+              <SelectTrigger className="w-full sm:w-48 border-slate-200 dark:border-slate-700" data-testid="select-responsavel">
+                <SelectValue placeholder="Responsável" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todas as oportunidades</SelectItem>
+                <SelectItem value={user?.id ? String(user.id) : ""}>Minhas oportunidades</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button 
+              data-testid="button-nova-oportunidade" 
+              onClick={() => setShowNovaOportunidade(true)}
+              className="bg-purple-600 hover:bg-purple-700 text-white w-full sm:w-auto"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Oportunidade
+            </Button>
+          </div>
+
+          {/* Kanban Board */}
+          <div className="overflow-x-auto pb-4">
+            <div className="flex gap-4 min-w-max">
+              {oportunidadesPorEtapa.map((coluna) => (
+                <KanbanColumn
+                  key={coluna.id}
+                  coluna={coluna}
+                  isLoading={isLoading}
+                  clientes={clientes}
+                  onMoveCard={(id, etapa) => {
+                    setDraggedCard(null);
+                    moveCardMutation.mutate({ id, etapa });
+                  }}
+                  onDeleteCard={(id) => deleteCardMutation.mutate(id)}
+                  onEditCard={setEditingOportunidade}
+                  draggedCard={draggedCard}
+                  setDraggedCard={setDraggedCard}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -254,15 +321,15 @@ function KanbanColumn({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <Card className={`h-full flex flex-col transition-colors ${isDragOver ? "bg-muted/50" : ""}`}>
-        <CardHeader className="pb-3">
+      <Card className={`h-full flex flex-col border-0 shadow-sm bg-white dark:bg-slate-800/50 transition-all ${isDragOver ? "bg-slate-100 dark:bg-slate-700/50 ring-2 ring-offset-2 ring-blue-500" : ""}`}>
+        <CardHeader className="pb-4 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className={`h-2 w-2 rounded-full ${coluna.cor}`} />
+            <div className="flex items-center gap-3">
+              <div className={`h-3 w-3 rounded-full ${coluna.cor}`} />
               <div className="flex flex-col">
-                <h3 className="font-semibold">{coluna.titulo}</h3>
+                <h3 className="font-semibold text-slate-900 dark:text-white">{coluna.titulo}</h3>
                 {coluna.oportunidades.length > 0 && (
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-slate-600 dark:text-slate-400 mt-1">
                     Total: R$ {(
                       coluna.oportunidades.reduce((sum, op) => sum + (op.valorEstimado || 0), 0)
                     ).toLocaleString("pt-BR", {
@@ -272,12 +339,12 @@ function KanbanColumn({
                 )}
               </div>
             </div>
-            <Badge variant="secondary" className="ml-auto">
+            <Badge variant="secondary" className="ml-auto bg-slate-100 dark:bg-slate-900">
               {coluna.oportunidades.length}
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="flex-1 space-y-3 overflow-y-auto max-h-[calc(100vh-300px)]">
+        <CardContent className="flex-1 space-y-3 overflow-y-auto max-h-[calc(100vh-300px)] pt-4">
           {isLoading ? (
             Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-32 w-full" />
@@ -295,7 +362,7 @@ function KanbanColumn({
               />
             ))
           ) : (
-            <div className="text-center py-8 text-sm text-muted-foreground">
+            <div className="text-center py-8 text-sm text-slate-500 dark:text-slate-400">
               Nenhuma oportunidade
             </div>
           )}
@@ -332,7 +399,7 @@ function OpportunityCard({
 
   return (
     <Card
-      className={`cursor-move hover-elevate active-elevate-2 transition-opacity ${
+      className={`cursor-move hover-elevate active-elevate-2 transition-all border-0 shadow-sm bg-white dark:bg-slate-900/50 ${
         isDragging ? "opacity-50" : "opacity-100"
       }`}
       data-testid={`card-oportunidade-${oportunidade.id}`}
@@ -344,23 +411,23 @@ function OpportunityCard({
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             {cliente?.razaoSocial && (
-              <p className="text-xs font-semibold text-muted-foreground uppercase truncate">
+              <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase truncate">
                 {cliente.razaoSocial}
               </p>
             )}
-            <h4 className="font-medium leading-snug break-words">{oportunidade.titulo}</h4>
+            <h4 className="font-medium leading-snug break-words text-slate-900 dark:text-white">{oportunidade.titulo}</h4>
           </div>
           <div className="flex gap-1 flex-shrink-0">
             <button
               onClick={() => onEdit(oportunidade)}
-              className="text-muted-foreground hover:text-primary transition-colors"
+              className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
               data-testid={`button-edit-${oportunidade.id}`}
             >
               <Edit2 className="h-4 w-4" />
             </button>
             <button
               onClick={() => onDelete(oportunidade.id)}
-              className="text-muted-foreground hover:text-destructive transition-colors"
+              className="text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
               data-testid={`button-delete-${oportunidade.id}`}
             >
               <Trash2 className="h-4 w-4" />
@@ -369,9 +436,9 @@ function OpportunityCard({
         </div>
 
         {oportunidade.valorEstimado && (
-          <div className="flex items-center gap-2 text-sm font-semibold">
-            <DollarSign className="h-4 w-4 text-primary" />
-            <span className="text-primary">
+          <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+            <DollarSign className="h-4 w-4" />
+            <span>
               R$ {oportunidade.valorEstimado.toLocaleString("pt-BR", {
                 minimumFractionDigits: 2,
               })}
@@ -379,7 +446,7 @@ function OpportunityCard({
           </div>
         )}
 
-        <div className="flex items-center justify-between text-xs text-muted-foreground gap-2">
+        <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 gap-2">
           {oportunidade.prazo && (
             <span>
               {new Date(oportunidade.prazo).toLocaleDateString("pt-BR")}
@@ -585,7 +652,7 @@ function NovaOportunidadeDialog({
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={createMutation.isPending}>
+              <Button type="submit" disabled={createMutation.isPending} className="bg-purple-600 hover:bg-purple-700">
                 {createMutation.isPending ? "Criando..." : "Criar"}
               </Button>
             </div>
@@ -804,7 +871,7 @@ function EditarOportunidadeDialog({
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={editMutation.isPending}>
+              <Button type="submit" disabled={editMutation.isPending} className="bg-purple-600 hover:bg-purple-700">
                 {editMutation.isPending ? "Atualizando..." : "Atualizar"}
               </Button>
             </div>
@@ -817,22 +884,35 @@ function EditarOportunidadeDialog({
 
 function KanbanSkeleton() {
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-4 w-64 mt-2" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+      <div className="px-6 py-8 md:py-12">
+        <div className="max-w-full mx-auto">
+          <Skeleton className="h-10 w-48 mb-2" />
+          <Skeleton className="h-5 w-96" />
+        </div>
       </div>
-      <div className="flex gap-4">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Card key={i} className="w-80">
-            <CardHeader>
-              <Skeleton className="h-6 w-32" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-64 w-full" />
-            </CardContent>
-          </Card>
-        ))}
+      <div className="px-6 pb-12">
+        <div className="max-w-full mx-auto space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <Card key={i} className="p-6 border-0 shadow-sm">
+                <Skeleton className="h-8 w-32" />
+              </Card>
+            ))}
+          </div>
+          <div className="flex gap-4 overflow-x-auto">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Card key={i} className="w-80 border-0 shadow-sm">
+                <CardHeader>
+                  <Skeleton className="h-6 w-32" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-64 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
