@@ -1154,13 +1154,37 @@ export default function CampanhasWhatsApp() {
           </DialogHeader>
 
           <div className="space-y-4">
-            <Input
-              placeholder="Buscar por nome ou telefone..."
-              value={searchClientes}
-              onChange={(e) => setSearchClientes(e.target.value)}
-              className="border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"
-              data-testid="input-search-clientes-db"
-            />
+            {/* Filters */}
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <Input
+                    placeholder="Buscar por nome ou telefone..."
+                    value={searchClientes}
+                    onChange={(e) => setSearchClientes(e.target.value)}
+                    className="border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"
+                    data-testid="input-search-clientes-db"
+                  />
+                </div>
+                <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+                  <SelectTrigger className="w-40 border-slate-200 dark:border-slate-700" data-testid="select-status-filter">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os Status</SelectItem>
+                    <SelectItem value="lead">Lead</SelectItem>
+                    <SelectItem value="ativo">Ativo</SelectItem>
+                    <SelectItem value="proposta">Proposta</SelectItem>
+                    <SelectItem value="fechado">Fechado</SelectItem>
+                    <SelectItem value="perdido">Perdido</SelectItem>
+                    <SelectItem value="inativo">Inativo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="text-xs text-slate-600 dark:text-slate-400">
+                {clientesFiltrados.length} cliente{clientesFiltrados.length !== 1 ? "s" : ""} encontrado{clientesFiltrados.length !== 1 ? "s" : ""}
+              </div>
+            </div>
 
             {carregandoClientes ? (
               <div className="text-center py-8 text-slate-600 dark:text-slate-400">
@@ -1169,22 +1193,28 @@ export default function CampanhasWhatsApp() {
             ) : (
               <ScrollArea className="h-80 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
                 <div className="space-y-2">
-                  {clientesFiltrados.map((client) => (
-                    <div
-                      key={client.id}
-                      className="flex items-center gap-3 p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-900"
-                    >
-                      <Checkbox
-                        checked={clientesSelecionados.has(client.id)}
-                        onCheckedChange={() => toggleClienteSelecionado(client.id)}
-                        data-testid={`checkbox-cliente-${client.id}`}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-slate-900 dark:text-white truncate">{client.nome}</div>
-                        <div className="text-sm text-slate-600 dark:text-slate-400">{client.telefone}</div>
+                  {clientesFiltrados.length > 0 ? (
+                    clientesFiltrados.map((client) => (
+                      <div
+                        key={client.id}
+                        className="flex items-center gap-3 p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-900"
+                      >
+                        <Checkbox
+                          checked={clientesSelecionados.has(client.id)}
+                          onCheckedChange={() => toggleClienteSelecionado(client.id)}
+                          data-testid={`checkbox-cliente-${client.id}`}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-slate-900 dark:text-white truncate">{client.nome}</div>
+                          <div className="text-sm text-slate-600 dark:text-slate-400">{client.telefone}</div>
+                        </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-slate-600 dark:text-slate-400">
+                      Nenhum cliente encontrado com os filtros selecionados
                     </div>
-                  ))}
+                  )}
                 </div>
               </ScrollArea>
             )}
