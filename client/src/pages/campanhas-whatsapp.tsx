@@ -1411,7 +1411,15 @@ export default function CampanhasWhatsApp() {
             </div>
 
             {/* Clients List - Expanded */}
-            {carregandoClientes ? (
+            {!filtersInitiated ? (
+              <div className="flex-1 flex items-center justify-center text-slate-600 dark:text-slate-400">
+                <div className="text-center">
+                  <Users className="h-12 w-12 mx-auto mb-4 opacity-40" />
+                  <div className="text-lg font-medium mb-2">Selecione filtros para começar</div>
+                  <p className="text-sm">Clique em um filtro acima para carregar clientes</p>
+                </div>
+              </div>
+            ) : carregandoClientes ? (
               <div className="flex-1 flex items-center justify-center text-slate-600 dark:text-slate-400">
                 <div className="text-center">
                   <Loader className="h-8 w-8 animate-spin mx-auto mb-2" />
@@ -1444,6 +1452,7 @@ export default function CampanhasWhatsApp() {
                               {client.cidade && <div>📍 {client.cidade}</div>}
                               {client.tipo && <div>Tipo: <span className="font-medium text-slate-700 dark:text-slate-300">{client.tipo}</span></div>}
                               {client.carteira && <div>Carteira: <span className="font-medium text-slate-700 dark:text-slate-300">{client.carteira}</span></div>}
+                              {client.sendStatus && <div>Envio: <span className="font-medium text-slate-700 dark:text-slate-300 capitalize">{client.sendStatus === 'nao_enviado' ? 'Não Enviado' : client.sendStatus}</span></div>}
                             </div>
                           </div>
                         </div>
