@@ -629,9 +629,9 @@ export default function Chat() {
                                 />
                               );
                             })()}
-                            <p className="text-sm font-medium truncate max-w-[300px]">
-                              {(conv.client?.razaoSocial || conv.client?.nome || "Contato desconhecido").length > 50
-                                ? (conv.client?.razaoSocial || conv.client?.nome || "Contato desconhecido").substring(0, 50) + "..."
+                            <p className="text-sm font-medium truncate">
+                              {(conv.client?.razaoSocial || conv.client?.nome || "Contato desconhecido").length > 85
+                                ? (conv.client?.razaoSocial || conv.client?.nome || "Contato desconhecido").substring(0, 85) + "..."
                                 : conv.client?.razaoSocial || conv.client?.nome || "Contato desconhecido"}
                             </p>
                           </div>
@@ -657,8 +657,8 @@ export default function Chat() {
                       </div>
                       {conv.ultimaMensagem && (
                         <p className="text-xs text-muted-foreground truncate mt-1">
-                          {conv.ultimaMensagem.length > 50
-                            ? conv.ultimaMensagem.substring(0, 50) + "..."
+                          {conv.ultimaMensagem.length > 85
+                            ? conv.ultimaMensagem.substring(0, 85) + "..."
                             : conv.ultimaMensagem}
                         </p>
                       )}
@@ -692,8 +692,8 @@ export default function Chat() {
                       );
                     })()}
                     <p className="font-medium text-foreground truncate">
-                      {(selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato").length > 50
-                        ? (selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato").substring(0, 50) + "..."
+                      {(selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato").length > 90
+                        ? (selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato").substring(0, 90) + "..."
                         : selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato"}
                     </p>
                   </div>
