@@ -162,7 +162,7 @@ export default function Clientes() {
       </div>
 
       {/* Filters */}
-      <Card className="p-4">
+      <Card className="p-4 bg-sidebar border-[1px] border-[#776BFF] dark:border-[#7069FF]">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
