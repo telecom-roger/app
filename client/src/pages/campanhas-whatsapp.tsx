@@ -1207,168 +1207,182 @@ export default function CampanhasWhatsApp() {
 
       {/* Database Selector Dialog */}
       <Dialog open={mostrarSeletorBD} onOpenChange={setMostrarSeletorBD}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-slate-900 dark:text-white">Selecionar Clientes da Base de Dados</DialogTitle>
-            <DialogDescription className="text-slate-600 dark:text-slate-400">
-              Escolha os clientes que deseja incluir na campanha
+        <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
+          <DialogHeader className="pb-4 border-b border-slate-200 dark:border-slate-700">
+            <DialogTitle className="text-xl text-slate-900 dark:text-white">Selecionar Clientes da Base de Dados</DialogTitle>
+            <DialogDescription className="text-slate-600 dark:text-slate-400 mt-1">
+              Filtro, selecione e importe clientes para sua campanha
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            {/* Filters */}
-            <div className="flex flex-col gap-3">
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <Input
-                    placeholder="Buscar por nome ou telefone..."
-                    value={searchClientes}
-                    onChange={(e) => setSearchClientes(e.target.value)}
-                    className="border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"
-                    data-testid="input-search-clientes-db"
-                  />
-                </div>
-                <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-                  <SelectTrigger className="w-40 border-slate-200 dark:border-slate-700" data-testid="select-status-filter">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos os Status</SelectItem>
-                    <SelectItem value="lead">Lead</SelectItem>
-                    <SelectItem value="ativo">Ativo</SelectItem>
-                    <SelectItem value="proposta">Proposta</SelectItem>
-                    <SelectItem value="fechado">Fechado</SelectItem>
-                    <SelectItem value="perdido">Perdido</SelectItem>
-                    <SelectItem value="inativo">Inativo</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant={selectedTag === null ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedTag(null)}
-                  data-testid="button-filter-all-tags"
-                  className="h-9 px-4 whitespace-nowrap rounded-md"
-                >
-                  Todas as Etiquetas
-                </Button>
-                {tagsDisponiveis.length > 0 && (
-                  <div className="flex gap-2">
-                    {tagsDisponiveis.map((tag) => (
-                      <Button
-                        key={tag.id}
-                        variant={selectedTag === tag.nome ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setSelectedTag(tag.nome)}
-                        data-testid={`button-filter-tag-${tag.id}`}
-                        className={`h-9 px-3 text-xs whitespace-nowrap rounded-full ${
-                          selectedTag === tag.nome ? `text-white` : ""
-                        }`}
-                        style={selectedTag === tag.nome ? { backgroundColor: tag.cor } : {}}
-                      >
-                        {tag.nome}
-                      </Button>
-                    ))}
+          <div className="flex-1 overflow-hidden flex flex-col gap-4 py-4">
+            {/* Filters Section */}
+            <div className="bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-700 rounded-lg p-4 space-y-3">
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-2 items-end flex-wrap">
+                  <div className="flex-1 min-w-64">
+                    <Input
+                      placeholder="Buscar por razão social ou telefone..."
+                      value={searchClientes}
+                      onChange={(e) => setSearchClientes(e.target.value)}
+                      className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+                      data-testid="input-search-clientes-db"
+                    />
                   </div>
-                )}
-              </div>
-              <div className="text-xs text-slate-600 dark:text-slate-400">
-                {clientesFiltrados.length} cliente{clientesFiltrados.length !== 1 ? "s" : ""} encontrado{clientesFiltrados.length !== 1 ? "s" : ""}
-              </div>
-            </div>
-
-            {/* Selection Actions */}
-            <div className="flex flex-col gap-3 p-4 bg-slate-50 dark:bg-slate-900/30 rounded-lg border border-slate-200 dark:border-slate-700">
-              <div className="text-sm font-semibold text-slate-900 dark:text-white mb-2">Ações Rápidas:</div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={selecionarTodos}
-                  disabled={clientesFiltrados.length === 0}
-                  className="flex-1 text-slate-700 dark:text-slate-200"
-                  data-testid="button-selecionar-todos"
-                >
-                  Selecionar Todos ({clientesFiltrados.length})
-                </Button>
-              </div>
-              <div className="flex gap-2 items-center">
-                <Input
-                  type="number"
-                  min={1}
-                  max={clientesFiltrados.length}
-                  value={quantidadeAleatoria}
-                  onChange={(e) => setQuantidadeAleatoria(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 h-9"
-                  data-testid="input-quantidade-aleatoria"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={selecionarAleatorios}
-                  disabled={clientesFiltrados.length === 0}
-                  className="text-slate-700 dark:text-slate-200"
-                  data-testid="button-selecionar-aleatorios"
-                >
-                  Aleatórios
-                </Button>
-              </div>
-              {clientesSelecionados.size > 0 && (
-                <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                  {clientesSelecionados.size} cliente{clientesSelecionados.size !== 1 ? "s" : ""} selecionado{clientesSelecionados.size !== 1 ? "s" : ""}
+                  <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+                    <SelectTrigger className="w-44 border-slate-200 dark:border-slate-700" data-testid="select-status-filter">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos os Status</SelectItem>
+                      <SelectItem value="lead">Lead</SelectItem>
+                      <SelectItem value="ativo">Ativo</SelectItem>
+                      <SelectItem value="proposta">Proposta</SelectItem>
+                      <SelectItem value="fechado">Fechado</SelectItem>
+                      <SelectItem value="perdido">Perdido</SelectItem>
+                      <SelectItem value="inativo">Inativo</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
+                
+                {/* Tag Filters */}
+                <div className="flex gap-2 flex-wrap items-center">
+                  <Button
+                    variant={selectedTag === null ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedTag(null)}
+                    data-testid="button-filter-all-tags"
+                    className="h-8 px-3 text-xs rounded-full"
+                  >
+                    Todas as Etiquetas
+                  </Button>
+                  {tagsDisponiveis.length > 0 && tagsDisponiveis.map((tag) => (
+                    <Button
+                      key={tag.id}
+                      variant={selectedTag === tag.nome ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedTag(tag.nome)}
+                      data-testid={`button-filter-tag-${tag.id}`}
+                      className={`h-8 px-3 text-xs rounded-full ${
+                        selectedTag === tag.nome ? `text-white` : ""
+                      }`}
+                      style={selectedTag === tag.nome ? { backgroundColor: tag.cor } : {}}
+                    >
+                      {tag.nome}
+                    </Button>
+                  ))}
+                </div>
+
+                {/* Counter */}
+                <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  <span className="text-blue-600 dark:text-blue-400">{clientesFiltrados.length}</span>
+                  {" cliente" + (clientesFiltrados.length !== 1 ? "s" : "")} encontrado{clientesFiltrados.length !== 1 ? "s" : ""}
+                  {clientesSelecionados.size > 0 && <span className="ml-4">• <span className="text-green-600 dark:text-green-400">{clientesSelecionados.size}</span> selecionado{clientesSelecionados.size !== 1 ? "s" : ""}</span>}
+                </div>
+              </div>
             </div>
 
+            {/* Clients List - Expanded */}
             {carregandoClientes ? (
-              <div className="text-center py-8 text-slate-600 dark:text-slate-400">
-                Carregando clientes...
+              <div className="flex-1 flex items-center justify-center text-slate-600 dark:text-slate-400">
+                <div className="text-center">
+                  <Loader className="h-8 w-8 animate-spin mx-auto mb-2" />
+                  Carregando clientes...
+                </div>
               </div>
             ) : (
-              <ScrollArea className="h-80 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
-                <div className="space-y-2">
+              <ScrollArea className="flex-1 border border-slate-200 dark:border-slate-700 rounded-lg">
+                <div className="p-4">
                   {clientesFiltrados.length > 0 ? (
-                    clientesFiltrados.map((client) => (
-                      <div
-                        key={client.id}
-                        className="flex items-center gap-3 p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-900"
-                      >
-                        <Checkbox
-                          checked={clientesSelecionados.has(client.id)}
-                          onCheckedChange={() => toggleClienteSelecionado(client.id)}
-                          data-testid={`checkbox-cliente-${client.id}`}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-slate-900 dark:text-white truncate">{client.razaoSocial || client.nome}</div>
-                          <div className="text-sm text-slate-600 dark:text-slate-400">{client.telefone}</div>
+                    <div className="space-y-2">
+                      {clientesFiltrados.map((client) => (
+                        <div
+                          key={client.id}
+                          className="flex items-center gap-3 p-3 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        >
+                          <Checkbox
+                            checked={clientesSelecionados.has(client.id)}
+                            onCheckedChange={() => toggleClienteSelecionado(client.id)}
+                            data-testid={`checkbox-cliente-${client.id}`}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-slate-900 dark:text-white truncate text-sm">{client.razaoSocial || client.nome}</div>
+                            <div className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">📞 {client.telefone} {client.email ? `• ${client.email}` : ""}</div>
+                            {client.status && (
+                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Status: <span className="font-medium capitalize">{client.status}</span></div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      ))}
+                    </div>
                   ) : (
-                    <div className="text-center py-8 text-slate-600 dark:text-slate-400">
-                      Nenhum cliente encontrado com os filtros selecionados
+                    <div className="text-center py-12 text-slate-600 dark:text-slate-400">
+                      <div className="text-lg font-medium mb-2">Nenhum cliente encontrado</div>
+                      <p className="text-sm">Ajuste os filtros e tente novamente</p>
                     </div>
                   )}
                 </div>
               </ScrollArea>
             )}
 
-            <div className="flex gap-3 justify-end pt-4 border-t border-slate-200 dark:border-slate-700">
-              <Button
-                variant="outline"
-                onClick={() => setMostrarSeletorBD(false)}
-                className="text-slate-700 dark:text-slate-200"
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={importarSelecionadosDoBD}
-                disabled={clientesSelecionados.size === 0}
-                className="bg-green-600 hover:bg-green-700 text-white"
-                data-testid="button-importar-selecionados"
-              >
-                Importar {clientesSelecionados.size > 0 && `(${clientesSelecionados.size})`}
-              </Button>
-            </div>
+            {/* Quick Actions */}
+            {clientesFiltrados.length > 0 && (
+              <div className="bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-700 rounded-lg p-4 space-y-3">
+                <div className="text-sm font-semibold text-slate-900 dark:text-white">Ações Rápidas:</div>
+                <div className="flex gap-2 flex-wrap">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={selecionarTodos}
+                    disabled={clientesFiltrados.length === 0}
+                    className="text-slate-700 dark:text-slate-200"
+                    data-testid="button-selecionar-todos"
+                  >
+                    ✓ Selecionar Todos ({clientesFiltrados.length})
+                  </Button>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={clientesFiltrados.length}
+                      value={quantidadeAleatoria}
+                      onChange={(e) => setQuantidadeAleatoria(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 h-9 w-20"
+                      data-testid="input-quantidade-aleatoria"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={selecionarAleatorios}
+                      disabled={clientesFiltrados.length === 0}
+                      className="text-slate-700 dark:text-slate-200"
+                      data-testid="button-selecionar-aleatorios"
+                    >
+                      🎲 Aleatórios
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer Actions */}
+          <div className="flex gap-3 justify-end pt-4 border-t border-slate-200 dark:border-slate-700">
+            <Button
+              variant="outline"
+              onClick={() => setMostrarSeletorBD(false)}
+              className="text-slate-700 dark:text-slate-200"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={importarSelecionadosDoBD}
+              disabled={clientesSelecionados.size === 0}
+              className="bg-green-600 hover:bg-green-700 text-white"
+              data-testid="button-importar-selecionados"
+            >
+              ✓ Importar {clientesSelecionados.size > 0 && `(${clientesSelecionados.size})`}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
