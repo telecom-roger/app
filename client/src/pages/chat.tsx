@@ -146,6 +146,15 @@ export default function Chat() {
     refetchOnWindowFocus: true, // Refetch quando voltar a janela
   });
 
+  // Fetch WhatsApp sessions to check connection status
+  const { data: whatsappSessions = [] } = useQuery<any[]>({
+    queryKey: ["/api/whatsapp/sessions"],
+    refetchInterval: 3000, // Verifica a cada 3s
+  });
+
+  // Check if WhatsApp is connected
+  const isWhatsappConnected = whatsappSessions.length > 0 && whatsappSessions.some(s => s.status === "conectada");
+
   // Fetch messages for selected conversation (MUST BE BEFORE WebSocket useEffect that uses refetchMessages)
   const { data: messages = [], isLoading: messagesLoading, refetch: refetchMessages } = useQuery<Message[]>({
     queryKey: selectedConversationId ? ["/api/chat/messages", selectedConversationId] : [],
@@ -312,6 +321,17 @@ export default function Chat() {
 
   const handleSendMessage = () => {
     if (!messageText.trim() || !selectedConversationId) return;
+    
+    // Check if WhatsApp is connected
+    if (!isWhatsappConnected) {
+      toast({
+        title: "WhatsApp desconectado",
+        description: "Conecte uma sessão do WhatsApp antes de enviar mensagens",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     sendMutation.mutate(messageText);
   };
 
