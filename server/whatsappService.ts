@@ -306,8 +306,9 @@ async function handleIncomingMessages(sessionId: string, sock: any) {
   sessionListeners.set(sessionId, true);
   console.log(`\n🎯🎯🎯 LISTENER REGISTRADO E ATIVADO PARA: ${sessionId} 🎯🎯🎯\n`);
 
+  // Only listen to new messages (upsert), NOT status updates (update)
+  // messages.update is for delivery status, NOT for incoming messages
   sock.ev.on("messages.upsert", (m: any) => processIncomingMessages(sessionId, m));
-  sock.ev.on("messages.update", (m: any) => processIncomingMessages(sessionId, m));
   
   console.log(`[LISTENER] Aguardando mensagens para ${sessionId}...`);
 }
