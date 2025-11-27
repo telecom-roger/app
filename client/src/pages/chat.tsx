@@ -142,8 +142,8 @@ export default function Chat() {
 
   // Handle clientId from URL parameter
   useEffect(() => {
-    const urlParams = new URLSearchParams(location.split('?')[1]);
-    const clientId = urlParams.get('clientId');
+    const params = new URLSearchParams(window.location.search);
+    const clientId = params.get('clientId');
     
     if (clientId && isInitializingFromUrl) {
       setIsInitializingFromUrl(false);
@@ -182,7 +182,7 @@ export default function Chat() {
     } else {
       setIsInitializingFromUrl(false);
     }
-  }, [location]);
+  }, [window.location.search]);
 
   const { data: quickReplies = [] } = useQuery<QuickReply[]>({
     queryKey: ["/api/quick-replies"],
