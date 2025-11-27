@@ -26,6 +26,30 @@ interface Message {
   mimeType?: string;
 }
 
+// Function to render text with clickable links
+const renderTextWithLinks = (text: string) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  
+  return parts.map((part, index) => {
+    if (urlRegex.test(part)) {
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:opacity-80 transition-opacity font-medium"
+          data-testid={`link-${index}`}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+};
+
 interface Conversation {
   id: string;
   clientId: string;
@@ -941,7 +965,11 @@ export default function Chat() {
                             : "bg-muted text-foreground"
                         }`}
                       >
-                        {msg.tipo === "texto" && <p className="text-sm">{msg.conteudo}</p>}
+                        {msg.tipo === "texto" && (
+                          <p className="text-sm break-words">
+                            {renderTextWithLinks(msg.conteudo)}
+                          </p>
+                        )}
                         
                         {msg.tipo === "imagem" && msg.arquivo && (
                           <button
