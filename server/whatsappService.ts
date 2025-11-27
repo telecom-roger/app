@@ -107,38 +107,53 @@ async function processIncomingMessages(sessionId: string, m: any) {
       }
 
       // Extract phone number from WhatsApp identifiers
-      // Priority: remoteJid > participant > remoteJidAlt (remoteJid is most reliable)
-      
-      // DETAILED DEBUG
-      if (msg.message?.conversation || msg.message?.extendedTextMessage) {
-        console.log(`[DEBUG] msg.key.remoteJid:`, msg.key.remoteJid);
-        console.log(`[DEBUG] msg.key.remoteJidAlt:`, msg.key.remoteJidAlt);
-        console.log(`[DEBUG] msg.key.participant:`, msg.key.participant);
-      }
-      
       let senderPhone = "";
       
+      // Helper function to validate phone format (should be 10-15 digits)
+      const isValidPhoneFormat = (phone: string): boolean => {
+        const cleaned = phone.replace(/\D/g, "");
+        return cleaned.length >= 10 && cleaned.length <= 15;
+      };
+      
+      // Try remoteJid first
       if (msg.key.remoteJid) {
-        // Individual messages - remoteJid contains the actual phone
-        senderPhone = msg.key.remoteJid;
-      } else if (msg.key.participant) {
-        // Group messages have participant
-        senderPhone = msg.key.participant;
-      } else if (msg.key.remoteJidAlt) {
-        // Fallback: remoteJidAlt may contain alternate ID
-        senderPhone = msg.key.remoteJidAlt;
+        const candidate = msg.key.remoteJid
+          .replace("@s.whatsapp.net", "")
+          .replace("@c.us", "")
+          .trim();
+        if (isValidPhoneFormat(candidate)) {
+          senderPhone = candidate;
+        }
       }
       
+      // If remoteJid didn't work, try participant (for group messages)
+      if (!senderPhone && msg.key.participant) {
+        const candidate = msg.key.participant
+          .replace("@s.whatsapp.net", "")
+          .replace("@c.us", "")
+          .trim();
+        if (isValidPhoneFormat(candidate)) {
+          senderPhone = candidate;
+        }
+      }
+      
+      // If still no valid phone, try remoteJidAlt
+      if (!senderPhone && msg.key.remoteJidAlt) {
+        const candidate = msg.key.remoteJidAlt
+          .replace("@iid", "")
+          .replace("@lid", "")
+          .replace("@s.whatsapp.net", "")
+          .trim();
+        if (isValidPhoneFormat(candidate)) {
+          senderPhone = candidate;
+        }
+      }
+      
+      // Final cleanup
       senderPhone = senderPhone
-        .replace("@s.whatsapp.net", "")
-        .replace("@c.us", "")
         .replace("@iid", "")
         .replace("@lid", "")
         .trim();
-      
-      if (msg.message?.conversation || msg.message?.extendedTextMessage) {
-        console.log(`[DEBUG] Final senderPhone:`, senderPhone);
-      }
       
       if (!senderPhone) {
         console.log(`[RECEBIMENTO] ⚠️ Telefone vazio após limpeza`);
