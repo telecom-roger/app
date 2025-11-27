@@ -202,9 +202,7 @@ export default function Chat() {
   // Scroll to bottom when messages change or conversation is selected
   useEffect(() => {
     if (messagesEndRef.current && (messages.length > 0 || selectedConversationId)) {
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-      }, 0);
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     }
   }, [messages, selectedConversationId]);
 
