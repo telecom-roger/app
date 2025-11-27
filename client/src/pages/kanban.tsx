@@ -353,15 +353,6 @@ function KanbanColumn({
               <div className={`h-3 w-3 rounded-full ${coluna.cor}`} />
               <div className="flex flex-col">
                 <h3 className="font-semibold text-slate-900 dark:text-white">{coluna.titulo}</h3>
-                {coluna.oportunidades.length > 0 && (
-                  <span className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                    Total: R$ {(
-                      coluna.oportunidades.reduce((sum, op) => sum + (op.valorEstimado || 0), 0)
-                    ).toLocaleString("pt-BR", {
-                      minimumFractionDigits: 2,
-                    })}
-                  </span>
-                )}
               </div>
             </div>
             <Badge variant="secondary" className="ml-auto bg-slate-100 dark:bg-slate-900">
