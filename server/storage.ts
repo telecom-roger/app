@@ -597,6 +597,7 @@ export async function getConversations(userId: string): Promise<any[]> {
         razaoSocial: clients.razaoSocial,
         CELULAR_PRINCIPAL: clients.CELULAR_PRINCIPAL,
         telefone: clients.telefone,
+        tags: clients.tags,
       }
     })
     .from(conversations)
