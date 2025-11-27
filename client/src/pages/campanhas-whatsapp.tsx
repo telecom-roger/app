@@ -126,6 +126,7 @@ export default function CampanhasWhatsApp() {
   const [campanhasEmProgresso, setCampanhasEmProgresso] = useState<any[]>([]);
   const [modoBackground, setModoBackground] = useState(true);
   const [templateSelecionado, setTemplateSelecionado] = useState("");
+  const [quantidadeAleatoria, setQuantidadeAleatoria] = useState(50);
 
   // Fetch templates
   const { data: templates = [] } = useQuery<any[]>({
@@ -291,6 +292,44 @@ export default function CampanhasWhatsApp() {
       novo.add(clientId);
     }
     setClientesSelecionados(novo);
+  };
+
+  // Select all clients
+  const selecionarTodos = () => {
+    const todosIds = new Set(clientesFiltrados.map((c) => c.id));
+    setClientesSelecionados(todosIds);
+  };
+
+  // Select random clients
+  const selecionarAleatorios = () => {
+    if (quantidadeAleatoria <= 0) {
+      toast({
+        title: "Erro",
+        description: "Digite uma quantidade válida",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (quantidadeAleatoria > clientesFiltrados.length) {
+      toast({
+        title: "Erro",
+        description: `Máximo ${clientesFiltrados.length} clientes disponíveis`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const shuffled = [...clientesFiltrados].sort(() => Math.random() - 0.5);
+    const selecionados = new Set(
+      shuffled.slice(0, quantidadeAleatoria).map((c) => c.id)
+    );
+    setClientesSelecionados(selecionados);
+
+    toast({
+      title: "Sucesso",
+      description: `${quantidadeAleatoria} cliente${quantidadeAleatoria !== 1 ? "s" : ""} selecionado${quantidadeAleatoria !== 1 ? "s" : ""} aleatoriamente`,
+    });
   };
 
   // Replace variables in template (supports both {variavel} and {{variavel}} syntax)
@@ -1184,6 +1223,49 @@ export default function CampanhasWhatsApp() {
               <div className="text-xs text-slate-600 dark:text-slate-400">
                 {clientesFiltrados.length} cliente{clientesFiltrados.length !== 1 ? "s" : ""} encontrado{clientesFiltrados.length !== 1 ? "s" : ""}
               </div>
+            </div>
+
+            {/* Selection Actions */}
+            <div className="flex flex-col gap-3 p-4 bg-slate-50 dark:bg-slate-900/30 rounded-lg border border-slate-200 dark:border-slate-700">
+              <div className="text-sm font-semibold text-slate-900 dark:text-white mb-2">Ações Rápidas:</div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={selecionarTodos}
+                  disabled={clientesFiltrados.length === 0}
+                  className="flex-1 text-slate-700 dark:text-slate-200"
+                  data-testid="button-selecionar-todos"
+                >
+                  Selecionar Todos ({clientesFiltrados.length})
+                </Button>
+              </div>
+              <div className="flex gap-2 items-center">
+                <Input
+                  type="number"
+                  min={1}
+                  max={clientesFiltrados.length}
+                  value={quantidadeAleatoria}
+                  onChange={(e) => setQuantidadeAleatoria(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 h-9"
+                  data-testid="input-quantidade-aleatoria"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={selecionarAleatorios}
+                  disabled={clientesFiltrados.length === 0}
+                  className="text-slate-700 dark:text-slate-200"
+                  data-testid="button-selecionar-aleatorios"
+                >
+                  Aleatórios
+                </Button>
+              </div>
+              {clientesSelecionados.size > 0 && (
+                <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                  {clientesSelecionados.size} cliente{clientesSelecionados.size !== 1 ? "s" : ""} selecionado{clientesSelecionados.size !== 1 ? "s" : ""}
+                </div>
+              )}
             </div>
 
             {carregandoClientes ? (
