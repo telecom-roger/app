@@ -550,11 +550,9 @@ export default function CampanhasAgendadas() {
 
               {/* Ordering */}
               <Select value={orderBy} onValueChange={(value: any) => setOrderBy(value)}>
-                <FormControl>
-                  <SelectTrigger className="w-32 h-9" data-testid="select-orderBy">
-                    <SelectValue />
-                  </SelectTrigger>
-                </FormControl>
+                <SelectTrigger className="w-32 h-9" data-testid="select-orderBy">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="recent">Mais Recentes</SelectItem>
                   <SelectItem value="oldest">Mais Antigos</SelectItem>
