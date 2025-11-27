@@ -39,6 +39,8 @@ const novaCampaignSchema = z.object({
   filtros: z.object({
     status: z.string().optional(),
     carteira: z.string().optional(),
+    orderBy: z.enum(["recent", "oldest"]).default("recent"),
+    quantidadeAleatoria: z.string().optional(),
   }).default({}),
 });
 
@@ -274,6 +276,82 @@ export default function CampanhaNova() {
                         )}
                       />
                     )}
+
+                    <div className="border-t pt-6">
+                      <h3 className="font-semibold mb-4">Filtros de Envio</h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <FormField
+                          control={form.control}
+                          name="filtros.orderBy"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Ordenação</FormLabel>
+                              <Select value={field.value} onValueChange={field.onChange}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="recent">Mais Recentes</SelectItem>
+                                  <SelectItem value="oldest">Mais Antigos</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="filtros.quantidadeAleatoria"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Quantidade Aleatória (opcional)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Ex: 500 ou 50%"
+                                  {...field}
+                                  data-testid="input-quantidade-aleatoria"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="filtros.status"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Status (opcional)</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Ex: lead, ativo" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="filtros.carteira"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Carteira (opcional)</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Ex: Vivo, Claro" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </form>
               </Form>
