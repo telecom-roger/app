@@ -334,6 +334,7 @@ export default function Kanban() {
         open={showNovaOportunidade}
         onOpenChange={setShowNovaOportunidade}
         clientes={clientes || []}
+        colunas={colunas}
       />
       {/* Modal Editar Oportunidade */}
       <EditarOportunidadeDialog
@@ -529,10 +530,12 @@ function NovaOportunidadeDialog({
   open,
   onOpenChange,
   clientes,
+  colunas,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   clientes: any[];
+  colunas: any[];
 }) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -679,6 +682,31 @@ function NovaOportunidadeDialog({
                   <FormControl>
                     <Input placeholder="Ex: Proposta de plano móvel" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="etapa"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Etapa/Coluna</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger data-testid="select-etapa">
+                        <SelectValue placeholder="Selecione a etapa" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {colunas.map((coluna: any) => (
+                        <SelectItem key={coluna.id} value={coluna.id}>
+                          {coluna.titulo}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
