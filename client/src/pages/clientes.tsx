@@ -218,7 +218,7 @@ export default function Clientes() {
                       onClick={() => setSelectedTag(tag.nome)}
                       data-testid={`button-filter-tag-${tag.id}`}
                       className={`h-7 px-3 text-xs whitespace-nowrap rounded-full ${
-                        selectedTag === tag.nome ? tag.cor : ""
+                        selectedTag === tag.nome ? `${tag.cor} border border-gray-400` : ""
                       }`}
                       style={{
                         backgroundColor: selectedTag === tag.nome ? undefined : "transparent",
