@@ -1856,6 +1856,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add tag to client
+  app.post("/api/clients/:clientId/tags", isAuthenticated, async (req, res) => {
+    try {
+      const { clientId } = req.params;
+      const { tagName } = req.body;
+      
+      const client = await storage.addTagToClient(clientId, tagName);
+      if (!client) return res.status(404).json({ error: "Client not found" });
+      res.json(client);
+    } catch (error: any) {
+      console.error("Error adding tag to client:", error);
+      res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
+  // Remove tag from client
+  app.delete("/api/clients/:clientId/tags/:tagName", isAuthenticated, async (req, res) => {
+    try {
+      const { clientId, tagName } = req.params;
+      const client = await storage.removeTagFromClient(clientId, tagName);
+      if (!client) return res.status(404).json({ error: "Client not found" });
+      res.json(client);
+    } catch (error: any) {
+      console.error("Error removing tag from client:", error);
+      res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
   // ==================== ADMIN ROUTES ====================
   app.get("/api/admin/users", isAuthenticated, requireAdmin, async (req, res) => {
     try {

@@ -358,47 +358,41 @@ export default function Chat() {
     }
   };
 
-  // Create note mutation
-  const createNoteMutation = useMutation({
-    mutationFn: async (data: { conteudo: string; cor: string }) => {
+  // Add tag to client mutation
+  const addTagMutation = useMutation({
+    mutationFn: async (tagName: string) => {
       if (!currentClientId) return;
-      const res = await apiRequest("POST", `/api/client-notes/${currentClientId}`, data);
+      const res = await apiRequest("POST", `/api/clients/${currentClientId}/tags`, { tagName });
       return res.json();
     },
     onSuccess: () => {
-      refetchNotes();
-      setNoteText("");
-      setNoteColor("bg-blue-500");
+      refetchConversations();
       setShowNoteInput(false);
-      toast({ title: "Nota adicionada", variant: "default" });
+      toast({ title: "Etiqueta adicionada", variant: "default" });
     },
     onError: (error: any) => {
-      toast({ title: "Erro ao criar nota", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao adicionar etiqueta", description: error.message, variant: "destructive" });
     },
   });
 
-  // Delete note mutation
-  const deleteNoteMutation = useMutation({
-    mutationFn: async (noteId: string) => {
-      const res = await apiRequest("DELETE", `/api/client-notes/${noteId}`, {});
+  // Remove tag from client mutation
+  const removeTagMutation = useMutation({
+    mutationFn: async (tagName: string) => {
+      if (!currentClientId) return;
+      const res = await apiRequest("DELETE", `/api/clients/${currentClientId}/tags/${tagName}`, {});
       return res.json();
     },
     onSuccess: () => {
-      refetchNotes();
-      toast({ title: "Nota removida", variant: "default" });
+      refetchConversations();
+      toast({ title: "Etiqueta removida", variant: "default" });
     },
     onError: (error: any) => {
-      toast({ title: "Erro ao remover nota", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao remover etiqueta", description: error.message, variant: "destructive" });
     },
   });
 
-  const handleCreateNote = () => {
-    if (!noteText.trim() || !currentClientId) return;
-    createNoteMutation.mutate({ conteudo: noteText, cor: noteColor });
-  };
-
-  const handleDeleteNote = (noteId: string) => {
-    deleteNoteMutation.mutate(noteId);
+  const handleDeleteTag = (tagName: string) => {
+    removeTagMutation.mutate(tagName);
   };
 
   const handleSelectQuickReply = (reply: string) => {
@@ -477,26 +471,29 @@ export default function Chat() {
             </div>
 
             {/* Tags List */}
-            {notesLoading ? (
+            {conversationsLoading ? (
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             ) : (
               <div className="flex flex-wrap gap-1">
-                {clientNotes.map((note) => (
-                  <Badge
-                    key={note.id}
-                    className={`${note.cor} text-white cursor-pointer flex items-center gap-1 py-1 px-2 hover-elevate`}
-                    data-testid={`badge-note-${note.id}`}
-                  >
-                    <span className="text-xs max-w-[150px] truncate">{note.conteudo}</span>
-                    <button
-                      onClick={() => handleDeleteNote(note.id)}
-                      className="ml-1 opacity-70 hover:opacity-100"
-                      data-testid={`button-delete-note-${note.id}`}
+                {selectedConversation?.client?.tags?.map((tagName: string) => {
+                  const tag = allTags.find(t => t.nome === tagName);
+                  return (
+                    <Badge
+                      key={tagName}
+                      className={`${tag?.cor || "bg-gray-500"} text-white cursor-pointer flex items-center gap-1 py-1 px-2 hover-elevate`}
+                      data-testid={`badge-tag-${tagName}`}
                     >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
+                      <span className="text-xs max-w-[150px] truncate">{tagName}</span>
+                      <button
+                        onClick={() => handleDeleteTag(tagName)}
+                        className="ml-1 opacity-70 hover:opacity-100"
+                        data-testid={`button-delete-tag-${tagName}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  );
+                })}
               </div>
             )}
 
@@ -514,16 +511,12 @@ export default function Chat() {
                         size="sm"
                         className={`${tag.cor} text-white hover:opacity-80`}
                         onClick={() => {
-                          setNoteText(tag.nome);
-                          setNoteColor(tag.cor);
-                          // Auto-create with selected tag
-                          createNoteMutation.mutate({ conteudo: tag.nome, cor: tag.cor });
-                          setShowNoteInput(false);
+                          addTagMutation.mutate(tag.nome);
                         }}
-                        disabled={createNoteMutation.isPending}
+                        disabled={addTagMutation.isPending}
                         data-testid={`button-select-tag-${tag.id}`}
                       >
-                        {createNoteMutation.isPending ? (
+                        {addTagMutation.isPending ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
                           tag.nome

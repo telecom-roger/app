@@ -796,3 +796,25 @@ export async function updateTag(id: string, data: Partial<InsertTag>): Promise<T
 export async function deleteTag(id: string): Promise<void> {
   await db.delete(tags).where(eq(tags.id, id));
 }
+
+// Add tag to client's tags array
+export async function addTagToClient(clientId: string, tagName: string): Promise<Client | undefined> {
+  const client = await getClientById(clientId);
+  if (!client) return undefined;
+  
+  const currentTags = client.tags || [];
+  if (!currentTags.includes(tagName)) {
+    currentTags.push(tagName);
+  }
+  
+  return updateClient(clientId, { tags: currentTags });
+}
+
+// Remove tag from client's tags array
+export async function removeTagFromClient(clientId: string, tagName: string): Promise<Client | undefined> {
+  const client = await getClientById(clientId);
+  if (!client) return undefined;
+  
+  const currentTags = (client.tags || []).filter(t => t !== tagName);
+  return updateClient(clientId, { tags: currentTags });
+}
