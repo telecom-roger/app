@@ -146,11 +146,19 @@ export default function CampanhasAgendadas() {
     },
   });
 
-  // Filter clients by search
-  const clientesFiltrados = clients.filter((c) =>
-    c.nome.toLowerCase().includes(searchClientes.toLowerCase()) ||
-    c.telefone.includes(searchClientes)
-  );
+  // Filter clients by search and apply ordering
+  const clientesFiltrados = clients
+    .filter((c) =>
+      c.nome.toLowerCase().includes(searchClientes.toLowerCase()) ||
+      c.telefone.includes(searchClientes)
+    )
+    .sort((a, b) => {
+      if (orderBy === "recent") {
+        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      } else {
+        return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+      }
+    });
 
   // Toggle client selection
   const toggleClienteSelecionado = (clientId: string) => {
@@ -449,39 +457,6 @@ export default function CampanhasAgendadas() {
                   )}
                 />
 
-                <div className="border-t pt-4">
-                  <h3 className="font-semibold mb-4">Filtros de Envio</h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormItem>
-                      <FormLabel>Ordenação</FormLabel>
-                      <Select value={orderBy} onValueChange={(value: any) => setOrderBy(value)}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-orderBy">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="recent">Mais Recentes</SelectItem>
-                          <SelectItem value="oldest">Mais Antigos</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
-
-                    <FormItem>
-                      <FormLabel>Quantidade Aleatória (opcional)</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Ex: 500 ou 50%"
-                          value={quantidadeAleatoria}
-                          onChange={(e) => setQuantidadeAleatoria(e.target.value)}
-                          data-testid="input-quantidade-aleatoria"
-                        />
-                      </FormControl>
-                    </FormItem>
-                  </div>
-                </div>
-
                 <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded text-sm text-muted-foreground">
                   <Clock className="w-4 h-4 inline mr-2" />
                   A campanha será enviada automaticamente na data e hora
@@ -569,6 +544,22 @@ export default function CampanhasAgendadas() {
               >
                 ✕ Desselecionar Todos
               </Button>
+
+              {/* Divider */}
+              <div className="h-6 w-px bg-border" />
+
+              {/* Ordering */}
+              <Select value={orderBy} onValueChange={(value: any) => setOrderBy(value)}>
+                <FormControl>
+                  <SelectTrigger className="w-32 h-9" data-testid="select-orderBy">
+                    <SelectValue />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="recent">Mais Recentes</SelectItem>
+                  <SelectItem value="oldest">Mais Antigos</SelectItem>
+                </SelectContent>
+              </Select>
 
               {/* Divider */}
               <div className="h-6 w-px bg-border" />
