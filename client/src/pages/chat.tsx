@@ -677,8 +677,8 @@ export default function Chat() {
                           </p>
                           {conv.ultimaMensagem && (
                             <p className="text-xs text-muted-foreground truncate mt-1">
-                              {conv.ultimaMensagem.length > 30
-                                ? conv.ultimaMensagem.substring(0, 30) + "..."
+                              {conv.ultimaMensagem.length > 50
+                                ? conv.ultimaMensagem.substring(0, 50) + "..."
                                 : conv.ultimaMensagem}
                             </p>
                           )}
