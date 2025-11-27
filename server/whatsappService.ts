@@ -667,6 +667,16 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
           mensagemEnviada = await sendMessage(sessionId, client.CELULAR_PRINCIPAL || client.telefone, conteudo);
         }
         
+        // Update client status to "Enviado" if message was sent successfully
+        if (mensagemEnviada) {
+          try {
+            await storage.updateClient(client.id, { status: "Enviado" });
+            console.log(`✅ Status do cliente ${client.id} atualizado para "Enviado"`);
+          } catch (err) {
+            console.warn("Erro ao atualizar status do cliente:", err);
+          }
+        }
+        
         // Registra interação
         await storage.createInteraction({
           clientId: client.id,
