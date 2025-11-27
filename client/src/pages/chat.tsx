@@ -130,6 +130,7 @@ export default function Chat() {
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
   const [contextMenuConvId, setContextMenuConvId] = useState<string | null>(null);
   const [showClientInfo, setShowClientInfo] = useState(false);
+  const [businessValue, setBusinessValue] = useState<string>("");
 
   // Persist closed conversations to localStorage
   useEffect(() => {
@@ -494,13 +495,15 @@ export default function Chat() {
   const addTagMutation = useMutation({
     mutationFn: async (tagName: string) => {
       if (!currentClientId) return;
-      const res = await apiRequest("POST", `/api/clients/${currentClientId}/tags`, { tagName });
+      const valorEstimado = businessValue ? parseInt(businessValue.replace(/\D/g, "")) * 100 : 0;
+      const res = await apiRequest("POST", `/api/clients/${currentClientId}/tags`, { tagName, valorEstimado });
       return res.json();
     },
     onSuccess: () => {
       refetchConversations();
       setShowNoteInput(false);
-      toast({ title: "Etiqueta adicionada", variant: "default" });
+      setBusinessValue("");
+      toast({ title: "Etiqueta adicionada e oportunidade criada", variant: "default" });
     },
     onError: (error: any) => {
       toast({ title: "Erro ao adicionar etiqueta", description: error.message, variant: "destructive" });
@@ -1039,7 +1042,10 @@ export default function Chat() {
             </ScrollArea>
 
       {/* Client Info Modal */}
-      <Dialog open={showClientInfo} onOpenChange={setShowClientInfo}>
+      <Dialog open={showClientInfo} onOpenChange={(open) => {
+        setShowClientInfo(open);
+        if (!open) setBusinessValue("");
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -1053,6 +1059,25 @@ export default function Chat() {
             </div>
           ) : detailedClient ? (
             <div className="space-y-4">
+              {/* Valor do Negócio */}
+              <div className="border-b border-slate-200 dark:border-slate-700 pb-3">
+                <label className="text-sm font-semibold text-slate-900 dark:text-slate-100">Valor do Negócio</label>
+                <Input
+                  type="text"
+                  placeholder="R$ 0,00"
+                  value={businessValue}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, "");
+                    const formatted = new Intl.NumberFormat("pt-BR", {
+                      style: "currency",
+                      currency: "BRL"
+                    }).format(parseInt(value || "0") / 100);
+                    setBusinessValue(formatted);
+                  }}
+                  className="mt-2"
+                  data-testid="input-business-value"
+                />
+              </div>
               <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800/50">
                 <div className="flex items-center gap-3 mb-3">
                   <Avatar className="h-12 w-12">
