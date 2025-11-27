@@ -1,8 +1,7 @@
 import { Bell } from "lucide-react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 
 export function NotificationBell() {
@@ -16,19 +15,8 @@ export function NotificationBell() {
 
   const unreadCount = data?.count || 0;
 
-  const markAllReadMutation = useMutation({
-    mutationFn: async () => {
-      await apiRequest("POST", "/api/notifications/mark-all-read", {});
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/notifications/unread-count"] });
-    },
-  });
-
-  const handleClick = async () => {
-    // Mark all as read
-    await markAllReadMutation.mutateAsync();
-    // Navigate to chat
+  const handleClick = () => {
+    // Navigate to chat - messages marked as read individually per conversation
     navigate("/chat");
   };
 
