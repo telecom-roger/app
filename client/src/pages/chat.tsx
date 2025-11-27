@@ -636,13 +636,28 @@ export default function Chat() {
   const saveBusinessValueMutation = useMutation({
     mutationFn: async () => {
       if (!currentClientId) return;
+      // Salvar no cliente
       await apiRequest("PATCH", `/api/clients/${currentClientId}`, { 
         camposCustom: { valorEstimado: businessValue } 
       });
+      // Sincronizar em todas as oportunidades do cliente
+      try {
+        const oppsRes = await fetch(`/api/opportunities`);
+        const opps = await oppsRes.json();
+        const clientOpps = opps.filter((op: any) => op.clientId === currentClientId);
+        for (const opp of clientOpps) {
+          await apiRequest("PATCH", `/api/opportunities/${opp.id}`, {
+            valorEstimado: businessValue
+          });
+        }
+      } catch (err) {
+        console.error("Erro ao sincronizar oportunidades:", err);
+      }
       return businessValue;
     },
     onSuccess: () => {
       refetchDetailedClient();
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
       toast({ title: "Valor salvo com sucesso", variant: "default" });
     },
     onError: (error: any) => {

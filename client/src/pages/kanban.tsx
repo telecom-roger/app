@@ -734,10 +734,18 @@ function EditarOportunidadeDialog({
   const editMutation = useMutation({
     mutationFn: async (data: any) => {
       if (!oportunidade) return;
+      // Atualizar oportunidade
       await apiRequest("PATCH", `/api/opportunities/${oportunidade.id}`, data);
+      // Sincronizar valorEstimado no cliente também
+      if (oportunidade.clientId && data.valorEstimado !== undefined) {
+        await apiRequest("PATCH", `/api/clients/${oportunidade.clientId}`, {
+          camposCustom: { valorEstimado: data.valorEstimado }
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
       toast({
         title: "Sucesso",
         description: "Oportunidade atualizada com sucesso",
