@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MessageSquare, Plus, Trash2, RotateCw, CheckCircle, AlertCircle, Send, Zap, Clock } from "lucide-react";
+import { MessageSquare, Plus, Trash2, RotateCw, CheckCircle, AlertCircle, Zap, Clock } from "lucide-react";
 import { useLocation } from "wouter";
 
 export default function WhatsApp() {
@@ -374,18 +374,6 @@ export default function WhatsApp() {
                 </div>
               </DialogContent>
             </Dialog>
-
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => setLocation("/whatsapp/broadcast")}
-              disabled={!hasConnectedSession}
-              data-testid="button-broadcast"
-              className="text-slate-700 dark:text-slate-200"
-            >
-              <Send className="h-5 w-5 mr-2" />
-              Enviar em Massa
-            </Button>
           </div>
 
           {/* Sessions List */}
