@@ -179,9 +179,11 @@ export default function CampanhasWhatsApp() {
   });
 
   // Fetch clients with campaign history (only after filters initiated)
-  const { data: clientesDisponiveis = [], isLoading: carregandoClientes } = useQuery<ClientForImport[]>({
+  const { data: clientesDisponiveis = [], isLoading: carregandoClientes, refetch: refetchClientes } = useQuery<ClientForImport[]>({
     queryKey: ["/api/clients/whatsapp-list"],
     enabled: isAuthenticated && mostrarSeletorBD && filtersInitiated,
+    refetchInterval: filtersInitiated && mostrarSeletorBD ? 1000 : false, // Refetch every 1s when filters are active
+    staleTime: 0, // Always consider data stale to enable constant refetch
   });
 
   // Fetch available tags
@@ -224,6 +226,13 @@ export default function CampanhasWhatsApp() {
       setFiltersInitiated(true);
     }
   }, [searchClientes, filtroStatus, selectedTag, selectedTiposFilter, selectedCarteirasFilter, selectedCidadesFilter, selectedSendStatusFilter, dataEnvioInicio, dataEnvioFim]);
+
+  // Immediately refetch when send status filter changes for real-time updates
+  useEffect(() => {
+    if (mostrarSeletorBD && filtersInitiated && selectedSendStatusFilter.size > 0) {
+      refetchClientes();
+    }
+  }, [selectedSendStatusFilter]);
 
   // Poll for campaigns in progress
   useEffect(() => {

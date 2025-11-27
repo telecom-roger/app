@@ -171,7 +171,7 @@ export default function CampanhasAgendadas() {
     enabled: isAuthenticated && showClientSelector,
   });
 
-  const { data: clients = [], isLoading: carregandoClientes } = useQuery<any[]>({
+  const { data: clients = [], isLoading: carregandoClientes, refetch: refetchClients } = useQuery<any[]>({
     queryKey: ["/api/clients/whatsapp-list"],
     queryFn: async () => {
       const res = await fetch("/api/clients/whatsapp-list");
@@ -180,6 +180,8 @@ export default function CampanhasAgendadas() {
       return Array.isArray(data) ? data : [];
     },
     enabled: isAuthenticated && showClientSelector && filtersInitiated,
+    refetchInterval: filtersInitiated && showClientSelector ? 1000 : false, // Refetch every 1s when filters are active
+    staleTime: 0, // Always consider data stale to enable constant refetch
   });
 
   // Detect when filters are initiated
@@ -198,6 +200,13 @@ export default function CampanhasAgendadas() {
       setFiltersInitiated(true);
     }
   }, [searchClientes, filtroStatus, selectedTag, selectedTiposFilter, selectedCarteirasFilter, selectedCidadesFilter, selectedSendStatusFilter, dataEnvioInicio, dataEnvioFim]);
+
+  // Immediately refetch when send status filter changes for real-time updates
+  useEffect(() => {
+    if (showClientSelector && filtersInitiated && selectedSendStatusFilter.size > 0) {
+      refetchClients();
+    }
+  }, [selectedSendStatusFilter]);
 
   // Filter clients by all criteria
   const clientesFiltrados = clients
