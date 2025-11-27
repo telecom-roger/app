@@ -31,7 +31,7 @@ import { useLocation } from "wouter";
 export default function WhatsApp() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [sessionName, setSessionName] = useState("");
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
@@ -438,35 +438,37 @@ export default function WhatsApp() {
                         </Badge>
                       </div>
 
-                      {/* Actions */}
-                      <div className="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                        {session.status === "desconectada" && (
+                      {/* Actions - Only show if user owns this session */}
+                      {user?.id === session.userId && (
+                        <div className="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                          {session.status === "desconectada" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setReconnectSessionId(session.id);
+                                reconnectMutation.mutate(session.id);
+                              }}
+                              disabled={reconnectMutation.isPending}
+                              data-testid={`button-reconnect-${session.id}`}
+                              className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 flex-1"
+                            >
+                              <RotateCw className="h-4 w-4 mr-1" />
+                              Reconectar
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
-                              setReconnectSessionId(session.id);
-                              reconnectMutation.mutate(session.id);
-                            }}
-                            disabled={reconnectMutation.isPending}
-                            data-testid={`button-reconnect-${session.id}`}
-                            className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 flex-1"
+                            onClick={() => setDeleteSessionId(session.id)}
+                            data-testid={`button-delete-${session.id}`}
+                            className={`text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 ${session.status !== "desconectada" ? "flex-1" : ""}`}
                           >
-                            <RotateCw className="h-4 w-4 mr-1" />
-                            Reconectar
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Deletar
                           </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDeleteSessionId(session.id)}
-                          data-testid={`button-delete-${session.id}`}
-                          className={`text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 ${session.status !== "desconectada" ? "flex-1" : ""}`}
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Deletar
-                        </Button>
-                      </div>
+                        </div>
+                      )}
                     </div>
                   </Card>
                 ))}
