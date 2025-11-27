@@ -442,7 +442,7 @@ export default function Chat() {
                   size="sm"
                   onClick={() => setSelectedTag(tag.nome)}
                   data-testid={`button-filter-tag-${tag.id}`}
-                  className={`h-7 px-2 text-xs text-white ${
+                  className={`h-7 px-2 text-xs rounded-full ${
                     selectedTag === tag.nome ? tag.cor : ""
                   }`}
                 >
@@ -517,7 +517,7 @@ export default function Chat() {
                           key={tag.id}
                           size="sm"
                           variant={isCurrentTag ? "default" : "outline"}
-                          className={`${tag.cor} text-white hover:opacity-80`}
+                          className={`${tag.cor} hover:opacity-80 rounded-full`}
                           onClick={() => {
                             addTagMutation.mutate(tag.nome);
                           }}
