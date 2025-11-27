@@ -143,6 +143,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para listar todas as cidades únicas
+  app.get("/api/clients/cidades", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const whereCondition = user.role === 'admin' ? undefined : or(
+        eq(clients.createdBy, user.id),
+        sql`${clients.createdBy} IS NULL`
+      );
+      
+      const cidadesResult = await db
+        .selectDistinct({ cidade: clients.cidade })
+        .from(clients)
+        .where(whereCondition);
+      
+      const cidades = cidadesResult
+        .map(r => r.cidade)
+        .filter((c): c is string => c !== null && c !== undefined && c !== '')
+        .sort();
+      
+      res.json(cidades);
+    } catch (error: any) {
+      console.error("Error fetching cidades:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Endpoint para listar clientes com WhatsApp (MUST be before :id route)
   app.get("/api/clients/whatsapp-list", isAuthenticated, async (req, res) => {
     try {

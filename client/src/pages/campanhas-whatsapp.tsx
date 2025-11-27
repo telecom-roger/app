@@ -180,14 +180,11 @@ export default function CampanhasWhatsApp() {
     enabled: isAuthenticated && mostrarSeletorBD,
   });
 
-  // Extract available cidades from clientesDisponiveis (eliminates mismatch issues)
-  const cidadesDisponiveis = Array.from(
-    new Set(
-      clientesDisponiveis
-        .map((c) => c.cidade)
-        .filter((cidade) => cidade && cidade.trim())
-    )
-  ).sort();
+  // Fetch available cidades
+  const { data: cidadesDisponiveis = [] } = useQuery<string[]>({
+    queryKey: ["/api/clients/cidades"],
+    enabled: isAuthenticated && mostrarSeletorBD,
+  });
 
   // Poll for campaigns in progress
   useEffect(() => {
@@ -1341,7 +1338,7 @@ export default function CampanhasWhatsApp() {
 
                   <MultiSelectFilter
                     label="Cidade"
-                    options={Array.isArray(cidadesDisponiveis) ? cidadesDisponiveis.slice(0, 100) : []}
+                    options={cidadesDisponiveis.slice(0, 100)}
                     selectedValues={selectedCidadesFilter}
                     onSelectionChange={setSelectedCidadesFilter}
                   />
