@@ -240,7 +240,7 @@ export async function getOpportunities(params: {
     .select()
     .from(opportunities)
     .where(whereClause)
-    .orderBy(opportunities.ordem, desc(opportunities.createdAt));
+    .orderBy(opportunities.ordem, opportunities.createdAt);
 }
 
 export async function getOpportunityById(id: string): Promise<Opportunity | undefined> {
