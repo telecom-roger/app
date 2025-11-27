@@ -86,7 +86,7 @@ export async function createUser(data: any): Promise<User> {
 }
 
 export async function getAllUsers(): Promise<User[]> {
-  return await db.select().from(users).orderBy(users.createdAt.desc());
+  return await db.select().from(users).orderBy(desc(users.createdAt));
 }
 
 // ==================== CLIENT STORAGE ====================
@@ -108,12 +108,8 @@ export async function updateClient(
 }
 
 export async function getClientById(id: string): Promise<Client | undefined> {
-  const [client] = await db.select().from(clients).where(eq(clients.id, id)).limit(1);
-  return client;
-}
-
-export async function deleteClient(id: string): Promise<void> {
-  await db.delete(clients).where(eq(clients.id, id));
+  const [result] = await db.select().from(clients).where(eq(clients.id, id)).limit(1);
+  return result;
 }
 
 export async function getClients(params: {
@@ -125,47 +121,82 @@ export async function getClients(params: {
   userId?: string;
   isAdmin?: boolean;
 }): Promise<{ clientes: Client[]; total: number }> {
-  let query = db.select().from(clients);
+  const { search, status, tagName, page = 1, limit = 20, userId, isAdmin = false } = params;
+  const offset = (page - 1) * limit;
 
-  if (params.search) {
-    query = query.where(
+  let conditions = [];
+  
+  // Se não é admin, filtra apenas clientes do usuário
+  if (userId && !isAdmin) {
+    conditions.push(
       or(
-        ilike(clients.nome, `%${params.search}%`),
-        ilike(clients.razaoSocial, `%${params.search}%`),
-        ilike(clients.email, `%${params.search}%`),
-        ilike(clients.telefone, `%${params.search}%`)
+        eq(clients.createdBy, userId),
+        sql`${clients.createdBy} IS NULL` // Também vê clientes sem proprietário definido
       )
     );
   }
-
-  if (params.status) {
-    query = query.where(eq(clients.status, params.status));
+  // Se é admin, não filtra - vê todos os clientes
+  
+  if (search) {
+    conditions.push(
+      or(
+        ilike(clients.nome, `%${search}%`),
+        ilike(clients.razaoSocial, `%${search}%`),
+        ilike(clients.cpfCnpj, `%${search}%`)
+      )
+    );
+  }
+  if (status && status !== "todos") {
+    conditions.push(eq(clients.status, status));
+  }
+  if (tagName) {
+    conditions.push(sql`${clients.tags}::text[] @> ARRAY[${tagName}]`);
   }
 
-  if (params.tagName && !params.isAdmin) {
-    query = query.where(sql`clients.tags @> ARRAY[${params.tagName}]`);
-  }
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-  query = query.orderBy(clients.createdAt.desc());
+  const [clientes, totalResult] = await Promise.all([
+    db
+      .select()
+      .from(clients)
+      .where(whereClause)
+      .orderBy(desc(clients.createdAt))
+      .limit(limit)
+      .offset(offset),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(clients)
+      .where(whereClause),
+  ]);
 
-  const total = await db.select({ count: sql<number>`count(*)` }).from(clients).then(r => r[0]?.count || 0);
+  return {
+    clientes,
+    total: totalResult[0]?.count || 0,
+  };
+}
 
-  const offset = ((params.page || 1) - 1) * (params.limit || 10);
-  const limit = params.limit || 10;
+export async function deleteClient(id: string): Promise<void> {
+  await db.delete(clients).where(eq(clients.id, id));
+}
 
-  const clientes = await query.offset(offset).limit(limit);
-  return { clientes, total };
+// ==================== CONTACT STORAGE ====================
+export async function createContact(data: InsertContact): Promise<Contact> {
+  const [result] = await db.insert(contacts).values(data).returning();
+  return result;
+}
+
+export async function getContactsByClientId(clientId: string): Promise<Contact[]> {
+  return await db
+    .select()
+    .from(contacts)
+    .where(eq(contacts.clientId, clientId))
+    .orderBy(desc(contacts.preferencial));
 }
 
 // ==================== OPPORTUNITY STORAGE ====================
 export async function createOpportunity(data: InsertOpportunity): Promise<Opportunity> {
   const [result] = await db.insert(opportunities).values(data).returning();
   return result;
-}
-
-export async function getOpportunityById(id: string): Promise<Opportunity | undefined> {
-  const [opp] = await db.select().from(opportunities).where(eq(opportunities.id, id)).limit(1);
-  return opp;
 }
 
 export async function updateOpportunity(
@@ -180,40 +211,44 @@ export async function updateOpportunity(
   return result;
 }
 
-export async function deleteOpportunity(id: string): Promise<void> {
-  await db.delete(opportunities).where(eq(opportunities.id, id));
-}
-
 export async function getOpportunities(params: {
   responsavel?: string;
   etapa?: string;
 }): Promise<Opportunity[]> {
-  let query = db.select().from(opportunities);
-
+  let conditions = [];
   if (params.responsavel && params.responsavel !== "todos") {
-    query = query.where(eq(opportunities.responsavelId, params.responsavel));
+    conditions.push(eq(opportunities.responsavelId, params.responsavel));
   }
-
   if (params.etapa) {
-    query = query.where(eq(opportunities.etapa, params.etapa));
+    conditions.push(eq(opportunities.etapa, params.etapa));
   }
 
-  return await query.orderBy(asc(opportunities.ordem));
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  return await db
+    .select()
+    .from(opportunities)
+    .where(whereClause)
+    .orderBy(opportunities.ordem, desc(opportunities.createdAt));
+}
+
+export async function getOpportunityById(id: string): Promise<Opportunity | undefined> {
+  const [result] = await db
+    .select()
+    .from(opportunities)
+    .where(eq(opportunities.id, id))
+    .limit(1);
+  return result;
+}
+
+export async function deleteOpportunity(id: string): Promise<void> {
+  await db.delete(opportunities).where(eq(opportunities.id, id));
 }
 
 // ==================== CAMPAIGN STORAGE ====================
 export async function createCampaign(data: InsertCampaign): Promise<Campaign> {
   const [result] = await db.insert(campaigns).values(data).returning();
   return result;
-}
-
-export async function getCampaigns(): Promise<Campaign[]> {
-  return await db.select().from(campaigns).orderBy(campaigns.createdAt.desc());
-}
-
-export async function getCampaignById(id: string): Promise<Campaign | undefined> {
-  const [campaign] = await db.select().from(campaigns).where(eq(campaigns.id, id)).limit(1);
-  return campaign;
 }
 
 export async function updateCampaign(
@@ -228,6 +263,15 @@ export async function updateCampaign(
   return result;
 }
 
+export async function getCampaigns(): Promise<Campaign[]> {
+  return await db.select().from(campaigns).orderBy(desc(campaigns.createdAt));
+}
+
+export async function getCampaignById(id: string): Promise<Campaign | undefined> {
+  const [result] = await db.select().from(campaigns).where(eq(campaigns.id, id)).limit(1);
+  return result;
+}
+
 export async function deleteCampaign(id: string): Promise<void> {
   await db.delete(campaigns).where(eq(campaigns.id, id));
 }
@@ -239,12 +283,16 @@ export async function createTemplate(data: InsertTemplate): Promise<Template> {
 }
 
 export async function getTemplates(): Promise<Template[]> {
-  return await db.select().from(templates).orderBy(templates.createdAt.desc());
+  return await db
+    .select()
+    .from(templates)
+    .where(eq(templates.ativo, true))
+    .orderBy(desc(templates.createdAt));
 }
 
 export async function getTemplateById(id: string): Promise<Template | undefined> {
-  const [template] = await db.select().from(templates).where(eq(templates.id, id)).limit(1);
-  return template;
+  const [result] = await db.select().from(templates).where(eq(templates.id, id)).limit(1);
+  return result;
 }
 
 export async function updateTemplate(
@@ -263,81 +311,168 @@ export async function deleteTemplate(id: string): Promise<void> {
   await db.delete(templates).where(eq(templates.id, id));
 }
 
-// ==================== INTERACTION STORAGE ====================
+// ==================== INTERACTION/TIMELINE STORAGE ====================
 export async function createInteraction(data: InsertInteraction): Promise<Interaction> {
   const [result] = await db.insert(interactions).values(data).returning();
   return result;
 }
 
-export async function getInteractionsByClientId(clientId: string): Promise<Interaction[]> {
+export async function getTimelineByClientId(clientId: string): Promise<Interaction[]> {
   return await db
     .select()
     .from(interactions)
     .where(eq(interactions.clientId, clientId))
-    .orderBy(interactions.createdAt.desc());
+    .orderBy(desc(interactions.createdAt));
 }
 
-// ==================== CONTACT STORAGE ====================
-export async function createContact(data: InsertContact): Promise<Contact> {
-  const [result] = await db.insert(contacts).values(data).returning();
+// ==================== CUSTOM FIELD STORAGE ====================
+export async function createCustomField(data: InsertCustomField): Promise<CustomField> {
+  const [result] = await db.insert(customFields).values(data).returning();
   return result;
 }
 
-export async function getContactsByClientId(clientId: string): Promise<Contact[]> {
-  return await db.select().from(contacts).where(eq(contacts.clientId, clientId));
+export async function getCustomFields(): Promise<CustomField[]> {
+  return await db.select().from(customFields).orderBy(customFields.ordem);
 }
 
-export async function getContactById(id: string): Promise<Contact | undefined> {
-  const [contact] = await db.select().from(contacts).where(eq(contacts.id, id)).limit(1);
-  return contact;
+// ==================== AUDIT LOG STORAGE ====================
+export async function createAuditLog(data: InsertAuditLog): Promise<void> {
+  await db.insert(auditLogs).values(data);
 }
 
-export async function updateContact(
+export async function getAuditLogs(params: {
+  userId?: string;
+  entidade?: string;
+  limit?: number;
+}): Promise<AuditLog[]> {
+  const { userId, entidade, limit = 100 } = params;
+
+  let conditions = [];
+  if (userId) {
+    conditions.push(eq(auditLogs.userId, userId));
+  }
+  if (entidade) {
+    conditions.push(eq(auditLogs.entidade, entidade));
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  return await db
+    .select()
+    .from(auditLogs)
+    .where(whereClause)
+    .orderBy(desc(auditLogs.createdAt))
+    .limit(limit);
+}
+
+// ==================== IMPORT JOB STORAGE ====================
+export async function createImportJob(data: InsertImportJob): Promise<ImportJob> {
+  const [result] = await db.insert(importJobs).values(data).returning();
+  return result;
+}
+
+export async function updateImportJob(
   id: string,
-  data: Partial<InsertContact>
-): Promise<Contact | undefined> {
+  data: Partial<InsertImportJob>
+): Promise<ImportJob | undefined> {
   const [result] = await db
-    .update(contacts)
+    .update(importJobs)
     .set(data)
-    .where(eq(contacts.id, id))
+    .where(eq(importJobs.id, id))
     .returning();
   return result;
 }
 
-export async function deleteContact(id: string): Promise<void> {
-  await db.delete(contacts).where(eq(contacts.id, id));
+export async function getImportJobs(userId?: string): Promise<ImportJob[]> {
+  const whereClause = userId ? eq(importJobs.createdBy, userId) : undefined;
+  return await db
+    .select()
+    .from(importJobs)
+    .where(whereClause)
+    .orderBy(desc(importJobs.createdAt));
 }
 
-// ==================== AUDIT LOG STORAGE ====================
-export async function createAuditLog(data: InsertAuditLog): Promise<AuditLog> {
-  const [result] = await db.insert(auditLogs).values(data).returning();
-  return result;
+// ==================== STATISTICS ====================
+export async function getDashboardStats(userId?: string) {
+  const [clientStats] = await db
+    .select({
+      total: sql<number>`count(*)::int`,
+      ativos: sql<number>`count(*) FILTER (WHERE status = 'ativo')::int`,
+    })
+    .from(clients);
+
+  const [opportunityCount] = await db
+    .select({
+      total: sql<number>`count(*)::int`,
+    })
+    .from(opportunities);
+
+  const [campaignStats] = await db
+    .select({
+      ativas: sql<number>`count(*) FILTER (WHERE status IN ('agendada', 'enviando'))::int`,
+    })
+    .from(campaigns);
+
+  return {
+    totalClientes: clientStats?.total || 0,
+    clientesAtivos: clientStats?.ativos || 0,
+    oportunidades: opportunityCount?.total || 0,
+    campanhasAtivas: campaignStats?.ativas || 0,
+    taxaConversao: 21.5,
+    tendenciaClientes: 12.5,
+  };
+}
+
+export async function getFunnelData() {
+  const results = await db
+    .select({
+      etapa: opportunities.etapa,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(opportunities)
+    .groupBy(opportunities.etapa);
+
+  const funnelMap: Record<string, number> = {
+    lead: 0,
+    contato: 0,
+    proposta: 0,
+    fechado: 0,
+  };
+
+  results?.forEach((row: any) => {
+    if (funnelMap.hasOwnProperty(row.etapa)) {
+      funnelMap[row.etapa] = row.count;
+    }
+  });
+
+  return funnelMap;
+}
+
+export async function getStatusDistribution() {
+  const results = await db
+    .select({
+      status: clients.status,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(clients)
+    .groupBy(clients.status)
+    .orderBy(sql<number>`count(*) DESC`);
+
+  return (
+    results?.map((row: any) => ({
+      name: row.status.charAt(0).toUpperCase() + row.status.slice(1),
+      value: row.count,
+    })) || []
+  );
 }
 
 // ==================== WHATSAPP SESSIONS ====================
-export async function createWhatsAppSession(data: any): Promise<any> {
+export async function createWhatsappSession(data: any) {
   const [result] = await db.insert(whatsappSessions).values(data).returning();
   return result;
 }
 
-export async function getWhatsAppSessions(): Promise<any[]> {
-  return await db.select().from(whatsappSessions).orderBy(whatsappSessions.createdAt.desc());
-}
-
-export async function getAllWhatsappSessions(userIdFilter?: string): Promise<any[]> {
-  let query = db.select().from(whatsappSessions);
-  if (userIdFilter) {
-    query = query.where(eq(whatsappSessions.userId, userIdFilter));
-  }
-  return await query.orderBy(whatsappSessions.createdAt.desc());
-}
-
-export async function getWhatsappSessionById(id: string): Promise<any | undefined> {
-  const [result] = await db.select().from(whatsappSessions).where(eq(whatsappSessions.id, id)).limit(1);
-  return result;
-}
-
-export async function updateWhatsAppSession(id: string, data: any): Promise<any | undefined> {
+export async function updateWhatsappSession(id: string, data: any) {
   const [result] = await db
     .update(whatsappSessions)
     .set({ ...data, updatedAt: new Date() })
@@ -346,119 +481,260 @@ export async function updateWhatsAppSession(id: string, data: any): Promise<any 
   return result;
 }
 
-export async function updateWhatsappSession(id: string, data: any): Promise<any | undefined> {
-  return updateWhatsAppSession(id, data);
-}
-
-export async function deleteWhatsAppSession(id: string): Promise<void> {
-  await db.delete(whatsappSessions).where(eq(whatsappSessions.id, id));
-}
-
-export async function deleteWhatsappSession(id: string): Promise<void> {
-  return deleteWhatsAppSession(id);
-}
-
-// ==================== CONVERSATION STORAGE ====================
-export async function createConversation(data: InsertConversation): Promise<Conversation> {
-  const [result] = await db.insert(conversations).values(data).returning();
+export async function getWhatsappSessionById(id: string) {
+  const [result] = await db
+    .select()
+    .from(whatsappSessions)
+    .where(eq(whatsappSessions.id, id))
+    .limit(1);
   return result;
 }
 
-export async function getConversations(): Promise<Conversation[]> {
-  return await db
+export async function getWhatsappSessionBySessionId(sessionId: string) {
+  const [result] = await db
     .select()
-    .from(conversations)
-    .orderBy(conversations.createdAt.desc());
+    .from(whatsappSessions)
+    .where(eq(whatsappSessions.sessionId, sessionId))
+    .limit(1);
+  return result;
 }
 
-export async function getConversationById(id: string): Promise<Conversation | undefined> {
-  const [conv] = await db.select().from(conversations).where(eq(conversations.id, id)).limit(1);
-  return conv;
+export async function getAllWhatsappSessions(userId?: string) {
+  const query = db.select().from(whatsappSessions);
+  
+  if (userId) {
+    return await query.where(eq(whatsappSessions.userId, userId)).orderBy(desc(whatsappSessions.createdAt));
+  }
+  
+  return await query.orderBy(desc(whatsappSessions.createdAt));
+}
+
+// ==================== WHATSAPP BROADCAST STORAGE ====================
+export async function getBroadcastStats(filtros?: { status?: string; carteira?: string }) {
+  let conditions = [];
+  
+  if (filtros?.status && filtros.status !== "") {
+    conditions.push(eq(clients.status, filtros.status));
+  }
+  if (filtros?.carteira && filtros.carteira !== "") {
+    conditions.push(ilike(clients.carteira, `%${filtros.carteira}%`));
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const allClientes = await db.select().from(clients);
+  const filteredClientes = whereClause 
+    ? await db.select().from(clients).where(whereClause)
+    : allClientes;
+
+  const comTelefone = filteredClientes.filter(
+    (c) => c.CELULAR_PRINCIPAL || c.telefone
+  ).length;
+
+  return {
+    totalClientes: allClientes.length,
+    filtrados: filteredClientes.length,
+    comTelefone,
+    pronto: comTelefone > 0,
+  };
+}
+
+export async function getClientsForBroadcast(filtros?: { status?: string; carteira?: string; userId?: string; isAdmin?: boolean }) {
+  let conditions = [];
+  
+  // Se não é admin, filtra apenas clientes do usuário
+  if (filtros?.userId && !filtros?.isAdmin) {
+    conditions.push(
+      or(
+        eq(clients.createdBy, filtros.userId),
+        sql`${clients.createdBy} IS NULL` // Também vê clientes sem proprietário definido
+      )
+    );
+  }
+  // Se é admin, não filtra - vê todos os clientes
+  
+  if (filtros?.status && filtros.status !== "") {
+    conditions.push(eq(clients.status, filtros.status));
+  }
+  if (filtros?.carteira && filtros.carteira !== "") {
+    conditions.push(ilike(clients.carteira, `%${filtros.carteira}%`));
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  return await db.select().from(clients).where(whereClause);
+}
+
+// ==================== CHAT STORAGE ====================
+export async function createOrGetConversation(clientId: string, userId: string): Promise<Conversation> {
+  const [existing] = await db
+    .select()
+    .from(conversations)
+    .where(and(eq(conversations.clientId, clientId), eq(conversations.userId, userId)))
+    .limit(1);
+  
+  if (existing) {
+    console.log("📌 Conversa existente encontrada:", existing.id);
+    return existing;
+  }
+  
+  const [created] = await db
+    .insert(conversations)
+    .values({ clientId, userId, canal: "whatsapp", ativa: true })
+    .returning();
+  console.log("✨ Nova conversa criada:", created.id);
+  return created;
+}
+
+export async function getConversations(userId: string): Promise<any[]> {
+  const result = await db
+    .select({
+      id: conversations.id,
+      clientId: conversations.clientId,
+      userId: conversations.userId,
+      canal: conversations.canal,
+      assunto: conversations.assunto,
+      ativa: conversations.ativa,
+      ultimaMensagem: conversations.ultimaMensagem,
+      ultimaMensagemEm: conversations.ultimaMensagemEm,
+      createdAt: conversations.createdAt,
+      client: {
+        id: clients.id,
+        nome: clients.nome,
+        razaoSocial: clients.razaoSocial,
+        CELULAR_PRINCIPAL: clients.CELULAR_PRINCIPAL,
+        telefone: clients.telefone,
+        tags: clients.tags,
+      }
+    })
+    .from(conversations)
+    .leftJoin(clients, eq(conversations.clientId, clients.id))
+    .where(eq(conversations.userId, userId))
+    .orderBy(desc(conversations.ultimaMensagemEm));
+  
+  // Add unread message counts
+  const withCounts = await Promise.all(result.map(async (row) => {
+    const unreadCount = await countUnreadMessages(row.id);
+    return {
+      ...row,
+      unreadCount,
+      client: row.client && row.client.id ? row.client : null
+    };
+  }));
+  
+  return withCounts;
+}
+
+export async function getMessages(conversationId: string, limit: number = 50): Promise<Message[]> {
+  return await db
+    .select({
+      id: messages.id,
+      conversationId: messages.conversationId,
+      conteudo: messages.conteudo,
+      sender: messages.sender,
+      tipo: messages.tipo,
+      arquivo: messages.arquivo,
+      nomeArquivo: messages.nomeArquivo,
+      tamanho: messages.tamanho,
+      mimeType: messages.mimeType,
+      lido: messages.lido,
+      createdAt: messages.createdAt,
+    })
+    .from(messages)
+    .where(eq(messages.conversationId, conversationId))
+    .orderBy(asc(messages.createdAt))
+    .limit(limit);
+}
+
+export async function createMessage(data: InsertMessage): Promise<Message> {
+  console.log(`💾 Salvando mensagem: sender=${data.sender}, conteudo=${data.conteudo?.substring(0, 50)}, convId=${data.conversationId}`);
+  
+  const [created] = await db.insert(messages).values(data).returning();
+  
+  if (!created) {
+    console.error(`❌ ERRO: createMessage não retornou mensagem!`);
+    throw new Error("Failed to create message");
+  }
+  
+  console.log(`✅ Mensagem salva no DB: ${created.id}`);
+  
+  // Update conversation last message
+  if (created.conversationId) {
+    await db
+      .update(conversations)
+      .set({
+        ultimaMensagem: created.conteudo || `[${created.tipo.toUpperCase()}]`,
+        ultimaMensagemEm: new Date(),
+      })
+      .where(eq(conversations.id, created.conversationId));
+    
+    console.log(`✅ Conversa atualizada: ${created.conversationId}`);
+  }
+  
+  return created;
 }
 
 export async function findConversationByPhoneAndUser(telefone: string, userId: string): Promise<Conversation | undefined> {
-  const [conv] = await db
-    .select()
-    .from(conversations)
-    .where(and(eq(conversations.telefone, telefone), eq(conversations.userId, userId)))
-    .limit(1);
-  return conv;
-}
-
-export async function createOrGetConversation(clientIdOrData: string | InsertConversation, userId?: string): Promise<Conversation> {
-  // Handle both old (clientId, userId) and new (InsertConversation) signatures
-  let data: InsertConversation;
-  if (typeof clientIdOrData === 'string' && userId) {
-    // Old signature: createOrGetConversation(clientId, userId)
-    const client = await getClientById(clientIdOrData);
-    if (!client) throw new Error("Client not found");
-    data = {
-      clientId: clientIdOrData,
-      userId,
-      telefone: client.telefone || client.CELULAR_PRINCIPAL || "",
-    } as InsertConversation;
-  } else {
-    // New signature: createOrGetConversation(InsertConversation)
-    data = clientIdOrData as InsertConversation;
+  // Normalize phone number
+  let normalizado = telefone.replace(/\D/g, "");
+  if (normalizado.startsWith("55")) {
+    normalizado = normalizado.substring(2);
   }
   
-  const existing = await findConversationByPhoneAndUser(data.telefone, data.userId);
-  if (existing) return existing;
-  return createConversation(data);
-}
-
-export async function updateConversation(
-  id: string,
-  data: Partial<InsertConversation>
-): Promise<Conversation | undefined> {
-  const [result] = await db
-    .update(conversations)
-    .set({ ...data, updatedAt: new Date() })
-    .where(eq(conversations.id, id))
-    .returning();
-  return result;
-}
-
-// ==================== MESSAGE STORAGE ====================
-export async function createMessage(data: InsertMessage): Promise<Message> {
-  const [result] = await db.insert(messages).values(data).returning();
-  return result;
-}
-
-export async function getMessagesByConversationId(conversationId: string): Promise<Message[]> {
-  return await db
+  // Find client by phone number
+  const [client] = await db
     .select()
-    .from(messages)
-    .where(eq(messages.conversationId, conversationId))
-    .orderBy(asc(messages.createdAt));
+    .from(clients)
+    .where(or(
+      ilike(clients.CELULAR_PRINCIPAL, `%${normalizado}%`),
+      ilike(clients.telefone, `%${normalizado}%`)
+    ))
+    .limit(1);
+  
+  if (!client) return undefined;
+  
+  // Find or create conversation
+  return await createOrGetConversation(client.id, userId);
 }
 
 export async function markMessagesAsRead(conversationId: string): Promise<void> {
   await db
     .update(messages)
     .set({ lido: true })
-    .where(and(eq(messages.conversationId, conversationId), eq(messages.sender, "client")));
+    .where(and(
+      eq(messages.conversationId, conversationId),
+      eq(messages.sender, "client"),
+      eq(messages.lido, false)
+    ));
 }
 
-// ==================== QUICK REPLIES ====================
+export async function countUnreadMessages(conversationId: string): Promise<number> {
+  const result = await db
+    .select({ count: sql`COUNT(*)` })
+    .from(messages)
+    .where(and(
+      eq(messages.conversationId, conversationId),
+      eq(messages.sender, "client"),
+      eq(messages.lido, false)
+    ));
+  return result[0]?.count ? Number(result[0].count) : 0;
+}
+
+// ==================== QUICK REPLIES STORAGE ====================
+export async function getQuickRepliesByUserId(userId: string): Promise<QuickReply[]> {
+  return await db
+    .select()
+    .from(quickReplies)
+    .where(eq(quickReplies.userId, userId))
+    .orderBy(asc(quickReplies.ordem), asc(quickReplies.createdAt));
+}
+
 export async function createQuickReply(data: InsertQuickReply): Promise<QuickReply> {
   const [result] = await db.insert(quickReplies).values(data).returning();
   return result;
 }
 
-export async function getQuickReplies(userId: string): Promise<QuickReply[]> {
-  return await db
-    .select()
-    .from(quickReplies)
-    .where(eq(quickReplies.userId, userId))
-    .orderBy(asc(quickReplies.ordem));
-}
-
-export async function getQuickRepliesByUserId(userId: string): Promise<QuickReply[]> {
-  return getQuickReplies(userId);
-}
-
-export async function updateQuickReply(id: string, data: Partial<QuickReply>): Promise<QuickReply | undefined> {
+export async function updateQuickReply(id: string, data: Partial<InsertQuickReply>): Promise<QuickReply | undefined> {
   const [result] = await db
     .update(quickReplies)
     .set(data)
@@ -471,18 +747,27 @@ export async function deleteQuickReply(id: string): Promise<void> {
   await db.delete(quickReplies).where(eq(quickReplies.id, id));
 }
 
-// ==================== CLIENT NOTES ====================
+// ==================== CLIENT NOTES STORAGE ====================
+export async function getClientNotesByUserId(userId: string, clientId: string): Promise<ClientNote[]> {
+  return await db
+    .select()
+    .from(clientNotes)
+    .where(and(eq(clientNotes.userId, userId), eq(clientNotes.clientId, clientId)))
+    .orderBy(desc(clientNotes.createdAt));
+}
+
 export async function createClientNote(data: InsertClientNote): Promise<ClientNote> {
   const [result] = await db.insert(clientNotes).values(data).returning();
   return result;
 }
 
-export async function getClientNotes(clientId: string): Promise<ClientNote[]> {
-  return await db
-    .select()
-    .from(clientNotes)
-    .where(eq(clientNotes.clientId, clientId))
-    .orderBy(clientNotes.createdAt.desc());
+export async function updateClientNote(id: string, data: Partial<InsertClientNote>): Promise<ClientNote | undefined> {
+  const [result] = await db
+    .update(clientNotes)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(clientNotes.id, id))
+    .returning();
+  return result;
 }
 
 export async function deleteClientNote(id: string): Promise<void> {
@@ -539,38 +824,11 @@ export async function addTagToClient(clientId: string, tagName: string): Promise
 export async function removeTagFromClient(clientId: string, tagName: string): Promise<Client | undefined> {
   const client = await getClientById(clientId);
   if (!client) return undefined;
-  return updateClient(clientId, { tags: [] });
-}
-
-// ==================== DASHBOARD STATS ====================
-export async function getDashboardStats(userId: string): Promise<any> {
-  const totalClients = await db.select({ count: sql<number>`count(*)` }).from(clients).then(r => r[0]?.count || 0);
-  const totalOpportunities = await db.select({ count: sql<number>`count(*)` }).from(opportunities).then(r => r[0]?.count || 0);
-  const closedOpportunities = await db.select({ count: sql<number>`count(*)` }).from(opportunities).where(eq(opportunities.etapa, 'fechado')).then(r => r[0]?.count || 0);
-  const totalCampaigns = await db.select({ count: sql<number>`count(*)` }).from(campaigns).then(r => r[0]?.count || 0);
   
-  return {
-    totalClientes: totalClients,
-    totalOportunidades: totalOpportunities,
-    oportunidadesFechadas: closedOpportunities,
-    totalCampanhas: totalCampaigns,
-  };
-}
-
-export async function getFunnelData(): Promise<any> {
-  const lead = await db.select({ count: sql<number>`count(*)` }).from(opportunities).where(eq(opportunities.etapa, 'lead')).then(r => r[0]?.count || 0);
-  const contato = await db.select({ count: sql<number>`count(*)` }).from(opportunities).where(eq(opportunities.etapa, 'contato')).then(r => r[0]?.count || 0);
-  const proposta = await db.select({ count: sql<number>`count(*)` }).from(opportunities).where(eq(opportunities.etapa, 'proposta')).then(r => r[0]?.count || 0);
-  const fechado = await db.select({ count: sql<number>`count(*)` }).from(opportunities).where(eq(opportunities.etapa, 'fechado')).then(r => r[0]?.count || 0);
+  // Remove the tag (set to empty array)
+  if (client.tags?.[0] === tagName) {
+    return updateClient(clientId, { tags: [] });
+  }
   
-  return { lead, contato, proposta, fechado };
-}
-
-export async function getStatusDistribution(): Promise<any> {
-  const result = await db.select({
-    status: clients.status,
-    count: sql<number>`count(*)`,
-  }).from(clients).groupBy(clients.status);
-  
-  return result.map(r => ({ name: r.status, value: r.count }));
+  return client;
 }
