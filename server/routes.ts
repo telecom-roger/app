@@ -768,6 +768,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/import/clients", isAuthenticated, async (req, res) => {
     try {
       const { data, mapping } = req.body; // data = array of rows, mapping = column mapping
+      const user = (req.user as any);
       
       if (!Array.isArray(data) || data.length === 0) {
         return res.status(400).json({ error: "No data provided" });
@@ -832,6 +833,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             PROP_MOVEL_AVANCADA: getRowValue(row, mapping.PROP_MOVEL_AVANCADA),
             SERASA: getRowValue(row, mapping.SERASA),
             MENSAGEM_SERASA: getRowValue(row, mapping.MENSAGEM_SERASA),
+            createdBy: user.id,
           };
 
           const validated = insertClientSchema.parse(clientData);
