@@ -246,6 +246,9 @@ export default function Clientes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [tipoFiltro, setTipoFiltro] = useState<string>("all");
+  const [orderBy, setOrderBy] = useState<string>("recent");
+  const [quantidadeSelecar, setQuantidadeSelecar] = useState<number>(10);
   const [page, setPage] = useState(1);
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
   const [selectedClientIds, setSelectedClientIds] = useState<Set<string>>(new Set());
@@ -320,6 +323,29 @@ export default function Clientes() {
   const totalClientes = data?.total || 0;
   const clientesAtivos = data?.clientes?.filter(c => c.status === 'ativo').length || 0;
   const leads = data?.clientes?.filter(c => c.status === 'lead').length || 0;
+
+  // Get unique tipos
+  const tiposUnicos = [...new Set((data?.clientes || []).map(c => c.tipo).filter(Boolean))].sort();
+
+  // Filter and sort clients
+  const clientesFiltrados = (data?.clientes || [])
+    .filter(c => tipoFiltro === 'all' ? true : c.tipo === tipoFiltro)
+    .sort((a, b) => {
+      if (orderBy === 'oldest') {
+        return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+      }
+      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+    });
+
+  const toggleClienteSelecionado = (clienteId: string) => {
+    const novoSet = new Set(selectedClientIds);
+    if (novoSet.has(clienteId)) {
+      novoSet.delete(clienteId);
+    } else {
+      novoSet.add(clienteId);
+    }
+    setSelectedClientIds(novoSet);
+  };
 
   if (authLoading || !isAuthenticated) {
     return <ClientesSkeleton />;
@@ -434,6 +460,91 @@ export default function Clientes() {
                   <Filter className="h-4 w-4 mr-2" />
                   Filtros
                 </Button>
+              </div>
+
+              {/* Quick Select & Filters */}
+              <div className="flex gap-2 flex-wrap items-center pt-2 border-t border-slate-200 dark:border-slate-700">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setSelectedClientIds(new Set(clientesFiltrados.map((c) => c.id)))}
+                  disabled={clientesFiltrados.length === 0}
+                  data-testid="button-select-all-quick"
+                  className="h-8 text-xs"
+                >
+                  ✓ Selecionar Todos
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setSelectedClientIds(new Set())}
+                  disabled={selectedClientIds.size === 0}
+                  data-testid="button-deselect-all"
+                  className="h-8 text-xs"
+                >
+                  ✕ Desselecionar Todos
+                </Button>
+
+                <div className="h-6 w-px bg-border" />
+
+                {/* Tipo Filter */}
+                <Select value={tipoFiltro} onValueChange={(value) => setTipoFiltro(value)}>
+                  <SelectTrigger className="w-40 h-8 text-xs" data-testid="select-tipo-filtro">
+                    <SelectValue placeholder="Filtrar por tipo..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os tipos</SelectItem>
+                    {tiposUnicos.map((tipo) => (
+                      <SelectItem key={tipo} value={tipo}>
+                        {tipo}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <div className="h-6 w-px bg-border" />
+
+                {/* Ordering */}
+                <Select value={orderBy} onValueChange={(value: any) => setOrderBy(value)}>
+                  <SelectTrigger className="w-32 h-8 text-xs" data-testid="select-orderBy">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="recent">Mais Recentes</SelectItem>
+                    <SelectItem value="oldest">Mais Antigos</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <div className="h-6 w-px bg-border" />
+
+                {/* Random Selection */}
+                <div className="flex gap-2 items-center">
+                  <Label className="text-xs font-medium whitespace-nowrap">Aleatório:</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={clientesFiltrados.length}
+                    value={quantidadeSelecar}
+                    onChange={(e) => setQuantidadeSelecar(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-16 h-8 text-xs"
+                    data-testid="input-quantidade-selecionar"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const shuffled = [...clientesFiltrados].sort(() => Math.random() - 0.5);
+                      const quantidadeReal = Math.min(quantidadeSelecar, clientesFiltrados.length);
+                      const selecionados = shuffled.slice(0, quantidadeReal).map((c) => c.id);
+                      setSelectedClientIds(new Set(selecionados));
+                    }}
+                    disabled={clientesFiltrados.length === 0}
+                    data-testid="button-random-select"
+                    className="h-8 text-xs"
+                  >
+                    🎲 Selecionar
+                  </Button>
+                </div>
               </div>
 
               {/* Tag Filter */}
