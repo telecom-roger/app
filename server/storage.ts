@@ -115,13 +115,13 @@ export async function getClientById(id: string): Promise<Client | undefined> {
 export async function getClients(params: {
   search?: string;
   status?: string;
-  tagId?: string;
+  tagName?: string;
   page?: number;
   limit?: number;
   userId?: string;
   isAdmin?: boolean;
 }): Promise<{ clientes: Client[]; total: number }> {
-  const { search, status, tagId, page = 1, limit = 20, userId, isAdmin = false } = params;
+  const { search, status, tagName, page = 1, limit = 20, userId, isAdmin = false } = params;
   const offset = (page - 1) * limit;
 
   let conditions = [];
@@ -149,8 +149,8 @@ export async function getClients(params: {
   if (status && status !== "todos") {
     conditions.push(eq(clients.status, status));
   }
-  if (tagId) {
-    conditions.push(sql`${clients.tags}::text[] @> ARRAY[${tagId}]`);
+  if (tagName) {
+    conditions.push(sql`${clients.tags}::text[] @> ARRAY[${tagName}]`);
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;

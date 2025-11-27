@@ -116,18 +116,13 @@ export default function Clientes() {
       { 
         ...(searchTerm && { search: searchTerm }),
         ...(statusFilter !== "todos" && { status: statusFilter }),
+        ...(selectedTag && { tagName: selectedTag }),
         page,
         limit,
       }
     ],
     enabled: isAuthenticated,
   });
-
-  // Filter clients by selected tag on frontend
-  const filteredClients = data?.clientes?.filter(client => {
-    if (!selectedTag) return true;
-    return client.tags?.[0] === selectedTag;
-  }) || [];
 
   const statusColors: Record<string, string> = {
     lead: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
