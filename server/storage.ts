@@ -717,19 +717,24 @@ export async function createMessage(data: InsertMessage): Promise<Message> {
 }
 
 export async function findConversationByPhoneAndUser(telefone: string, userId: string): Promise<Conversation | undefined> {
-  // Normalize phone number
+  // Normalize phone number (remove all non-digits, remove leading 55)
   let normalizado = telefone.replace(/\D/g, "");
   if (normalizado.startsWith("55")) {
     normalizado = normalizado.substring(2);
   }
   
-  // Find client by phone number
+  // Search for exact match first (with or without 55)
+  const phoneCom55 = `55${normalizado}`;
+  
+  // Find client by phone number - check both fields for exact or partial matches
   let [client] = await db
     .select()
     .from(clients)
     .where(or(
-      ilike(clients.CELULAR_PRINCIPAL, `%${normalizado}%`),
-      ilike(clients.telefone, `%${normalizado}%`)
+      ilike(clients.CELULAR_PRINCIPAL, phoneCom55),
+      ilike(clients.CELULAR_PRINCIPAL, normalizado),
+      ilike(clients.telefone, phoneCom55),
+      ilike(clients.telefone, normalizado)
     ))
     .limit(1);
   

@@ -239,12 +239,15 @@ async function processIncomingMessages(sessionId: string, m: any) {
             normalizado = normalizado.substring(2);
           }
           
+          const phoneCom55 = `55${normalizado}`;
           const [client] = await db
             .select()
             .from(clientsTable)
             .where(or(
-              ilike(clientsTable.CELULAR_PRINCIPAL, `%${normalizado}%`),
-              ilike(clientsTable.telefone, `%${normalizado}%`)
+              ilike(clientsTable.CELULAR_PRINCIPAL, phoneCom55),
+              ilike(clientsTable.CELULAR_PRINCIPAL, normalizado),
+              ilike(clientsTable.telefone, phoneCom55),
+              ilike(clientsTable.telefone, normalizado)
             ))
             .limit(1);
           
@@ -255,11 +258,18 @@ async function processIncomingMessages(sessionId: string, m: any) {
           } else {
             console.warn(`[RECEBIMENTO] ⚠️ Cliente não encontrado, criando novo...`);
             
+            // Normalize phone for creation (ensure consistent format with 55)
+            let telefoneFinal = senderPhone.replace(/\D/g, "");
+            if (telefoneFinal.startsWith("55")) {
+              telefoneFinal = telefoneFinal.substring(2);
+            }
+            telefoneFinal = `55${telefoneFinal}`;
+            
             // Auto-create new client for this phone number
             const novoCliente = await storage.createClient({
-              nome: `Novo contato ${senderPhone}`,
-              telefone: senderPhone,
-              CELULAR_PRINCIPAL: senderPhone,
+              nome: `Novo contato ${telefoneFinal}`,
+              telefone: telefoneFinal,
+              CELULAR_PRINCIPAL: telefoneFinal,
               cpfCnpj: "",
               status: "Lead",
               carteira: "Dominio",
