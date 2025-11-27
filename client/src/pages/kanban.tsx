@@ -89,38 +89,17 @@ export default function Kanban() {
   const clientes = clientesData?.clientes || [];
   const tags = tagsData || [];
 
-  // Carregar preferência de colunas do localStorage e combinar com tags
+  // Combinar colunas padrão com tags
   useEffect(() => {
-    if (tags.length > 0) {
-      const stored = localStorage.getItem("kanban_colunas");
-      if (stored) {
-        try {
-          const storedIds = JSON.parse(stored);
-          const colunasFromTags = tags
-            .filter((tag: any) => storedIds.includes(tag.id))
-            .map((tag: any) => ({
-              id: tag.id,
-              titulo: tag.nome,
-              cor: tag.cor,
-            }));
-          if (colunasFromTags.length > 0) {
-            setColunas(colunasFromTags);
-            return;
-          }
-        } catch (e) {
-          // Fallback para padrão
-        }
-      }
-      // Se não há preferência, usa as tags como colunas
-      const tagsAsColunas = tags.map((tag: any) => ({
-        id: tag.id,
-        titulo: tag.nome,
-        cor: tag.cor,
-      }));
-      if (tagsAsColunas.length > 0) {
-        setColunas(tagsAsColunas);
-      }
-    }
+    const tagsAsColunas = tags.map((tag: any) => ({
+      id: tag.id,
+      titulo: tag.nome,
+      cor: tag.cor,
+    }));
+    
+    // Manter as colunas padrão E adicionar as tags como colunas adicionais
+    const todasAsColunas = [...defaultColunas, ...tagsAsColunas];
+    setColunas(todasAsColunas);
   }, [tags]);
 
   const moveCardMutation = useMutation({
