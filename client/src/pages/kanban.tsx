@@ -154,7 +154,6 @@ export default function Kanban() {
   }));
 
   const totalOportunidades = oportunidades?.length || 0;
-  const valorTotal = (oportunidades || []).reduce((sum, op) => sum + (op.valorEstimado || 0), 0);
   const oportunidadesFechadas = oportunidades?.filter(op => op.etapa === 'fechado').length || 0;
 
   if (authLoading || !isAuthenticated) {
@@ -466,11 +465,7 @@ function OpportunityCard({
         {oportunidade.valorEstimado && (
           <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
             <DollarSign className="h-4 w-4" />
-            <span>
-              R$ {oportunidade.valorEstimado.toLocaleString("pt-BR", {
-                minimumFractionDigits: 2,
-              })}
-            </span>
+            <span>{oportunidade.valorEstimado}</span>
           </div>
         )}
 
@@ -526,7 +521,7 @@ function NovaOportunidadeDialog({
       titulo: "",
       clientId: "",
       etapa: "lead",
-      valorEstimado: 0,
+      valorEstimado: "",
       responsavelId: user?.id,
     },
   });
@@ -556,7 +551,7 @@ function NovaOportunidadeDialog({
   const onSubmit = (data: any) => {
     createMutation.mutate({
       ...data,
-      valorEstimado: data.valorEstimado || 0,
+      valorEstimado: data.valorEstimado || "",
     });
   };
 
@@ -659,10 +654,10 @@ function NovaOportunidadeDialog({
                   <FormLabel>Valor Estimado</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Digite o valor em números"
-                      type="number"
+                      placeholder="Ex: R$ 5.000,00 ou 5000"
+                      type="text"
                       value={field.value || ""}
-                      onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : 0)}
+                      onChange={(e) => field.onChange(e.target.value)}
                       data-testid="input-valor-estimado"
                     />
                   </FormControl>
@@ -773,7 +768,7 @@ function EditarOportunidadeDialog({
   const onSubmit = (data: any) => {
     editMutation.mutate({
       ...data,
-      valorEstimado: data.valorEstimado || 0,
+      valorEstimado: data.valorEstimado || "",
     });
   };
 
@@ -878,10 +873,10 @@ function EditarOportunidadeDialog({
                   <FormLabel>Valor Estimado</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Digite o valor em números"
-                      type="number"
+                      placeholder="Ex: R$ 5.000,00 ou 5000"
+                      type="text"
                       value={field.value || ""}
-                      onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : 0)}
+                      onChange={(e) => field.onChange(e.target.value)}
                       data-testid="input-valor-estimado-edit"
                     />
                   </FormControl>

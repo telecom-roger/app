@@ -156,7 +156,7 @@ export const opportunities = pgTable("opportunities", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
   titulo: text("titulo").notNull(),
-  valorEstimado: integer("valor_estimado"), // in cents
+  valorEstimado: text("valor_estimado"), // text field for flexible value entry
   etapa: varchar("etapa", { length: 100 }).notNull().default("lead"), // lead, contato, proposta, fechado, perdido
   responsavelId: varchar("responsavel_id").references(() => users.id),
   prazo: timestamp("prazo"),

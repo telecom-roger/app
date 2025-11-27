@@ -554,13 +554,12 @@ export default function Chat() {
   const addTagMutation = useMutation({
     mutationFn: async (tagName: string) => {
       if (!currentClientId || !detailedClient) return;
-      const valorEstimado = businessValue ? parseInt(businessValue.replace(/\D/g, "")) : 0;
       
       // 1. Adicionar tag ao cliente
-      const tagRes = await apiRequest("POST", `/api/clients/${currentClientId}/tags`, { tagName, valorEstimado: valorEstimado * 100 });
+      const tagRes = await apiRequest("POST", `/api/clients/${currentClientId}/tags`, { tagName, valorEstimado: businessValue });
       
       // 2. Gerenciar oportunidade - cliente tem apenas 1
-      if (valorEstimado > 0 || businessValue) {
+      if (businessValue) {
         try {
           // Buscar oportunidade existente do cliente
           const oppsRes = await fetch(`/api/opportunities`);
@@ -576,7 +575,7 @@ export default function Chat() {
               clientId: currentClientId,
               titulo: `${detailedClient.razaoSocial || detailedClient.nome}`,
               etapa: tagName,
-              valorEstimado: valorEstimado * 100,
+              valorEstimado: businessValue,
               responsavelId: detailedClient.createdBy,
             });
           }
@@ -642,11 +641,10 @@ export default function Chat() {
   const saveBusinessValueMutation = useMutation({
     mutationFn: async () => {
       if (!currentClientId) return;
-      const valorEstimado = businessValue ? parseInt(businessValue.replace(/\D/g, "")) : 0;
       await apiRequest("PATCH", `/api/clients/${currentClientId}`, { 
-        camposCustom: { valorEstimado: valorEstimado * 100 } 
+        camposCustom: { valorEstimado: businessValue } 
       });
-      return valorEstimado;
+      return businessValue;
     },
     onSuccess: () => {
       refetchDetailedClient();
@@ -1176,7 +1174,7 @@ export default function Chat() {
                       size="sm"
                       variant="outline"
                       onClick={() => saveBusinessValueMutation.mutate()}
-                      disabled={saveBusinessValueMutation.isPending || businessValue === "R$ 0,00" || businessValue === ""}
+                      disabled={saveBusinessValueMutation.isPending || businessValue === ""}
                       className="whitespace-nowrap"
                       data-testid="button-save-value"
                     >
