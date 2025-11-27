@@ -66,10 +66,7 @@ export default function Kanban() {
   }, [isAuthenticated, authLoading, toast]);
 
   const { data: oportunidades, isLoading } = useQuery<Opportunity[]>({
-    queryKey: [
-      "/api/opportunities",
-      filtroResponsavel !== "todos" ? { responsavel: filtroResponsavel } : null,
-    ].filter(Boolean),
+    queryKey: ["/api/opportunities"],
     enabled: isAuthenticated,
   });
 

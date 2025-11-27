@@ -214,11 +214,17 @@ export async function updateOpportunity(
 export async function getOpportunities(params: {
   responsavel?: string;
   etapa?: string;
+  userId?: string; // Filtro por usuário
 }): Promise<Opportunity[]> {
   let conditions = [];
-  if (params.responsavel && params.responsavel !== "todos") {
+  
+  // Se userId está definido, filtra por responsavelId do usuário
+  if (params.userId) {
+    conditions.push(eq(opportunities.responsavelId, params.userId));
+  } else if (params.responsavel && params.responsavel !== "todos") {
     conditions.push(eq(opportunities.responsavelId, params.responsavel));
   }
+  
   if (params.etapa) {
     conditions.push(eq(opportunities.etapa, params.etapa));
   }

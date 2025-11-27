@@ -72,7 +72,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       const { search, status, tagName, page = "1", limit = "10000" } = req.query;
+      // Adicionar userId para filtrar apenas clientes do usuário
       const result = await storage.getClients({
+        userId: user.id,
         search: search as string,
         status: status as string,
         tagName: tagName as string,
@@ -278,9 +280,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== OPPORTUNITY ROUTES ====================
   app.get("/api/opportunities", isAuthenticated, async (req, res) => {
     try {
-      const { responsavel, etapa } = req.query;
+      const user = req.user as any;
+      const { etapa } = req.query;
       const opportunities = await storage.getOpportunities({
-        responsavel: responsavel as string,
+        userId: user.id, // Filtrar por usuário autenticado
         etapa: etapa as string,
       });
       res.json(opportunities);
