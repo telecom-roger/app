@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, FileText } from "lucide-react";
 import { insertClientSchema } from "@shared/schema";
 import type { Client } from "@shared/schema";
 
@@ -168,37 +168,49 @@ export default function ClienteForm() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => navigate("/clientes")}
-          data-testid="button-back"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold">
-            {isEditing ? "Editar Cliente" : "Novo Cliente"}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {isEditing ? "Atualize as informações do cliente" : "Crie um novo cliente"}
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+      {/* Header Section */}
+      <div className="px-6 py-8 md:py-12">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-start gap-4">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate("/clientes")}
+              data-testid="button-back"
+              className="mt-1"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-3 bg-purple-500/10 rounded-xl">
+                  <FileText className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                </div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent">
+                  {isEditing ? "Editar Cliente" : "Novo Cliente"}
+                </h1>
+              </div>
+              <p className="text-slate-600 dark:text-slate-400 mt-2">
+                {isEditing ? "Atualize as informações do cliente" : "Crie um novo cliente"}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Form Container */}
+      <div className="px-6 pb-12">
+        <div className="max-w-7xl mx-auto">
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit((data) => saveMutation.mutate(data))}
           className="space-y-6"
         >
           {/* Informações Básicas */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações Básicas</CardTitle>
+          <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
+            <CardHeader className="border-b border-slate-200 dark:border-slate-700">
+              <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Informações Básicas</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
@@ -379,9 +391,9 @@ export default function ClienteForm() {
           </Card>
 
           {/* Contato & Endereço */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Contato & Endereço</CardTitle>
+          <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
+            <CardHeader className="border-b border-slate-200 dark:border-slate-700">
+              <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Contato & Endereço</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-3 gap-4">
@@ -555,9 +567,9 @@ export default function ClienteForm() {
           </Card>
 
           {/* Contrato & Datas */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Contrato & Datas</CardTitle>
+          <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
+            <CardHeader className="border-b border-slate-200 dark:border-slate-700">
+              <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Contrato & Datas</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-3 gap-4">
@@ -658,9 +670,9 @@ export default function ClienteForm() {
           </Card>
 
           {/* Dados Telecom */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Dados Telecom</CardTitle>
+          <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
+            <CardHeader className="border-b border-slate-200 dark:border-slate-700">
+              <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Dados Telecom</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-3 gap-4">
@@ -890,6 +902,8 @@ export default function ClienteForm() {
           </div>
         </form>
       </Form>
+        </div>
+      </div>
     </div>
   );
 }
