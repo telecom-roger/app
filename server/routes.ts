@@ -1584,39 +1584,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete message for all (soft delete - local only)
-  // Note: WhatsApp doesn't support message deletion via Baileys without storing messageKey
-  app.delete("/api/chat/messages/:messageId", isAuthenticated, async (req, res) => {
-    try {
-      const { messageId } = req.params;
-      const user = (req.user as any);
-
-      // Check if WhatsApp is connected
-      const [session] = await db
-        .select()
-        .from(whatsappSessions)
-        .where(and(eq(whatsappSessions.userId, user.id), eq(whatsappSessions.status, "conectada")))
-        .limit(1);
-
-      if (!session || !whatsappService.isSessionAlive(session.sessionId)) {
-        return res.status(403).json({ error: "WhatsApp não está conectado. Conecte uma sessão antes de deletar mensagens." });
-      }
-
-      const success = await storage.deleteMessage(messageId, user.id);
-      
-      if (!success) {
-        return res.status(403).json({ error: "Acesso negado ou mensagem não encontrada" });
-      }
-
-      // Note: Message is deleted locally in database only
-      // WhatsApp deletion is not supported via Baileys without storing message keys
-      res.json({ success: true, note: "Mensagem removida do app" });
-    } catch (error: any) {
-      console.error("Error deleting message:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
   // Upload file for chat
   app.post("/api/chat/upload", isAuthenticated, async (req, res) => {
     try {

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle, Download, Plus, Trash2 } from "lucide-react";
+import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle, Download, Plus } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -24,7 +24,6 @@ interface Message {
   arquivo?: string;
   nomeArquivo?: string;
   mimeType?: string;
-  deletado?: boolean;
 }
 
 interface Conversation {
@@ -320,35 +319,6 @@ export default function Chat() {
       });
     },
     retry: 0,
-  });
-
-  // Delete message mutation
-  const deleteMutation = useMutation({
-    mutationFn: async (messageId: string) => {
-      if (!isWhatsappConnected) {
-        throw new Error("WhatsApp não está conectado. Conecte uma sessão antes de deletar mensagens.");
-      }
-      const res = await apiRequest("DELETE", `/api/chat/messages/${messageId}`, {});
-      return res.json();
-    },
-    onSuccess: () => {
-      if (selectedConversationId) {
-        queryClient.invalidateQueries({
-          queryKey: ["/api/chat/messages", selectedConversationId],
-        });
-      }
-      toast({
-        title: "Mensagem removida do app",
-        description: "A mensagem foi removida (nota: não é deletada do WhatsApp)",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro ao deletar",
-        description: error.message || "Não foi possível remover a mensagem",
-        variant: "destructive",
-      });
-    },
   });
 
   const handleSelectClient = (client: Client) => {
@@ -961,86 +931,63 @@ export default function Chat() {
                         msg.sender === "user"
                           ? "justify-end"
                           : "justify-start"
-                      } group`}
+                      }`}
                       data-testid={`message-${msg.id}`}
                     >
-                      {msg.deletado ? (
-                        <div
-                          className="px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 italic text-sm"
-                          data-testid={`text-message-deleted-${msg.id}`}
-                        >
-                          Mensagem removida para todos
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`max-w-xs px-4 py-2 rounded-lg ${
-                              msg.sender === "user"
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-muted text-foreground"
-                            }`}
+                      <div
+                        className={`max-w-xs px-4 py-2 rounded-lg ${
+                          msg.sender === "user"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-foreground"
+                        }`}
+                      >
+                        {msg.tipo === "texto" && <p className="text-sm">{msg.conteudo}</p>}
+                        
+                        {msg.tipo === "imagem" && msg.arquivo && (
+                          <button
+                            onClick={() => setSelectedImage(msg.arquivo!)}
+                            className="cursor-pointer hover:opacity-80 transition-opacity"
+                            data-testid={`button-open-image-${msg.id}`}
                           >
-                            {msg.tipo === "texto" && <p className="text-sm">{msg.conteudo}</p>}
-                            
-                            {msg.tipo === "imagem" && msg.arquivo && (
-                              <button
-                                onClick={() => setSelectedImage(msg.arquivo!)}
-                                className="cursor-pointer hover:opacity-80 transition-opacity"
-                                data-testid={`button-open-image-${msg.id}`}
-                              >
-                                <img src={msg.arquivo} alt="Imagem" className="max-w-xs rounded max-h-64 object-cover" />
-                              </button>
-                            )}
-                            
-                            {msg.tipo === "audio" && msg.arquivo && (
-                              <div className="w-48">
-                                <audio controls className="w-full h-8 rounded-full">
-                                  <source src={msg.arquivo} type={msg.mimeType} />
-                                </audio>
-                              </div>
-                            )}
-                            
-                            {msg.tipo === "documento" && msg.arquivo && (
-                              <button
-                                onClick={() => {
-                                  const link = document.createElement("a");
-                                  link.href = msg.arquivo!;
-                                  link.download = msg.nomeArquivo || "documento";
-                                  link.click();
-                                }}
-                                className="flex items-center gap-2 text-sm hover:underline cursor-pointer"
-                                data-testid={`button-download-document-${msg.id}`}
-                              >
-                                <File className="h-4 w-4" />
-                                {msg.nomeArquivo}
-                              </button>
-                            )}
-                            
-                            <div className="flex items-center justify-between gap-2 mt-1">
-                              <p className="text-xs opacity-70">
-                                {new Date(msg.createdAt).toLocaleTimeString("pt-BR")}
-                              </p>
-                              {msg.sender === "user" && (
-                                <span className="text-xs">
-                                  {msg.lido ? "✓✓" : "✓"}
-                                </span>
-                              )}
-                            </div>
+                            <img src={msg.arquivo} alt="Imagem" className="max-w-xs rounded max-h-64 object-cover" />
+                          </button>
+                        )}
+                        
+                        {msg.tipo === "audio" && msg.arquivo && (
+                          <div className="w-48">
+                            <audio controls className="w-full h-8 rounded-full">
+                              <source src={msg.arquivo} type={msg.mimeType} />
+                            </audio>
                           </div>
+                        )}
+                        
+                        {msg.tipo === "documento" && msg.arquivo && (
+                          <button
+                            onClick={() => {
+                              const link = document.createElement("a");
+                              link.href = msg.arquivo!;
+                              link.download = msg.nomeArquivo || "documento";
+                              link.click();
+                            }}
+                            className="flex items-center gap-2 text-sm hover:underline cursor-pointer"
+                            data-testid={`button-download-document-${msg.id}`}
+                          >
+                            <File className="h-4 w-4" />
+                            {msg.nomeArquivo}
+                          </button>
+                        )}
+                        
+                        <div className="flex items-center justify-between gap-2 mt-1">
+                          <p className="text-xs opacity-70">
+                            {new Date(msg.createdAt).toLocaleTimeString("pt-BR")}
+                          </p>
                           {msg.sender === "user" && (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => deleteMutation.mutate(msg.id)}
-                              disabled={deleteMutation.isPending}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 flex-shrink-0"
-                              data-testid={`button-delete-message-${msg.id}`}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
+                            <span className="text-xs">
+                              {msg.lido ? "✓✓" : "✓"}
+                            </span>
                           )}
                         </div>
-                      )}
+                      </div>
                     </div>
                   ))
                 )}

@@ -638,14 +638,10 @@ export async function getMessages(conversationId: string, limit: number = 50): P
       tamanho: messages.tamanho,
       mimeType: messages.mimeType,
       lido: messages.lido,
-      deletado: messages.deletado,
       createdAt: messages.createdAt,
     })
     .from(messages)
-    .where(and(
-      eq(messages.conversationId, conversationId),
-      eq(messages.deletado, false)
-    ))
+    .where(eq(messages.conversationId, conversationId))
     .orderBy(asc(messages.createdAt))
     .limit(limit);
 }
@@ -722,39 +718,6 @@ export async function countUnreadMessages(conversationId: string): Promise<numbe
       eq(messages.lido, false)
     ));
   return result[0]?.count ? Number(result[0].count) : 0;
-}
-
-export async function deleteMessage(messageId: string, userId: string): Promise<boolean> {
-  // Get the message to verify ownership (sender must be "user" and session must belong to userId)
-  const [message] = await db
-    .select()
-    .from(messages)
-    .where(eq(messages.id, messageId));
-
-  if (!message) return false;
-
-  // Only the user who sent the message can delete it
-  if (message.sender !== "user") return false;
-
-  // Verify user has access to this conversation
-  const [conv] = await db
-    .select()
-    .from(conversations)
-    .where(and(
-      eq(conversations.id, message.conversationId),
-      eq(conversations.userId, userId)
-    ));
-
-  if (!conv) return false;
-
-  // Soft delete: set deleted flag
-  const [updated] = await db
-    .update(messages)
-    .set({ deletado: true })
-    .where(eq(messages.id, messageId))
-    .returning();
-
-  return !!updated;
 }
 
 // ==================== QUICK REPLIES STORAGE ====================
