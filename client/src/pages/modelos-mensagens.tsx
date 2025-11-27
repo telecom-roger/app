@@ -140,7 +140,7 @@ export default function ModelosMensagens() {
       variaveis: template.variaveis || [],
       ativo: template.ativo ?? true,
     });
-    setOpenDialog(true);
+    setShowForm(true);
   };
 
   const handleNew = () => {
