@@ -324,6 +324,14 @@ export async function getWhatsAppSessions(): Promise<any[]> {
   return await db.select().from(whatsappSessions).orderBy(desc(whatsappSessions.createdAt));
 }
 
+export async function getAllWhatsappSessions(userIdFilter?: string): Promise<any[]> {
+  let query = db.select().from(whatsappSessions);
+  if (userIdFilter) {
+    query = query.where(eq(whatsappSessions.userId, userIdFilter));
+  }
+  return await query.orderBy(desc(whatsappSessions.createdAt));
+}
+
 export async function updateWhatsAppSession(id: string, data: any): Promise<any | undefined> {
   const [result] = await db
     .update(whatsappSessions)
@@ -347,7 +355,7 @@ export async function getConversations(): Promise<Conversation[]> {
   return await db
     .select()
     .from(conversations)
-    .orderBy(desc(conversations.updatedAt));
+    .orderBy(sql`${conversations.updatedAt} DESC`);
 }
 
 export async function getConversationById(id: string): Promise<Conversation | undefined> {
@@ -364,7 +372,23 @@ export async function findConversationByPhoneAndUser(telefone: string, userId: s
   return conv;
 }
 
-export async function createOrGetConversation(data: InsertConversation): Promise<Conversation> {
+export async function createOrGetConversation(clientIdOrData: string | InsertConversation, userId?: string): Promise<Conversation> {
+  // Handle both old (clientId, userId) and new (InsertConversation) signatures
+  let data: InsertConversation;
+  if (typeof clientIdOrData === 'string' && userId) {
+    // Old signature: createOrGetConversation(clientId, userId)
+    const client = await getClientById(clientIdOrData);
+    if (!client) throw new Error("Client not found");
+    data = {
+      clientId: clientIdOrData,
+      userId,
+      telefone: client.telefone || client.CELULAR_PRINCIPAL || "",
+    } as InsertConversation;
+  } else {
+    // New signature: createOrGetConversation(InsertConversation)
+    data = clientIdOrData as InsertConversation;
+  }
+  
   const existing = await findConversationByPhoneAndUser(data.telefone, data.userId);
   if (existing) return existing;
   return createConversation(data);
@@ -415,6 +439,19 @@ export async function getQuickReplies(userId: string): Promise<QuickReply[]> {
     .from(quickReplies)
     .where(eq(quickReplies.userId, userId))
     .orderBy(asc(quickReplies.ordem));
+}
+
+export async function getQuickRepliesByUserId(userId: string): Promise<QuickReply[]> {
+  return getQuickReplies(userId);
+}
+
+export async function updateQuickReply(id: string, data: Partial<QuickReply>): Promise<QuickReply | undefined> {
+  const [result] = await db
+    .update(quickReplies)
+    .set(data)
+    .where(eq(quickReplies.id, id))
+    .returning();
+  return result;
 }
 
 export async function deleteQuickReply(id: string): Promise<void> {
@@ -490,4 +527,37 @@ export async function removeTagFromClient(clientId: string, tagName: string): Pr
   const client = await getClientById(clientId);
   if (!client) return undefined;
   return updateClient(clientId, { tags: [] });
+}
+
+// ==================== DASHBOARD STATS ====================
+export async function getDashboardStats(userId: string): Promise<any> {
+  const totalClients = await db.select({ count: sql<number>`count(*)` }).from(clients).then(r => r[0]?.count || 0);
+  const totalOpportunities = await db.select({ count: sql<number>`count(*)` }).from(opportunities).then(r => r[0]?.count || 0);
+  const closedOpportunities = await db.select({ count: sql<number>`count(*)` }).from(opportunities).where(eq(opportunities.etapa, 'fechado')).then(r => r[0]?.count || 0);
+  const totalCampaigns = await db.select({ count: sql<number>`count(*)` }).from(campaigns).then(r => r[0]?.count || 0);
+  
+  return {
+    totalClientes: totalClients,
+    totalOportunidades: totalOpportunities,
+    oportunidadesFechadas: closedOpportunities,
+    totalCampanhas: totalCampaigns,
+  };
+}
+
+export async function getFunnelData(): Promise<any> {
+  const lead = await db.select({ count: sql<number>`count(*)` }).from(opportunities).where(eq(opportunities.etapa, 'lead')).then(r => r[0]?.count || 0);
+  const contato = await db.select({ count: sql<number>`count(*)` }).from(opportunities).where(eq(opportunities.etapa, 'contato')).then(r => r[0]?.count || 0);
+  const proposta = await db.select({ count: sql<number>`count(*)` }).from(opportunities).where(eq(opportunities.etapa, 'proposta')).then(r => r[0]?.count || 0);
+  const fechado = await db.select({ count: sql<number>`count(*)` }).from(opportunities).where(eq(opportunities.etapa, 'fechado')).then(r => r[0]?.count || 0);
+  
+  return { lead, contato, proposta, fechado };
+}
+
+export async function getStatusDistribution(): Promise<any> {
+  const result = await db.select({
+    status: clients.status,
+    count: sql<number>`count(*)`,
+  }).from(clients).groupBy(clients.status);
+  
+  return result.map(r => ({ name: r.status, value: r.count }));
 }
