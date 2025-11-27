@@ -116,6 +116,7 @@ export default function Chat() {
   const shouldDiscardAudioRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [pastedImage, setPastedImage] = useState<{ base64: string; nome: string; tipo: string; size: number; mimeType: string } | null>(null);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [showNoteInput, setShowNoteInput] = useState(false);
   const [noteText, setNoteText] = useState("");
@@ -485,18 +486,34 @@ export default function Chat() {
         const reader = new FileReader();
         reader.onload = (event) => {
           const base64 = event.target?.result as string;
-          sendMutation.mutate({ 
-            arquivo: base64, 
-            tipo: "imagem", 
-            nomeArquivo: `imagem_${Date.now()}.${file.type.split("/")[1]}`,
-            tamanho: file.size,
-            mimeType: file.type 
-          } as any);
+          setPastedImage({
+            base64,
+            nome: `imagem_${Date.now()}.${file.type.split("/")[1]}`,
+            tipo: "imagem",
+            size: file.size,
+            mimeType: file.type
+          });
         };
         reader.readAsDataURL(file);
         break;
       }
     }
+  };
+
+  const handleSendPastedImage = () => {
+    if (!pastedImage) return;
+    sendMutation.mutate({
+      arquivo: pastedImage.base64,
+      tipo: pastedImage.tipo,
+      nomeArquivo: pastedImage.nome,
+      tamanho: pastedImage.size,
+      mimeType: pastedImage.mimeType
+    } as any);
+    setPastedImage(null);
+  };
+
+  const handleDiscardPastedImage = () => {
+    setPastedImage(null);
   };
 
   const handleStartRecording = async () => {
@@ -1313,6 +1330,38 @@ export default function Chat() {
 
             {/* Input */}
             <div className="flex flex-col gap-3">
+              {pastedImage && (
+                <div className="px-6 pt-4 pb-3 mx-6 flex items-center gap-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue/10 dark:bg-blue/20 flex items-center justify-center">
+                    <img src={pastedImage.base64} alt="Preview" className="w-10 h-10 object-cover rounded-full" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Imagem pronta</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{(pastedImage.size / 1024).toFixed(1)} KB</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Button
+                      size="sm"
+                      onClick={handleSendPastedImage}
+                      disabled={sendMutation.isPending}
+                      data-testid="button-send-pasted-image"
+                      className="gap-1.5"
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                      Enviar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleDiscardPastedImage}
+                      disabled={sendMutation.isPending}
+                      data-testid="button-discard-pasted-image"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
               {recordedAudio && (
                 <div className="px-6 pt-4 pb-3 mx-6 flex items-center gap-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
                   <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
