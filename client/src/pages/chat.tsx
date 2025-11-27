@@ -473,7 +473,7 @@ export default function Chat() {
                 data-testid="button-add-note"
                 className="h-6 w-6"
               >
-                <Plus className="h-4 w-4" />
+                {showNoteInput ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
               </Button>
             </div>
 
