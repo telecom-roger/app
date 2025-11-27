@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { z } from "zod";
 import { eq, and, or, ilike, desc, sql, lte, inArray } from "drizzle-orm";
 import cron from "node-cron";
-import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, whatsappSessions, clients, interactions, conversations, messages, campaigns as campaignsTable, templates as templatesTable } from "@shared/schema";
+import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, whatsappSessions, clients, interactions, conversations, messages, campaigns as campaignsTable, templates as templatesTable, tags } from "@shared/schema";
 import * as storage from "./storage";
 import * as whatsappService from "./whatsappService";
 import { setupAuth, isAuthenticated } from "./localAuth";
@@ -106,24 +106,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: clients.EMAIL_PRINCIPAL,
           cpfCnpj: clients.cpfCnpj,
           status: clients.status,
-          tags: clients.tags,
+          tagNames: clients.tags,
         })
         .from(clients)
         .where(whereCondition)
         .limit(10000);
 
+      // Fetch all available tags
+      const allTags = await db.select().from(tags);
+      
       const clientsWithPhones = allClients.filter((c) => c.telefone && c.telefone.trim());
-      const result = clientsWithPhones.map((client) => ({
-        id: client.id,
-        nome: client.nome,
-        razaoSocial: client.razaoSocial,
-        telefone: client.telefone,
-        email: client.email,
-        cpfCnpj: client.cpfCnpj,
-        status: client.status,
-        tags: client.tags,
-        ultimaCampanha: undefined,
-      }));
+      const result = clientsWithPhones.map((client) => {
+        // Convert tag names to tag objects with id, nome, cor
+        const clientTags = (client.tagNames || []).map((tagName: string) => {
+          const tag = allTags.find(t => t.nome === tagName);
+          return tag ? { id: tag.id, nome: tag.nome, cor: tag.cor } : null;
+        }).filter(Boolean);
+
+        return {
+          id: client.id,
+          nome: client.nome,
+          razaoSocial: client.razaoSocial,
+          telefone: client.telefone,
+          email: client.email,
+          cpfCnpj: client.cpfCnpj,
+          status: client.status,
+          tags: clientTags,
+          ultimaCampanha: undefined,
+        };
+      });
 
       res.json(result);
     } catch (error: any) {
