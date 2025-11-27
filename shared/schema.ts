@@ -164,6 +164,7 @@ export const opportunities = pgTable("opportunities", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
+  index("idx_opportunities_pipeline").on(table.pipelineId),
   index("idx_opportunities_client").on(table.clientId),
   index("idx_opportunities_etapa").on(table.etapa),
   index("idx_opportunities_responsavel").on(table.responsavelId),
