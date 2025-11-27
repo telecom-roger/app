@@ -124,6 +124,8 @@ async function processIncomingMessages(sessionId: string, m: any) {
       senderPhone = senderPhone
         .replace("@s.whatsapp.net", "")
         .replace("@c.us", "")
+        .replace("@iid", "")
+        .replace("@lid", "")
         .trim();
       
       if (!senderPhone) {
