@@ -108,6 +108,14 @@ async function processIncomingMessages(sessionId: string, m: any) {
 
       // Extract phone number from WhatsApp identifiers
       // Priority: remoteJid > participant > remoteJidAlt (remoteJid is most reliable)
+      
+      // DETAILED DEBUG
+      if (msg.message?.conversation || msg.message?.extendedTextMessage) {
+        console.log(`[DEBUG] msg.key.remoteJid:`, msg.key.remoteJid);
+        console.log(`[DEBUG] msg.key.remoteJidAlt:`, msg.key.remoteJidAlt);
+        console.log(`[DEBUG] msg.key.participant:`, msg.key.participant);
+      }
+      
       let senderPhone = "";
       
       if (msg.key.remoteJid) {
@@ -127,6 +135,10 @@ async function processIncomingMessages(sessionId: string, m: any) {
         .replace("@iid", "")
         .replace("@lid", "")
         .trim();
+      
+      if (msg.message?.conversation || msg.message?.extendedTextMessage) {
+        console.log(`[DEBUG] Final senderPhone:`, senderPhone);
+      }
       
       if (!senderPhone) {
         console.log(`[RECEBIMENTO] ⚠️ Telefone vazio após limpeza`);
