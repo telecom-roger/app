@@ -91,6 +91,10 @@ export default function Chat() {
   const [noteText, setNoteText] = useState("");
   const [noteColor, setNoteColor] = useState("bg-blue-500");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [closedConversations, setClosedConversations] = useState<Set<string>>(new Set());
+  const [contextMenuOpen, setContextMenuOpen] = useState(false);
+  const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
+  const [contextMenuConvId, setContextMenuConvId] = useState<string | null>(null);
 
   const { data: quickReplies = [] } = useQuery<QuickReply[]>({
     queryKey: ["/api/quick-replies"],
@@ -192,6 +196,10 @@ export default function Chat() {
   // Sort conversations by last message date (most recent first)
   const sortedConversations = [...conversations]
     .filter(conv => {
+      // Filter out closed conversations
+      if (closedConversations.has(conv.id)) {
+        return false;
+      }
       // If a tag is selected, only show conversations with that tag
       if (selectedTag && conv.client?.tags) {
         return (conv.client.tags as string[]).includes(selectedTag);
@@ -619,10 +627,18 @@ export default function Chat() {
                     const clientName = conv.client?.razaoSocial || conv.client?.nome || "Contato desconhecido";
                     const initials = getInitials(clientName);
 
+                    const handleContextMenu = (e: React.MouseEvent) => {
+                      e.preventDefault();
+                      setContextMenuOpen(true);
+                      setContextMenuPos({ x: e.clientX, y: e.clientY });
+                      setContextMenuConvId(conv.id);
+                    };
+
                     return (
                     <button
                       key={conv.id}
                       onClick={() => handleSelectConversation(conv.id)}
+                      onContextMenu={handleContextMenu}
                       className={`w-full text-left p-3 rounded-lg transition-colors mb-1 hover:bg-muted border-b border-gray-200 dark:border-gray-800 ${
                         selectedConversationId === conv.id
                           ? "bg-primary/15 text-foreground"
@@ -693,6 +709,44 @@ export default function Chat() {
             )}
           </div>
         </ScrollArea>
+
+        {/* Context Menu */}
+        {contextMenuOpen && (
+          <>
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setContextMenuOpen(false)}
+              onContextMenu={(e) => e.preventDefault()}
+            />
+            <div
+              className="fixed z-50 bg-card border border-border rounded-md shadow-lg py-1"
+              style={{
+                left: `${contextMenuPos.x}px`,
+                top: `${contextMenuPos.y}px`,
+              }}
+            >
+              <button
+                onClick={() => {
+                  if (contextMenuConvId) {
+                    setClosedConversations(prev => new Set([...prev, contextMenuConvId]));
+                    if (selectedConversationId === contextMenuConvId) {
+                      setSelectedConversationId(null);
+                    }
+                  }
+                  setContextMenuOpen(false);
+                  toast({
+                    title: "Conversa fechada",
+                    description: "A conversa foi fechada, mas continua no banco de dados",
+                  });
+                }}
+                className="w-full text-left px-4 py-2 text-sm hover:bg-muted transition-colors"
+                data-testid="button-close-conversation"
+              >
+                Fechar conversa
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Right Panel - Messages */}
