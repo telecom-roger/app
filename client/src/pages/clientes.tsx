@@ -206,7 +206,7 @@ export default function Clientes() {
                     size="sm"
                     onClick={() => setSelectedTag(null)}
                     data-testid="button-filter-all-tags"
-                    className="h-7 px-3 text-xs whitespace-nowrap"
+                    className="h-7 px-3 text-xs whitespace-nowrap rounded-full"
                   >
                     Todas
                   </Button>

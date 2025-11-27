@@ -431,7 +431,7 @@ export default function Chat() {
                 size="sm"
                 onClick={() => setSelectedTag(null)}
                 data-testid="button-filter-all-tags"
-                className="h-7 px-2 text-xs"
+                className="h-7 px-2 text-xs rounded-full"
               >
                 Todas
               </Button>
