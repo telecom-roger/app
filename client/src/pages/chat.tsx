@@ -188,22 +188,6 @@ export default function Chat() {
       })
     : [];
 
-  // Extract all unique tags from conversations' clients AND all clients
-  const allUniqueTags = Array.from(
-    new Set(
-      [
-        // Tags from conversations
-        ...(conversations || [])
-          .filter(conv => conv.client?.tags && Array.isArray(conv.client.tags) && (conv.client.tags as string[]).length > 0)
-          .flatMap(conv => conv.client?.tags || []),
-        // Tags from all clients
-        ...(clients || [])
-          .filter(client => client.tags && Array.isArray(client.tags) && (client.tags as string[]).length > 0)
-          .flatMap(client => client.tags || []),
-      ].filter(tag => tag && typeof tag === 'string')
-    )
-  ).sort();
-
   // Sort conversations by last message date (most recent first)
   const sortedConversations = [...conversations]
     .filter(conv => {
@@ -444,7 +428,7 @@ export default function Chat() {
         </div>
 
         {/* Tag Filter Section */}
-        {!showSearchResults && allUniqueTags.length > 0 && (
+        {!showSearchResults && allTags.length > 0 && (
           <div className="px-4 py-3 border-b border-border space-y-2">
             <p className="text-xs font-semibold text-muted-foreground">FILTRAR POR ETIQUETA</p>
             <div className="flex flex-wrap gap-1">
@@ -457,16 +441,18 @@ export default function Chat() {
               >
                 Todas
               </Button>
-              {allUniqueTags.map((tag) => (
+              {allTags.map((tag) => (
                 <Button
-                  key={tag}
-                  variant={selectedTag === tag ? "default" : "outline"}
+                  key={tag.id}
+                  variant={selectedTag === tag.id ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setSelectedTag(tag)}
-                  data-testid={`button-filter-tag-${tag}`}
-                  className="h-7 px-2 text-xs"
+                  onClick={() => setSelectedTag(tag.id)}
+                  data-testid={`button-filter-tag-${tag.id}`}
+                  className={`h-7 px-2 text-xs text-white ${
+                    selectedTag === tag.id ? tag.cor : ""
+                  }`}
                 >
-                  {tag}
+                  {tag.nome}
                 </Button>
               ))}
             </div>
