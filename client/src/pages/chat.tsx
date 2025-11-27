@@ -422,11 +422,11 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex h-full bg-background">
+    <div className="flex h-full bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Left Sidebar - Conversations List */}
-      <div className="w-full md:w-96 lg:w-2/5 flex flex-col border-r border-border bg-card">
+      <div className="w-full md:w-96 lg:w-2/5 flex flex-col border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50">
         {/* Search Input */}
-        <div className="p-4 space-y-3 border-b border-border">
+        <div className="p-4 space-y-3 border-b border-slate-200 dark:border-slate-700">
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
@@ -444,8 +444,8 @@ export default function Chat() {
 
         {/* Tag Filter Section */}
         {!showSearchResults && allTags.length > 0 && (
-          <div className="px-4 py-3 border-b border-border space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground">FILTRAR POR ETIQUETA</p>
+          <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 space-y-2">
+            <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">FILTRAR POR ETIQUETA</p>
             <div className="flex flex-wrap gap-1">
               <Button
                 variant={selectedTag === null ? "default" : "outline"}
@@ -476,9 +476,9 @@ export default function Chat() {
 
         {/* Etiquetas Section - Only show when conversation is selected and not searching */}
         {!showSearchResults && selectedConversationId && (
-          <div className="px-4 py-3 border-b border-border space-y-2">
+          <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 space-y-2">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-muted-foreground">ETIQUETAS</p>
+              <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">ETIQUETAS</p>
               <Button
                 size="icon"
                 variant="ghost"
@@ -526,10 +526,10 @@ export default function Chat() {
 
             {/* Tag Selection Form */}
             {showNoteInput && (
-              <div className="space-y-2 p-2 border border-border rounded-md bg-muted/20">
-                <p className="text-xs text-muted-foreground font-medium">Selecione uma etiqueta (substitui a atual):</p>
+              <div className="space-y-2 p-2 border border-slate-200 dark:border-slate-700 rounded-md bg-slate-50 dark:bg-slate-900/30">
+                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">Selecione uma etiqueta (substitui a atual):</p>
                 {allTags.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">Nenhuma etiqueta criada. Crie em /etiquetas</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">Nenhuma etiqueta criada. Crie em /etiquetas</p>
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {allTags.map((tag) => {
@@ -599,16 +599,16 @@ export default function Chat() {
                     <button
                       key={client.id}
                       onClick={() => handleSelectClient(client)}
-                      className="w-full text-left p-3 rounded-lg transition-colors hover:bg-muted mb-2"
+                      className="w-full text-left p-3 rounded-lg transition-colors hover:bg-slate-100 dark:hover:bg-slate-700 mb-2"
                       data-testid={`button-search-client-${client.id}`}
                     >
-                      <p className="text-sm font-medium truncate">{client.nome}</p>
+                      <p className="text-sm font-medium truncate text-slate-900 dark:text-white">{client.nome}</p>
                       {client.razaoSocial && (
-                        <p className="text-xs text-muted-foreground truncate">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
                           {client.razaoSocial}
                         </p>
                       )}
-                      <p className="text-xs text-muted-foreground truncate">
+                      <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
                         {client.CELULAR_PRINCIPAL || client.telefone}
                       </p>
                     </button>
@@ -623,7 +623,7 @@ export default function Chat() {
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   </div>
                 ) : sortedConversations.length === 0 ? (
-                  <p className="text-sm text-muted-foreground p-4 text-center">
+                  <p className="text-sm text-slate-600 dark:text-slate-400 p-4 text-center">
                     Nenhuma conversa ainda
                   </p>
                 ) : (
@@ -651,9 +651,9 @@ export default function Chat() {
                       key={conv.id}
                       onClick={() => handleSelectConversation(conv.id)}
                       onContextMenu={handleContextMenu}
-                      className={`w-full text-left p-3 rounded-lg transition-colors mb-1 hover:bg-muted border-b border-gray-200 dark:border-gray-800 ${
+                      className={`w-full text-left p-3 rounded-lg transition-colors mb-1 hover:bg-slate-100 dark:hover:bg-slate-700 border-b border-slate-200 dark:border-slate-700 ${
                         selectedConversationId === conv.id
-                          ? "bg-primary/15 text-foreground"
+                          ? "bg-blue-50 dark:bg-blue-950/30 text-foreground"
                           : "text-foreground"
                       }`}
                       data-testid={`button-conversation-${conv.id}`}
@@ -661,12 +661,12 @@ export default function Chat() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                           <Avatar className="h-8 w-8 flex-shrink-0" data-testid={`avatar-${conv.id}`}>
-                            <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">
+                            <AvatarFallback className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-bold">
                               {initials}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex items-center gap-1 min-w-0 flex-1">
-                            <p className="text-sm font-medium truncate">
+                            <p className="text-sm font-medium truncate text-slate-900 dark:text-white">
                               {clientName.length > 30
                                 ? clientName.substring(0, 30) + "..."
                                 : clientName}
@@ -690,7 +690,7 @@ export default function Chat() {
                             </span>
                           )}
                           {conv.ultimaMensagemEm && (
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-slate-600 dark:text-slate-400">
                               {new Date(conv.ultimaMensagemEm).toLocaleTimeString("pt-BR", {
                                 hour: "2-digit",
                                 minute: "2-digit"
@@ -701,11 +701,11 @@ export default function Chat() {
                       </div>
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0 ml-10">
-                          <p className="text-xs text-muted-foreground truncate">
+                          <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
                             {conv.client?.CELULAR_PRINCIPAL || conv.client?.telefone || "Sem telefone"}
                           </p>
                           {conv.ultimaMensagem && (
-                            <p className="text-xs text-muted-foreground truncate mt-1">
+                            <p className="text-xs text-slate-600 dark:text-slate-400 truncate mt-1">
                               {conv.ultimaMensagem.length > 50
                                 ? conv.ultimaMensagem.substring(0, 50) + "..."
                                 : conv.ultimaMensagem}
@@ -731,7 +731,7 @@ export default function Chat() {
               onContextMenu={(e) => e.preventDefault()}
             />
             <div
-              className="fixed z-50 bg-card border border-border rounded-md shadow-lg py-1"
+              className="fixed z-50 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg py-1"
               style={{
                 left: `${contextMenuPos.x}px`,
                 top: `${contextMenuPos.y}px`,
@@ -751,7 +751,7 @@ export default function Chat() {
                     description: "A conversa foi fechada, mas continua no banco de dados",
                   });
                 }}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-muted transition-colors"
+                className="w-full text-left px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-slate-900 dark:text-white"
                 data-testid="button-close-conversation"
               >
                 Fechar conversa
@@ -762,11 +762,11 @@ export default function Chat() {
       </div>
 
       {/* Right Panel - Messages */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col bg-white dark:bg-slate-800">
         {selectedConversation ? (
           <>
             {/* Header */}
-            <div className="flex items-center gap-2 p-4 border-b border-border bg-card justify-between">
+            <div className="flex items-center gap-2 p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 justify-between">
               <div className="flex items-center gap-2 flex-1">
                 <SiWhatsapp className="h-5 w-5 text-green-500" />
                 <div className="flex-1 min-w-0">
@@ -781,13 +781,13 @@ export default function Chat() {
                         />
                       );
                     })()}
-                    <p className="font-medium text-foreground truncate">
+                    <p className="font-medium text-slate-900 dark:text-white truncate">
                       {(selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato").length > 30
                         ? (selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato").substring(0, 30) + "..."
                         : selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato"}
                     </p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
                     {selectedConversation.client?.CELULAR_PRINCIPAL || selectedConversation.client?.telefone}
                   </p>
                 </div>
@@ -804,7 +804,7 @@ export default function Chat() {
                 </PopoverTrigger>
                 <PopoverContent className="w-56 p-2" align="end">
                   {quickReplies.length === 0 ? (
-                    <p className="text-xs text-muted-foreground text-center py-4">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 text-center py-4">
                       Nenhuma mensagem configurada. Vá a Configurações para adicionar.
                     </p>
                   ) : (
@@ -813,7 +813,7 @@ export default function Chat() {
                         <button
                           key={reply.id}
                           onClick={() => handleSelectQuickReply(reply.conteudo)}
-                          className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors break-words"
+                          className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors break-words text-slate-900 dark:text-white"
                           data-testid={`button-quick-reply-${reply.id}`}
                           title={reply.conteudo}
                         >
@@ -833,14 +833,14 @@ export default function Chat() {
             </div>
 
             {/* Messages */}
-            <ScrollArea className="flex-1 p-4">
+            <ScrollArea className="flex-1 p-4 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950">
               <div className="space-y-3 flex flex-col">
                 {messagesLoading ? (
                   <div className="flex items-center justify-center h-20">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    <Loader2 className="h-4 w-4 animate-spin text-slate-600 dark:text-slate-400" />
                   </div>
                 ) : messages.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">
+                  <p className="text-sm text-slate-600 dark:text-slate-400 text-center py-8">
                     Nenhuma mensagem ainda
                   </p>
                 ) : (
@@ -949,7 +949,7 @@ export default function Chat() {
       </Dialog>
 
             {/* Input */}
-            <div className="p-6 border-t border-border bg-card flex gap-3 items-end">
+            <div className="p-6 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex gap-3 items-end">
               <Input
                 placeholder="Digite uma mensagem..."
                 value={messageText}
@@ -1008,14 +1008,14 @@ export default function Chat() {
             </div>
           </>
         ) : (
-          <Card className="flex items-center justify-center h-full m-4">
+          <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">
+              <MessageSquare className="h-12 w-12 mx-auto text-slate-400 dark:text-slate-500 mb-4" />
+              <p className="text-slate-600 dark:text-slate-400">
                 Selecione uma conversa ou busque um cliente
               </p>
             </div>
-          </Card>
+          </div>
         )}
       </div>
     </div>
