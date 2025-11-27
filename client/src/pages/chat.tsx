@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,10 +104,12 @@ interface Tag {
 
 export default function Chat() {
   const { toast } = useToast();
+  const [location] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [messageText, setMessageText] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [isInitializingFromUrl, setIsInitializingFromUrl] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [recordedAudio, setRecordedAudio] = useState<{ base64: string; blob: Blob } | null>(null);
@@ -136,6 +139,34 @@ export default function Chat() {
   useEffect(() => {
     localStorage.setItem("closedConversations", JSON.stringify(Array.from(closedConversations)));
   }, [closedConversations]);
+
+  // Handle clientId from URL parameter
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.split('?')[1]);
+    const clientId = urlParams.get('clientId');
+    
+    if (clientId && isInitializingFromUrl) {
+      setIsInitializingFromUrl(false);
+      
+      // Create or get conversation for this client
+      apiRequest("POST", `/api/chat/start-conversation/${clientId}`, {})
+        .then((conversa) => {
+          setSelectedConversationId(conversa.id);
+          // Refetch conversations to include the newly created one
+          queryClient.invalidateQueries({ queryKey: ["/api/chat/conversations"] });
+        })
+        .catch((error) => {
+          console.error("Erro ao iniciar conversa:", error);
+          toast({
+            title: "Erro",
+            description: "Não foi possível iniciar conversa com este cliente",
+            variant: "destructive",
+          });
+        });
+    } else {
+      setIsInitializingFromUrl(false);
+    }
+  }, [location]);
 
   const { data: quickReplies = [] } = useQuery<QuickReply[]>({
     queryKey: ["/api/quick-replies"],
