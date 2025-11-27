@@ -1062,21 +1062,32 @@ export default function Chat() {
               {/* Valor do Negócio */}
               <div className="border-b border-slate-200 dark:border-slate-700 pb-3">
                 <label className="text-sm font-semibold text-slate-900 dark:text-slate-100">Valor do Negócio</label>
-                <Input
-                  type="text"
-                  placeholder="R$ 0,00"
-                  value={businessValue}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, "");
-                    const formatted = new Intl.NumberFormat("pt-BR", {
-                      style: "currency",
-                      currency: "BRL"
-                    }).format(parseInt(value || "0") / 100);
-                    setBusinessValue(formatted);
-                  }}
-                  className="mt-2"
-                  data-testid="input-business-value"
-                />
+                <div className="flex gap-2 mt-2">
+                  <Input
+                    type="text"
+                    placeholder="R$ 0,00"
+                    value={businessValue}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, "");
+                      const formatted = new Intl.NumberFormat("pt-BR", {
+                        style: "currency",
+                        currency: "BRL"
+                      }).format(parseInt(value || "0") / 100);
+                      setBusinessValue(formatted);
+                    }}
+                    className="flex-1"
+                    data-testid="input-business-value"
+                  />
+                  <Button
+                    onClick={() => {
+                      toast({ title: "Valor salvo", description: businessValue || "R$ 0,00", variant: "default" });
+                    }}
+                    disabled={!businessValue || businessValue === "R$ 0,00"}
+                    data-testid="button-save-business-value"
+                  >
+                    Salvar
+                  </Button>
+                </div>
               </div>
               <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800/50">
                 <div className="flex items-center gap-3 mb-3">
