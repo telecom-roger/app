@@ -153,6 +153,13 @@ export default function Chat() {
       // Create or get conversation for this client
       apiRequest("POST", `/api/chat/start-conversation/${clientId}`, {})
         .then((conversa) => {
+          // Remove from closed conversations
+          setClosedConversations(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(conversa.id);
+            return newSet;
+          });
+          
           // Get current conversations from cache
           const currentConversations = queryClient.getQueryData<Conversation[]>(["/api/chat/conversations"]) || [];
           
@@ -340,6 +347,12 @@ export default function Chat() {
       return res.json();
     },
     onSuccess: (data: any) => {
+      // Remove from closed conversations when opened
+      setClosedConversations(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(data.id);
+        return newSet;
+      });
       setSelectedConversationId(data.id);
       setSearchTerm("");
       setShowSearchResults(false);
