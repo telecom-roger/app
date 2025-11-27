@@ -444,12 +444,12 @@ export default function Chat() {
               {allTags.map((tag) => (
                 <Button
                   key={tag.id}
-                  variant={selectedTag === tag.id ? "default" : "outline"}
+                  variant={selectedTag === tag.nome ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setSelectedTag(tag.id)}
+                  onClick={() => setSelectedTag(tag.nome)}
                   data-testid={`button-filter-tag-${tag.id}`}
                   className={`h-7 px-2 text-xs text-white ${
-                    selectedTag === tag.id ? tag.cor : ""
+                    selectedTag === tag.nome ? tag.cor : ""
                   }`}
                 >
                   {tag.nome}
