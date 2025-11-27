@@ -215,19 +215,29 @@ export default function CampanhasWhatsApp() {
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
-  // Filter clients by search, status and tag
+  // Filter clients by search, status, tag, tipo, carteira, cidade
   const clientesFiltrados = clientesDisponiveis.filter((c) => {
     // Search filter
     const searchMatch = c.nome.toLowerCase().includes(searchClientes.toLowerCase()) ||
+      c.razaoSocial?.toLowerCase().includes(searchClientes.toLowerCase()) ||
       c.telefone.includes(searchClientes);
     
     // Status filter
     const statusMatch = filtroStatus === "todos" || c.status?.toLowerCase() === filtroStatus.toLowerCase();
     
-    // Tag filter - using tag NAME like in clientes.tsx
+    // Tag filter
     const tagMatch = selectedTag === null || (c.tags && c.tags.some(t => t.nome === selectedTag));
+
+    // Tipo filter
+    const tipoMatch = selectedTiposFilter.size === 0 || (c.tipo && selectedTiposFilter.has(c.tipo));
+
+    // Carteira filter
+    const carteiraMatch = selectedCarteirasFilter.size === 0 || (c.carteira && selectedCarteirasFilter.has(c.carteira));
+
+    // Cidade filter
+    const cidadeMatch = selectedCidadesFilter.size === 0 || (c.cidade && selectedCidadesFilter.has(c.cidade));
     
-    return searchMatch && statusMatch && tagMatch;
+    return searchMatch && statusMatch && tagMatch && tipoMatch && carteiraMatch && cidadeMatch;
   });
 
   // Parse CSV when text changes
@@ -1316,6 +1326,78 @@ export default function CampanhasWhatsApp() {
                     onEndDateChange={setDataEnvioFim}
                   />
                 </div>
+
+                {/* Status, Tipo, Carteira, Cidade */}
+                <div className="flex gap-2 flex-wrap items-center">
+                  <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+                    <SelectTrigger className="w-40 border-slate-200 dark:border-slate-700 h-9" data-testid="select-status-filter-2">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos Status</SelectItem>
+                      <SelectItem value="lead">Lead</SelectItem>
+                      <SelectItem value="ativo">Ativo</SelectItem>
+                      <SelectItem value="proposta">Proposta</SelectItem>
+                      <SelectItem value="fechado">Fechado</SelectItem>
+                      <SelectItem value="perdido">Perdido</SelectItem>
+                      <SelectItem value="inativo">Inativo</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={selectedTiposFilter.size > 0 ? Array.from(selectedTiposFilter)[0] : "todos"} onValueChange={(val) => {
+                    if (val === "todos") {
+                      setSelectedTiposFilter(new Set());
+                    } else {
+                      setSelectedTiposFilter(new Set([val]));
+                    }
+                  }}>
+                    <SelectTrigger className="w-40 border-slate-200 dark:border-slate-700 h-9" data-testid="select-tipo-filter">
+                      <SelectValue placeholder="Tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos Tipos</SelectItem>
+                      {tiposDisponiveis.map((tipo) => (
+                        <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={selectedCarteirasFilter.size > 0 ? Array.from(selectedCarteirasFilter)[0] : "todos"} onValueChange={(val) => {
+                    if (val === "todos") {
+                      setSelectedCarteirasFilter(new Set());
+                    } else {
+                      setSelectedCarteirasFilter(new Set([val]));
+                    }
+                  }}>
+                    <SelectTrigger className="w-40 border-slate-200 dark:border-slate-700 h-9" data-testid="select-carteira-filter">
+                      <SelectValue placeholder="Carteira" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todas Carteiras</SelectItem>
+                      {carteirasDisponiveis.map((carteira) => (
+                        <SelectItem key={carteira} value={carteira}>{carteira}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={selectedCidadesFilter.size > 0 ? Array.from(selectedCidadesFilter)[0] : "todos"} onValueChange={(val) => {
+                    if (val === "todos") {
+                      setSelectedCidadesFilter(new Set());
+                    } else {
+                      setSelectedCidadesFilter(new Set([val]));
+                    }
+                  }}>
+                    <SelectTrigger className="w-40 border-slate-200 dark:border-slate-700 h-9" data-testid="select-cidade-filter">
+                      <SelectValue placeholder="Cidade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todas Cidades</SelectItem>
+                      {cidadesDisponiveis.slice(0, 50).map((cidade) => (
+                        <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 
                 {/* Tag Filters */}
                 <div className="flex gap-2 flex-wrap items-center">
@@ -1326,7 +1408,7 @@ export default function CampanhasWhatsApp() {
                     data-testid="button-filter-all-tags"
                     className="h-8 px-3 text-xs rounded-full"
                   >
-                    Todas as Etiquetas
+                    Todas Etiquetas
                   </Button>
                   {tagsDisponiveis.length > 0 && tagsDisponiveis.map((tag) => (
                     <Button
@@ -1363,32 +1445,38 @@ export default function CampanhasWhatsApp() {
                 </div>
               </div>
             ) : (
-              <ScrollArea className="flex-1 border border-slate-200 dark:border-slate-700 rounded-lg">
-                <div className="p-4">
+              <ScrollArea className="flex-1 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-950">
+                <div className="p-6">
                   {clientesFiltrados.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {clientesFiltrados.map((client) => (
                         <div
                           key={client.id}
-                          className="flex items-center gap-3 p-3 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                          className="flex items-start gap-3 p-4 rounded-lg bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800/70 transition-colors border border-slate-100 dark:border-slate-800"
+                          data-testid={`card-cliente-${client.id}`}
                         >
                           <Checkbox
                             checked={clientesSelecionados.has(client.id)}
                             onCheckedChange={() => toggleClienteSelecionado(client.id)}
                             data-testid={`checkbox-cliente-${client.id}`}
+                            className="mt-1"
                           />
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-slate-900 dark:text-white truncate text-sm">{client.razaoSocial || client.nome}</div>
-                            <div className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">📞 {client.telefone} {client.email ? `• ${client.email}` : ""}</div>
-                            {client.status && (
-                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Status: <span className="font-medium capitalize">{client.status}</span></div>
-                            )}
+                            <div className="font-semibold text-slate-900 dark:text-white text-base">{client.razaoSocial || client.nome}</div>
+                            <div className="text-sm text-slate-600 dark:text-slate-400 mt-1 space-y-1">
+                              <div>📞 {client.telefone}</div>
+                              {client.email && <div>✉️ {client.email}</div>}
+                              {client.status && <div>Status: <span className="font-medium capitalize text-slate-700 dark:text-slate-300">{client.status}</span></div>}
+                              {client.cidade && <div>📍 {client.cidade}</div>}
+                              {client.tipo && <div>Tipo: <span className="font-medium text-slate-700 dark:text-slate-300">{client.tipo}</span></div>}
+                              {client.carteira && <div>Carteira: <span className="font-medium text-slate-700 dark:text-slate-300">{client.carteira}</span></div>}
+                            </div>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-12 text-slate-600 dark:text-slate-400">
+                    <div className="text-center py-16 text-slate-600 dark:text-slate-400">
                       <div className="text-lg font-medium mb-2">Nenhum cliente encontrado</div>
                       <p className="text-sm">Ajuste os filtros e tente novamente</p>
                     </div>
