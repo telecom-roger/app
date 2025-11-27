@@ -203,10 +203,8 @@ export default function Kanban() {
             <Card className="p-6 border-0 shadow-sm bg-white dark:bg-slate-800/50">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Valor Total</p>
-                  <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">
-                    R$ {(valorTotal / 1000).toFixed(0)}k
-                  </p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Você controla os valores</p>
+                  <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">Qualquer formato</p>
                 </div>
                 <div className="p-3 bg-emerald-500/10 rounded-lg">
                   <DollarSign className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
