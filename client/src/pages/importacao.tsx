@@ -78,6 +78,71 @@ interface ColumnMapping {
   MENSAGEM_SERASA: number;
 }
 
+const createDefaultMapping = (): ColumnMapping => ({
+  nome: -1,
+  razaoSocial: -1,
+  cpfCnpj: -1,
+  status: -1,
+  carteira: -1,
+  tipo: -1,
+  categoria: -1,
+  score: -1,
+  planoAtual: -1,
+  produtoAtual: -1,
+  telefone: -1,
+  email: -1,
+  contato: -1,
+  endereco: -1,
+  numero: -1,
+  complemento: -1,
+  cep: -1,
+  cidade: -1,
+  uf: -1,
+  dataContrato: -1,
+  valorContrato: -1,
+  dataUltimoContato: -1,
+  observacoes: -1,
+  APARELHO_LIBERADO: -1,
+  PEDIDO_MOVEL: -1,
+  M_FIXA: -1,
+  PEDIDO_FIXA: -1,
+  NOME_CONTATO: -1,
+  EMAIL_PRINCIPAL: -1,
+  CELULAR_PRINCIPAL: -1,
+  TIPO_GESTOR: -1,
+  FLG_DOMINIO_PUBLICO_SFA: -1,
+  TELEFONE_COMERCIAL: -1,
+  CELULAR: -1,
+  TELEFONE_RESIDENCIAL: -1,
+  EMAIL_SIBEL: -1,
+  PROP_MOVEL_AVANCADA: -1,
+  SERASA: -1,
+  MENSAGEM_SERASA: -1,
+});
+
+const autoDetectMapping = (headers: string[]): ColumnMapping => {
+  const mapping = createDefaultMapping();
+  
+  const lowerHeaders = headers.map(h => h.toLowerCase().trim());
+  
+  lowerHeaders.forEach((header, idx) => {
+    if (header.includes('nome') && !header.includes('contato')) mapping.nome = idx;
+    else if (header.includes('razão') || header.includes('razao')) mapping.razaoSocial = idx;
+    else if (header.includes('cnpj') || header.includes('cpf')) mapping.cpfCnpj = idx;
+    else if (header.includes('status')) mapping.status = idx;
+    else if (header.includes('carteira')) mapping.carteira = idx;
+    else if (header.includes('tipo') && !header.includes('gestor')) mapping.tipo = idx;
+    else if (header.includes('categoria')) mapping.categoria = idx;
+    else if (header.includes('telefone') && !header.includes('comercial') && !header.includes('residencial')) mapping.telefone = idx;
+    else if (header.includes('email') && !header.includes('sibel')) mapping.email = idx;
+    else if (header.includes('endereço') || header.includes('endereco')) mapping.endereco = idx;
+    else if (header.includes('cidade')) mapping.cidade = idx;
+    else if (header.includes('cep')) mapping.cep = idx;
+  });
+  
+  return mapping;
+};
+
 export default function Importacao() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -85,47 +150,7 @@ export default function Importacao() {
   const [fileData, setFileData] = useState<FileData | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [mapping, setMapping] = useState<ColumnMapping>({
-    nome: 0,
-    razaoSocial: 1,
-    cpfCnpj: 2,
-    status: 3,
-    carteira: 4,
-    tipo: 5,
-    categoria: 6,
-    score: 7,
-    planoAtual: 8,
-    produtoAtual: 9,
-    telefone: -1,
-    email: -1,
-    contato: -1,
-    endereco: -1,
-    numero: -1,
-    complemento: -1,
-    cep: -1,
-    cidade: -1,
-    uf: -1,
-    dataContrato: -1,
-    valorContrato: -1,
-    dataUltimoContato: -1,
-    observacoes: -1,
-    APARELHO_LIBERADO: -1,
-    PEDIDO_MOVEL: -1,
-    M_FIXA: -1,
-    PEDIDO_FIXA: -1,
-    NOME_CONTATO: -1,
-    EMAIL_PRINCIPAL: -1,
-    CELULAR_PRINCIPAL: -1,
-    TIPO_GESTOR: -1,
-    FLG_DOMINIO_PUBLICO_SFA: -1,
-    TELEFONE_COMERCIAL: -1,
-    CELULAR: -1,
-    TELEFONE_RESIDENCIAL: -1,
-    EMAIL_SIBEL: -1,
-    PROP_MOVEL_AVANCADA: -1,
-    SERASA: -1,
-    MENSAGEM_SERASA: -1,
-  });
+  const [mapping, setMapping] = useState<ColumnMapping>(createDefaultMapping());
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{
     successCount: number;
@@ -172,10 +197,15 @@ export default function Importacao() {
             const headers = results.data[0];
             const rows = results.data.slice(1).filter((row: any) => row.some((cell: any) => cell));
             setFileData({ headers, rows });
+            
+            // Auto-detect mapping based on column headers
+            const detectedMapping = autoDetectMapping(headers);
+            setMapping(detectedMapping);
+            
             setCurrentStep(2);
             toast({
               title: "Sucesso",
-              description: `${rows.length} linhas detectadas`,
+              description: `${rows.length} linhas detectadas. Colunas mapeadas automaticamente.`,
             });
           }
         },
