@@ -146,6 +146,7 @@ export default function CampanhasWhatsApp() {
   const [nomeCampanha, setNomeCampanha] = useState("");
   const [filtersInitiated, setFiltersInitiated] = useState(false);
   const [selectedSendStatusFilter, setSelectedSendStatusFilter] = useState<Set<string>>(new Set());
+  const [cancelandoCampanha, setCanceladoCampanha] = useState<string | null>(null);
 
   // Fetch templates
   const { data: templates = [] } = useQuery<any[]>({
@@ -157,6 +158,24 @@ export default function CampanhasWhatsApp() {
       return Array.isArray(data) ? data : [];
     },
     enabled: isAuthenticated,
+  });
+
+  // Cancel campaign mutation
+  const cancelarCampanhaMutation = useMutation({
+    mutationFn: async (campaignId: string) => {
+      setCanceladoCampanha(campaignId);
+      const res = await apiRequest("POST", `/api/campaigns/${campaignId}/cancel`, {});
+      return res.json();
+    },
+    onSuccess: (_, campaignId) => {
+      setCampanhasEmProgresso(prev => prev.filter(c => c.id !== campaignId));
+      setCanceladoCampanha(null);
+      toast({ title: "Campanha cancelada com sucesso", variant: "default" });
+    },
+    onError: () => {
+      toast({ title: "Erro ao cancelar campanha", variant: "destructive" });
+      setCanceladoCampanha(null);
+    },
   });
 
   // Fetch clients with campaign history (only after filters initiated)
@@ -736,9 +755,31 @@ export default function CampanhasWhatsApp() {
                         <CardHeader>
                           <div className="flex justify-between items-center">
                             <CardTitle className="text-base text-slate-900 dark:text-white">Campanha em Progresso</CardTitle>
-                            <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                              {Math.round((campanha.enviadas / campanha.total) * 100)}%
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                                {Math.round((campanha.enviadas / campanha.total) * 100)}%
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => cancelarCampanhaMutation.mutate(campanha.id)}
+                                disabled={cancelandoCampanha === campanha.id}
+                                className="h-8 px-2 text-xs"
+                                data-testid={`button-cancelar-campanha-${campanha.id}`}
+                              >
+                                {cancelandoCampanha === campanha.id ? (
+                                  <>
+                                    <Loader className="h-3 w-3 mr-1 animate-spin" />
+                                    Cancelando...
+                                  </>
+                                ) : (
+                                  <>
+                                    <X className="h-3 w-3 mr-1" />
+                                    Cancelar
+                                  </>
+                                )}
+                              </Button>
+                            </div>
                           </div>
                         </CardHeader>
                         <CardContent className="space-y-3">
@@ -1200,9 +1241,31 @@ export default function CampanhasWhatsApp() {
                           <div key={campanha.id} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4">
                             <div className="flex justify-between items-center mb-3">
                               <h4 className="font-medium text-slate-900 dark:text-white">Campanha {campanha.id.slice(0, 8)}</h4>
-                              <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                {Math.round((campanha.enviadas / campanha.total) * 100)}%
-                              </Badge>
+                              <div className="flex items-center gap-2">
+                                <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                  {Math.round((campanha.enviadas / campanha.total) * 100)}%
+                                </Badge>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => cancelarCampanhaMutation.mutate(campanha.id)}
+                                  disabled={cancelandoCampanha === campanha.id}
+                                  className="h-8 px-2 text-xs"
+                                  data-testid={`button-cancelar-campanha-${campanha.id}`}
+                                >
+                                  {cancelandoCampanha === campanha.id ? (
+                                    <>
+                                      <Loader className="h-3 w-3 mr-1 animate-spin" />
+                                      Cancelando...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <X className="h-3 w-3 mr-1" />
+                                      Cancelar
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
                             </div>
                             <Progress value={(campanha.enviadas / campanha.total) * 100} className="mb-3" />
                             <div className="grid grid-cols-3 gap-4 text-sm">

@@ -105,6 +105,11 @@ async function processIncomingMessages(sessionId: string, m: any) {
         console.log(`[RECEBIMENTO] ➡️ Pulando msg de grupo`);
         continue;
       }
+      // Filter out WhatsApp status updates (broadcasts)
+      if (msg.key.remoteJid?.includes("@broadcast") || msg.message?.statusMessage) {
+        console.log(`[RECEBIMENTO] ➡️ Pulando status do WhatsApp (broadcast)`);
+        continue;
+      }
 
       // Extract phone number from WhatsApp identifiers
       let senderPhone = "";
