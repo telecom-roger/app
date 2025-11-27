@@ -1,4 +1,4 @@
-import { Bell } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +28,7 @@ export function NotificationBell() {
       className="relative"
       data-testid="button-notifications-bell"
     >
-      <Bell className="h-5 w-5" />
+      <MessageSquare className="h-5 w-5" />
       {unreadCount > 0 && (
         <Badge
           variant="destructive"
