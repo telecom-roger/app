@@ -959,14 +959,14 @@ export default function Chat() {
                       data-testid={`message-${msg.id}`}
                     >
                       <div
-                        className={`max-w-md px-5 py-3 rounded-xl shadow-sm ${
+                        className={`max-w-xs px-3 py-2 rounded-lg shadow-sm ${
                           msg.sender === "user"
                             ? "bg-primary text-primary-foreground shadow-primary/20"
                             : "bg-muted text-foreground border border-slate-200 dark:border-slate-700"
                         }`}
                       >
                         {msg.tipo === "texto" && (
-                          <p className="text-sm break-words leading-relaxed">
+                          <p className="text-sm break-words">
                             {renderTextWithLinks(msg.conteudo)}
                           </p>
                         )}
@@ -974,16 +974,16 @@ export default function Chat() {
                         {msg.tipo === "imagem" && msg.arquivo && (
                           <button
                             onClick={() => setSelectedImage(msg.arquivo!)}
-                            className="cursor-pointer hover:opacity-90 transition-opacity rounded-lg overflow-hidden"
+                            className="cursor-pointer hover:opacity-90 transition-opacity rounded-md overflow-hidden"
                             data-testid={`button-open-image-${msg.id}`}
                           >
-                            <img src={msg.arquivo} alt="Imagem" className="max-w-sm rounded-lg max-h-72 object-cover" />
+                            <img src={msg.arquivo} alt="Imagem" className="max-w-xs rounded-md max-h-56 object-cover" />
                           </button>
                         )}
                         
                         {msg.tipo === "audio" && msg.arquivo && (
-                          <div className="w-56 py-1">
-                            <audio controls className="w-full h-9 rounded-full">
+                          <div className="w-48 py-0.5">
+                            <audio controls className="w-full h-8 rounded-full">
                               <source src={msg.arquivo} type={msg.mimeType} />
                             </audio>
                           </div>
@@ -997,20 +997,20 @@ export default function Chat() {
                               link.download = msg.nomeArquivo || "documento";
                               link.click();
                             }}
-                            className="flex items-center gap-3 text-sm hover:underline cursor-pointer transition-opacity hover:opacity-80 p-2 rounded-lg hover-elevate"
+                            className="flex items-center gap-2 text-xs hover:underline cursor-pointer transition-opacity hover:opacity-80 p-1 rounded hover-elevate"
                             data-testid={`button-download-document-${msg.id}`}
                           >
-                            <File className="h-5 w-5 flex-shrink-0" />
-                            <span className="truncate font-medium">{msg.nomeArquivo}</span>
+                            <File className="h-4 w-4 flex-shrink-0" />
+                            <span className="truncate">{msg.nomeArquivo}</span>
                           </button>
                         )}
                         
-                        <div className="flex items-center justify-between gap-3 mt-2 pt-1">
-                          <p className="text-xs opacity-70 font-medium">
+                        <div className="flex items-center justify-between gap-2 mt-1 pt-0.5">
+                          <p className="text-xs opacity-70">
                             {new Date(msg.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                           </p>
                           {msg.sender === "user" && (
-                            <span className="text-xs font-bold opacity-80">
+                            <span className="text-xs opacity-70">
                               {msg.lido ? "✓✓" : "✓"}
                             </span>
                           )}
