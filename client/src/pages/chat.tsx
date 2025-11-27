@@ -490,16 +490,11 @@ export default function Chat() {
                       <Badge
                         key={tagName}
                         className={`${tag?.cor || "bg-gray-500"} text-white cursor-pointer flex items-center gap-1 py-1 px-2 hover-elevate rounded-full`}
+                        onClick={() => handleDeleteTag(tagName)}
                         data-testid={`badge-tag-${tagName}`}
                       >
                         <span className="text-xs max-w-[150px] truncate">{tagName}</span>
-                        <button
-                          onClick={() => handleDeleteTag(tagName)}
-                          className="ml-1 opacity-70 hover:opacity-100"
-                          data-testid={`button-delete-tag-${tagName}`}
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
+                        <X className="h-3 w-3 opacity-70 hover:opacity-100" data-testid={`button-delete-tag-${tagName}`} />
                       </Badge>
                     );
                   })()
