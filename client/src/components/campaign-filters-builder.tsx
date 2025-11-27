@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertCircle } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar, AlertCircle } from "lucide-react";
+import { DayPicker } from "react-day-picker";
 
 export type CampaignFilters = {
-  diasDesdeEnvio?: number;
+  dataEnvioInicio?: Date;
+  dataEnvioFim?: Date;
   tags?: string[];
   semEtiqueta?: boolean;
   cidades?: string[];
@@ -35,7 +36,8 @@ export function CampaignFiltersBuilder({
   allCarteiras = [],
 }: CampaignFiltersBuilderProps) {
   const [filters, setFilters] = useState<CampaignFilters>({});
-  const [diasDesdeEnvio, setDiasDesdeEnvio] = useState<string>("");
+  const [dataEnvioInicio, setDataEnvioInicio] = useState<Date | undefined>();
+  const [dataEnvioFim, setDataEnvioFim] = useState<Date | undefined>();
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [selectedCidades, setSelectedCidades] = useState<Set<string>>(new Set());
   const [selectedTipos, setSelectedTipos] = useState<Set<string>>(new Set());
@@ -45,8 +47,11 @@ export function CampaignFiltersBuilder({
   const updateFilters = () => {
     const newFilters: CampaignFilters = {};
     
-    if (diasDesdeEnvio) {
-      newFilters.diasDesdeEnvio = parseInt(diasDesdeEnvio);
+    if (dataEnvioInicio) {
+      newFilters.dataEnvioInicio = dataEnvioInicio;
+    }
+    if (dataEnvioFim) {
+      newFilters.dataEnvioFim = dataEnvioFim;
     }
     if (selectedTags.size > 0) {
       newFilters.tags = Array.from(selectedTags);
@@ -109,7 +114,8 @@ export function CampaignFiltersBuilder({
   };
 
   const resetFilters = () => {
-    setDiasDesdeEnvio("");
+    setDataEnvioInicio(undefined);
+    setDataEnvioFim(undefined);
     setSelectedTags(new Set());
     setSelectedCidades(new Set());
     setSelectedTipos(new Set());
@@ -119,8 +125,13 @@ export function CampaignFiltersBuilder({
     onFiltersChange({});
   };
 
+  const formatData = (data: Date | undefined) => {
+    if (!data) return "";
+    return data.toLocaleDateString("pt-BR");
+  };
+
   const activeFilterCount = 
-    (diasDesdeEnvio ? 1 : 0) +
+    (dataEnvioInicio || dataEnvioFim ? 1 : 0) +
     selectedTags.size +
     selectedCidades.size +
     selectedTipos.size +
@@ -146,25 +157,82 @@ export function CampaignFiltersBuilder({
       </CardHeader>
 
       <CardContent className="pt-6 space-y-6">
-        {/* Dias desde último envio */}
+        {/* Data de Envio - Range Picker */}
         <div className="space-y-3">
-          <Label className="font-semibold">📅 Enviado há quantos dias?</Label>
-          <div className="flex gap-2 items-end">
-            <div className="flex-1">
-              <Input
-                type="number"
-                min="0"
-                placeholder="Ex: 7, 30, 90..."
-                value={diasDesdeEnvio}
-                onChange={(e) => setDiasDesdeEnvio(e.target.value)}
-                className="h-9"
-                data-testid="input-dias-desde-envio"
-              />
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Busca clientes que receberam campanhas há X dias
-              </p>
-            </div>
+          <Label className="font-semibold">📅 Período de Envio</Label>
+          <div className="flex gap-3 items-center flex-wrap">
+            {/* Data Inicial */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full sm:w-auto justify-start text-left font-normal border-slate-200 dark:border-slate-700 hover-elevate"
+                  data-testid="button-data-inicio"
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  {dataEnvioInicio ? formatData(dataEnvioInicio) : "Data Inicial"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700" align="start">
+                <div className="p-4">
+                  <Label className="text-sm font-semibold mb-3 block">Selecione a data inicial:</Label>
+                  <DayPicker
+                    mode="single"
+                    selected={dataEnvioInicio}
+                    onSelect={setDataEnvioInicio}
+                    disabled={(date) => date > new Date()}
+                    className="[&_.rdp]:bg-transparent [&_.rdp-months]:m-0 [&_.rdp-month_table]:w-full [&_.rdp-cell]:w-full"
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            <span className="text-slate-400">→</span>
+
+            {/* Data Final */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full sm:w-auto justify-start text-left font-normal border-slate-200 dark:border-slate-700 hover-elevate"
+                  data-testid="button-data-fim"
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  {dataEnvioFim ? formatData(dataEnvioFim) : "Data Final"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700" align="start">
+                <div className="p-4">
+                  <Label className="text-sm font-semibold mb-3 block">Selecione a data final:</Label>
+                  <DayPicker
+                    mode="single"
+                    selected={dataEnvioFim}
+                    onSelect={setDataEnvioFim}
+                    disabled={(date) => date > new Date() || (dataEnvioInicio ? date < dataEnvioInicio : false)}
+                    className="[&_.rdp]:bg-transparent [&_.rdp-months]:m-0 [&_.rdp-month_table]:w-full [&_.rdp-cell]:w-full"
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {(dataEnvioInicio || dataEnvioFim) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setDataEnvioInicio(undefined);
+                  setDataEnvioFim(undefined);
+                }}
+                className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                data-testid="button-limpar-data"
+              >
+                ✕ Limpar
+              </Button>
+            )}
           </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+            Filtra clientes que receberam campanhas dentro do período selecionado
+          </p>
         </div>
 
         {/* Sem Etiqueta (sem retorno) */}
@@ -196,7 +264,7 @@ export function CampaignFiltersBuilder({
                 <Badge
                   key={tag}
                   variant={selectedTags.has(tag) ? "default" : "outline"}
-                  className="cursor-pointer"
+                  className="cursor-pointer hover-elevate"
                   onClick={() => toggleTag(tag)}
                   data-testid={`badge-tag-${tag}`}
                 >
@@ -216,7 +284,7 @@ export function CampaignFiltersBuilder({
                 <Badge
                   key={tipo}
                   variant={selectedTipos.has(tipo) ? "default" : "outline"}
-                  className="cursor-pointer"
+                  className="cursor-pointer hover-elevate"
                   onClick={() => toggleTipo(tipo)}
                   data-testid={`badge-tipo-${tipo}`}
                 >
@@ -236,7 +304,7 @@ export function CampaignFiltersBuilder({
                 <Badge
                   key={carteira}
                   variant={selectedCarteiras.has(carteira) ? "default" : "outline"}
-                  className="cursor-pointer"
+                  className="cursor-pointer hover-elevate"
                   onClick={() => toggleCarteira(carteira)}
                   data-testid={`badge-carteira-${carteira}`}
                 >
@@ -256,7 +324,7 @@ export function CampaignFiltersBuilder({
                 <Badge
                   key={cidade}
                   variant={selectedCidades.has(cidade) ? "default" : "outline"}
-                  className="cursor-pointer"
+                  className="cursor-pointer hover-elevate"
                   onClick={() => toggleCidade(cidade)}
                   data-testid={`badge-cidade-${cidade}`}
                 >
