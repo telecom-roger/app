@@ -286,7 +286,7 @@ export default function WhatsApp() {
               <DialogTrigger asChild>
                 <Button
                   size="lg"
-                  className="bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white shadow-lg"
+                  className="bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white shadow-lg border-2 border-green-600 dark:border-green-600"
                   data-testid="button-new-session"
                 >
                   <Plus className="h-5 w-5 mr-2" />
