@@ -42,6 +42,7 @@ interface ColumnMapping {
   cpfCnpj: number;
   status: number;
   carteira: number;
+  tipo: number;
   categoria: number;
   score: number;
   planoAtual: number;
@@ -90,10 +91,11 @@ export default function Importacao() {
     cpfCnpj: 2,
     status: 3,
     carteira: 4,
-    categoria: 5,
-    score: 6,
-    planoAtual: 7,
-    produtoAtual: 8,
+    tipo: 5,
+    categoria: 6,
+    score: 7,
+    planoAtual: 8,
+    produtoAtual: 9,
     telefone: -1,
     email: -1,
     contato: -1,
@@ -352,6 +354,8 @@ export default function Importacao() {
                 { key: "nome", label: "Nome *" },
                 { key: "cpfCnpj", label: "CNPJ" },
                 { key: "razaoSocial", label: "Razão Social" },
+                { key: "carteira", label: "Carteira" },
+                { key: "tipo", label: "Tipo" },
                 { key: "PEDIDO_MOVEL", label: "PEDIDO MOVEL" },
                 { key: "M_FIXA", label: "M FIXA" },
                 { key: "PEDIDO_FIXA", label: "PEDIDO FIXA" },

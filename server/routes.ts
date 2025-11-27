@@ -794,6 +794,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             cpfCnpj: getRowValue(row, mapping.cpfCnpj),
             status: getRowValue(row, mapping.status) || "lead",
             carteira: getRowValue(row, mapping.carteira),
+            tipo: getRowValue(row, mapping.tipo),
             categoria: getRowValue(row, mapping.categoria),
             score: mapping.score >= 0 ? parseInt(getRowValue(row, mapping.score) || "0") || 0 : 0,
             planoAtual: getRowValue(row, mapping.planoAtual),
