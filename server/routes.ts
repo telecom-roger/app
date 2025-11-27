@@ -201,15 +201,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allTags = await db.select().from(tags);
       
       // Fetch most recent campaign sending for each client
-      const recentSendings = await db
-        .select({
-          clientId: campaignSendings.clientId,
-          status: campaignSendings.status,
-          dataSending: campaignSendings.dataSending,
-        })
-        .from(campaignSendings)
-        .where(eq(campaignSendings.userId, user.id))
-        .orderBy(sql`${campaignSendings.dataSending} DESC`);
+      let recentSendings: any[] = [];
+      try {
+        recentSendings = await db
+          .select({
+            clientId: campaignSendings.clientId,
+            status: campaignSendings.status,
+            dataSending: campaignSendings.dataSending,
+          })
+          .from(campaignSendings)
+          .where(eq(campaignSendings.userId, user.id))
+          .orderBy(sql`${campaignSendings.dataSending} DESC`);
+      } catch (err) {
+        console.warn("Warning: could not fetch campaign sendings:", err);
+        recentSendings = [];
+      }
 
       // Create map of most recent sending per client
       const clientSendingMap = new Map<string, any>();
