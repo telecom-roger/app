@@ -609,7 +609,7 @@ export default function Chat() {
                     <button
                       key={conv.id}
                       onClick={() => handleSelectConversation(conv.id)}
-                      className={`w-full text-left p-3 rounded-lg transition-colors mb-1 hover:bg-muted ${
+                      className={`w-full text-left p-3 rounded-lg transition-colors mb-1 hover:bg-muted border-b border-gray-200 dark:border-gray-800 ${
                         selectedConversationId === conv.id
                           ? "bg-primary/15 text-foreground"
                           : "text-foreground"
