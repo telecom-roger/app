@@ -254,7 +254,13 @@ export default function Clientes() {
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
   const [selectedClientIds, setSelectedClientIds] = useState<Set<string>>(new Set());
   const [bulkShareDialogOpen, setBulkShareDialogOpen] = useState(false);
-  const limit = 10;
+
+  // Check if any filter is active
+  const hasActiveFilter = searchTerm || statusFilter !== "todos" || selectedTag || tipoFiltro !== "all";
+  
+  // Use high limit when filters are active, otherwise use pagination limit
+  const limit = hasActiveFilter ? 10000 : 10;
+  const effectivePage = hasActiveFilter ? 1 : page;
 
   // Fetch predefined tags
   const { data: tags = [] } = useQuery<Tag[]>({
@@ -277,7 +283,7 @@ export default function Clientes() {
         ...(statusFilter !== "todos" && { status: statusFilter }),
         ...(selectedTag && { tagName: selectedTag }),
         ...(tipoFiltro !== "all" && { tipo: tipoFiltro }),
-        page,
+        page: effectivePage,
         limit,
       }
     ],
