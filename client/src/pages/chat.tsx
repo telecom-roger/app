@@ -630,34 +630,29 @@ export default function Chat() {
                       data-testid={`button-conversation-${conv.id}`}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <Avatar className="h-8 w-8 flex-shrink-0" data-testid={`avatar-${conv.id}`}>
-                              <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">
-                                {initials}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex items-center gap-1 min-w-0">
-                              <p className="text-sm font-medium truncate">
-                                {clientName.length > 30
-                                  ? clientName.substring(0, 30) + "..."
-                                  : clientName}
-                              </p>
-                              {conv.client?.tags?.[0] && (() => {
-                                const tagName = conv.client.tags[0];
-                                const tag = allTags.find(t => t.nome === tagName);
-                                return (
-                                  <div
-                                    className={`w-2 h-2 rounded-full flex-shrink-0 ${tag?.cor || "bg-gray-500"}`}
-                                    data-testid={`dot-tag-inline-${conv.id}`}
-                                  />
-                                );
-                              })()}
-                            </div>
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <Avatar className="h-8 w-8 flex-shrink-0" data-testid={`avatar-${conv.id}`}>
+                            <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">
+                              {initials}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex items-center gap-1 min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate">
+                              {clientName.length > 30
+                                ? clientName.substring(0, 30) + "..."
+                                : clientName}
+                            </p>
+                            {conv.client?.tags?.[0] && (() => {
+                              const tagName = conv.client.tags[0];
+                              const tag = allTags.find(t => t.nome === tagName);
+                              return (
+                                <div
+                                  className={`w-2 h-2 rounded-full flex-shrink-0 ${tag?.cor || "bg-gray-500"}`}
+                                  data-testid={`dot-tag-inline-${conv.id}`}
+                                />
+                              );
+                            })()}
                           </div>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {conv.client?.CELULAR_PRINCIPAL || conv.client?.telefone || "Sem telefone"}
-                          </p>
                         </div>
                         <div className="flex items-center gap-2 whitespace-nowrap">
                           {(conv.unreadCount ?? 0) > 0 && conv.unreadCount && (
@@ -675,13 +670,20 @@ export default function Chat() {
                           )}
                         </div>
                       </div>
-                      {conv.ultimaMensagem && (
-                        <p className="text-xs text-muted-foreground truncate mt-1">
-                          {conv.ultimaMensagem.length > 30
-                            ? conv.ultimaMensagem.substring(0, 30) + "..."
-                            : conv.ultimaMensagem}
-                        </p>
-                      )}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0 ml-10">
+                          <p className="text-xs text-muted-foreground truncate">
+                            {conv.client?.CELULAR_PRINCIPAL || conv.client?.telefone || "Sem telefone"}
+                          </p>
+                          {conv.ultimaMensagem && (
+                            <p className="text-xs text-muted-foreground truncate mt-1">
+                              {conv.ultimaMensagem.length > 30
+                                ? conv.ultimaMensagem.substring(0, 30) + "..."
+                                : conv.ultimaMensagem}
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </button>
                     );
                   })
