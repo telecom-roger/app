@@ -105,6 +105,7 @@ export default function Kanban() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] }); // Invalidar cache de clientes
       toast({
         title: "Sucesso",
         description: "Oportunidade movida com sucesso",

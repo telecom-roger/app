@@ -336,9 +336,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (client) {
           const oldTags = client.tags || [];
           // Remover tag antiga, adicionar tag nova
-          const newTags = oldTags.filter((t: string) => !oldOpportunity.etapa.includes(t));
+          let newTags = oldTags.filter((t: string) => t !== oldOpportunity.etapa);
           if (!newTags.includes(etapa)) {
-            newTags.push(etapa);
+            newTags = [etapa]; // Cliente tem apenas 1 tag/oportunidade
           }
           await storage.updateClient(oldOpportunity.clientId, { tags: newTags });
         }
