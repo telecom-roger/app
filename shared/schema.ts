@@ -451,3 +451,27 @@ export const insertClientNoteSchema = createInsertSchema(clientNotes).omit({
 
 export type ClientNote = typeof clientNotes.$inferSelect;
 export type InsertClientNote = z.infer<typeof insertClientNoteSchema>;
+
+// ==================== TAGS (Reusable Tags for Clients) ====================
+export const tags = pgTable("tags", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  nome: text("nome").notNull(),
+  cor: varchar("cor", { length: 50 }).notNull(), // bg-blue-500, bg-purple-500, etc
+  createdBy: varchar("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_tags_created_by").on(table.createdBy),
+]);
+
+export const insertTagSchema = createInsertSchema(tags).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  nome: z.string().min(1, "Nome da etiqueta obrigatório").max(50, "Nome muito longo"),
+  cor: z.string().min(1, "Cor obrigatória"),
+});
+
+export type Tag = typeof tags.$inferSelect;
+export type InsertTag = z.infer<typeof insertTagSchema>;

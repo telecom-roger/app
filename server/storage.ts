@@ -29,6 +29,8 @@ import type {
   InsertQuickReply,
   ClientNote,
   InsertClientNote,
+  Tag,
+  InsertTag,
 } from "@shared/schema";
 import {
   clients,
@@ -46,6 +48,7 @@ import {
   messages,
   quickReplies,
   clientNotes,
+  tags,
 } from "@shared/schema";
 
 // ==================== USER STORAGE ====================
@@ -765,4 +768,27 @@ export async function updateClientNote(id: string, data: Partial<InsertClientNot
 
 export async function deleteClientNote(id: string): Promise<void> {
   await db.delete(clientNotes).where(eq(clientNotes.id, id));
+}
+
+// ==================== TAGS STORAGE ====================
+export async function createTag(data: InsertTag): Promise<Tag> {
+  const [result] = await db.insert(tags).values(data).returning();
+  return result;
+}
+
+export async function getTags(userId: string): Promise<Tag[]> {
+  return await db.select().from(tags).where(eq(tags.createdBy, userId)).orderBy(asc(tags.nome));
+}
+
+export async function updateTag(id: string, data: Partial<InsertTag>): Promise<Tag | undefined> {
+  const [result] = await db
+    .update(tags)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(tags.id, id))
+    .returning();
+  return result;
+}
+
+export async function deleteTag(id: string): Promise<void> {
+  await db.delete(tags).where(eq(tags.id, id));
 }

@@ -1801,6 +1801,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== TAGS ROUTES ====================
+  app.get("/api/tags", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const allTags = await storage.getTags(user.id);
+      res.json(allTags);
+    } catch (error: any) {
+      console.error("Error fetching tags:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/tags", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const { nome, cor } = req.body;
+      
+      const tag = await storage.createTag({
+        nome,
+        cor,
+        createdBy: user.id,
+      });
+      res.json(tag);
+    } catch (error: any) {
+      console.error("Error creating tag:", error);
+      res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
+  app.patch("/api/tags/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { nome, cor } = req.body;
+      
+      const tag = await storage.updateTag(id, { nome, cor });
+      if (!tag) return res.status(404).json({ error: "Tag not found" });
+      res.json(tag);
+    } catch (error: any) {
+      console.error("Error updating tag:", error);
+      res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
+  app.delete("/api/tags/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteTag(id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting tag:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // ==================== ADMIN ROUTES ====================
   app.get("/api/admin/users", isAuthenticated, requireAdmin, async (req, res) => {
     try {
