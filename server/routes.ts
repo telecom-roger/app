@@ -1843,6 +1843,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: "Lead",
           carteira: "Dominio",
           score: 0,
+          createdBy: userId,
         });
         client = newClient;
         console.log(`[CHAT] ✅ Cliente criado: ${client.id}`);
