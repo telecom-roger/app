@@ -94,6 +94,11 @@ export default function Dashboard() {
     enabled: isAuthenticated,
   });
 
+  const { data: tags, isLoading: tagsLoading } = useQuery<any[]>({
+    queryKey: ["/api/tags"],
+    enabled: isAuthenticated,
+  });
+
   if (authLoading || !isAuthenticated) {
     return <DashboardSkeleton />;
   }
@@ -128,6 +133,19 @@ export default function Dashboard() {
   const totalValueNegotiation = oportunidades
     ?.filter(opp => opp.etapa && opp.etapa !== 'fechado' && opp.etapa !== 'perdido')
     .reduce((sum, opp) => sum + parseValue(opp.valorEstimado), 0) || 0;
+
+  // Agrupar valores por etiqueta (etapa)
+  const valuesByStage = (tags || []).map(tag => {
+    const total = (oportunidades || [])
+      .filter(opp => opp.etapa === tag.nome)
+      .reduce((sum, opp) => sum + parseValue(opp.valorEstimado), 0);
+    return {
+      nome: tag.nome,
+      cor: tag.cor,
+      total: total,
+      count: (oportunidades || []).filter(opp => opp.etapa === tag.nome).length,
+    };
+  }).filter(item => item.count > 0);
 
   // Transformar dados para gráfico de funil
   const funnelChartData = funnelData
@@ -228,6 +246,46 @@ export default function Dashboard() {
               ) : (
                 <div className="text-4xl font-bold text-emerald-600 dark:text-emerald-400">
                   R$ {totalValueNegotiation.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Negotiation by Stage Card */}
+          <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50 lg:col-span-2">
+            <CardHeader className="border-b border-slate-200 dark:border-slate-700">
+              <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                Negociação por Etiqueta
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {oppLoading || tagsLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ) : valuesByStage.length > 0 ? (
+                <div className="space-y-3">
+                  {valuesByStage.map((stage) => (
+                    <div key={stage.nome} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-900/30">
+                      <div className="flex items-center gap-3">
+                        <div className={`h-3 w-3 rounded-full ${stage.cor}`} />
+                        <div>
+                          <p className="text-sm font-medium text-slate-900 dark:text-white">{stage.nome}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">{stage.count} oportunidade{stage.count !== 1 ? 's' : ''}</p>
+                        </div>
+                      </div>
+                      <p className="text-lg font-bold text-slate-900 dark:text-white">
+                        R$ {stage.total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-slate-500 dark:text-slate-400 py-8">
+                  <Target className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                  Nenhuma negociação em andamento
                 </div>
               )}
             </CardContent>
