@@ -96,7 +96,7 @@ export function ChatNotificationBell() {
                     className={`p-3 rounded-lg border transition-colors ${
                       notif.lida
                         ? "bg-slate-50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-700"
-                        : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700"
+                        : "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-700"
                     }`}
                     data-testid={`activity-${notif.id}`}
                   >
