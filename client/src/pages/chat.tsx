@@ -151,9 +151,25 @@ export default function Chat() {
       // Create or get conversation for this client
       apiRequest("POST", `/api/chat/start-conversation/${clientId}`, {})
         .then((conversa) => {
+          // Get current conversations from cache
+          const currentConversations = queryClient.getQueryData<Conversation[]>(["/api/chat/conversations"]) || [];
+          
+          // Check if conversation already exists in cache
+          const existingIndex = currentConversations.findIndex(c => c.id === conversa.id);
+          
+          // Update cache
+          if (existingIndex >= 0) {
+            // Update existing
+            currentConversations[existingIndex] = conversa;
+          } else {
+            // Add new
+            currentConversations.unshift(conversa);
+          }
+          
+          queryClient.setQueryData(["/api/chat/conversations"], currentConversations);
+          
+          // Now select the conversation
           setSelectedConversationId(conversa.id);
-          // Refetch conversations to include the newly created one
-          queryClient.invalidateQueries({ queryKey: ["/api/chat/conversations"] });
         })
         .catch((error) => {
           console.error("Erro ao iniciar conversa:", error);
