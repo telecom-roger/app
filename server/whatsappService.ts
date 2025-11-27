@@ -233,21 +233,27 @@ async function processIncomingMessages(sessionId: string, m: any) {
         if (!conversation) {
           console.warn(`[RECEBIMENTO] ⚠️ Conversa não encontrada, procurando cliente...`);
           
-          // Normalize phone for lookup
+          // Normalize phone for lookup - remove all non-digits and strip 55 prefix
           let normalizado = senderPhone.replace(/\D/g, "");
           if (normalizado.startsWith("55")) {
             normalizado = normalizado.substring(2);
           }
           
           const phoneCom55 = `55${normalizado}`;
+          
+          console.log(`🔍 Buscando cliente com: sem55="${normalizado}", com55="${phoneCom55}"`);
+          
+          // Search in both formats to ensure we find the client regardless of how it's stored
           const [client] = await db
             .select()
             .from(clientsTable)
             .where(or(
-              ilike(clientsTable.CELULAR_PRINCIPAL, phoneCom55),
-              ilike(clientsTable.CELULAR_PRINCIPAL, normalizado),
-              ilike(clientsTable.telefone, phoneCom55),
-              ilike(clientsTable.telefone, normalizado)
+              eq(clientsTable.CELULAR_PRINCIPAL, phoneCom55),
+              eq(clientsTable.CELULAR_PRINCIPAL, normalizado),
+              eq(clientsTable.telefone, phoneCom55),
+              eq(clientsTable.telefone, normalizado),
+              ilike(clientsTable.CELULAR_PRINCIPAL, `%${normalizado}%`),
+              ilike(clientsTable.telefone, `%${normalizado}%`)
             ))
             .limit(1);
           
