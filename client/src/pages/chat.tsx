@@ -69,16 +69,12 @@ interface ClientNote {
   createdAt: string;
 }
 
-const NOTE_COLORS = [
-  { name: "Azul", class: "bg-blue-500" },
-  { name: "Roxo", class: "bg-purple-500" },
-  { name: "Verde", class: "bg-green-500" },
-  { name: "Vermelho", class: "bg-red-500" },
-  { name: "Amarelo", class: "bg-yellow-500" },
-  { name: "Laranja", class: "bg-orange-500" },
-  { name: "Rosa", class: "bg-pink-500" },
-  { name: "Cinza", class: "bg-gray-500" },
-];
+interface Tag {
+  id: string;
+  nome: string;
+  cor: string;
+  createdAt: string;
+}
 
 export default function Chat() {
   const { toast } = useToast();
@@ -98,6 +94,12 @@ export default function Chat() {
   const { data: quickReplies = [] } = useQuery<QuickReply[]>({
     queryKey: ["/api/quick-replies"],
     refetchInterval: 10000,
+  });
+
+  // Fetch predefined tags
+  const { data: allTags = [] } = useQuery<Tag[]>({
+    queryKey: ["/api/tags"],
+    refetchInterval: 5000,
   });
 
   // Fetch all conversations for current user
@@ -471,16 +473,16 @@ export default function Chat() {
           </div>
         )}
 
-        {/* Client Notes Section - Only show when conversation is selected and not searching */}
+        {/* Etiquetas Section - Only show when conversation is selected and not searching */}
         {!showSearchResults && selectedConversationId && (
           <div className="px-4 py-3 border-b border-border space-y-2">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-muted-foreground">NOTAS DO CLIENTE</p>
+              <p className="text-xs font-semibold text-muted-foreground">ETIQUETAS</p>
               <Button
                 size="icon"
                 variant="ghost"
                 onClick={() => setShowNoteInput(!showNoteInput)}
-                disabled={!currentClientId}
+                disabled={!currentClientId || allTags.length === 0}
                 data-testid="button-add-note"
                 className="h-6 w-6"
               >
@@ -488,7 +490,7 @@ export default function Chat() {
               </Button>
             </div>
 
-            {/* Notes List */}
+            {/* Tags List */}
             {notesLoading ? (
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             ) : (
@@ -512,51 +514,41 @@ export default function Chat() {
               </div>
             )}
 
-            {/* Note Input Form */}
+            {/* Tag Selection Form */}
             {showNoteInput && (
               <div className="space-y-2 p-2 border border-border rounded-md bg-muted/20">
-                <Input
-                  placeholder="Adicionar nota..."
-                  value={noteText}
-                  onChange={(e) => setNoteText(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter") {
-                      handleCreateNote();
-                    }
-                  }}
-                  data-testid="input-note-text"
-                  className="h-8 text-sm"
-                />
-                
-                {/* Color Picker */}
-                <div className="flex flex-wrap gap-1">
-                  {NOTE_COLORS.map((color) => (
-                    <button
-                      key={color.class}
-                      onClick={() => setNoteColor(color.class)}
-                      className={`w-6 h-6 rounded-full ${color.class} transition-transform ${
-                        noteColor === color.class ? "ring-2 ring-offset-1 ring-foreground scale-110" : ""
-                      }`}
-                      title={color.name}
-                      data-testid={`button-color-${color.name.toLowerCase()}`}
-                    />
-                  ))}
-                </div>
+                <p className="text-xs text-muted-foreground font-medium">Selecione uma etiqueta:</p>
+                {allTags.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Nenhuma etiqueta criada. Crie em /etiquetas</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {allTags.map((tag) => (
+                      <Button
+                        key={tag.id}
+                        size="sm"
+                        className={`${tag.cor} text-white hover:opacity-80`}
+                        onClick={() => {
+                          setNoteText(tag.nome);
+                          setNoteColor(tag.cor);
+                          // Auto-create with selected tag
+                          createNoteMutation.mutate({ conteudo: tag.nome, cor: tag.cor });
+                          setShowNoteInput(false);
+                        }}
+                        disabled={createNoteMutation.isPending}
+                        data-testid={`button-select-tag-${tag.id}`}
+                      >
+                        {createNoteMutation.isPending ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          tag.nome
+                        )}
+                      </Button>
+                    ))}
+                  </div>
+                )}
 
-                {/* Action Buttons */}
+                {/* Cancel Button */}
                 <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={handleCreateNote}
-                    disabled={!noteText.trim() || createNoteMutation.isPending}
-                    data-testid="button-save-note"
-                  >
-                    {createNoteMutation.isPending ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      "Salvar"
-                    )}
-                  </Button>
                   <Button
                     size="sm"
                     variant="outline"
@@ -565,6 +557,7 @@ export default function Chat() {
                       setNoteText("");
                       setNoteColor("bg-blue-500");
                     }}
+                    className="w-full"
                     data-testid="button-cancel-note"
                   >
                     Cancelar

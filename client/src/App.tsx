@@ -32,6 +32,7 @@ import CampanhasAgendadas from "@/pages/campanhas-agendadas";
 import CampanhasEmExecucao from "@/pages/campanhas-em-execucao";
 import CampanhasHistorico from "@/pages/campanhas-historico";
 import QuickRepliesConfig from "@/pages/quick-replies-config";
+import TagsConfig from "@/pages/tags-config";
 import NotFound from "@/pages/not-found";
 
 function Router({ isAuthenticated }: { isAuthenticated: boolean }) {
@@ -52,6 +53,7 @@ function Router({ isAuthenticated }: { isAuthenticated: boolean }) {
       <Route path="/whatsapp" component={WhatsApp} />
       <Route path="/whatsapp/broadcast" component={WhatsAppBroadcast} />
       <Route path="/chat" component={Chat} />
+      <Route path="/etiquetas" component={TagsConfig} />
       <Route path="/modelos-mensagens" component={ModelosMensagens} />
       <Route path="/campanhas-agendadas" component={CampanhasAgendadas} />
       <Route path="/campanhas-em-execucao" component={CampanhasEmExecucao} />

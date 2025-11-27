@@ -13,6 +13,7 @@ import {
   Edit3,
   Zap,
   Lightbulb,
+  Tag,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -70,6 +71,11 @@ const menuItems = [
     title: "Mensagens Rápidas",
     url: "/mensagens-rapidas",
     icon: Lightbulb,
+  },
+  {
+    title: "Etiquetas",
+    url: "/etiquetas",
+    icon: Tag,
   },
   {
     title: "Modelos de Mensagens",
