@@ -91,6 +91,7 @@ export default function Chat() {
   const [showNoteInput, setShowNoteInput] = useState(false);
   const [noteText, setNoteText] = useState("");
   const [noteColor, setNoteColor] = useState("bg-blue-500");
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   const { data: quickReplies = [] } = useQuery<QuickReply[]>({
     queryKey: ["/api/quick-replies"],
@@ -180,12 +181,30 @@ export default function Chat() {
       })
     : [];
 
+  // Extract all unique tags from conversations' clients
+  const allUniqueTags = Array.from(
+    new Set(
+      conversations
+        .filter(conv => conv.client?.tags && Array.isArray(conv.client.tags))
+        .flatMap(conv => conv.client?.tags || [])
+        .filter(tag => tag && typeof tag === 'string')
+    )
+  ).sort();
+
   // Sort conversations by last message date (most recent first)
-  const sortedConversations = [...conversations].sort((a, b) => {
-    const aTime = a.ultimaMensagemEm ? new Date(a.ultimaMensagemEm).getTime() : 0;
-    const bTime = b.ultimaMensagemEm ? new Date(b.ultimaMensagemEm).getTime() : 0;
-    return bTime - aTime;
-  });
+  const sortedConversations = [...conversations]
+    .filter(conv => {
+      // If a tag is selected, only show conversations with that tag
+      if (selectedTag && conv.client?.tags) {
+        return (conv.client.tags as string[]).includes(selectedTag);
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      const aTime = a.ultimaMensagemEm ? new Date(a.ultimaMensagemEm).getTime() : 0;
+      const bTime = b.ultimaMensagemEm ? new Date(b.ultimaMensagemEm).getTime() : 0;
+      return bTime - aTime;
+    });
 
   // Get or create conversation by phone
   const getConversationMutation = useMutation({
@@ -410,6 +429,36 @@ export default function Chat() {
             />
           </div>
         </div>
+
+        {/* Tag Filter Section */}
+        {!showSearchResults && allUniqueTags.length > 0 && (
+          <div className="px-4 py-3 border-b border-border space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground">FILTRAR POR ETIQUETA</p>
+            <div className="flex flex-wrap gap-1">
+              <Button
+                variant={selectedTag === null ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedTag(null)}
+                data-testid="button-filter-all-tags"
+                className="h-7 px-2 text-xs"
+              >
+                Todas
+              </Button>
+              {allUniqueTags.map((tag) => (
+                <Button
+                  key={tag}
+                  variant={selectedTag === tag ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedTag(tag)}
+                  data-testid={`button-filter-tag-${tag}`}
+                  className="h-7 px-2 text-xs"
+                >
+                  {tag}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Client Notes Section - Only show when conversation is selected and not searching */}
         {!showSearchResults && selectedConversationId && (
