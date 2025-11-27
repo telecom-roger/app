@@ -259,8 +259,8 @@ export default function Clientes() {
                   <TableCell><Skeleton className="h-4 w-8" /></TableCell>
                 </TableRow>
               ))
-            ) : filteredClients.length > 0 ? (
-              filteredClients.map((cliente) => (
+            ) : data?.clientes && data.clientes.length > 0 ? (
+              data.clientes.map((cliente) => (
                 <TableRow 
                   key={cliente.id} 
                   className="border-b border-[#776BFF]/10 hover:bg-[#776BFF]/5 cursor-pointer transition-colors"
