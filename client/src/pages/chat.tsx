@@ -111,15 +111,6 @@ export default function Chat() {
     localStorage.setItem("closedConversations", JSON.stringify(Array.from(closedConversations)));
   }, [closedConversations]);
 
-  // Scroll to bottom when messages change or conversation is selected
-  useEffect(() => {
-    if (messagesEndRef.current && (messages.length > 0 || selectedConversationId)) {
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-      }, 0);
-    }
-  }, [messages, selectedConversationId]);
-
   const { data: quickReplies = [] } = useQuery<QuickReply[]>({
     queryKey: ["/api/quick-replies"],
     refetchInterval: 10000,
@@ -207,6 +198,15 @@ export default function Chat() {
       }
     };
   }, [selectedConversationId, refetchConversations, refetchMessages]);
+
+  // Scroll to bottom when messages change or conversation is selected
+  useEffect(() => {
+    if (messagesEndRef.current && (messages.length > 0 || selectedConversationId)) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+      }, 0);
+    }
+  }, [messages, selectedConversationId]);
 
   // Filter clients by search term
   const filteredClients = searchTerm.trim()
