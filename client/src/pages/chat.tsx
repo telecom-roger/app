@@ -185,17 +185,18 @@ export default function Chat() {
 
   // Extract all unique tags from conversations' clients AND all clients
   const allUniqueTags = Array.from(
-    new Set([
-      // Tags from conversations
-      ...conversations
-        .filter(conv => conv.client?.tags && Array.isArray(conv.client.tags))
-        .flatMap(conv => conv.client?.tags || []),
-      // Tags from all clients
-      ...clients
-        .filter(client => client.tags && Array.isArray(client.tags))
-        .flatMap(client => client.tags || []),
-    ])
-      .filter(tag => tag && typeof tag === 'string')
+    new Set(
+      [
+        // Tags from conversations
+        ...(conversations || [])
+          .filter(conv => conv.client?.tags && Array.isArray(conv.client.tags))
+          .flatMap(conv => conv.client?.tags || []),
+        // Tags from all clients
+        ...(clients || [])
+          .filter(client => client.tags && Array.isArray(client.tags))
+          .flatMap(client => client.tags || []),
+      ].filter(tag => tag && typeof tag === 'string')
+    )
   ).sort();
 
   // Sort conversations by last message date (most recent first)
