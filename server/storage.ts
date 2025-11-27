@@ -368,7 +368,7 @@ export async function getConversations(): Promise<Conversation[]> {
   return await db
     .select()
     .from(conversations)
-    .orderBy(conversations.updatedAt.desc());
+    .orderBy(conversations.createdAt.desc());
 }
 
 export async function getConversationById(id: string): Promise<Conversation | undefined> {
