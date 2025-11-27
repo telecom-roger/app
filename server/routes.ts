@@ -1134,9 +1134,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const telefone = cliente.CELULAR_PRINCIPAL || cliente.telefone;
         if (telefone) {
           // Queue message asynchronously (don't wait)
-          whatsappService.sendMessage(session.sessionId, telefone, mensagem).catch(err => {
-            console.error(`Erro ao enviar para ${telefone}:`, err);
-          });
+          (async () => {
+            try {
+              await whatsappService.sendMessage(session.sessionId, telefone, mensagem);
+              
+              // Save message to chat
+              try {
+                const conversa = await storage.createOrGetConversation(cliente.id, (req.user as any).id);
+                await storage.createMessage({
+                  conversationId: conversa.id,
+                  sender: "user",
+                  tipo: "texto",
+                  conteudo: mensagem,
+                });
+                console.log(`💬 Mensagem salva no chat para ${cliente.id}`);
+              } catch (chatErr) {
+                console.warn("⚠️ Erro ao salvar no chat:", chatErr);
+              }
+            } catch (err) {
+              console.error(`Erro ao enviar para ${telefone}:`, err);
+            }
+          })();
           enfileiradas++;
         }
       }
@@ -1222,6 +1240,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
               await whatsappService.sendMessage(sessaoConectada.sessionId, telefone, mensagem);
               enviadas++;
+              
+              // Save message to chat
+              if (clientId) {
+                try {
+                  const conversa = await storage.createOrGetConversation(clientId, user.id);
+                  await storage.createMessage({
+                    conversationId: conversa.id,
+                    sender: "user",
+                    tipo: "texto",
+                    conteudo: mensagem,
+                  });
+                  console.log(`💬 Mensagem salva no chat para ${clientId}`);
+                } catch (chatErr) {
+                  console.warn("⚠️ Erro ao salvar no chat:", chatErr);
+                }
+              }
               
               // Record interaction in timeline
               if (clientId) {
