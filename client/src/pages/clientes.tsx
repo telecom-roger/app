@@ -56,6 +56,7 @@ import {
   Zap,
   Share2,
   Check,
+  MessageSquare,
 } from "lucide-react";
 import {
   Dialog,
@@ -597,6 +598,12 @@ export default function Clientes() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem asChild>
+                                <Link href={`/chat?clientId=${cliente.id}`}>
+                                  <MessageSquare className="h-4 w-4 mr-2" />
+                                  Conversar
+                                </Link>
+                              </DropdownMenuItem>
                               <DropdownMenuItem asChild>
                                 <Link href={`/clientes/${cliente.id}/editar`}>
                                   <Edit className="h-4 w-4 mr-2" />
