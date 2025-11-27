@@ -517,7 +517,7 @@ export default function Chat() {
                           key={tag.id}
                           size="sm"
                           variant={isCurrentTag ? "default" : "outline"}
-                          className={`${tag.cor} hover:opacity-80 rounded-full`}
+                          className={`${isCurrentTag ? `${tag.cor} border ${tag.cor.replace('bg-', 'border-')}` : ''} hover:opacity-80 rounded-full`}
                           onClick={() => {
                             addTagMutation.mutate(tag.nome);
                           }}
