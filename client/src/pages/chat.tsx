@@ -308,7 +308,8 @@ export default function Chat() {
       queryClient.invalidateQueries({
         queryKey: selectedConversationId ? ["/api/chat/messages", selectedConversationId] : [],
       });
-      refetchConversations();
+      // Refetch conversations in background without blocking
+      setTimeout(() => refetchConversations(), 0);
     },
     onError: (error: any) => {
       toast({
@@ -317,6 +318,7 @@ export default function Chat() {
         variant: "destructive",
       });
     },
+    retry: 0,
   });
 
   const handleSelectClient = (client: Client) => {
