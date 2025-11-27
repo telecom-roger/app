@@ -1136,23 +1136,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Queue message asynchronously (don't wait)
           (async () => {
             try {
+              console.log(`📨 Enviando broadcast para ${telefone}...`);
               await whatsappService.sendMessage(session.sessionId, telefone, mensagem);
+              console.log(`✅ Broadcast enviado para ${telefone}`);
               
               // Save message to chat
               try {
+                console.log(`🔍 Criando conversa para cliente ${cliente.id}...`);
                 const conversa = await storage.createOrGetConversation(cliente.id, (req.user as any).id);
-                await storage.createMessage({
+                console.log(`✅ Conversa obtida: ${conversa.id}`);
+                
+                console.log(`💾 Salvando mensagem no chat...`);
+                const msg = await storage.createMessage({
                   conversationId: conversa.id,
-                  sender: "user",
+                  sender: "client",
                   tipo: "texto",
                   conteudo: mensagem,
                 });
-                console.log(`💬 Mensagem salva no chat para ${cliente.id}`);
+                console.log(`💬 ✅ Mensagem ${msg.id} salva no chat para ${cliente.id}`);
               } catch (chatErr) {
-                console.warn("⚠️ Erro ao salvar no chat:", chatErr);
+                console.error(`❌ Erro ao salvar no chat:`, chatErr);
               }
             } catch (err) {
-              console.error(`Erro ao enviar para ${telefone}:`, err);
+              console.error(`❌ Erro ao enviar broadcast para ${telefone}:`, err);
             }
           })();
           enfileiradas++;

@@ -654,16 +654,20 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
         
         // Salva a mensagem também no chat
         try {
+          console.log(`🔍 Criando conversa para cliente ${client.id} (${client.razaoSocial})`);
           const conversa = await storage.createOrGetConversation(client.id, campaign.createdBy);
-          await storage.createMessage({
+          console.log(`✅ Conversa obtida: ${conversa.id}`);
+          
+          console.log(`💾 Salvando mensagem no chat...`);
+          const msg = await storage.createMessage({
             conversationId: conversa.id,
-            sender: "user",
+            sender: "client",
             tipo: "texto",
             conteudo,
           });
-          console.log(`💬 Mensagem salva no chat para ${client.razaoSocial}`);
+          console.log(`💬 ✅ Mensagem ${msg.id} salva no chat para ${client.razaoSocial}`);
         } catch (chatErr) {
-          console.warn(`⚠️ Erro ao salvar no chat:`, chatErr);
+          console.error(`❌ Erro ao salvar no chat para ${client.razaoSocial}:`, chatErr);
         }
         
         // Registra interação
