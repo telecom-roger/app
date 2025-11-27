@@ -510,9 +510,10 @@ export default function Clientes() {
                         data-testid="checkbox-select-all"
                       />
                     </TableHead>
-                    <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Nome / Razão Social</TableHead>
+                    <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Razão Social / Nome</TableHead>
                     <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">CPF/CNPJ</TableHead>
-                    <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Status</TableHead>
+                    <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Celular</TableHead>
+                    <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Email</TableHead>
                     <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Carteira</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
@@ -524,7 +525,8 @@ export default function Clientes() {
                         <TableCell><Skeleton className="h-4 w-4" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-48" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-40" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-8" /></TableCell>
                       </TableRow>
@@ -566,13 +568,11 @@ export default function Clientes() {
                         <TableCell className="font-mono text-sm text-slate-700 dark:text-slate-300">
                           {cliente.cpfCnpj || '-'}
                         </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant="secondary" 
-                            className={statusColors[cliente.status] || ''}
-                          >
-                            {cliente.status}
-                          </Badge>
+                        <TableCell className="text-sm text-slate-700 dark:text-slate-300">
+                          {cliente.CELULAR_PRINCIPAL || cliente.telefone || '-'}
+                        </TableCell>
+                        <TableCell className="text-sm text-slate-700 dark:text-slate-300">
+                          {cliente.EMAIL_PRINCIPAL || cliente.email || '-'}
                         </TableCell>
                         <TableCell className="text-sm text-slate-700 dark:text-slate-300">
                           {cliente.carteira || '-'}
@@ -607,7 +607,7 @@ export default function Clientes() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-12">
+                      <TableCell colSpan={7} className="text-center py-12">
                         <div className="text-slate-500 dark:text-slate-400">
                           <Users className="h-12 w-12 mx-auto mb-3 opacity-40" />
                           <p className="font-medium">Nenhum cliente encontrado</p>
