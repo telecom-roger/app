@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -81,111 +81,200 @@ export default function AdminTemplates() {
   });
 
   if (authLoading || !isAuthenticated || user?.role !== "admin") {
-    return (
-      <div className="p-6 space-y-6">
-        <Skeleton className="h-8 w-48" />
-        <Card>
-          <CardContent className="p-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full mb-3" />
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <AdminTemplatesSkeleton />;
   }
 
+  const totalTemplates = templates?.length || 0;
+  const emailTemplates = templates?.filter((t: any) => t.tipo === "email").length || 0;
+  const whatsappTemplates = templates?.filter((t: any) => t.tipo === "whatsapp").length || 0;
+  const activeTemplates = templates?.filter((t: any) => t.ativo).length || 0;
+
   return (
-    <div className="p-6 space-y-6 max-w-5xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Templates</h1>
-          <p className="text-muted-foreground mt-1">
-            Gerencie templates de email e WhatsApp
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+      {/* Header Section */}
+      <div className="px-6 py-8 md:py-12">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-3 bg-blue-500/10 rounded-xl">
+              <Mail className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent">
+              Modelos de Mensagens
+            </h1>
+          </div>
+          <p className="text-slate-600 dark:text-slate-400 mt-2">
+            Gerencie templates de email e WhatsApp para suas campanhas
           </p>
         </div>
-        <Button
-          onClick={() => setShowNovoTemplate(true)}
-          data-testid="button-novo-template"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Template
-        </Button>
       </div>
 
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Variáveis</TableHead>
-              <TableHead>Ação</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading
-              ? Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    {[...Array(5)].map((_, j) => (
-                      <TableCell key={j}>
-                        <Skeleton className="h-4 w-20" />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              : templates && templates.length > 0
-              ? templates.map((template: any) => (
-                  <TableRow key={template.id}>
-                    <TableCell className="font-medium">{template.nome}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        {template.tipo === "email" ? (
-                          <>
-                            <Mail className="h-4 w-4" />
-                            Email
-                          </>
-                        ) : (
-                          <>
-                            <MessageSquare className="h-4 w-4" />
-                            WhatsApp
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={template.ativo ? "default" : "secondary"}>
-                        {template.ativo ? "Ativo" : "Inativo"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {template.variaveis?.length || 0} variáveis
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => deleteTemplateMutation.mutate(template.id)}
-                        data-testid={`button-delete-${template.id}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              : (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-12">
-                    <p className="text-muted-foreground">Nenhum template criado</p>
-                  </TableCell>
-                </TableRow>
-              )}
-          </TableBody>
-        </Table>
-      </Card>
+      {/* Main Content */}
+      <div className="px-6 pb-12">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50 overflow-hidden hover-elevate">
+              <div className="px-6 py-4">
+                <p className="text-sm text-slate-600 dark:text-slate-400">Total de Templates</p>
+                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-1">{totalTemplates}</p>
+              </div>
+            </Card>
+
+            <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50 overflow-hidden hover-elevate">
+              <div className="px-6 py-4">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Templates Email</p>
+                </div>
+                <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">{emailTemplates}</p>
+              </div>
+            </Card>
+
+            <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50 overflow-hidden hover-elevate">
+              <div className="px-6 py-4">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Templates WhatsApp</p>
+                </div>
+                <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">{whatsappTemplates}</p>
+              </div>
+            </Card>
+
+            <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50 overflow-hidden hover-elevate">
+              <div className="px-6 py-4">
+                <p className="text-sm text-slate-600 dark:text-slate-400">Modelos Ativos</p>
+                <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{activeTemplates}</p>
+              </div>
+            </Card>
+          </div>
+
+          {/* Table Card */}
+          <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50 overflow-hidden">
+            <div className="px-6 pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Lista de Modelos</h2>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                    {totalTemplates} modelo{totalTemplates !== 1 ? 's' : ''} registrado{totalTemplates !== 1 ? 's' : ''}
+                  </p>
+                </div>
+                <Button
+                  onClick={() => setShowNovoTemplate(true)}
+                  data-testid="button-novo-template"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo Modelo
+                </Button>
+              </div>
+            </div>
+
+            <div className="px-6 pb-6 mt-4">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-slate-200 dark:border-slate-700">
+                      <TableHead className="text-slate-900 dark:text-slate-100">Nome</TableHead>
+                      <TableHead className="text-slate-900 dark:text-slate-100">Tipo</TableHead>
+                      <TableHead className="text-slate-900 dark:text-slate-100">Status</TableHead>
+                      <TableHead className="text-slate-900 dark:text-slate-100">Variáveis</TableHead>
+                      <TableHead className="w-12"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading
+                      ? Array.from({ length: 5 }).map((_, i) => (
+                          <TableRow key={i} className="border-slate-200 dark:border-slate-700">
+                            {[...Array(5)].map((_, j) => (
+                              <TableCell key={j}>
+                                <Skeleton className="h-4 w-20" />
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        ))
+                      : templates && templates.length > 0
+                      ? templates.map((template: any) => (
+                          <TableRow
+                            key={template.id}
+                            className="border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                            data-testid={`row-template-${template.id}`}
+                          >
+                            <TableCell className="font-medium text-slate-900 dark:text-white">
+                              {template.nome}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1 text-slate-900 dark:text-slate-100">
+                                {template.tipo === "email" ? (
+                                  <>
+                                    <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                    Email
+                                  </>
+                                ) : (
+                                  <>
+                                    <MessageSquare className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                    WhatsApp
+                                  </>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={template.ativo ? "default" : "secondary"}>
+                                {template.ativo ? "Ativo" : "Inativo"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm text-slate-600 dark:text-slate-400">
+                              {template.variaveis?.length || 0} variáveis
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => deleteTemplateMutation.mutate(template.id)}
+                                data-testid={`button-delete-${template.id}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      : (
+                        <TableRow className="border-slate-200 dark:border-slate-700">
+                          <TableCell colSpan={5} className="text-center py-12">
+                            <p className="text-slate-600 dark:text-slate-400">Nenhum modelo criado</p>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
 
       <NovoTemplateDialog open={showNovoTemplate} onOpenChange={setShowNovoTemplate} />
+    </div>
+  );
+}
+
+function AdminTemplatesSkeleton() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+      <div className="px-6 py-8 md:py-12">
+        <div className="max-w-7xl mx-auto">
+          <Skeleton className="h-10 w-48 mb-2" />
+          <Skeleton className="h-5 w-96" />
+        </div>
+      </div>
+      <div className="px-6 pb-12">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-24 w-full" />
+            ))}
+          </div>
+          <Skeleton className="h-96 w-full" />
+        </div>
+      </div>
     </div>
   );
 }
@@ -237,9 +326,9 @@ function NovoTemplateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Novo Template</DialogTitle>
+          <DialogTitle>Novo Modelo de Mensagem</DialogTitle>
           <DialogDescription>
-            Crie um novo template para campanhas de email ou WhatsApp
+            Crie um novo modelo para campanhas de email ou WhatsApp com suporte a variáveis dinâmicas
           </DialogDescription>
         </DialogHeader>
 
@@ -250,9 +339,13 @@ function NovoTemplateDialog({
               name="nome"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome</FormLabel>
+                  <FormLabel>Nome do Modelo</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Template de boas-vindas" {...field} />
+                    <Input
+                      placeholder="Ex: Bem-vindas aos novos clientes"
+                      {...field}
+                      data-testid="input-template-nome"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -264,10 +357,10 @@ function NovoTemplateDialog({
               name="tipo"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tipo</FormLabel>
+                  <FormLabel>Tipo de Mensagem</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger data-testid="select-template-tipo">
                         <SelectValue />
                       </SelectTrigger>
                     </FormControl>
@@ -289,7 +382,11 @@ function NovoTemplateDialog({
                   <FormItem>
                     <FormLabel>Assunto do Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: Bem-vindo ao nosso serviço!" {...field} />
+                      <Input
+                        placeholder="Ex: Bem-vindo ao nosso serviço! Use {{nome}} para variáveis"
+                        {...field}
+                        data-testid="input-template-assunto"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -302,12 +399,13 @@ function NovoTemplateDialog({
               name="conteudo"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Conteúdo</FormLabel>
+                  <FormLabel>Conteúdo da Mensagem</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Use {{nome}}, {{email}}, etc para variáveis"
+                      placeholder="Use {{nome}}, {{email}}, {{telefone}}, etc para inserir variáveis dinâmicas"
                       rows={6}
                       {...field}
+                      data-testid="textarea-template-conteudo"
                     />
                   </FormControl>
                   <FormMessage />
@@ -315,17 +413,22 @@ function NovoTemplateDialog({
               )}
             />
 
-            <div className="flex gap-2 justify-end pt-4">
+            <div className="flex gap-2 justify-end pt-4 border-t border-slate-200 dark:border-slate-700">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
                 disabled={createMutation.isPending}
+                data-testid="button-cancelar-template"
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Criando..." : "Criar"}
+              <Button
+                type="submit"
+                disabled={createMutation.isPending}
+                data-testid="button-criar-template"
+              >
+                {createMutation.isPending ? "Criando..." : "Criar Modelo"}
               </Button>
             </div>
           </form>
