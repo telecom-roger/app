@@ -107,6 +107,14 @@ async function processIncomingMessages(sessionId: string, m: any) {
       }
 
       // Extract phone number from WhatsApp identifiers
+      // Debug: log all fields to understand what we're getting
+      console.log(`[RECEBIMENTO] 🔍 DEBUG msg.key:`, {
+        remoteJid: msg.key.remoteJid,
+        remoteJidAlt: msg.key.remoteJidAlt,
+        participant: msg.key.participant,
+        pushName: msg.pushName,
+      });
+      
       // Priority: participant > remoteJidAlt > remoteJid
       let senderPhone = "";
       
