@@ -27,6 +27,8 @@ import {
   TrendingUp,
   ArrowUpRight,
   ArrowDownRight,
+  Zap,
+  Activity,
 } from "lucide-react";
 
 interface DashboardStats {
@@ -109,190 +111,230 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="p-6 space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">
-          Visão geral da sua operação
-        </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+      {/* Header Section */}
+      <div className="px-6 py-8 md:py-12">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-3 bg-purple-500/10 rounded-xl">
+                  <Activity className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                </div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent">
+                  Dashboard
+                </h1>
+              </div>
+              <p className="text-slate-600 dark:text-slate-400 mt-2">
+                Visão estratégica de toda sua operação de vendas
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total de Clientes"
-          value={stats?.totalClientes}
-          icon={<Users className="h-5 w-5" />}
-          trend={stats?.tendenciaClientes}
-          isLoading={statsLoading}
-        />
-        <StatCard
-          title="Clientes Ativos"
-          value={stats?.clientesAtivos}
-          icon={<TrendingUp className="h-5 w-5" />}
-          isLoading={statsLoading}
-        />
-        <StatCard
-          title="Oportunidades"
-          value={stats?.oportunidades}
-          icon={<Target className="h-5 w-5" />}
-          isLoading={statsLoading}
-        />
-        <StatCard
-          title="Campanhas Ativas"
-          value={stats?.campanhasAtivas}
-          icon={<Mail className="h-5 w-5" />}
-          isLoading={statsLoading}
-        />
-      </div>
+      {/* Main Content */}
+      <div className="px-6 pb-12">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              title="Total de Clientes"
+              value={stats?.totalClientes}
+              icon={<Users className="h-6 w-6" />}
+              trend={stats?.tendenciaClientes}
+              isLoading={statsLoading}
+              bgColor="bg-blue-500/10"
+              iconColor="text-blue-600 dark:text-blue-400"
+            />
+            <StatCard
+              title="Clientes Ativos"
+              value={stats?.clientesAtivos}
+              icon={<TrendingUp className="h-6 w-6" />}
+              isLoading={statsLoading}
+              bgColor="bg-emerald-500/10"
+              iconColor="text-emerald-600 dark:text-emerald-400"
+            />
+            <StatCard
+              title="Oportunidades"
+              value={stats?.oportunidades}
+              icon={<Target className="h-6 w-6" />}
+              isLoading={statsLoading}
+              bgColor="bg-amber-500/10"
+              iconColor="text-amber-600 dark:text-amber-400"
+            />
+            <StatCard
+              title="Campanhas Ativas"
+              value={stats?.campanhasAtivas}
+              icon={<Mail className="h-6 w-6" />}
+              isLoading={statsLoading}
+              bgColor="bg-purple-500/10"
+              iconColor="text-purple-600 dark:text-purple-400"
+            />
+          </div>
 
-      {/* Charts Row */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Funil de Conversão */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-medium">
-              Funil de Conversão
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {funnelLoading ? (
-              <div className="space-y-3">
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-              </div>
-            ) : funnelChartData.length > 0 ? (
-              <div className="space-y-4">
-                {funnelChartData.map((stage, idx) => (
-                  <FunnelStage
-                    key={idx}
-                    label={stage.name}
-                    value={stage.value}
-                    total={funnelChartData[0].value}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center text-muted-foreground py-8">
-                Sem dados disponíveis
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Distribuição por Status */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-medium">
-              Distribuição de Clientes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {statusLoading ? (
-              <Skeleton className="h-64 w-full" />
-            ) : statusDist && statusDist.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={statusDist}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, value }) => `${name}: ${value}`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {statusDist.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={
-                          STATUS_COLORS[entry.name.toLowerCase()] ||
-                          COLORS[index % COLORS.length]
-                        }
+          {/* Charts Row */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Funil de Conversão */}
+            <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
+              <CardHeader className="border-b border-slate-200 dark:border-slate-700">
+                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  Funil de Conversão
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                {funnelLoading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-full" />
+                  </div>
+                ) : funnelChartData.length > 0 ? (
+                  <div className="space-y-4">
+                    {funnelChartData.map((stage, idx) => (
+                      <FunnelStage
+                        key={idx}
+                        label={stage.name}
+                        value={stage.value}
+                        total={funnelChartData[0].value}
+                        color={COLORS[idx]}
                       />
                     ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="text-center text-muted-foreground py-8">
-                Sem dados disponíveis
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                  </div>
+                ) : (
+                  <div className="text-center text-slate-500 dark:text-slate-400 py-12">
+                    <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                    Sem dados disponíveis
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-      {/* Score e Conversão */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-medium">
-              Taxa de Conversão
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {statsLoading ? (
-              <Skeleton className="h-16 w-full" />
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-end justify-between">
-                  <div>
-                    <div className="text-3xl font-bold text-primary">
-                      {stats?.taxaConversao}%
+            {/* Distribuição por Status */}
+            <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
+              <CardHeader className="border-b border-slate-200 dark:border-slate-700">
+                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  Distribuição de Clientes
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                {statusLoading ? (
+                  <Skeleton className="h-64 w-full" />
+                ) : statusDist && statusDist.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={statusDist}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, value }) => `${name}: ${value}`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {statusDist.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={
+                              STATUS_COLORS[entry.name.toLowerCase()] ||
+                              COLORS[index % COLORS.length]
+                            }
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="text-center text-slate-500 dark:text-slate-400 py-12">
+                    <Mail className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                    Sem dados disponíveis
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Score e Conversão */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
+              <CardHeader className="border-b border-slate-200 dark:border-slate-700">
+                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  Taxa de Conversão
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                {statsLoading ? (
+                  <Skeleton className="h-16 w-full" />
+                ) : (
+                  <div className="space-y-6">
+                    <div className="flex items-end justify-between">
+                      <div>
+                        <div className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
+                          {stats?.taxaConversao}%
+                        </div>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+                          De leads para fechado
+                        </p>
+                      </div>
+                      <div className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1 rounded-lg">
+                        <ArrowUpRight className="h-4 w-4" />
+                        <span className="text-sm font-semibold">+2.5%</span>
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      De leads para fechado
-                    </p>
+                    <div className="h-3 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-1000"
+                        style={{ width: `${stats?.taxaConversao || 0}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="text-green-600 flex items-center gap-1">
-                    <ArrowUpRight className="h-4 w-4" />
-                    <span className="text-sm font-medium">+2.5%</span>
-                  </div>
-                </div>
-                <div className="h-2 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full bg-primary rounded-full"
-                    style={{ width: `${stats?.taxaConversao || 0}%` }}
-                  />
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                )}
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-medium">
-              Crescimento Mensal
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {statsLoading ? (
-              <Skeleton className="h-64 w-full" />
-            ) : (
-              <ResponsiveContainer width="100%" height={180}>
-                <LineChart data={monthlyGrowthData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="mes" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="clientes"
-                    stroke="#7069FF"
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
+            <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
+              <CardHeader className="border-b border-slate-200 dark:border-slate-700">
+                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  Crescimento Mensal
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                {statsLoading ? (
+                  <Skeleton className="h-64 w-full" />
+                ) : (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <LineChart data={monthlyGrowthData}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
+                      <XAxis dataKey="mes" className="text-xs text-slate-600 dark:text-slate-400" />
+                      <YAxis className="text-xs text-slate-600 dark:text-slate-400" />
+                      <Tooltip 
+                        contentStyle={{
+                          backgroundColor: "var(--background)",
+                          border: "1px solid var(--border)",
+                          borderRadius: "8px",
+                        }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="clientes"
+                        stroke="#7069FF"
+                        strokeWidth={3}
+                        dot={{ r: 5, fill: "#7069FF" }}
+                        activeDot={{ r: 7 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -304,20 +346,28 @@ function StatCard({
   icon,
   trend,
   isLoading,
+  bgColor,
+  iconColor,
 }: {
   title: string;
   value?: number;
   icon: React.ReactNode;
   trend?: number;
   isLoading: boolean;
+  bgColor: string;
+  iconColor: string;
 }) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {title}
-        </CardTitle>
-        <div className="text-muted-foreground">{icon}</div>
+    <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50 hover:shadow-md transition-shadow duration-200">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
+            {title}
+          </CardTitle>
+          <div className={`p-2.5 rounded-lg ${bgColor}`}>
+            <div className={iconColor}>{icon}</div>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -325,15 +375,17 @@ function StatCard({
         ) : (
           <>
             <div
-              className="text-2xl font-semibold"
+              className="text-3xl font-bold text-slate-900 dark:text-white"
               data-testid={`stat-${title.toLowerCase().replace(/\s+/g, "-")}`}
             >
               {value?.toLocaleString("pt-BR") || "0"}
             </div>
             {trend !== undefined && (
               <div
-                className={`flex items-center gap-1 text-xs mt-1 ${
-                  trend >= 0 ? "text-green-600" : "text-red-600"
+                className={`flex items-center gap-1 text-xs font-medium mt-2 ${
+                  trend >= 0 
+                    ? "text-emerald-600 dark:text-emerald-400" 
+                    : "text-red-600 dark:text-red-400"
                 }`}
               >
                 {trend >= 0 ? (
@@ -355,65 +407,66 @@ function FunnelStage({
   label,
   value,
   total,
+  color,
 }: {
   label: string;
   value: number;
   total: number;
+  color: string;
 }) {
   const percentage = total > 0 ? (value / total) * 100 : 0;
 
   return (
-    <div className="space-y-1">
-      <div className="flex justify-between text-sm">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="font-medium">{value}</span>
+    <div className="space-y-2">
+      <div className="flex justify-between items-center">
+        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</span>
+        <span className="text-sm font-semibold text-slate-900 dark:text-white">{value}</span>
       </div>
-      <div className="h-2 rounded-full bg-muted overflow-hidden">
+      <div className="h-2.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
         <div
-          className="h-full bg-primary rounded-full transition-all"
-          style={{ width: `${percentage}%` }}
+          className="h-full rounded-full transition-all duration-500"
+          style={{ width: `${percentage}%`, backgroundColor: color }}
         />
       </div>
+      <span className="text-xs text-slate-500 dark:text-slate-400">{percentage.toFixed(1)}%</span>
     </div>
   );
 }
 
 function DashboardSkeleton() {
   return (
-    <div className="p-6 space-y-8">
-      <div>
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-4 w-64 mt-2" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+      <div className="px-6 py-8 md:py-12">
+        <div className="max-w-7xl mx-auto">
+          <Skeleton className="h-10 w-48 mb-2" />
+          <Skeleton className="h-5 w-96" />
+        </div>
       </div>
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {[1, 2, 3, 4].map((i) => (
-          <Card key={i}>
-            <CardHeader className="pb-2">
-              <Skeleton className="h-4 w-24" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-8 w-20" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-32" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-64 w-full" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-32" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-64 w-full" />
-          </CardContent>
-        </Card>
+      <div className="px-6 pb-12">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} className="border-0 shadow-sm">
+                <CardHeader className="pb-3">
+                  <Skeleton className="h-5 w-24 mb-2" />
+                  <Skeleton className="h-8 w-32" />
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
+          <div className="grid gap-6 lg:grid-cols-2">
+            {[1, 2].map((i) => (
+              <Card key={i} className="border-0 shadow-sm">
+                <CardHeader>
+                  <Skeleton className="h-6 w-32" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-64 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
