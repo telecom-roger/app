@@ -109,6 +109,13 @@ async function processIncomingMessages(sessionId: string, m: any) {
       // Extract phone number from WhatsApp identifiers
       let senderPhone = "";
       
+      // LOG ALL FIELDS FOR DEBUG
+      console.log(`[🔍 DEBUG INCOMING MESSAGE]`);
+      console.log(`  remoteJid: "${msg.key.remoteJid}"`);
+      console.log(`  remoteJidAlt: "${msg.key.remoteJidAlt}"`);
+      console.log(`  participant: "${msg.key.participant}"`);
+      console.log(`  Full msg.key:`, JSON.stringify(msg.key, null, 2));
+      
       // Helper function to validate phone format (should be 10-15 digits)
       const isValidPhoneFormat = (phone: string): boolean => {
         const cleaned = phone.replace(/\D/g, "");
@@ -121,6 +128,7 @@ async function processIncomingMessages(sessionId: string, m: any) {
           .replace("@s.whatsapp.net", "")
           .replace("@c.us", "")
           .trim();
+        console.log(`  Candidate from remoteJid: "${candidate}" (valid: ${isValidPhoneFormat(candidate)})`);
         if (isValidPhoneFormat(candidate)) {
           senderPhone = candidate;
         }
@@ -132,6 +140,7 @@ async function processIncomingMessages(sessionId: string, m: any) {
           .replace("@s.whatsapp.net", "")
           .replace("@c.us", "")
           .trim();
+        console.log(`  Candidate from participant: "${candidate}" (valid: ${isValidPhoneFormat(candidate)})`);
         if (isValidPhoneFormat(candidate)) {
           senderPhone = candidate;
         }
@@ -144,6 +153,7 @@ async function processIncomingMessages(sessionId: string, m: any) {
           .replace("@lid", "")
           .replace("@s.whatsapp.net", "")
           .trim();
+        console.log(`  Candidate from remoteJidAlt: "${candidate}" (valid: ${isValidPhoneFormat(candidate)})`);
         if (isValidPhoneFormat(candidate)) {
           senderPhone = candidate;
         }
@@ -154,6 +164,8 @@ async function processIncomingMessages(sessionId: string, m: any) {
         .replace("@iid", "")
         .replace("@lid", "")
         .trim();
+      
+      console.log(`  ✅ FINAL senderPhone: "${senderPhone}"`);
       
       if (!senderPhone) {
         console.log(`[RECEBIMENTO] ⚠️ Telefone vazio após limpeza`);
