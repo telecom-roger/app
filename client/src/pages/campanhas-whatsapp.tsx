@@ -97,6 +97,8 @@ type ClientForImport = {
     minutosPara: number;
     recente: boolean;
   };
+  sendStatus?: "enviado" | "nao_enviado" | "erro";
+  lastSendDate?: string;
 };
 
 type Tag = {
@@ -144,6 +146,7 @@ export default function CampanhasWhatsApp() {
   const [selectedCidadesFilter, setSelectedCidadesFilter] = useState<Set<string>>(new Set());
   const [nomeCampanha, setNomeCampanha] = useState("");
   const [filtersInitiated, setFiltersInitiated] = useState(false);
+  const [selectedSendStatusFilter, setSelectedSendStatusFilter] = useState<Set<string>>(new Set());
 
   // Fetch templates
   const { data: templates = [] } = useQuery<any[]>({
@@ -196,12 +199,13 @@ export default function CampanhasWhatsApp() {
       selectedTiposFilter.size > 0 ||
       selectedCarteirasFilter.size > 0 ||
       selectedCidadesFilter.size > 0 ||
+      selectedSendStatusFilter.size > 0 ||
       dataEnvioInicio ||
       dataEnvioFim
     ) {
       setFiltersInitiated(true);
     }
-  }, [searchClientes, filtroStatus, selectedTag, selectedTiposFilter, selectedCarteirasFilter, selectedCidadesFilter, dataEnvioInicio, dataEnvioFim]);
+  }, [searchClientes, filtroStatus, selectedTag, selectedTiposFilter, selectedCarteirasFilter, selectedCidadesFilter, selectedSendStatusFilter, dataEnvioInicio, dataEnvioFim]);
 
   // Poll for campaigns in progress
   useEffect(() => {
@@ -222,7 +226,7 @@ export default function CampanhasWhatsApp() {
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
-  // Filter clients by search, status, tag, tipo, carteira, cidade
+  // Filter clients by search, status, tag, tipo, carteira, cidade, sendStatus
   const clientesFiltrados = clientesDisponiveis.filter((c) => {
     const searchMatch = c.nome.toLowerCase().includes(searchClientes.toLowerCase()) ||
       c.razaoSocial?.toLowerCase().includes(searchClientes.toLowerCase()) ||
@@ -232,7 +236,8 @@ export default function CampanhasWhatsApp() {
     const tipoMatch = selectedTiposFilter.size === 0 || (c.tipo && selectedTiposFilter.has(c.tipo));
     const carteiraMatch = selectedCarteirasFilter.size === 0 || (c.carteira && selectedCarteirasFilter.has(c.carteira));
     const cidadeMatch = selectedCidadesFilter.size === 0 || (c.cidade && selectedCidadesFilter.has(c.cidade));
-    return searchMatch && statusMatch && tagMatch && tipoMatch && carteiraMatch && cidadeMatch;
+    const sendStatusMatch = selectedSendStatusFilter.size === 0 || (c.sendStatus && selectedSendStatusFilter.has(c.sendStatus));
+    return searchMatch && statusMatch && tagMatch && tipoMatch && carteiraMatch && cidadeMatch && sendStatusMatch;
   });
 
   // Parse CSV when text changes
@@ -1358,6 +1363,13 @@ export default function CampanhasWhatsApp() {
                     options={cidadesDisponiveis.slice(0, 100)}
                     selectedValues={selectedCidadesFilter}
                     onSelectionChange={setSelectedCidadesFilter}
+                  />
+
+                  <MultiSelectFilter
+                    label="Status Envio"
+                    options={["enviado", "nao_enviado", "erro"]}
+                    selectedValues={selectedSendStatusFilter}
+                    onSelectionChange={setSelectedSendStatusFilter}
                   />
                 </div>
                 

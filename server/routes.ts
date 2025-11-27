@@ -191,6 +191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           createdAt: clients.createdAt,
           carteira: clients.carteira,
           tipo: clients.tipo,
+          cidade: clients.cidade,
         })
         .from(clients)
         .where(whereCondition)
@@ -199,6 +200,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Fetch all available tags
       const allTags = await db.select().from(tags);
       
+      // Fetch most recent campaign sending for each client
+      const recentSendings = await db
+        .select({
+          clientId: campaignSendings.clientId,
+          status: campaignSendings.status,
+          dataSending: campaignSendings.dataSending,
+        })
+        .from(campaignSendings)
+        .where(eq(campaignSendings.userId, user.id))
+        .orderBy(sql`${campaignSendings.dataSending} DESC`);
+
+      // Create map of most recent sending per client
+      const clientSendingMap = new Map<string, any>();
+      for (const sending of recentSendings) {
+        if (!clientSendingMap.has(sending.clientId)) {
+          clientSendingMap.set(sending.clientId, sending);
+        }
+      }
+      
       const clientsWithPhones = allClients.filter((c) => c.telefone && c.telefone.trim());
       const result = clientsWithPhones.map((client) => {
         // Convert tag names to tag objects with id, nome, cor
@@ -206,6 +226,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const tag = allTags.find(t => t.nome === tagName);
           return tag ? { id: tag.id, nome: tag.nome, cor: tag.cor } : null;
         }).filter(Boolean);
+
+        const sendingHistory = clientSendingMap.get(client.id);
+        const sendStatus = sendingHistory?.status === "enviado" ? "enviado" : sendingHistory?.status === "erro" ? "erro" : "nao_enviado";
 
         return {
           id: client.id,
@@ -217,8 +240,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: client.status,
           carteira: client.carteira,
           tipo: client.tipo,
+          cidade: client.cidade,
           tags: clientTags,
           createdAt: client.createdAt,
+          sendStatus: sendStatus,
+          lastSendDate: sendingHistory?.dataSending ? new Date(sendingHistory.dataSending).toLocaleDateString("pt-BR") : undefined,
           ultimaCampanha: undefined,
         };
       });
