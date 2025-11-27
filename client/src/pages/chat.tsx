@@ -462,7 +462,13 @@ export default function Chat() {
               <Button
                 size="icon"
                 variant="ghost"
-                onClick={() => setShowNoteInput(!showNoteInput)}
+                onClick={() => {
+                  setShowNoteInput(!showNoteInput);
+                  if (showNoteInput) {
+                    setNoteText("");
+                    setNoteColor("bg-blue-500");
+                  }
+                }}
                 disabled={!currentClientId || allTags.length === 0}
                 data-testid="button-add-note"
                 className="h-6 w-6"
