@@ -88,6 +88,9 @@ export default function Kanban() {
   const { toast } = useToast();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [filtroResponsavel, setFiltroResponsavel] = useState<string>("todos");
+  const [filtroDataInicio, setFiltroDataInicio] = useState<string>("");
+  const [filtroDataFim, setFiltroDataFim] = useState<string>("");
+  const [filtroTags, setFiltroTags] = useState<Set<string>>(new Set());
   const [showNovaOportunidade, setShowNovaOportunidade] = useState(false);
   const [editingOportunidade, setEditingOportunidade] = useState<Opportunity | null>(null);
   const [draggedCard, setDraggedCard] = useState<{ id: string; fromEtapa: string } | null>(null);
@@ -189,18 +192,42 @@ export default function Kanban() {
     },
   });
 
-  const oportunidadesPorEtapa = colunas.map(coluna => ({
-    ...coluna,
-    oportunidades: (oportunidades || []).filter(op => op.etapa === coluna.id),
-  }));
+  // Filtrar oportunidades por responsável, data e tags
+  const oportunidadesFiltradas = (oportunidades || []).filter(op => {
+    // Filtro responsável
+    if (filtroResponsavel !== "todos" && op.responsavelId !== filtroResponsavel) return false;
+    
+    // Filtro data
+    if (filtroDataInicio && op.createdAt && new Date(op.createdAt) < new Date(filtroDataInicio)) return false;
+    if (filtroDataFim && op.createdAt && new Date(op.createdAt) > new Date(filtroDataFim)) return false;
+    
+    // Filtro tags - se filtroTags não vazio, só inclui se tem tag selecionada
+    if (filtroTags.size > 0) {
+      const clienteTags = clientes.find(c => c.id === op.clientId)?.tags || [];
+      const temTagSelecionada = clienteTags.some(tag => filtroTags.has(tag));
+      if (!temTagSelecionada) return false;
+    }
+    
+    return true;
+  });
 
-  const totalOportunidades = oportunidades?.length || 0;
-  const oportunidadesFechadas = oportunidades?.filter(op => op.etapa === 'fechado').length || 0;
+  const totalOportunidades = oportunidadesFiltradas.length;
+  const oportunidadesFechadas = oportunidadesFiltradas.filter(op => op.etapa === 'fechado').length;
   
-  // Calcular soma de valores em negociação
+  // Calcular soma de valores em negociação (excluindo "perdido" e colunas com "perdido" no nome)
   const totalValueNegotiation = (oportunidades || [])
-    .filter(op => op.etapa && op.etapa !== 'fechado' && op.etapa !== 'perdido')
+    .filter(op => {
+      if (!op.etapa) return false;
+      if (op.etapa === 'fechado' || op.etapa === 'perdido') return false;
+      if (op.etapa.toLowerCase().includes('perdido')) return false;
+      return true;
+    })
     .reduce((sum, op) => sum + parseValue(op.valorEstimado), 0);
+
+  const oportunidadesPorEtapaFiltradas = colunas.map(coluna => ({
+    ...coluna,
+    oportunidades: oportunidadesFiltradas.filter(op => op.etapa === coluna.id),
+  }));
 
   if (authLoading || !isAuthenticated) {
     return <KanbanSkeleton />;
@@ -272,43 +299,88 @@ export default function Kanban() {
           </div>
 
           {/* Controls */}
-          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
-            <Select value={filtroResponsavel} onValueChange={setFiltroResponsavel}>
-              <SelectTrigger className="w-full sm:w-48 border-slate-200 dark:border-slate-700" data-testid="select-responsavel">
-                <SelectValue placeholder="Responsável" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todas as oportunidades</SelectItem>
-                <SelectItem value={user?.id ? String(user.id) : ""}>Minhas oportunidades</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select 
-              value={colunas.map(c => c.id).join(",")} 
-              onValueChange={() => {}}
-            >
-              <SelectTrigger className="w-full sm:w-48 border-slate-200 dark:border-slate-700" data-testid="select-etapas">
-                <SelectValue placeholder="Etapas customizadas" />
-              </SelectTrigger>
-              <SelectContent>
-                <div className="p-2 text-xs text-slate-600 dark:text-slate-400">
-                  {tags.length > 0 ? "Usando tags como etapas" : "Use as etapas padrões"}
-                </div>
-              </SelectContent>
-            </Select>
-            <Button 
-              data-testid="button-nova-oportunidade" 
-              onClick={() => setShowNovaOportunidade(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white w-full sm:w-auto"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Oportunidade
-            </Button>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
+              <Select value={filtroResponsavel} onValueChange={setFiltroResponsavel}>
+                <SelectTrigger className="w-full sm:w-48 border-slate-200 dark:border-slate-700" data-testid="select-responsavel">
+                  <SelectValue placeholder="Responsável" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todas as oportunidades</SelectItem>
+                  <SelectItem value={user?.id ? String(user.id) : ""}>Minhas oportunidades</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Input
+                type="date"
+                value={filtroDataInicio}
+                onChange={(e) => setFiltroDataInicio(e.target.value)}
+                placeholder="Data início"
+                className="w-full sm:w-40 border-slate-200 dark:border-slate-700"
+                data-testid="input-filtro-data-inicio"
+              />
+              
+              <Input
+                type="date"
+                value={filtroDataFim}
+                onChange={(e) => setFiltroDataFim(e.target.value)}
+                placeholder="Data fim"
+                className="w-full sm:w-40 border-slate-200 dark:border-slate-700"
+                data-testid="input-filtro-data-fim"
+              />
+
+              <Button 
+                data-testid="button-nova-oportunidade" 
+                onClick={() => setShowNovaOportunidade(true)}
+                className="bg-purple-600 hover:bg-purple-700 text-white w-full sm:w-auto"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Oportunidade
+              </Button>
+            </div>
+
+            {/* Filtro Tags */}
+            {tags.length > 0 && (
+              <div className="flex gap-2 flex-wrap items-center">
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Filtrar por Tags:</span>
+                <Button
+                  variant={filtroTags.size === 0 ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFiltroTags(new Set())}
+                  className="h-8 text-xs"
+                  data-testid="button-limpar-filtro-tags"
+                >
+                  Todas
+                </Button>
+                {tags.map((tag: any) => (
+                  <Button
+                    key={tag.id}
+                    variant={filtroTags.has(tag.nome) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      const newTags = new Set(filtroTags);
+                      if (newTags.has(tag.nome)) {
+                        newTags.delete(tag.nome);
+                      } else {
+                        newTags.add(tag.nome);
+                      }
+                      setFiltroTags(newTags);
+                    }}
+                    className="h-8 px-2 text-xs rounded-full"
+                    data-testid={`button-filtro-tag-${tag.id}`}
+                    style={filtroTags.has(tag.nome) ? { backgroundColor: tag.cor } : {}}
+                  >
+                    {tag.nome}
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Kanban Board */}
           <div className="overflow-x-auto pb-4">
             <div className="flex gap-4 min-w-max">
-              {oportunidadesPorEtapa.map((coluna) => (
+              {oportunidadesPorEtapaFiltradas.map((coluna) => (
                 <KanbanColumn
                   key={coluna.id}
                   coluna={coluna}
