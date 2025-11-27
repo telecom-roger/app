@@ -1332,6 +1332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create campaign tracking ID
       const campanhaId = `camp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       campanhasEmProgresso.set(campanhaId, {
+        userId: user.id,
         id: campanhaId,
         total: contatos.length,
         enviadas: 0,
@@ -1441,7 +1442,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint para obter status de campanhas em progresso
   app.get("/api/whatsapp/campanhas-em-progresso", isAuthenticated, async (req, res) => {
     try {
+      const user = (req.user as any);
       const campanhas = Array.from(campanhasEmProgresso.values())
+        .filter(c => c.userId === user.id)
         .sort((a, b) => b.criadoEm.getTime() - a.criadoEm.getTime());
       
       res.json(campanhas);
