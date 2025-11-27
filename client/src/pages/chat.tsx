@@ -121,7 +121,10 @@ export default function Chat() {
   // Fetch all clients for search
   const { data: clients = [], isLoading: clientsLoading, refetch: refetchClients } = useQuery<Client[]>({
     queryKey: ["/api/clients/whatsapp-list"],
-    refetchInterval: 10000, // Atualiza a cada 10s para pegar mudanças
+    refetchInterval: 2000, // Atualiza a cada 2s para pegar mudanças rapidamente
+    staleTime: 0, // Sempre considerar dados como stale
+    gcTime: 0, // Não cachear dados
+    refetchOnWindowFocus: true, // Refetch quando voltar a janela
   });
 
   // Fetch messages for selected conversation (MUST BE BEFORE WebSocket useEffect that uses refetchMessages)
@@ -198,6 +201,12 @@ export default function Chat() {
       ].filter(tag => tag && typeof tag === 'string')
     )
   ).sort();
+  
+  console.log("✨ DEBUG - allUniqueTags:", allUniqueTags);
+  if (allUniqueTags.length === 0) {
+    const firstClient = clients?.[0];
+    console.log("✨ DEBUG - First client full:", firstClient);
+  }
 
   // Sort conversations by last message date (most recent first)
   const sortedConversations = [...conversations]
