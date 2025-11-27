@@ -553,30 +553,25 @@ export default function Chat() {
       // 1. Adicionar tag ao cliente
       const tagRes = await apiRequest("POST", `/api/clients/${currentClientId}/tags`, { tagName, valorEstimado: businessValue });
       
-      // 2. Gerenciar oportunidade - cliente tem apenas 1
-      if (businessValue) {
-        try {
-          // Buscar oportunidade existente do cliente
-          const oppsRes = await fetch(`/api/opportunities`);
-          const opps = await oppsRes.json();
-          const existingOp = opps.find((op: any) => op.clientId === currentClientId);
-          
-          if (existingOp) {
-            // Mover oportunidade para nova etapa
-            await apiRequest("PATCH", `/api/opportunities/${existingOp.id}/move`, { etapa: tagName });
-          } else {
-            // Criar oportunidade apenas se não existir
-            await apiRequest("POST", "/api/opportunities", {
-              clientId: currentClientId,
-              titulo: `${detailedClient.razaoSocial || detailedClient.nome}`,
-              etapa: tagName,
-              valorEstimado: businessValue,
-              responsavelId: detailedClient.createdBy,
-            });
-          }
-        } catch (err) {
-          console.error("Erro ao gerenciar oportunidade:", err);
+      // 2. Gerenciar oportunidade - busca por cliente E etiqueta
+      try {
+        const oppsRes = await fetch(`/api/opportunities`);
+        const opps = await oppsRes.json();
+        // Buscar oportunidade existente do cliente NESTA etiqueta específica
+        const existingOp = opps.find((op: any) => op.clientId === currentClientId && op.etapa === tagName);
+        
+        if (!existingOp && businessValue) {
+          // Criar oportunidade apenas se não existir nesta etiqueta
+          await apiRequest("POST", "/api/opportunities", {
+            clientId: currentClientId,
+            titulo: `${detailedClient.razaoSocial || detailedClient.nome}`,
+            etapa: tagName,
+            valorEstimado: businessValue,
+            responsavelId: detailedClient.createdBy,
+          });
         }
+      } catch (err) {
+        console.error("Erro ao gerenciar oportunidade:", err);
       }
       
       return tagRes.json();
