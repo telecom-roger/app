@@ -11,6 +11,7 @@ import { SiWhatsapp } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface Message {
   id: string;
@@ -605,7 +606,19 @@ export default function Chat() {
                     Nenhuma conversa ainda
                   </p>
                 ) : (
-                  sortedConversations.map((conv: Conversation) => (
+                  sortedConversations.map((conv: Conversation) => {
+                    const getInitials = (name: string) => {
+                      return name
+                        .split(" ")
+                        .slice(0, 2)
+                        .map(word => word[0])
+                        .join("")
+                        .toUpperCase();
+                    };
+                    const clientName = conv.client?.razaoSocial || conv.client?.nome || "Contato desconhecido";
+                    const initials = getInitials(clientName);
+
+                    return (
                     <button
                       key={conv.id}
                       onClick={() => handleSelectConversation(conv.id)}
@@ -619,6 +632,11 @@ export default function Chat() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 min-w-0">
+                            <Avatar className="h-8 w-8 flex-shrink-0" data-testid={`avatar-${conv.id}`}>
+                              <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">
+                                {initials}
+                              </AvatarFallback>
+                            </Avatar>
                             {conv.client?.tags?.[0] && (() => {
                               const tagName = conv.client.tags[0];
                               const tag = allTags.find(t => t.nome === tagName);
@@ -630,9 +648,9 @@ export default function Chat() {
                               );
                             })()}
                             <p className="text-sm font-medium truncate">
-                              {(conv.client?.razaoSocial || conv.client?.nome || "Contato desconhecido").length > 47
-                                ? (conv.client?.razaoSocial || conv.client?.nome || "Contato desconhecido").substring(0, 47) + "..."
-                                : conv.client?.razaoSocial || conv.client?.nome || "Contato desconhecido"}
+                              {clientName.length > 47
+                                ? clientName.substring(0, 47) + "..."
+                                : clientName}
                             </p>
                           </div>
                           <p className="text-xs text-muted-foreground truncate">
@@ -663,7 +681,8 @@ export default function Chat() {
                         </p>
                       )}
                     </button>
-                  ))
+                    );
+                  })
                 )}
               </>
             )}
