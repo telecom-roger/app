@@ -91,10 +91,22 @@ export default function Chat() {
   const [noteText, setNoteText] = useState("");
   const [noteColor, setNoteColor] = useState("bg-blue-500");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [closedConversations, setClosedConversations] = useState<Set<string>>(new Set());
+  const [closedConversations, setClosedConversations] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem("closedConversations");
+      return new Set(stored ? JSON.parse(stored) : []);
+    } catch {
+      return new Set();
+    }
+  });
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
   const [contextMenuConvId, setContextMenuConvId] = useState<string | null>(null);
+
+  // Persist closed conversations to localStorage
+  useEffect(() => {
+    localStorage.setItem("closedConversations", JSON.stringify(Array.from(closedConversations)));
+  }, [closedConversations]);
 
   const { data: quickReplies = [] } = useQuery<QuickReply[]>({
     queryKey: ["/api/quick-replies"],
