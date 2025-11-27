@@ -966,76 +966,124 @@ export default function Chat() {
         setShowClientInfo(open);
         if (!open) setBusinessValue("");
       }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Info className="h-5 w-5" />
-              Informações do Cliente
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           {clientDetailLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-5 w-5 animate-spin text-slate-600 dark:text-slate-400" />
             </div>
           ) : detailedClient ? (
-            <div className="space-y-4">
-              {/* Valor do Negócio */}
-              <div>
-                <label className="text-sm font-semibold text-slate-900 dark:text-slate-100">Valor do Negócio</label>
-                <Input
-                  type="text"
-                  placeholder="R$ 0,00"
-                  value={businessValue}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, "");
-                    const formatted = new Intl.NumberFormat("pt-BR", {
-                      style: "currency",
-                      currency: "BRL"
-                    }).format(parseInt(value || "0") / 100);
-                    setBusinessValue(formatted);
-                  }}
-                  className="mt-2"
-                  data-testid="input-business-value"
-                />
-              </div>
-              
-              {/* Etapas */}
-              <div>
-                <label className="text-sm font-semibold text-slate-900 dark:text-slate-100">Etapas</label>
-                {allTags && allTags.length > 0 ? (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {allTags.map((tag) => {
-                      const isCurrentTag = detailedClient?.tags?.[0] === tag.nome;
-                      return (
-                        <Button
-                          key={tag.id}
-                          size="sm"
-                          variant={isCurrentTag ? "default" : "outline"}
-                          className={`${isCurrentTag ? `${tag.cor}` : ""} rounded-full`}
-                          onClick={() => {
-                            if (isCurrentTag) {
-                              handleDeleteTag(tag.nome);
-                            } else {
-                              addTagMutation.mutate(tag.nome);
-                            }
-                          }}
-                          disabled={addTagMutation.isPending || removeTagMutation.isPending}
-                          data-testid={`button-tag-${tag.id}`}
-                        >
-                          {addTagMutation.isPending || removeTagMutation.isPending ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : isCurrentTag ? (
-                            `✓ ${tag.nome}`
-                          ) : (
-                            tag.nome
-                          )}
-                        </Button>
-                      );
-                    })}
+            <div className="space-y-6">
+              {/* Header com Informações do Cliente */}
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/20 rounded-lg p-5 border border-purple-200 dark:border-purple-800/50">
+                <div className="flex items-start gap-4 mb-4">
+                  <Avatar className="h-14 w-14 flex-shrink-0">
+                    <AvatarFallback className="bg-purple-200 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-bold text-lg">
+                      {(detailedClient.nome || detailedClient.razaoSocial || "C")
+                        .split(" ")
+                        .slice(0, 2)
+                        .map((w: string) => w[0])
+                        .join("")
+                        .toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                      {detailedClient.nome || "Sem nome"}
+                    </h2>
+                    {detailedClient.razaoSocial && (
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{detailedClient.razaoSocial}</p>
+                    )}
+                    {detailedClient.CELULAR_PRINCIPAL || detailedClient.telefone && (
+                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                        {detailedClient.CELULAR_PRINCIPAL || detailedClient.telefone}
+                      </p>
+                    )}
                   </div>
-                ) : (
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">Nenhuma etapa criada. Crie em "Etiquetas"</p>
-                )}
+                </div>
+
+                {/* Dados do Cliente em Grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  {detailedClient.email && (
+                    <div>
+                      <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">EMAIL</p>
+                      <p className="text-sm text-slate-900 dark:text-white truncate">{detailedClient.email}</p>
+                    </div>
+                  )}
+                  {detailedClient.carteira && (
+                    <div>
+                      <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">CARTEIRA</p>
+                      <p className="text-sm text-slate-900 dark:text-white">{detailedClient.carteira}</p>
+                    </div>
+                  )}
+                  {detailedClient.cpfCnpj && (
+                    <div className="col-span-2">
+                      <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">CPF/CNPJ</p>
+                      <p className="text-sm text-slate-900 dark:text-white font-mono">{detailedClient.cpfCnpj}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Gerenciamento de Etapas e Valor */}
+              <div className="space-y-4 border-t border-slate-200 dark:border-slate-700 pt-6">
+                {/* Valor do Negócio */}
+                <div>
+                  <label className="text-sm font-semibold text-slate-900 dark:text-slate-100">Valor do Negócio</label>
+                  <Input
+                    type="text"
+                    placeholder="R$ 0,00"
+                    value={businessValue}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, "");
+                      const formatted = new Intl.NumberFormat("pt-BR", {
+                        style: "currency",
+                        currency: "BRL"
+                      }).format(parseInt(value || "0") / 100);
+                      setBusinessValue(formatted);
+                    }}
+                    className="mt-2"
+                    data-testid="input-business-value"
+                  />
+                </div>
+                
+                {/* Etapas */}
+                <div>
+                  <label className="text-sm font-semibold text-slate-900 dark:text-slate-100">Etapas</label>
+                  {allTags && allTags.length > 0 ? (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {allTags.map((tag) => {
+                        const isCurrentTag = detailedClient?.tags?.[0] === tag.nome;
+                        return (
+                          <Button
+                            key={tag.id}
+                            size="sm"
+                            variant={isCurrentTag ? "default" : "outline"}
+                            className={`${isCurrentTag ? `${tag.cor}` : "opacity-60"} rounded-full`}
+                            onClick={() => {
+                              if (isCurrentTag) {
+                                handleDeleteTag(tag.nome);
+                              } else {
+                                addTagMutation.mutate(tag.nome);
+                              }
+                            }}
+                            disabled={addTagMutation.isPending || removeTagMutation.isPending}
+                            data-testid={`button-tag-${tag.id}`}
+                          >
+                            {addTagMutation.isPending || removeTagMutation.isPending ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : isCurrentTag ? (
+                              `✓ ${tag.nome}`
+                            ) : (
+                              tag.nome
+                            )}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">Nenhuma etapa criada. Crie em "Etiquetas"</p>
+                  )}
+                </div>
               </div>
             </div>
           ) : (
