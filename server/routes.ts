@@ -1339,6 +1339,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         erros: 0,
         status: "em_progresso",
         criadoEm: new Date(),
+        parar: false,
       });
 
       // Return immediately with campaign ID
@@ -1355,6 +1356,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let erros = 0;
         
         for (let i = 0; i < contatos.length; i++) {
+          // Check if campaign was cancelled
+          const campanhaCurrent = campanhasEmProgresso.get(campanhaId);
+          if (campanhaCurrent && campanhaCurrent.parar) {
+            console.log(`⏹️ Campanha ${campanhaId} foi cancelada. Parando envio.`);
+            break;
+          }
+
           try {
             const contato = contatos[i];
             const telefone = contato.celular || "";
@@ -1486,8 +1494,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       
-      // Remove do memory
-      campanhasEmProgresso.delete(id);
+      // Marca para parar
+      const campanha = campanhasEmProgresso.get(id);
+      if (campanha) {
+        campanha.parar = true;
+      }
+      
+      // Remove do memory após um pequeno delay para garantir que parou
+      setTimeout(() => campanhasEmProgresso.delete(id), 1000);
 
       // Também deleta do banco de dados
       const { campaigns: campaignsTable } = await import("@shared/schema");
