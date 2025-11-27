@@ -98,6 +98,8 @@ export default function CampanhasAgendadas() {
   const [clientesSelecionados, setClientesSelecionados] = useState<Set<string>>(new Set());
   const [searchClientes, setSearchClientes] = useState("");
   const [quantidadeSelecar, setQuantidadeSelecar] = useState(10);
+  const [orderBy, setOrderBy] = useState<"recent" | "oldest">("recent");
+  const [quantidadeAleatoria, setQuantidadeAleatoria] = useState("");
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -347,6 +349,8 @@ export default function CampanhasAgendadas() {
                       ...data,
                       filtros: {
                         clientIds: Array.from(clientesSelecionados),
+                        orderBy,
+                        quantidadeAleatoria,
                       },
                       totalRecipients: clientesSelecionados.size,
                     });
@@ -444,6 +448,39 @@ export default function CampanhasAgendadas() {
                     </FormItem>
                   )}
                 />
+
+                <div className="border-t pt-4">
+                  <h3 className="font-semibold mb-4">Filtros de Envio</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormItem>
+                      <FormLabel>Ordenação</FormLabel>
+                      <Select value={orderBy} onValueChange={(value: any) => setOrderBy(value)}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-orderBy">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="recent">Mais Recentes</SelectItem>
+                          <SelectItem value="oldest">Mais Antigos</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+
+                    <FormItem>
+                      <FormLabel>Quantidade Aleatória (opcional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Ex: 500 ou 50%"
+                          value={quantidadeAleatoria}
+                          onChange={(e) => setQuantidadeAleatoria(e.target.value)}
+                          data-testid="input-quantidade-aleatoria"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  </div>
+                </div>
 
                 <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded text-sm text-muted-foreground">
                   <Clock className="w-4 h-4 inline mr-2" />
