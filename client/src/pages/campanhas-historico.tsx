@@ -45,7 +45,7 @@ export default function CampanhasHistorico() {
       if (!res.ok) throw new Error("Failed to fetch campaigns");
       const data = await res.json();
       return Array.isArray(data) 
-        ? data.filter((c: any) => ['concluida', 'enviando', 'pausada'].includes(c.status))
+        ? data.filter((c: any) => c.status === 'concluida')
         : [];
     },
     refetchInterval: 3000,
@@ -73,10 +73,6 @@ export default function CampanhasHistorico() {
     switch (status) {
       case 'concluida':
         return <Badge className="bg-green-500">✅ Concluída</Badge>;
-      case 'enviando':
-        return <Badge className="bg-blue-500">📤 Enviando</Badge>;
-      case 'pausada':
-        return <Badge className="bg-yellow-500">⏸️ Pausada</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
