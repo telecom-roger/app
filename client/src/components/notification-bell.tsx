@@ -3,13 +3,13 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 
 export function NotificationBell() {
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
 
   // Poll unread count every 3 seconds
-  const { data } = useQuery({
+  const { data } = useQuery<{ count: number }>({
     queryKey: ["/api/notifications/unread-count"],
     refetchInterval: 3000,
   });

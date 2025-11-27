@@ -797,13 +797,13 @@ export async function deleteTag(id: string): Promise<void> {
   await db.delete(tags).where(eq(tags.id, id));
 }
 
-// Count unread messages
-export async function countUnreadMessages(): Promise<number> {
+// Count all unread messages globally
+export async function countAllUnreadMessages(): Promise<number> {
   const result = await db
-    .select({ count: sql<number>`count(*)` })
+    .select({ count: sql<number>`COUNT(*)` })
     .from(messages)
-    .where(eq(messages.isRead, false));
-  return result[0]?.count || 0;
+    .where(eq(messages.lido, false));
+  return result[0]?.count ? Number(result[0].count) : 0;
 }
 
 // Set tag to client (only one tag per client - replaces existing)

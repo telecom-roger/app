@@ -1898,7 +1898,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== NOTIFICATIONS ROUTES ====================
   app.get("/api/notifications/unread-count", isAuthenticated, async (req, res) => {
     try {
-      const count = await storage.countUnreadMessages();
+      const count = await storage.countAllUnreadMessages();
       res.json({ count });
     } catch (error: any) {
       console.error("Error fetching unread messages count:", error);
@@ -1909,7 +1909,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mark all messages as read
   app.post("/api/notifications/mark-all-read", isAuthenticated, async (req, res) => {
     try {
-      await db.update(messages).set({ isRead: true }).where(eq(messages.isRead, false));
+      await db.update(messages).set({ lido: true }).where(eq(messages.lido, false));
       res.json({ success: true, message: "All messages marked as read" });
     } catch (error: any) {
       console.error("Error marking messages as read:", error);
