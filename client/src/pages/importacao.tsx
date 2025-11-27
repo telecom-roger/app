@@ -3,10 +3,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -23,6 +24,8 @@ import {
   FileText,
   Users,
   Loader2,
+  Download,
+  Package,
 } from "lucide-react";
 import Papa from "papaparse";
 
@@ -222,23 +225,33 @@ export default function Importacao() {
   };
 
   if (authLoading || !isAuthenticated) {
-    return null;
+    return <ImportacaoSkeleton />;
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">
-          Importação de Clientes
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Importe sua base de clientes via CSV ou XLSX
-        </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+      {/* Header Section */}
+      <div className="px-6 py-8 md:py-12">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-3 bg-blue-500/10 rounded-xl">
+              <Download className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent">
+              Importação de Clientes
+            </h1>
+          </div>
+          <p className="text-slate-600 dark:text-slate-400 mt-2">
+            Importe sua base de clientes via CSV ou XLSX em 4 etapas simples
+          </p>
+        </div>
       </div>
 
-      {/* Stepper */}
-      <div className="flex items-center justify-between max-w-3xl mx-auto">
+      {/* Main Content */}
+      <div className="px-6 pb-12">
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Stepper */}
+          <div className="flex items-center justify-between">
         {[
           { step: 1, label: "Upload" },
           { step: 2, label: "Mapeamento" },
@@ -278,14 +291,17 @@ export default function Importacao() {
         ))}
       </div>
 
-      {/* Step 1: Upload */}
-      {currentStep === 1 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Selecione seu arquivo</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="border-2 border-dashed rounded-lg p-8 text-center hover:bg-muted/50 transition cursor-pointer">
+          {/* Steps Container */}
+        </div>
+
+        {/* Step 1: Upload */}
+        {currentStep === 1 && (
+        <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50 overflow-hidden">
+          <div className="px-6 pt-6">
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">Selecione seu arquivo</h2>
+          </div>
+          <div className="px-6 pb-6 space-y-4">
+            <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-8 text-center hover:bg-slate-50 dark:hover:bg-slate-900/50 transition cursor-pointer">
               <Input
                 type="file"
                 accept=".csv,.xlsx"
@@ -298,32 +314,32 @@ export default function Importacao() {
                 htmlFor="file-input"
                 className="cursor-pointer space-y-2 flex flex-col items-center"
               >
-                <Upload className="h-12 w-12 text-muted-foreground mx-auto" />
+                <Upload className="h-12 w-12 text-slate-400 dark:text-slate-500 mx-auto" />
                 <div>
-                  <p className="font-medium">Clique ou arraste seu arquivo aqui</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="font-medium text-slate-900 dark:text-white">Clique ou arraste seu arquivo aqui</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
                     CSV ou XLSX (máx. 10MB)
                   </p>
                 </div>
               </label>
             </div>
-          </CardContent>
+          </div>
         </Card>
       )}
 
-      {/* Step 2: Mapping */}
-      {currentStep === 2 && fileData && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Mapeie as colunas</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
+        {/* Step 2: Mapping */}
+        {currentStep === 2 && fileData && (
+        <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50 overflow-hidden">
+          <div className="px-6 pt-6">
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Mapeie as colunas</h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
               Associe as colunas do seu arquivo aos campos do sistema
             </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          </div>
+          <div className="px-6 pb-6 space-y-4 mt-4">
             {/* Preview */}
-            <div className="bg-muted rounded-lg p-4 mb-6">
-              <p className="text-sm font-medium mb-2">Primeira linha (prévia):</p>
+            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4 mb-6">
+              <p className="text-sm font-medium text-slate-900 dark:text-white mb-2">Primeira linha (prévia):</p>
               <div className="flex gap-2 flex-wrap">
                 {fileData.headers.map((header, idx) => (
                   <Badge key={idx} variant="outline">
@@ -387,7 +403,7 @@ export default function Importacao() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2 pt-4">
+            <div className="flex gap-2 pt-4 border-t border-slate-200 dark:border-slate-700 mt-4">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -405,18 +421,18 @@ export default function Importacao() {
                 Continuar
               </Button>
             </div>
-          </CardContent>
+          </div>
         </Card>
       )}
 
-      {/* Step 3: Import */}
-      {currentStep === 3 && fileData && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Revisar e Importar</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-4 flex gap-2">
+        {/* Step 3: Import */}
+        {currentStep === 3 && fileData && (
+        <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50 overflow-hidden">
+          <div className="px-6 pt-6">
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Revisar e Importar</h2>
+          </div>
+          <div className="px-6 pb-6 space-y-4 mt-4">
+            <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 flex gap-2 border border-blue-200 dark:border-blue-800/50">
               <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
               <div className="text-sm">
                 <p className="font-medium text-blue-900 dark:text-blue-100">
@@ -429,29 +445,29 @@ export default function Importacao() {
             </div>
 
             {/* Preview table */}
-            <div className="border rounded-lg overflow-hidden">
+            <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="px-4 py-2 text-left font-medium">#</th>
-                      <th className="px-4 py-2 text-left font-medium">Nome</th>
-                      <th className="px-4 py-2 text-left font-medium">CPF/CNPJ</th>
-                      <th className="px-4 py-2 text-left font-medium">Status</th>
+                  <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
+                    <tr className="hover:bg-transparent">
+                      <th className="px-4 py-2 text-left font-semibold text-xs uppercase tracking-wider text-slate-900 dark:text-slate-100">#</th>
+                      <th className="px-4 py-2 text-left font-semibold text-xs uppercase tracking-wider text-slate-900 dark:text-slate-100">Nome</th>
+                      <th className="px-4 py-2 text-left font-semibold text-xs uppercase tracking-wider text-slate-900 dark:text-slate-100">CPF/CNPJ</th>
+                      <th className="px-4 py-2 text-left font-semibold text-xs uppercase tracking-wider text-slate-900 dark:text-slate-100">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {fileData.rows.slice(0, 5).map((row, idx) => (
-                      <tr key={idx} className="border-t">
-                        <td className="px-4 py-2">{idx + 1}</td>
-                        <td className="px-4 py-2">
+                      <tr key={idx} className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+                        <td className="px-4 py-2 text-slate-600 dark:text-slate-400">{idx + 1}</td>
+                        <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">
                           {row[mapping.nome] || "-"}
                         </td>
-                        <td className="px-4 py-2">
+                        <td className="px-4 py-2 font-mono text-xs text-slate-600 dark:text-slate-400">
                           {row[mapping.cpfCnpj] || "-"}
                         </td>
                         <td className="px-4 py-2">
-                          {row[mapping.status] || "lead"}
+                          <Badge className="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs border-0">{row[mapping.status] || "lead"}</Badge>
                         </td>
                       </tr>
                     ))}
@@ -460,14 +476,15 @@ export default function Importacao() {
               </div>
             </div>
 
-            {fileData.rows.length > 5 && (
-              <p className="text-sm text-muted-foreground">
-                ... e mais {fileData.rows.length - 5} registros
-              </p>
-            )}
+              {fileData.rows.length > 5 && (
+                <p className="text-sm text-slate-600 dark:text-slate-400 px-4 py-2">
+                  ... e mais {fileData.rows.length - 5} registros
+                </p>
+              )}
+            </div>
 
             {/* Actions */}
-            <div className="flex gap-2 pt-4">
+            <div className="flex gap-2 pt-4 border-t border-slate-200 dark:border-slate-700 mt-4">
               <Button
                 variant="outline"
                 onClick={() => setCurrentStep(2)}
@@ -485,31 +502,33 @@ export default function Importacao() {
                 {importing ? "Importando..." : "Importar Agora"}
               </Button>
             </div>
-          </CardContent>
+          </div>
         </Card>
       )}
 
-      {/* Step 4: Result */}
-      {currentStep === 4 && importResult && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle2 className="h-6 w-6 text-green-600" />
-              Importação Concluída
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        {/* Step 4: Result */}
+        {currentStep === 4 && importResult && (
+        <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50 overflow-hidden">
+          <div className="px-6 pt-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-green-500/10 rounded-lg">
+                <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+              <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Importação Concluída</h2>
+            </div>
+          </div>
+          <div className="px-6 pb-6 space-y-4 mt-4">
             {/* Stats */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-green-50 dark:bg-green-950 rounded-lg p-4">
-                <p className="text-sm text-muted-foreground">Sucessos</p>
-                <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+              <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-4 border border-green-200 dark:border-green-800/50">
+                <p className="text-sm text-slate-600 dark:text-slate-400">Sucessos</p>
+                <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">
                   {importResult.successCount}
                 </p>
               </div>
-              <div className="bg-red-50 dark:bg-red-950 rounded-lg p-4">
-                <p className="text-sm text-muted-foreground">Erros</p>
-                <p className="text-3xl font-bold text-red-600 dark:text-red-400">
+              <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-4 border border-red-200 dark:border-red-800/50">
+                <p className="text-sm text-slate-600 dark:text-slate-400">Erros</p>
+                <p className="text-3xl font-bold text-red-600 dark:text-red-400 mt-1">
                   {importResult.errorCount}
                 </p>
               </div>
@@ -518,10 +537,10 @@ export default function Importacao() {
             {/* Errors */}
             {importResult.errors.length > 0 && (
               <div className="space-y-2">
-                <p className="text-sm font-medium">Erros encontrados:</p>
-                <div className="bg-muted rounded-lg p-4 space-y-1 max-h-48 overflow-y-auto">
+                <p className="text-sm font-medium text-slate-900 dark:text-white">Erros encontrados:</p>
+                <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4 space-y-1 max-h-48 overflow-y-auto border border-slate-200 dark:border-slate-700">
                   {importResult.errors.map((error, idx) => (
-                    <p key={idx} className="text-sm text-destructive">
+                    <p key={idx} className="text-sm text-red-600 dark:text-red-400">
                       {error}
                     </p>
                   ))}
@@ -530,7 +549,7 @@ export default function Importacao() {
             )}
 
             {/* Actions */}
-            <div className="flex gap-2 pt-4">
+            <div className="flex gap-2 pt-4 border-t border-slate-200 dark:border-slate-700 mt-4">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -546,9 +565,29 @@ export default function Importacao() {
                 <a href="/clientes">Ver clientes importados</a>
               </Button>
             </div>
-          </CardContent>
+          </div>
         </Card>
       )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ImportacaoSkeleton() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+      <div className="px-6 py-8 md:py-12">
+        <div className="max-w-7xl mx-auto">
+          <Skeleton className="h-10 w-48 mb-2" />
+          <Skeleton className="h-5 w-96" />
+        </div>
+      </div>
+      <div className="px-6 pb-12">
+        <div className="max-w-4xl mx-auto">
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </div>
     </div>
   );
 }
