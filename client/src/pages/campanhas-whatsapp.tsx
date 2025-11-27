@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useWhatsAppStatus } from "@/hooks/useWhatsAppStatus";
 import { DateRangeFilter } from "@/components/date-range-filter";
+import { MultiSelectFilter } from "@/components/multi-select-filter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -217,26 +218,14 @@ export default function CampanhasWhatsApp() {
 
   // Filter clients by search, status, tag, tipo, carteira, cidade
   const clientesFiltrados = clientesDisponiveis.filter((c) => {
-    // Search filter
     const searchMatch = c.nome.toLowerCase().includes(searchClientes.toLowerCase()) ||
       c.razaoSocial?.toLowerCase().includes(searchClientes.toLowerCase()) ||
       c.telefone.includes(searchClientes);
-    
-    // Status filter
     const statusMatch = filtroStatus === "todos" || c.status?.toLowerCase() === filtroStatus.toLowerCase();
-    
-    // Tag filter
     const tagMatch = selectedTag === null || (c.tags && c.tags.some(t => t.nome === selectedTag));
-
-    // Tipo filter
     const tipoMatch = selectedTiposFilter.size === 0 || (c.tipo && selectedTiposFilter.has(c.tipo));
-
-    // Carteira filter
     const carteiraMatch = selectedCarteirasFilter.size === 0 || (c.carteira && selectedCarteirasFilter.has(c.carteira));
-
-    // Cidade filter
     const cidadeMatch = selectedCidadesFilter.size === 0 || (c.cidade && selectedCidadesFilter.has(c.cidade));
-    
     return searchMatch && statusMatch && tagMatch && tipoMatch && carteiraMatch && cidadeMatch;
   });
 
@@ -1344,59 +1333,26 @@ export default function CampanhasWhatsApp() {
                     </SelectContent>
                   </Select>
 
-                  <Select value={selectedTiposFilter.size > 0 ? Array.from(selectedTiposFilter)[0] : "todos"} onValueChange={(val) => {
-                    if (val === "todos") {
-                      setSelectedTiposFilter(new Set());
-                    } else {
-                      setSelectedTiposFilter(new Set([val]));
-                    }
-                  }}>
-                    <SelectTrigger className="w-40 border-slate-200 dark:border-slate-700 h-9" data-testid="select-tipo-filter">
-                      <SelectValue placeholder="Tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos Tipos</SelectItem>
-                      {tiposDisponiveis.map((tipo) => (
-                        <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <MultiSelectFilter
+                    label="Tipo"
+                    options={tiposDisponiveis}
+                    selectedValues={selectedTiposFilter}
+                    onSelectionChange={setSelectedTiposFilter}
+                  />
 
-                  <Select value={selectedCarteirasFilter.size > 0 ? Array.from(selectedCarteirasFilter)[0] : "todos"} onValueChange={(val) => {
-                    if (val === "todos") {
-                      setSelectedCarteirasFilter(new Set());
-                    } else {
-                      setSelectedCarteirasFilter(new Set([val]));
-                    }
-                  }}>
-                    <SelectTrigger className="w-40 border-slate-200 dark:border-slate-700 h-9" data-testid="select-carteira-filter">
-                      <SelectValue placeholder="Carteira" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todas Carteiras</SelectItem>
-                      {carteirasDisponiveis.map((carteira) => (
-                        <SelectItem key={carteira} value={carteira}>{carteira}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <MultiSelectFilter
+                    label="Carteira"
+                    options={carteirasDisponiveis}
+                    selectedValues={selectedCarteirasFilter}
+                    onSelectionChange={setSelectedCarteirasFilter}
+                  />
 
-                  <Select value={selectedCidadesFilter.size > 0 ? Array.from(selectedCidadesFilter)[0] : "todos"} onValueChange={(val) => {
-                    if (val === "todos") {
-                      setSelectedCidadesFilter(new Set());
-                    } else {
-                      setSelectedCidadesFilter(new Set([val]));
-                    }
-                  }}>
-                    <SelectTrigger className="w-40 border-slate-200 dark:border-slate-700 h-9" data-testid="select-cidade-filter">
-                      <SelectValue placeholder="Cidade" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todas Cidades</SelectItem>
-                      {cidadesDisponiveis.slice(0, 50).map((cidade) => (
-                        <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <MultiSelectFilter
+                    label="Cidade"
+                    options={Array.isArray(cidadesDisponiveis) ? cidadesDisponiveis.slice(0, 100) : []}
+                    selectedValues={selectedCidadesFilter}
+                    onSelectionChange={setSelectedCidadesFilter}
+                  />
                 </div>
                 
                 {/* Tag Filters */}
