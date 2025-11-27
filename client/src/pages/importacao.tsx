@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -152,6 +153,7 @@ export default function Importacao() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [mapping, setMapping] = useState<ColumnMapping>(createDefaultMapping());
   const [importing, setImporting] = useState(false);
+  const [currentProgress, setCurrentProgress] = useState(0);
   const [importResult, setImportResult] = useState<{
     successCount: number;
     errorCount: number;
@@ -230,6 +232,7 @@ export default function Importacao() {
     if (!fileData || !fileData.rows.length) return;
 
     setImporting(true);
+    setCurrentProgress(0);
     try {
       const response = await apiRequest("POST", "/api/import/clients", {
         data: fileData.rows,
@@ -239,6 +242,7 @@ export default function Importacao() {
       const result = await response.json();
       setImportResult(result);
       setCurrentStep(4);
+      setCurrentProgress(fileData.rows.length);
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
 
       toast({
@@ -378,60 +382,62 @@ export default function Importacao() {
               </div>
             </div>
 
-            {/* Mapping selects */}
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                { key: "nome", label: "Nome *" },
-                { key: "cpfCnpj", label: "CNPJ" },
-                { key: "razaoSocial", label: "Razão Social" },
-                { key: "carteira", label: "Carteira" },
-                { key: "tipo", label: "Tipo" },
-                { key: "PEDIDO_MOVEL", label: "PEDIDO MOVEL" },
-                { key: "M_FIXA", label: "M FIXA" },
-                { key: "PEDIDO_FIXA", label: "PEDIDO FIXA" },
-                { key: "endereco", label: "Endereço" },
-                { key: "cidade", label: "Cidade" },
-                { key: "cep", label: "CEP" },
-                { key: "numero", label: "Número" },
-                { key: "NOME_CONTATO", label: "Nome Contato" },
-                { key: "EMAIL_PRINCIPAL", label: "Email Principal" },
-                { key: "CELULAR_PRINCIPAL", label: "Celular Principal" },
-                { key: "TIPO_GESTOR", label: "Tipo Gestor" },
-                { key: "FLG_DOMINIO_PUBLICO_SFA", label: "FLG_DOMINIO_SFA" },
-                { key: "TELEFONE_COMERCIAL", label: "Telefone Comercial" },
-                { key: "CELULAR", label: "Celular" },
-                { key: "TELEFONE_RESIDENCIAL", label: "Telefone Residencial" },
-                { key: "EMAIL_SIBEL", label: "Email Sibel" },
-                { key: "PROP_MOVEL_AVANCADA", label: "Prop. Movel/Avançada" },
-                { key: "SERASA", label: "Serasa" },
-                { key: "MENSAGEM_SERASA", label: "Mensagem Serasa" },
-              ].map((field) => (
-                <div key={field.key}>
-                  <label className="text-sm font-medium">{field.label}</label>
-                  <Select
-                    value={mapping[field.key as keyof ColumnMapping].toString()}
-                    onValueChange={(val) =>
-                      setMapping({
-                        ...mapping,
-                        [field.key]: parseInt(val),
-                      })
-                    }
-                  >
-                    <SelectTrigger className="mt-1" data-testid={`select-map-${field.key}`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="-1">Ignorar</SelectItem>
-                      {fileData.headers.map((header, idx) => (
-                        <SelectItem key={idx} value={idx.toString()}>
-                          {header}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ))}
-            </div>
+            {/* Mapping selects with scroll */}
+            <ScrollArea className="h-80 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
+              <div className="grid grid-cols-4 gap-2 pr-4">
+                {[
+                  { key: "nome", label: "Nome *" },
+                  { key: "cpfCnpj", label: "CNPJ" },
+                  { key: "razaoSocial", label: "Razão Social" },
+                  { key: "carteira", label: "Carteira" },
+                  { key: "tipo", label: "Tipo" },
+                  { key: "PEDIDO_MOVEL", label: "PEDIDO MOVEL" },
+                  { key: "M_FIXA", label: "M FIXA" },
+                  { key: "PEDIDO_FIXA", label: "PEDIDO FIXA" },
+                  { key: "endereco", label: "Endereço" },
+                  { key: "cidade", label: "Cidade" },
+                  { key: "cep", label: "CEP" },
+                  { key: "numero", label: "Número" },
+                  { key: "NOME_CONTATO", label: "Nome Contato" },
+                  { key: "EMAIL_PRINCIPAL", label: "Email Principal" },
+                  { key: "CELULAR_PRINCIPAL", label: "Celular Principal" },
+                  { key: "TIPO_GESTOR", label: "Tipo Gestor" },
+                  { key: "FLG_DOMINIO_PUBLICO_SFA", label: "FLG_DOMINIO_SFA" },
+                  { key: "TELEFONE_COMERCIAL", label: "Telefone Comercial" },
+                  { key: "CELULAR", label: "Celular" },
+                  { key: "TELEFONE_RESIDENCIAL", label: "Telefone Residencial" },
+                  { key: "EMAIL_SIBEL", label: "Email Sibel" },
+                  { key: "PROP_MOVEL_AVANCADA", label: "Prop. Movel/Avançada" },
+                  { key: "SERASA", label: "Serasa" },
+                  { key: "MENSAGEM_SERASA", label: "Mensagem Serasa" },
+                ].map((field) => (
+                  <div key={field.key}>
+                    <label className="text-sm font-medium">{field.label}</label>
+                    <Select
+                      value={mapping[field.key as keyof ColumnMapping].toString()}
+                      onValueChange={(val) =>
+                        setMapping({
+                          ...mapping,
+                          [field.key]: parseInt(val),
+                        })
+                      }
+                    >
+                      <SelectTrigger className="mt-1" data-testid={`select-map-${field.key}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="-1">Ignorar</SelectItem>
+                        {fileData.headers.map((header, idx) => (
+                          <SelectItem key={idx} value={idx.toString()}>
+                            {header}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
 
             {/* Actions */}
             <div className="flex gap-2 pt-4 border-t border-slate-200 dark:border-slate-700 mt-4">
@@ -474,6 +480,19 @@ export default function Importacao() {
                 </p>
               </div>
             </div>
+
+            {/* Progress during import */}
+            {importing && (
+              <div className="bg-amber-50 dark:bg-amber-950/30 rounded-lg p-4 border border-amber-200 dark:border-amber-800/50">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-100">Importando...</p>
+                  <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+                    {currentProgress}/{fileData.rows.length}
+                  </p>
+                </div>
+                <Progress value={(currentProgress / fileData.rows.length) * 100} className="h-2" />
+              </div>
+            )}
 
             {/* Preview table */}
             <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
@@ -604,19 +623,21 @@ export default function Importacao() {
   );
 }
 
-
 function ImportacaoSkeleton() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       <div className="px-6 py-8 md:py-12">
         <div className="max-w-7xl mx-auto">
-          <Skeleton className="h-10 w-48 mb-2" />
-          <Skeleton className="h-5 w-96" />
+          <div className="flex items-center gap-3 mb-2">
+            <Skeleton className="h-12 w-12 rounded-xl" />
+            <Skeleton className="h-8 w-64" />
+          </div>
+          <Skeleton className="h-4 w-96 mt-4" />
         </div>
       </div>
       <div className="px-6 pb-12">
         <div className="max-w-4xl mx-auto">
-          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-96 rounded-lg" />
         </div>
       </div>
     </div>
