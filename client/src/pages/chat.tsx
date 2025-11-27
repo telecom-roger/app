@@ -547,7 +547,7 @@ export default function Chat() {
                       setNoteText("");
                       setNoteColor("bg-blue-500");
                     }}
-                    className="w-full"
+                    className="w-full rounded-full"
                     data-testid="button-cancel-note"
                   >
                     Cancelar
