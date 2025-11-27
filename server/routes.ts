@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
-import { eq, and, or, ilike, desc, sql, lte, inArray } from "drizzle-orm";
+import { eq, and, or, ilike, desc, sql, lte, inArray, isNull } from "drizzle-orm";
 import cron from "node-cron";
 import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, insertClientSharingSchema, whatsappSessions, clients, interactions, conversations, messages, campaigns as campaignsTable, templates as templatesTable, tags, clientSharing } from "@shared/schema";
 import * as storage from "./storage";
@@ -2045,6 +2045,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ==================== ADMIN ROUTES ====================
+  app.post("/api/claim-all-clients", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const result = await db
+        .update(clientsTable)
+        .set({ createdBy: user.id })
+        .where(isNull(clientsTable.createdBy))
+        .returning({ id: clientsTable.id });
+
+      res.json({ 
+        success: true, 
+        updated: result.length,
+        message: `${result.length} clientes associados ao seu usuário` 
+      });
+    } catch (error: any) {
+      console.error("Error claiming clients:", error);
+      res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
   app.get("/api/admin/users", isAuthenticated, requireAdmin, async (req, res) => {
     try {
       const users = await storage.getAllUsers();
