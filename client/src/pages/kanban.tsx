@@ -147,6 +147,7 @@ export default function Kanban() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] }); // Invalidar cache de clientes
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/conversations"] }); // Sincronizar com chat
       toast({
         title: "Sucesso",
         description: "Oportunidade movida com sucesso",
@@ -178,6 +179,7 @@ export default function Kanban() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/conversations"] }); // Sincronizar com chat
       toast({
         title: "Removida",
         description: "Oportunidade excluída com sucesso",
@@ -645,6 +647,7 @@ function NovaOportunidadeDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/conversations"] }); // Sincronizar com chat
       toast({
         title: "Sucesso",
         description: "Oportunidade criada com sucesso",
@@ -895,6 +898,7 @@ function EditarOportunidadeDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/conversations"] }); // Sincronizar com chat
       toast({
         title: "Sucesso",
         description: "Oportunidade atualizada com sucesso",
