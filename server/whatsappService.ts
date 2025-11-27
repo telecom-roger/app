@@ -231,26 +231,23 @@ async function processIncomingMessages(sessionId: string, m: any) {
         let conversation = await storage.findConversationByPhoneAndUser(senderPhone, userId);
         
         if (!conversation) {
-          console.warn(`[RECEBIMENTO] ⚠️ Conversa não encontrada, procurando cliente...`);
+          console.warn(`[RECEBIMENTO] ⚠️ Conversa não encontrada via findConversationByPhoneAndUser`);
           
           // Normalize phone for lookup - remove all non-digits and strip 55 prefix
+          // Standard: always store and search WITHOUT 55 (just the 11 Brazilian digits)
           let normalizado = senderPhone.replace(/\D/g, "");
           if (normalizado.startsWith("55")) {
             normalizado = normalizado.substring(2);
           }
           
-          const phoneCom55 = `55${normalizado}`;
+          console.log(`🔍 Buscando cliente com telefone normalizado (SEM 55): "${normalizado}"`);
           
-          console.log(`🔍 Buscando cliente com: sem55="${normalizado}", com55="${phoneCom55}"`);
-          
-          // Search in both formats to ensure we find the client regardless of how it's stored
+          // Search for existing client by normalized phone
           const [client] = await db
             .select()
             .from(clientsTable)
             .where(or(
-              eq(clientsTable.CELULAR_PRINCIPAL, phoneCom55),
               eq(clientsTable.CELULAR_PRINCIPAL, normalizado),
-              eq(clientsTable.telefone, phoneCom55),
               eq(clientsTable.telefone, normalizado),
               ilike(clientsTable.CELULAR_PRINCIPAL, `%${normalizado}%`),
               ilike(clientsTable.telefone, `%${normalizado}%`)
@@ -264,14 +261,13 @@ async function processIncomingMessages(sessionId: string, m: any) {
           } else {
             console.warn(`[RECEBIMENTO] ⚠️ Cliente não encontrado, criando novo...`);
             
-            // Normalize phone for creation (ensure consistent format with 55)
+            // Normalize phone for creation - store WITHOUT 55 prefix (standard format)
             let telefoneFinal = senderPhone.replace(/\D/g, "");
             if (telefoneFinal.startsWith("55")) {
               telefoneFinal = telefoneFinal.substring(2);
             }
-            telefoneFinal = `55${telefoneFinal}`;
             
-            // Auto-create new client for this phone number
+            // Auto-create new client for this phone number (SEM 55)
             const novoCliente = await storage.createClient({
               nome: `Novo contato ${telefoneFinal}`,
               telefone: telefoneFinal,
@@ -282,7 +278,7 @@ async function processIncomingMessages(sessionId: string, m: any) {
               score: 0,
             });
             
-            console.log(`✅ Novo cliente criado: ${novoCliente.id}`);
+            console.log(`✅ Novo cliente criado: ${novoCliente.id} (${telefoneFinal})`);
             conversation = await storage.createOrGetConversation(novoCliente.id, userId);
             console.log(`✨ Conversa criada para novo contato: ${conversation.id}`);
           }

@@ -717,23 +717,23 @@ export async function createMessage(data: InsertMessage): Promise<Message> {
 }
 
 export async function findConversationByPhoneAndUser(telefone: string, userId: string): Promise<Conversation | undefined> {
-  // Normalize phone number (remove all non-digits, remove leading 55)
+  // Normalize phone number to SEM-55 format (last 11 digits for Brazilian numbers)
+  // All phones in DB are stored without 55 prefix
   let normalizado = telefone.replace(/\D/g, "");
+  
+  // Remove 55 prefix if present - we always store/search without it
   if (normalizado.startsWith("55")) {
     normalizado = normalizado.substring(2);
   }
   
-  // Search for exact match first (with or without 55)
-  const phoneCom55 = `55${normalizado}`;
+  console.log(`🔍 findConversationByPhoneAndUser: buscando por "${normalizado}" (original: "${telefone}")`);
   
-  // Find client by phone number - check both fields for exact or partial matches
+  // Find client by phone number - search only in normalized format (SEM 55)
   const [client] = await db
     .select()
     .from(clients)
     .where(or(
-      eq(clients.CELULAR_PRINCIPAL, phoneCom55),
       eq(clients.CELULAR_PRINCIPAL, normalizado),
-      eq(clients.telefone, phoneCom55),
       eq(clients.telefone, normalizado),
       ilike(clients.CELULAR_PRINCIPAL, `%${normalizado}%`),
       ilike(clients.telefone, `%${normalizado}%`)
@@ -741,7 +741,7 @@ export async function findConversationByPhoneAndUser(telefone: string, userId: s
     .limit(1);
   
   if (!client) {
-    console.log(`⚠️ Cliente não encontrado para ${telefone} no findConversationByPhoneAndUser`);
+    console.log(`⚠️ Cliente não encontrado: "${normalizado}"`);
     return undefined;
   }
   
