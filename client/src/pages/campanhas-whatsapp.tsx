@@ -143,6 +143,7 @@ export default function CampanhasWhatsApp() {
   const [selectedCarteirasFilter, setSelectedCarteirasFilter] = useState<Set<string>>(new Set());
   const [selectedCidadesFilter, setSelectedCidadesFilter] = useState<Set<string>>(new Set());
   const [nomeCampanha, setNomeCampanha] = useState("");
+  const [filtersInitiated, setFiltersInitiated] = useState(false);
 
   // Fetch templates
   const { data: templates = [] } = useQuery<any[]>({
@@ -156,10 +157,10 @@ export default function CampanhasWhatsApp() {
     enabled: isAuthenticated,
   });
 
-  // Fetch clients with campaign history
+  // Fetch clients with campaign history (only after filters initiated)
   const { data: clientesDisponiveis = [], isLoading: carregandoClientes } = useQuery<ClientForImport[]>({
     queryKey: ["/api/clients/whatsapp-list"],
-    enabled: isAuthenticated && mostrarSeletorBD,
+    enabled: isAuthenticated && mostrarSeletorBD && filtersInitiated,
   });
 
   // Fetch available tags
@@ -185,6 +186,22 @@ export default function CampanhasWhatsApp() {
     queryKey: ["/api/clients/cidades"],
     enabled: isAuthenticated && mostrarSeletorBD,
   });
+
+  // Detect when filters are initiated (when user interacts with filters or seletor)
+  useEffect(() => {
+    if (
+      searchClientes ||
+      filtroStatus !== "todos" ||
+      selectedTag ||
+      selectedTiposFilter.size > 0 ||
+      selectedCarteirasFilter.size > 0 ||
+      selectedCidadesFilter.size > 0 ||
+      dataEnvioInicio ||
+      dataEnvioFim
+    ) {
+      setFiltersInitiated(true);
+    }
+  }, [searchClientes, filtroStatus, selectedTag, selectedTiposFilter, selectedCarteirasFilter, selectedCidadesFilter, dataEnvioInicio, dataEnvioFim]);
 
   // Poll for campaigns in progress
   useEffect(() => {
