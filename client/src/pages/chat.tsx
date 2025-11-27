@@ -637,27 +637,29 @@ export default function Chat() {
                                 {initials}
                               </AvatarFallback>
                             </Avatar>
-                            <p className="text-sm font-medium truncate">
-                              {clientName.length > 30
-                                ? clientName.substring(0, 30) + "..."
-                                : clientName}
-                            </p>
+                            <div className="flex items-center gap-1 min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {clientName.length > 30
+                                  ? clientName.substring(0, 30) + "..."
+                                  : clientName}
+                              </p>
+                              {conv.client?.tags?.[0] && (() => {
+                                const tagName = conv.client.tags[0];
+                                const tag = allTags.find(t => t.nome === tagName);
+                                return (
+                                  <div
+                                    className={`w-2 h-2 rounded-full flex-shrink-0 ${tag?.cor || "bg-gray-500"}`}
+                                    data-testid={`dot-tag-inline-${conv.id}`}
+                                  />
+                                );
+                              })()}
+                            </div>
                           </div>
                           <p className="text-xs text-muted-foreground truncate">
                             {conv.client?.CELULAR_PRINCIPAL || conv.client?.telefone || "Sem telefone"}
                           </p>
                         </div>
                         <div className="flex items-center gap-2 whitespace-nowrap">
-                          {conv.client?.tags?.[0] && (() => {
-                            const tagName = conv.client.tags[0];
-                            const tag = allTags.find(t => t.nome === tagName);
-                            return (
-                              <div
-                                className={`w-2 h-2 rounded-full flex-shrink-0 ${tag?.cor || "bg-gray-500"}`}
-                                data-testid={`dot-tag-${conv.id}`}
-                              />
-                            );
-                          })()}
                           {(conv.unreadCount ?? 0) > 0 && conv.unreadCount && (
                             <span className="bg-primary text-white text-xs font-bold rounded-full min-w-[24px] h-6 flex items-center justify-center">
                               {conv.unreadCount > 99 ? "99+" : conv.unreadCount}
