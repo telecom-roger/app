@@ -180,22 +180,14 @@ export default function CampanhasWhatsApp() {
     enabled: isAuthenticated && mostrarSeletorBD,
   });
 
-  // Fetch available cidades
-  const { data: cidadesDisponiveis = [] } = useQuery<string[]>({
-    queryKey: ["/api/clients"],
-    queryFn: async () => {
-      const res = await fetch("/api/clients?limit=10000");
-      if (!res.ok) return [];
-      const data = await res.json();
-      if (!data.clientes) return [];
-      const cidades = new Set<string>();
-      data.clientes.forEach((c: any) => {
-        if (c.cidade) cidades.add(c.cidade);
-      });
-      return Array.from(cidades).sort();
-    },
-    enabled: isAuthenticated && mostrarSeletorBD,
-  });
+  // Extract available cidades from clientesDisponiveis (eliminates mismatch issues)
+  const cidadesDisponiveis = Array.from(
+    new Set(
+      clientesDisponiveis
+        .map((c) => c.cidade)
+        .filter((cidade) => cidade && cidade.trim())
+    )
+  ).sort();
 
   // Poll for campaigns in progress
   useEffect(() => {
