@@ -588,19 +588,29 @@ export default function Chat() {
           </div>
         )}
 
-        {/* Tag indicator for current conversation - view only */}
-        {!showSearchResults && selectedConversationId && selectedConversation?.client?.tags?.[0] && (
-          <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-700">
-            <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">ETAPA ATUAL</p>
-            {(() => {
-              const tagName = selectedConversation.client.tags[0];
-              const tag = allTags.find(t => t.nome === tagName);
-              return (
-                <Badge className={`${tag?.cor || "bg-gray-500"}`}>
-                  {tagName}
-                </Badge>
-              );
-            })()}
+        {/* Tags Section - for filtering and visualization */}
+        {!showSearchResults && selectedConversationId && (
+          <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 space-y-2">
+            <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">ETAPA ATUAL</p>
+            {conversationsLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            ) : (
+              <div className="flex flex-wrap gap-1">
+                {selectedConversation?.client?.tags?.[0] ? (
+                  (() => {
+                    const tagName = selectedConversation.client.tags[0];
+                    const tag = allTags.find(t => t.nome === tagName);
+                    return (
+                      <Badge className={`${tag?.cor || "bg-gray-500"} text-white`}>
+                        {tagName}
+                      </Badge>
+                    );
+                  })()
+                ) : (
+                  <p className="text-xs text-muted-foreground">Nenhuma etapa</p>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -1006,7 +1016,7 @@ export default function Chat() {
                             onClick={() => {
                               addTagMutation.mutate(tag.nome);
                             }}
-                            disabled={addTagMutation.isPending || !businessValue || businessValue === "R$ 0,00"}
+                            disabled={addTagMutation.isPending}
                             data-testid={`button-tag-${tag.id}`}
                           >
                             {addTagMutation.isPending ? (
