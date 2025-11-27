@@ -1895,6 +1895,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== NOTIFICATIONS ROUTES ====================
+  app.get("/api/notifications/unread-count", isAuthenticated, async (req, res) => {
+    try {
+      const count = await storage.countUnreadMessages();
+      res.json({ count });
+    } catch (error: any) {
+      console.error("Error fetching unread messages count:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Mark all messages as read
+  app.post("/api/notifications/mark-all-read", isAuthenticated, async (req, res) => {
+    try {
+      await db.update(messages).set({ isRead: true }).where(eq(messages.isRead, false));
+      res.json({ success: true, message: "All messages marked as read" });
+    } catch (error: any) {
+      console.error("Error marking messages as read:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // ==================== ADMIN ROUTES ====================
   app.get("/api/admin/users", isAuthenticated, requireAdmin, async (req, res) => {
     try {

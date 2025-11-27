@@ -797,6 +797,15 @@ export async function deleteTag(id: string): Promise<void> {
   await db.delete(tags).where(eq(tags.id, id));
 }
 
+// Count unread messages
+export async function countUnreadMessages(): Promise<number> {
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(messages)
+    .where(eq(messages.isRead, false));
+  return result[0]?.count || 0;
+}
+
 // Set tag to client (only one tag per client - replaces existing)
 export async function addTagToClient(clientId: string, tagName: string): Promise<Client | undefined> {
   const client = await getClientById(clientId);
