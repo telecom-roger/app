@@ -71,16 +71,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/clients", isAuthenticated, async (req, res) => {
     try {
       const user = req.user as any;
-      const { search, status, tagName, page = "1", limit = "10000" } = req.query;
+      const { search, status, tagName, tipo, page = "1", limit = "10000" } = req.query;
       // Adicionar userId para filtrar apenas clientes do usuário
       const result = await storage.getClients({
         userId: user.id,
         search: search as string,
         status: status as string,
         tagName: tagName as string,
+        tipo: tipo as string,
         page: parseInt(page as string),
         limit: parseInt(limit as string),
-        userId: user.id,
         isAdmin: user.role === 'admin',
       });
       res.json(result);

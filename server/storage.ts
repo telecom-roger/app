@@ -122,12 +122,13 @@ export async function getClients(params: {
   search?: string;
   status?: string;
   tagName?: string;
+  tipo?: string;
   page?: number;
   limit?: number;
   userId?: string;
   isAdmin?: boolean;
 }): Promise<{ clientes: Client[]; total: number }> {
-  const { search, status, tagName, page = 1, limit = 20, userId, isAdmin = false } = params;
+  const { search, status, tagName, tipo, page = 1, limit = 20, userId, isAdmin = false } = params;
   const offset = (page - 1) * limit;
 
   let conditions = [];
@@ -156,6 +157,9 @@ export async function getClients(params: {
   }
   if (tagName) {
     conditions.push(sql`${clients.tags}::text[] @> ARRAY[${tagName}]`);
+  }
+  if (tipo) {
+    conditions.push(eq(clients.tipo, tipo));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;

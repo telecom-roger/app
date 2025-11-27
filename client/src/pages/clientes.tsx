@@ -276,6 +276,7 @@ export default function Clientes() {
         ...(searchTerm && { search: searchTerm }),
         ...(statusFilter !== "todos" && { status: statusFilter }),
         ...(selectedTag && { tagName: selectedTag }),
+        ...(tipoFiltro !== "all" && { tipo: tipoFiltro }),
         page,
         limit,
       }
@@ -334,9 +335,8 @@ export default function Clientes() {
   // Use tipos from DB, fallback to loaded clients
   const tiposUnicos = tiposDoDb.length > 0 ? tiposDoDb : [...new Set((data?.clientes || []).map(c => c.tipo).filter(Boolean))].sort();
 
-  // Filter and sort clients
+  // Sort clients (filtering is done on backend)
   const clientesFiltrados = (data?.clientes || [])
-    .filter(c => tipoFiltro === 'all' ? true : c.tipo === tipoFiltro)
     .sort((a, b) => {
       if (orderBy === 'oldest') {
         return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
