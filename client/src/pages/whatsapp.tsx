@@ -73,14 +73,15 @@ export default function WhatsApp() {
   }, [sessions, toast]);
 
   useEffect(() => {
-    if (sessions && sessions.length > 0 && openDialog) {
-      const connectedSession = sessions.find((s) => s.status === "conectada");
-      if (connectedSession) {
+    if (sessions && sessions.length > 0 && openDialog && user) {
+      // Only close if THIS user has a connected session (not other users' sessions)
+      const userConnectedSession = sessions.find((s) => s.status === "conectada" && s.userId === user.id);
+      if (userConnectedSession) {
         setOpenDialog(false);
         setQrCode(null);
       }
     }
-  }, [sessions, openDialog]);
+  }, [sessions, openDialog, user]);
 
   const connectMutation = useMutation({
     mutationFn: async (nome: string) => {
