@@ -413,7 +413,6 @@ export default function Chat() {
       recorder.start();
       setMediaRecorder(recorder);
       setIsRecording(true);
-      toast({ title: "Gravando áudio...", variant: "default" });
     } catch (error: any) {
       toast({
         title: "Erro ao acessar microfone",
@@ -1024,29 +1023,35 @@ export default function Chat() {
             {/* Input */}
             <div className="flex flex-col gap-3">
               {recordedAudio && (
-                <div className="px-6 pt-3 flex items-center gap-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Áudio gravado pronto para enviar</p>
-                    <p className="text-xs text-blue-700 dark:text-blue-300">{(recordedAudio.blob.size / 1024).toFixed(1)} KB</p>
+                <div className="px-6 pt-4 pb-3 mx-6 flex items-center gap-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
+                    <Music className="h-5 w-5 text-primary" />
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={handleSendRecordedAudio}
-                    disabled={sendMutation.isPending}
-                    data-testid="button-send-audio"
-                  >
-                    <Send className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={handleDiscardRecordedAudio}
-                    disabled={sendMutation.isPending}
-                    data-testid="button-discard-audio"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Áudio pronto</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{(recordedAudio.blob.size / 1024).toFixed(1)} KB</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Button
+                      size="sm"
+                      onClick={handleSendRecordedAudio}
+                      disabled={sendMutation.isPending}
+                      data-testid="button-send-audio"
+                      className="gap-1.5"
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                      Enviar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleDiscardRecordedAudio}
+                      disabled={sendMutation.isPending}
+                      data-testid="button-discard-audio"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
               )}
               <div className="p-6 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex gap-3 items-end">
