@@ -462,6 +462,43 @@ export default function Chat() {
     e.target.value = "";
   };
 
+  const handlePaste = async (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items || !selectedConversationId) return;
+
+    // Check if WhatsApp is connected
+    if (!isWhatsappConnected) {
+      toast({
+        title: "WhatsApp desconectado",
+        description: "Conecte uma sessão do WhatsApp antes de enviar imagens",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const base64 = event.target?.result as string;
+          sendMutation.mutate({ 
+            arquivo: base64, 
+            tipo: "imagem", 
+            nomeArquivo: `imagem_${Date.now()}.${file.type.split("/")[1]}`,
+            tamanho: file.size,
+            mimeType: file.type 
+          } as any);
+        };
+        reader.readAsDataURL(file);
+        break;
+      }
+    }
+  };
+
   const handleStartRecording = async () => {
     // Check if WhatsApp is connected
     if (!isWhatsappConnected) {
@@ -1310,7 +1347,7 @@ export default function Chat() {
               )}
               <div className="p-6 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex gap-3 items-end">
                 <Input
-                  placeholder="Digite uma mensagem..."
+                  placeholder="Digite uma mensagem... (ou cole uma imagem)"
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
                   onKeyPress={(e) => {
@@ -1319,6 +1356,7 @@ export default function Chat() {
                       handleSendMessage();
                     }
                   }}
+                  onPaste={handlePaste}
                   disabled={sendMutation.isPending || recordedAudio !== null}
                   data-testid="input-message"
                   className="h-12 text-base"
