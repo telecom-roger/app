@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -86,6 +86,7 @@ export default function Chat() {
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [recordedAudio, setRecordedAudio] = useState<{ base64: string; blob: Blob } | null>(null);
+  const shouldDiscardAudioRef = useRef(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [showNoteInput, setShowNoteInput] = useState(false);
@@ -376,8 +377,9 @@ export default function Chat() {
       return;
     }
 
-    // Clear any previous recording
+    // Clear any previous recording and reset discard flag
     setRecordedAudio(null);
+    shouldDiscardAudioRef.current = false;
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -386,9 +388,20 @@ export default function Chat() {
 
       recorder.ondataavailable = (e) => chunks.push(e.data);
       recorder.onstop = () => {
+        // Check if user discarded before recording finished
+        if (shouldDiscardAudioRef.current) {
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
+
         const blob = new Blob(chunks, { type: "audio/webm" });
         const reader = new FileReader();
         reader.onload = (event) => {
+          // Double check if user discarded during file reading
+          if (shouldDiscardAudioRef.current) {
+            return;
+          }
+          
           const base64 = event.target?.result as string;
           setRecordedAudio({ base64, blob });
           toast({ title: "Áudio gravado - clique para enviar ou descartar", variant: "default" });
@@ -434,6 +447,7 @@ export default function Chat() {
   };
 
   const handleDiscardRecordedAudio = () => {
+    shouldDiscardAudioRef.current = true;
     setRecordedAudio(null);
     toast({ title: "Áudio descartado", variant: "default" });
   };
