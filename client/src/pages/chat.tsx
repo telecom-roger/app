@@ -176,7 +176,7 @@ export default function Chat() {
   });
 
   // Fetch detailed client info when selected
-  const { data: detailedClient = null, isLoading: clientDetailLoading } = useQuery<any>({
+  const { data: detailedClient = null, isLoading: clientDetailLoading, refetch: refetchDetailedClient } = useQuery<any>({
     queryKey: currentClientId ? ["/api/clients", currentClientId] : [],
     enabled: !!currentClientId,
   });
@@ -501,6 +501,7 @@ export default function Chat() {
     },
     onSuccess: () => {
       refetchConversations();
+      refetchDetailedClient();
       setShowNoteInput(false);
       setBusinessValue("");
       toast({ title: "Etiqueta adicionada e oportunidade criada", variant: "default" });
@@ -519,6 +520,7 @@ export default function Chat() {
     },
     onSuccess: () => {
       refetchConversations();
+      refetchDetailedClient();
       toast({ title: "Etiqueta removida", variant: "default" });
     },
     onError: (error: any) => {
@@ -1054,29 +1056,33 @@ export default function Chat() {
                       {allTags.map((tag) => {
                         const isCurrentTag = detailedClient?.tags?.[0] === tag.nome;
                         return (
-                          <Button
-                            key={tag.id}
-                            size="sm"
-                            variant={isCurrentTag ? "default" : "outline"}
-                            className={`${isCurrentTag ? `${tag.cor}` : "opacity-60"} rounded-full`}
-                            onClick={() => {
-                              if (isCurrentTag) {
-                                handleDeleteTag(tag.nome);
-                              } else {
-                                addTagMutation.mutate(tag.nome);
-                              }
-                            }}
-                            disabled={addTagMutation.isPending || removeTagMutation.isPending}
-                            data-testid={`button-tag-${tag.id}`}
-                          >
-                            {addTagMutation.isPending || removeTagMutation.isPending ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : isCurrentTag ? (
-                              `✓ ${tag.nome}`
-                            ) : (
-                              tag.nome
-                            )}
-                          </Button>
+                          <div key={tag.id} className="relative group">
+                            <Button
+                              size="sm"
+                              variant={isCurrentTag ? "default" : "outline"}
+                              className={`${isCurrentTag ? `${tag.cor}` : "opacity-60"} rounded-full`}
+                              onClick={() => {
+                                if (isCurrentTag) {
+                                  handleDeleteTag(tag.nome);
+                                } else {
+                                  addTagMutation.mutate(tag.nome);
+                                }
+                              }}
+                              disabled={addTagMutation.isPending || removeTagMutation.isPending}
+                              data-testid={`button-tag-${tag.id}`}
+                            >
+                              {addTagMutation.isPending || removeTagMutation.isPending ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : isCurrentTag ? (
+                                <span className="flex items-center gap-1">
+                                  {tag.nome}
+                                  <X className="h-3 w-3 ml-0.5" />
+                                </span>
+                              ) : (
+                                tag.nome
+                              )}
+                            </Button>
+                          </div>
                         );
                       })}
                     </div>
