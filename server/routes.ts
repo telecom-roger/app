@@ -71,11 +71,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/clients", isAuthenticated, async (req, res) => {
     try {
       const user = req.user as any;
-      const { search, status, tagId, page = "1", limit = "10000" } = req.query;
+      const { search, status, tagName, page = "1", limit = "10000" } = req.query;
       const result = await storage.getClients({
         search: search as string,
         status: status as string,
-        tagId: tagId as string,
+        tagName: tagName as string,
         page: parseInt(page as string),
         limit: parseInt(limit as string),
         userId: user.id,
