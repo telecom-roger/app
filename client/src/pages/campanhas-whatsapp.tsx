@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useWhatsAppStatus } from "@/hooks/useWhatsAppStatus";
+import { CampaignFiltersBuilder, type CampaignFilters } from "@/components/campaign-filters-builder";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -135,6 +136,8 @@ export default function CampanhasWhatsApp() {
   const [templateSelecionado, setTemplateSelecionado] = useState("");
   const [quantidadeAleatoria, setQuantidadeAleatoria] = useState(50);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [campaignFilters, setCampaignFilters] = useState<CampaignFilters>({});
+  const [nomeCampanha, setNomeCampanha] = useState("");
 
   // Fetch templates
   const { data: templates = [] } = useQuery<any[]>({
@@ -157,6 +160,35 @@ export default function CampanhasWhatsApp() {
   // Fetch available tags
   const { data: tagsDisponiveis = [] } = useQuery<Tag[]>({
     queryKey: ["/api/tags"],
+    enabled: isAuthenticated && mostrarSeletorBD,
+  });
+
+  // Fetch available tipos
+  const { data: tiposDisponiveis = [] } = useQuery<string[]>({
+    queryKey: ["/api/clients/tipos"],
+    enabled: isAuthenticated && mostrarSeletorBD,
+  });
+
+  // Fetch available carteiras
+  const { data: carteirasDisponiveis = [] } = useQuery<string[]>({
+    queryKey: ["/api/clients/carteiras"],
+    enabled: isAuthenticated && mostrarSeletorBD,
+  });
+
+  // Fetch available cidades
+  const { data: cidadesDisponiveis = [] } = useQuery<string[]>({
+    queryKey: ["/api/clients"],
+    queryFn: async () => {
+      const res = await fetch("/api/clients?limit=10000");
+      if (!res.ok) return [];
+      const data = await res.json();
+      if (!data.clientes) return [];
+      const cidades = new Set<string>();
+      data.clientes.forEach((c: any) => {
+        if (c.cidade) cidades.add(c.cidade);
+      });
+      return Array.from(cidades).sort();
+    },
     enabled: isAuthenticated && mostrarSeletorBD,
   });
 
@@ -515,6 +547,16 @@ export default function CampanhasWhatsApp() {
               // Adicionar cliente à lista de enviados com sucesso
               if (contato.id) {
                 clientesEnviadosComSucesso.push(contato.id);
+                // Registrar envio de campanha
+                await fetch("/api/campaigns/record-sending", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    clientId: contato.id,
+                    campaignName: nomeCampanha || "Campanha WhatsApp",
+                    status: "enviado",
+                  }),
+                }).catch((err) => console.warn("Erro ao registrar envio:", err));
               }
             } else {
               const erro = await response.text();
@@ -662,8 +704,9 @@ export default function CampanhasWhatsApp() {
           {/* Tabs */}
           <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50 overflow-hidden">
             <Tabs value={tabAtivo} onValueChange={setTabAtivo} className="space-y-4 p-6">
-              <TabsList className="grid grid-cols-4 bg-slate-100 dark:bg-slate-900">
+              <TabsList className="grid grid-cols-5 bg-slate-100 dark:bg-slate-900">
                 <TabsTrigger value="mensagens" className="text-slate-700 dark:text-slate-300">Mensagens</TabsTrigger>
+                <TabsTrigger value="filtros" className="text-slate-700 dark:text-slate-300">Filtros</TabsTrigger>
                 <TabsTrigger value="configuracao" className="text-slate-700 dark:text-slate-300">Configuração</TabsTrigger>
                 <TabsTrigger value="progresso" className="text-slate-700 dark:text-slate-300">
                   Progresso {campanhasEmProgresso.length > 0 && `(${campanhasEmProgresso.length})`}
@@ -1053,6 +1096,17 @@ export default function CampanhasWhatsApp() {
                 </div>
               </TabsContent>
 
+              {/* ===== ABA FILTROS ===== */}
+              <TabsContent value="filtros" className="space-y-4">
+                <CampaignFiltersBuilder
+                  onFiltersChange={setCampaignFilters}
+                  allTags={tagsDisponiveis.map((t) => t.nome)}
+                  allTipos={tiposDisponiveis}
+                  allCarteiras={carteirasDisponiveis}
+                  allCidades={cidadesDisponiveis}
+                />
+              </TabsContent>
+
               {/* ===== ABA CONFIGURAÇÃO ===== */}
               <TabsContent value="configuracao" className="space-y-4">
                 <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
@@ -1060,6 +1114,20 @@ export default function CampanhasWhatsApp() {
                     <CardTitle className="text-slate-900 dark:text-white">Configurações da Campanha</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
+                    {/* Nome da Campanha */}
+                    <div className="space-y-3">
+                      <Label htmlFor="nome-campanha" className="text-slate-900 dark:text-white">Nome da Campanha</Label>
+                      <Input
+                        id="nome-campanha"
+                        type="text"
+                        placeholder="Ex: Promoção Black Friday, Upsell Premium, etc"
+                        value={nomeCampanha}
+                        onChange={(e) => setNomeCampanha(e.target.value)}
+                        className="border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"
+                        data-testid="input-nome-campanha"
+                      />
+                      <p className="text-xs text-slate-600 dark:text-slate-400">Usado para histórico e identificação de envios</p>
+                    </div>
                     {/* Delay */}
                     <div className="space-y-3">
                       <Label htmlFor="delay" className="text-slate-900 dark:text-white">Tempo de delay entre mensagens (segundos)</Label>
