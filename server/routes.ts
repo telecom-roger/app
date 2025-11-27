@@ -867,7 +867,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/stats/funnel", isAuthenticated, async (req, res) => {
     try {
-      const funnelData = await storage.getFunnelData();
+      const funnelData = await storage.getFunnelData((req.user as any).id);
       res.json(funnelData);
     } catch (error: any) {
       console.error("Error fetching funnel data:", error);
@@ -877,7 +877,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/stats/status-distribution", isAuthenticated, async (req, res) => {
     try {
-      const distribution = await storage.getStatusDistribution();
+      const distribution = await storage.getStatusDistribution((req.user as any).id);
       res.json(distribution);
     } catch (error: any) {
       console.error("Error fetching status distribution:", error);

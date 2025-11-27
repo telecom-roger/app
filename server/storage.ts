@@ -400,24 +400,31 @@ export async function getImportJobs(userId?: string): Promise<ImportJob[]> {
 
 // ==================== STATISTICS ====================
 export async function getDashboardStats(userId?: string) {
+  let clientWhereClause = userId ? eq(clients.createdBy, userId) : undefined;
+  let opportunityWhereClause = userId ? eq(opportunities.responsavelId, userId) : undefined;
+  let campaignWhereClause = userId ? eq(campaigns.createdBy, userId) : undefined;
+
   const [clientStats] = await db
     .select({
       total: sql<number>`count(*)::int`,
       ativos: sql<number>`count(*) FILTER (WHERE status = 'ativo')::int`,
     })
-    .from(clients);
+    .from(clients)
+    .where(clientWhereClause);
 
   const [opportunityCount] = await db
     .select({
       total: sql<number>`count(*)::int`,
     })
-    .from(opportunities);
+    .from(opportunities)
+    .where(opportunityWhereClause);
 
   const [campaignStats] = await db
     .select({
       ativas: sql<number>`count(*) FILTER (WHERE status IN ('agendada', 'enviando'))::int`,
     })
-    .from(campaigns);
+    .from(campaigns)
+    .where(campaignWhereClause);
 
   return {
     totalClientes: clientStats?.total || 0,
@@ -429,13 +436,16 @@ export async function getDashboardStats(userId?: string) {
   };
 }
 
-export async function getFunnelData() {
+export async function getFunnelData(userId?: string) {
+  let whereClause = userId ? eq(opportunities.responsavelId, userId) : undefined;
+  
   const results = await db
     .select({
       etapa: opportunities.etapa,
       count: sql<number>`count(*)::int`,
     })
     .from(opportunities)
+    .where(whereClause)
     .groupBy(opportunities.etapa);
 
   const funnelMap: Record<string, number> = {
@@ -454,13 +464,16 @@ export async function getFunnelData() {
   return funnelMap;
 }
 
-export async function getStatusDistribution() {
+export async function getStatusDistribution(userId?: string) {
+  let whereClause = userId ? eq(clients.createdBy, userId) : undefined;
+  
   const results = await db
     .select({
       status: clients.status,
       count: sql<number>`count(*)::int`,
     })
     .from(clients)
+    .where(whereClause)
     .groupBy(clients.status)
     .orderBy(sql<number>`count(*) DESC`);
 
