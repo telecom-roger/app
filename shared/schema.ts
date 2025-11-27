@@ -500,3 +500,28 @@ export const insertClientSharingSchema = createInsertSchema(clientSharing).omit(
 
 export type ClientSharing = typeof clientSharing.$inferSelect;
 export type InsertClientSharing = z.infer<typeof insertClientSharingSchema>;
+
+// ==================== NOTIFICATIONS ====================
+export const notifications = pgTable("notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tipo: varchar("tipo", { length: 50 }).notNull(), // "client_shared", etc
+  titulo: text("titulo").notNull(),
+  descricao: text("descricao").notNull(),
+  clientId: varchar("client_id").references(() => clients.id, { onDelete: "cascade" }),
+  fromUserId: varchar("from_user_id").references(() => users.id, { onDelete: "cascade" }),
+  lida: boolean("lida").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_notifications_user").on(table.userId),
+  index("idx_notifications_lida").on(table.lida),
+  index("idx_notifications_user_lida").on(table.userId, table.lida),
+]);
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;

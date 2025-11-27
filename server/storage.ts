@@ -33,6 +33,8 @@ import type {
   InsertTag,
   ClientSharing,
   InsertClientSharing,
+  Notification,
+  InsertNotification,
 } from "@shared/schema";
 import {
   clients,
@@ -52,6 +54,7 @@ import {
   clientNotes,
   tags,
   clientSharing,
+  notifications,
 } from "@shared/schema";
 
 // ==================== USER STORAGE ====================
@@ -755,6 +758,36 @@ export async function countUnreadMessages(conversationId: string): Promise<numbe
       eq(messages.lido, false)
     ));
   return result[0]?.count ? Number(result[0].count) : 0;
+}
+
+// ==================== NOTIFICATIONS STORAGE ====================
+export async function createNotification(data: any): Promise<any> {
+  const [result] = await db.insert(notifications).values(data).returning();
+  return result;
+}
+
+export async function getNotificationsByUserId(userId: string): Promise<any[]> {
+  return await db
+    .select()
+    .from(notifications)
+    .where(eq(notifications.userId, userId))
+    .orderBy(desc(notifications.createdAt))
+    .limit(50);
+}
+
+export async function getUnreadNotificationsCount(userId: string): Promise<number> {
+  const result = await db
+    .select({ count: sql`COUNT(*)` })
+    .from(notifications)
+    .where(and(eq(notifications.userId, userId), eq(notifications.lida, false)));
+  return result[0]?.count ? Number(result[0].count) : 0;
+}
+
+export async function markNotificationAsRead(notificationId: string): Promise<void> {
+  await db
+    .update(notifications)
+    .set({ lida: true })
+    .where(eq(notifications.id, notificationId));
 }
 
 // ==================== QUICK REPLIES STORAGE ====================

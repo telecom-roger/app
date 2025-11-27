@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { z } from "zod";
 import { eq, and, or, ilike, desc, sql, lte, inArray, isNull } from "drizzle-orm";
 import cron from "node-cron";
-import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, insertClientSharingSchema, whatsappSessions, clients, interactions, conversations, messages, campaigns as campaignsTable, templates as templatesTable, tags, clientSharing } from "@shared/schema";
+import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, insertClientSharingSchema, whatsappSessions, clients, interactions, conversations, messages, campaigns as campaignsTable, templates as templatesTable, tags, clientSharing, notifications, users } from "@shared/schema";
 import * as storage from "./storage";
 import * as whatsappService from "./whatsappService";
 import { setupAuth, isAuthenticated } from "./localAuth";
@@ -1960,6 +1960,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         permissao,
       });
 
+      // 📢 CREATE NOTIFICATION FOR RECIPIENT
+      const [recipient] = await db.select().from(users).where(eq(users.id, sharedWithUserId)).limit(1);
+      const senderName = (user.firstName || user.email).split('@')[0];
+      
+      if (recipient) {
+        await storage.createNotification({
+          userId: sharedWithUserId,
+          tipo: "client_shared",
+          titulo: "Cliente compartilhado",
+          descricao: `${senderName} compartilhou o cliente "${client.nome}" com você`,
+          clientId,
+          fromUserId: user.id,
+          lida: false,
+        });
+      }
+
       res.json(sharing);
     } catch (error: any) {
       console.error("Error sharing client:", error);
@@ -2033,13 +2049,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ==================== NOTIFICATIONS ROUTES ====================
+  app.get("/api/notifications", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const notifs = await storage.getNotificationsByUserId(user.id);
+      res.json(notifs);
+    } catch (error: any) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/notifications/unread-count", isAuthenticated, async (req, res) => {
     try {
       const user = req.user as any;
-      const count = await storage.countAllUnreadMessages(user.id);
-      res.json({ count });
+      const unreadNotifications = await storage.getUnreadNotificationsCount(user.id);
+      const unreadMessages = await storage.countAllUnreadMessages(user.id);
+      res.json({ count: unreadNotifications + unreadMessages });
     } catch (error: any) {
-      console.error("Error fetching unread messages count:", error);
+      console.error("Error fetching unread count:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
