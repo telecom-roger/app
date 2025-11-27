@@ -42,6 +42,7 @@ interface Conversation {
     razaoSocial?: string;
     CELULAR_PRINCIPAL?: string;
     telefone: string;
+    tags?: string[];
   };
 }
 
@@ -52,6 +53,7 @@ interface Client {
   cpfCnpj?: string;
   telefone: string;
   CELULAR_PRINCIPAL?: string;
+  tags?: string[];
 }
 
 interface QuickReply {
@@ -181,14 +183,19 @@ export default function Chat() {
       })
     : [];
 
-  // Extract all unique tags from conversations' clients
+  // Extract all unique tags from conversations' clients AND all clients
   const allUniqueTags = Array.from(
-    new Set(
-      conversations
+    new Set([
+      // Tags from conversations
+      ...conversations
         .filter(conv => conv.client?.tags && Array.isArray(conv.client.tags))
-        .flatMap(conv => conv.client?.tags || [])
-        .filter(tag => tag && typeof tag === 'string')
-    )
+        .flatMap(conv => conv.client?.tags || []),
+      // Tags from all clients
+      ...clients
+        .filter(client => client.tags && Array.isArray(client.tags))
+        .flatMap(client => client.tags || []),
+    ])
+      .filter(tag => tag && typeof tag === 'string')
   ).sort();
 
   // Sort conversations by last message date (most recent first)
