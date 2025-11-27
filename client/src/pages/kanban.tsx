@@ -38,18 +38,25 @@ import { Plus, GripVertical, User, DollarSign, Trash2, Edit2, TrendingUp, Zap } 
 import type { Opportunity } from "@shared/schema";
 import { insertOpportunitySchema } from "@shared/schema";
 
-const colunas = [
-  { id: "lead", titulo: "Lead", cor: "bg-blue-500" },
-  { id: "contato", titulo: "Contato Realizado", cor: "bg-yellow-500" },
-  { id: "proposta", titulo: "Proposta Enviada", cor: "bg-purple-500" },
-  { id: "fechado", titulo: "Fechado", cor: "bg-green-500" },
-  { id: "perdido", titulo: "Perdido", cor: "bg-red-500" },
-];
+const defaultPipeline = {
+  id: "default",
+  nome: "Funil Padrão",
+  etapas: [
+    { id: "lead", titulo: "Lead", cor: "bg-blue-500" },
+    { id: "contato", titulo: "Contato Realizado", cor: "bg-yellow-500" },
+    { id: "proposta", titulo: "Proposta Enviada", cor: "bg-purple-500" },
+    { id: "fechado", titulo: "Fechado", cor: "bg-green-500" },
+    { id: "perdido", titulo: "Perdido", cor: "bg-red-500" },
+  ],
+};
+
+const colunas = defaultPipeline.etapas;
 
 export default function Kanban() {
   const { toast } = useToast();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [filtroResponsavel, setFiltroResponsavel] = useState<string>("todos");
+  const [selectedPipeline, setSelectedPipeline] = useState(defaultPipeline.id);
   const [showNovaOportunidade, setShowNovaOportunidade] = useState(false);
   const [editingOportunidade, setEditingOportunidade] = useState<Opportunity | null>(null);
   const [draggedCard, setDraggedCard] = useState<{ id: string; fromEtapa: string } | null>(null);
