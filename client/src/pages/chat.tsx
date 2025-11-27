@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -1395,8 +1396,8 @@ export default function Chat() {
                 </div>
               )}
               <div className="p-6 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex gap-3 items-end">
-                <Input
-                  placeholder="Digite uma mensagem... (ou cole uma imagem)"
+                <Textarea
+                  placeholder="Digite uma mensagem"
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
                   onKeyPress={(e) => {
@@ -1406,9 +1407,9 @@ export default function Chat() {
                     }
                   }}
                   onPaste={handlePaste}
-                  disabled={sendMutation.isPending || recordedAudio !== null}
+                  disabled={sendMutation.isPending || recordedAudio !== null || pastedImage !== null}
                   data-testid="input-message"
-                  className="h-12 text-base"
+                  className="resize-none min-h-12 max-h-32 text-base"
                 />
                 <input
                   type="file"
