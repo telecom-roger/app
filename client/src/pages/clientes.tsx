@@ -126,7 +126,7 @@ export default function Clientes() {
   // Filter clients by selected tag on frontend
   const filteredClients = data?.clientes?.filter(client => {
     if (!selectedTag) return true;
-    return (client.tags || []).includes(selectedTag);
+    return client.tags?.[0] === selectedTag;
   }) || [];
 
   const statusColors: Record<string, string> = {

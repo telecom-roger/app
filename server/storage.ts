@@ -797,24 +797,24 @@ export async function deleteTag(id: string): Promise<void> {
   await db.delete(tags).where(eq(tags.id, id));
 }
 
-// Add tag to client's tags array
+// Set tag to client (only one tag per client - replaces existing)
 export async function addTagToClient(clientId: string, tagName: string): Promise<Client | undefined> {
   const client = await getClientById(clientId);
   if (!client) return undefined;
   
-  const currentTags = client.tags || [];
-  if (!currentTags.includes(tagName)) {
-    currentTags.push(tagName);
-  }
-  
-  return updateClient(clientId, { tags: currentTags });
+  // Only one tag per client - replace existing with new tag
+  return updateClient(clientId, { tags: [tagName] });
 }
 
-// Remove tag from client's tags array
+// Remove tag from client
 export async function removeTagFromClient(clientId: string, tagName: string): Promise<Client | undefined> {
   const client = await getClientById(clientId);
   if (!client) return undefined;
   
-  const currentTags = (client.tags || []).filter(t => t !== tagName);
-  return updateClient(clientId, { tags: currentTags });
+  // Remove the tag (set to empty array)
+  if (client.tags?.[0] === tagName) {
+    return updateClient(clientId, { tags: [] });
+  }
+  
+  return client;
 }

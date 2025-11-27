@@ -470,59 +470,70 @@ export default function Chat() {
               </Button>
             </div>
 
-            {/* Tags List */}
+            {/* Tags List - Only one tag per client */}
             {conversationsLoading ? (
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             ) : (
               <div className="flex flex-wrap gap-1">
-                {selectedConversation?.client?.tags?.map((tagName: string) => {
-                  const tag = allTags.find(t => t.nome === tagName);
-                  return (
-                    <Badge
-                      key={tagName}
-                      className={`${tag?.cor || "bg-gray-500"} text-white cursor-pointer flex items-center gap-1 py-1 px-2 hover-elevate`}
-                      data-testid={`badge-tag-${tagName}`}
-                    >
-                      <span className="text-xs max-w-[150px] truncate">{tagName}</span>
-                      <button
-                        onClick={() => handleDeleteTag(tagName)}
-                        className="ml-1 opacity-70 hover:opacity-100"
-                        data-testid={`button-delete-tag-${tagName}`}
+                {selectedConversation?.client?.tags?.[0] ? (
+                  (() => {
+                    const tagName = selectedConversation.client.tags[0];
+                    const tag = allTags.find(t => t.nome === tagName);
+                    return (
+                      <Badge
+                        key={tagName}
+                        className={`${tag?.cor || "bg-gray-500"} text-white cursor-pointer flex items-center gap-1 py-1 px-2 hover-elevate`}
+                        data-testid={`badge-tag-${tagName}`}
                       >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  );
-                })}
+                        <span className="text-xs max-w-[150px] truncate">{tagName}</span>
+                        <button
+                          onClick={() => handleDeleteTag(tagName)}
+                          className="ml-1 opacity-70 hover:opacity-100"
+                          data-testid={`button-delete-tag-${tagName}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    );
+                  })()
+                ) : (
+                  <p className="text-xs text-muted-foreground">Nenhuma etiqueta</p>
+                )}
               </div>
             )}
 
             {/* Tag Selection Form */}
             {showNoteInput && (
               <div className="space-y-2 p-2 border border-border rounded-md bg-muted/20">
-                <p className="text-xs text-muted-foreground font-medium">Selecione uma etiqueta:</p>
+                <p className="text-xs text-muted-foreground font-medium">Selecione uma etiqueta (substitui a atual):</p>
                 {allTags.length === 0 ? (
                   <p className="text-xs text-muted-foreground">Nenhuma etiqueta criada. Crie em /etiquetas</p>
                 ) : (
                   <div className="flex flex-wrap gap-2">
-                    {allTags.map((tag) => (
-                      <Button
-                        key={tag.id}
-                        size="sm"
-                        className={`${tag.cor} text-white hover:opacity-80`}
-                        onClick={() => {
-                          addTagMutation.mutate(tag.nome);
-                        }}
-                        disabled={addTagMutation.isPending}
-                        data-testid={`button-select-tag-${tag.id}`}
-                      >
-                        {addTagMutation.isPending ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          tag.nome
-                        )}
-                      </Button>
-                    ))}
+                    {allTags.map((tag) => {
+                      const isCurrentTag = selectedConversation?.client?.tags?.[0] === tag.nome;
+                      return (
+                        <Button
+                          key={tag.id}
+                          size="sm"
+                          variant={isCurrentTag ? "default" : "outline"}
+                          className={`${tag.cor} text-white hover:opacity-80`}
+                          onClick={() => {
+                            addTagMutation.mutate(tag.nome);
+                          }}
+                          disabled={addTagMutation.isPending}
+                          data-testid={`button-select-tag-${tag.id}`}
+                        >
+                          {addTagMutation.isPending ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : isCurrentTag ? (
+                            `✓ ${tag.nome}`
+                          ) : (
+                            tag.nome
+                          )}
+                        </Button>
+                      );
+                    })}
                   </div>
                 )}
 
