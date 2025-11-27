@@ -39,9 +39,6 @@ import type { Opportunity } from "@shared/schema";
 import { insertOpportunitySchema } from "@shared/schema";
 
 const defaultColunas = [
-  { id: "lead", titulo: "Lead", cor: "bg-blue-500" },
-  { id: "contato", titulo: "Contato Realizado", cor: "bg-yellow-500" },
-  { id: "proposta", titulo: "Proposta Enviada", cor: "bg-purple-500" },
   { id: "fechado", titulo: "Fechado", cor: "bg-green-500" },
   { id: "perdido", titulo: "Perdido", cor: "bg-red-500" },
 ];
