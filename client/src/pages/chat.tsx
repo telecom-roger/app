@@ -588,109 +588,19 @@ export default function Chat() {
           </div>
         )}
 
-        {/* Etiquetas Section - Only show when conversation is selected and not searching */}
-        {!showSearchResults && selectedConversationId && (
-          <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">ETIQUETAS</p>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => {
-                  setShowNoteInput(!showNoteInput);
-                  if (showNoteInput) {
-                    setNoteText("");
-                    setNoteColor("bg-blue-500");
-                  }
-                }}
-                disabled={!currentClientId || allTags.length === 0}
-                data-testid="button-add-note"
-                className="h-6 w-6"
-              >
-                {showNoteInput ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-              </Button>
-            </div>
-
-            {/* Tags List - Only one tag per client */}
-            {conversationsLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            ) : (
-              <div className="flex flex-wrap gap-1">
-                {selectedConversation?.client?.tags?.[0] ? (
-                  (() => {
-                    const tagName = selectedConversation.client.tags[0];
-                    const tag = allTags.find(t => t.nome === tagName);
-                    return (
-                      <Badge
-                        key={tagName}
-                        className={`${tag?.cor || "bg-gray-500"} text-white cursor-pointer flex items-center gap-1 py-1 px-2 hover-elevate rounded-full`}
-                        onClick={() => handleDeleteTag(tagName)}
-                        data-testid={`badge-tag-${tagName}`}
-                      >
-                        <span className="text-xs max-w-[150px] truncate">{tagName}</span>
-                        <X className="h-3 w-3 opacity-70 hover:opacity-100" data-testid={`button-delete-tag-${tagName}`} />
-                      </Badge>
-                    );
-                  })()
-                ) : (
-                  <p className="text-xs text-muted-foreground">Nenhuma etiqueta</p>
-                )}
-              </div>
-            )}
-
-            {/* Tag Selection Form */}
-            {showNoteInput && (
-              <div className="space-y-2 p-2 border border-slate-200 dark:border-slate-700 rounded-md bg-slate-50 dark:bg-slate-900/30">
-                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">Selecione uma etiqueta (substitui a atual):</p>
-                {allTags.length === 0 ? (
-                  <p className="text-xs text-slate-600 dark:text-slate-400">Nenhuma etiqueta criada. Crie em /etiquetas</p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {allTags.map((tag) => {
-                      const isCurrentTag = selectedConversation?.client?.tags?.[0] === tag.nome;
-                      return (
-                        <Button
-                          key={tag.id}
-                          size="sm"
-                          variant={isCurrentTag ? "default" : "outline"}
-                          className={`${isCurrentTag ? `${tag.cor} border ${tag.cor.replace('bg-', 'border-')}` : ''} hover:opacity-80 rounded-full`}
-                          onClick={() => {
-                            addTagMutation.mutate(tag.nome);
-                          }}
-                          disabled={addTagMutation.isPending}
-                          data-testid={`button-select-tag-${tag.id}`}
-                        >
-                          {addTagMutation.isPending ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : isCurrentTag ? (
-                            `✓ ${tag.nome}`
-                          ) : (
-                            tag.nome
-                          )}
-                        </Button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Cancel Button */}
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setShowNoteInput(false);
-                      setNoteText("");
-                      setNoteColor("bg-blue-500");
-                    }}
-                    className="w-full rounded-full"
-                    data-testid="button-cancel-note"
-                  >
-                    Cancelar
-                  </Button>
-                </div>
-              </div>
-            )}
+        {/* Tag indicator for current conversation - view only */}
+        {!showSearchResults && selectedConversationId && selectedConversation?.client?.tags?.[0] && (
+          <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-700">
+            <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">ETAPA ATUAL</p>
+            {(() => {
+              const tagName = selectedConversation.client.tags[0];
+              const tag = allTags.find(t => t.nome === tagName);
+              return (
+                <Badge className={`${tag?.cor || "bg-gray-500"}`}>
+                  {tagName}
+                </Badge>
+              );
+            })()}
           </div>
         )}
 
