@@ -111,6 +111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tagNames: clients.tags,
           createdAt: clients.createdAt,
           carteira: clients.carteira,
+          tipo: clients.tipo,
         })
         .from(clients)
         .where(whereCondition)
@@ -136,6 +137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           cpfCnpj: client.cpfCnpj,
           status: client.status,
           carteira: client.carteira,
+          tipo: client.tipo,
           tags: clientTags,
           createdAt: client.createdAt,
           ultimaCampanha: undefined,

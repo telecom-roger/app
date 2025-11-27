@@ -100,6 +100,7 @@ export default function CampanhasAgendadas() {
   const [quantidadeSelecar, setQuantidadeSelecar] = useState(10);
   const [orderBy, setOrderBy] = useState<"recent" | "oldest">("recent");
   const [quantidadeAleatoria, setQuantidadeAleatoria] = useState("");
+  const [tipoFiltro, setTipoFiltro] = useState("");
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -146,12 +147,14 @@ export default function CampanhasAgendadas() {
     },
   });
 
-  // Filter clients by search and apply ordering
+  // Filter clients by search, tipo, and apply ordering
   const clientesFiltrados = clients
-    .filter((c) =>
-      c.nome.toLowerCase().includes(searchClientes.toLowerCase()) ||
-      c.telefone.includes(searchClientes)
-    )
+    .filter((c) => {
+      const matchSearch = c.nome.toLowerCase().includes(searchClientes.toLowerCase()) ||
+                         c.telefone.includes(searchClientes);
+      const matchTipo = !tipoFiltro || c.tipo === tipoFiltro;
+      return matchSearch && matchTipo;
+    })
     .sort((a, b) => {
       if (orderBy === "recent") {
         return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
@@ -159,6 +162,9 @@ export default function CampanhasAgendadas() {
         return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
       }
     });
+
+  // Get unique tipos for filter dropdown
+  const tiposUnicos = Array.from(new Set(clients.map((c) => c.tipo).filter(Boolean)));
 
   // Toggle client selection
   const toggleClienteSelecionado = (clientId: string) => {
@@ -544,6 +550,24 @@ export default function CampanhasAgendadas() {
               >
                 ✕ Desselecionar Todos
               </Button>
+
+              {/* Divider */}
+              <div className="h-6 w-px bg-border" />
+
+              {/* Tipo Filter */}
+              <Select value={tipoFiltro} onValueChange={(value) => setTipoFiltro(value)}>
+                <SelectTrigger className="w-40 h-9" data-testid="select-tipo-filtro">
+                  <SelectValue placeholder="Filtrar por tipo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos os tipos</SelectItem>
+                  {tiposUnicos.map((tipo) => (
+                    <SelectItem key={tipo} value={tipo}>
+                      {tipo}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
               {/* Divider */}
               <div className="h-6 w-px bg-border" />
