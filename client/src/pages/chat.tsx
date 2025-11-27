@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle, Download, Plus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle, Download, Plus, Info } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -129,6 +129,7 @@ export default function Chat() {
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
   const [contextMenuConvId, setContextMenuConvId] = useState<string | null>(null);
+  const [showClientInfo, setShowClientInfo] = useState(false);
 
   // Persist closed conversations to localStorage
   useEffect(() => {
@@ -171,6 +172,12 @@ export default function Chat() {
     staleTime: 0, // Sempre considerar dados como stale
     gcTime: 0, // Não cachear dados
     refetchOnWindowFocus: true, // Refetch quando voltar a janela
+  });
+
+  // Fetch detailed client info when selected
+  const { data: detailedClient = null, isLoading: clientDetailLoading } = useQuery<any>({
+    queryKey: currentClientId ? ["/api/clients", currentClientId] : [],
+    enabled: !!currentClientId,
   });
 
   // Fetch WhatsApp sessions to check connection status
@@ -896,6 +903,14 @@ export default function Chat() {
                   </p>
                 </div>
               </div>
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                onClick={() => setShowClientInfo(true)}
+                data-testid="button-client-info"
+              >
+                <Info className="h-5 w-5" />
+              </Button>
               <Popover open={showQuickReplies} onOpenChange={setShowQuickReplies}>
                 <PopoverTrigger asChild>
                   <Button 
@@ -1022,6 +1037,108 @@ export default function Chat() {
                 <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
+
+      {/* Client Info Modal */}
+      <Dialog open={showClientInfo} onOpenChange={setShowClientInfo}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5" />
+              Informações do Cliente
+            </DialogTitle>
+          </DialogHeader>
+          {clientDetailLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-slate-600 dark:text-slate-400" />
+            </div>
+          ) : detailedClient ? (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800/50">
+                <div className="flex items-center gap-3 mb-3">
+                  <Avatar className="h-12 w-12">
+                    <AvatarFallback className="bg-purple-200 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-bold text-lg">
+                      {(detailedClient.nome || detailedClient.razaoSocial || "C")
+                        .split(" ")
+                        .slice(0, 2)
+                        .map((w: string) => w[0])
+                        .join("")
+                        .toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-semibold text-slate-900 dark:text-white">
+                      {detailedClient.razaoSocial || detailedClient.nome || "Sem nome"}
+                    </p>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      {detailedClient.CELULAR_PRINCIPAL || detailedClient.telefone || "Sem contato"}
+                    </p>
+                  </div>
+                </div>
+                {detailedClient.tags?.[0] && (() => {
+                  const tagName = detailedClient.tags[0];
+                  const tag = allTags.find(t => t.nome === tagName);
+                  return (
+                    <Badge className={`${tag?.cor || "bg-gray-500"}`}>
+                      {tagName}
+                    </Badge>
+                  );
+                })()}
+              </div>
+
+              <div className="space-y-3">
+                {detailedClient.email && (
+                  <div className="border-b border-slate-200 dark:border-slate-700 pb-3">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase">Email</p>
+                    <p className="text-sm text-slate-900 dark:text-white mt-1">{detailedClient.email}</p>
+                  </div>
+                )}
+                
+                {detailedClient.carteira && (
+                  <div className="border-b border-slate-200 dark:border-slate-700 pb-3">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase">Carteira</p>
+                    <p className="text-sm text-slate-900 dark:text-white mt-1">{detailedClient.carteira}</p>
+                  </div>
+                )}
+                
+                {detailedClient.status && (
+                  <div className="border-b border-slate-200 dark:border-slate-700 pb-3">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase">Status</p>
+                    <Badge variant="outline" className="mt-1">
+                      {detailedClient.status}
+                    </Badge>
+                  </div>
+                )}
+                
+                {detailedClient.leadScore && (
+                  <div className="border-b border-slate-200 dark:border-slate-700 pb-3">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase">Lead Score</p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-purple-500 to-purple-600" 
+                          style={{ width: `${(detailedClient.leadScore / 100) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-semibold text-slate-900 dark:text-white">{detailedClient.leadScore}</span>
+                    </div>
+                  </div>
+                )}
+
+                {detailedClient.cpfCnpj && (
+                  <div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase">CPF/CNPJ</p>
+                    <p className="text-sm text-slate-900 dark:text-white mt-1 font-mono">{detailedClient.cpfCnpj}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-slate-600 dark:text-slate-400 text-center py-8">
+              Não foi possível carregar informações
+            </p>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Image Viewer Modal */}
       <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>
