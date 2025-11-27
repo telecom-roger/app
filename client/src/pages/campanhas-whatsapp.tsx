@@ -1338,7 +1338,7 @@ export default function CampanhasWhatsApp() {
                           data-testid={`checkbox-cliente-${client.id}`}
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-slate-900 dark:text-white truncate">{client.nome}</div>
+                          <div className="font-medium text-slate-900 dark:text-white truncate">{client.razaoSocial || client.nome}</div>
                           <div className="text-sm text-slate-600 dark:text-slate-400">{client.telefone}</div>
                         </div>
                       </div>
