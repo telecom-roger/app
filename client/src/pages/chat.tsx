@@ -1157,16 +1157,9 @@ export default function Chat() {
                   <div className="flex gap-2 mt-2">
                     <Input
                       type="text"
-                      placeholder="R$ 0,00"
+                      placeholder="Ex: R$ 5.000,00 ou 5000"
                       value={businessValue}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, "");
-                        const formatted = new Intl.NumberFormat("pt-BR", {
-                          style: "currency",
-                          currency: "BRL"
-                        }).format(parseInt(value || "0") / 100);
-                        setBusinessValue(formatted);
-                      }}
+                      onChange={(e) => setBusinessValue(e.target.value)}
                       className="flex-1"
                       data-testid="input-business-value"
                     />
