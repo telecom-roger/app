@@ -404,7 +404,6 @@ export default function Chat() {
           
           const base64 = event.target?.result as string;
           setRecordedAudio({ base64, blob });
-          toast({ title: "Áudio gravado - clique para enviar ou descartar", variant: "default" });
         };
         reader.readAsDataURL(blob);
         stream.getTracks().forEach(track => track.stop());
@@ -448,7 +447,6 @@ export default function Chat() {
   const handleDiscardRecordedAudio = () => {
     shouldDiscardAudioRef.current = true;
     setRecordedAudio(null);
-    toast({ title: "Áudio descartado", variant: "default" });
   };
 
   // Add tag to client mutation
