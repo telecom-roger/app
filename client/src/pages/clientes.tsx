@@ -680,7 +680,7 @@ export default function Clientes() {
           </div>
         </AlertDialogContent>
       </AlertDialog>
-    <DeleteClientDialog clientId={deleteClientId} onOpenChange={setDeleteClientId} />
+
     <BulkShareDialog 
       selectedClientIds={Array.from(selectedClientIds)} 
       onOpenChange={setBulkShareDialogOpen} 
