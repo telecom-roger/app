@@ -198,6 +198,12 @@ export default function Chat() {
       ].filter(tag => tag && typeof tag === 'string')
     )
   ).sort();
+  
+  console.log("🔍 DEBUG - allUniqueTags:", allUniqueTags);
+  console.log("🔍 DEBUG - conversations length:", conversations?.length);
+  console.log("🔍 DEBUG - clients length:", clients?.length);
+  console.log("🔍 DEBUG - First conversation client tags:", conversations?.[0]?.client?.tags);
+  console.log("🔍 DEBUG - First client tags:", clients?.[0]?.tags);
 
   // Sort conversations by last message date (most recent first)
   const sortedConversations = [...conversations]
