@@ -100,7 +100,7 @@ export default function CampanhasAgendadas() {
   const [quantidadeSelecar, setQuantidadeSelecar] = useState(10);
   const [orderBy, setOrderBy] = useState<"recent" | "oldest">("recent");
   const [quantidadeAleatoria, setQuantidadeAleatoria] = useState("");
-  const [tipoFiltro, setTipoFiltro] = useState("");
+  const [tipoFiltro, setTipoFiltro] = useState("all");
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -152,7 +152,7 @@ export default function CampanhasAgendadas() {
     .filter((c) => {
       const matchSearch = c.nome.toLowerCase().includes(searchClientes.toLowerCase()) ||
                          c.telefone.includes(searchClientes);
-      const matchTipo = !tipoFiltro || c.tipo === tipoFiltro;
+      const matchTipo = tipoFiltro === "all" || c.tipo === tipoFiltro;
       return matchSearch && matchTipo;
     })
     .sort((a, b) => {
@@ -560,7 +560,7 @@ export default function CampanhasAgendadas() {
                   <SelectValue placeholder="Filtrar por tipo..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os tipos</SelectItem>
+                  <SelectItem value="all">Todos os tipos</SelectItem>
                   {tiposUnicos.map((tipo) => (
                     <SelectItem key={tipo} value={tipo}>
                       {tipo}
