@@ -48,6 +48,7 @@ function Router({ isAuthenticated }: { isAuthenticated: boolean }) {
       <Route path="/clientes/novo" component={ClienteForm} />
       <Route path="/clientes/:id/editar" component={ClienteForm} />
       <Route path="/clientes/:id" component={ClienteProfile} />
+      <Route path="/clientes/editar/:id" component={ClienteForm} />
       <Route path="/oportunidades" component={Kanban} />
       <Route path="/campanhas" component={Campanhas} />
       <Route path="/campanhas/nova" component={CampanhaNova} />
