@@ -38,7 +38,7 @@ import { Plus, GripVertical, User, DollarSign, Trash2, Edit2, TrendingUp, Zap } 
 import type { Opportunity } from "@shared/schema";
 import { insertOpportunitySchema } from "@shared/schema";
 
-const colunas = [
+const defaultColunas = [
   { id: "lead", titulo: "Lead", cor: "bg-blue-500" },
   { id: "contato", titulo: "Contato Realizado", cor: "bg-yellow-500" },
   { id: "proposta", titulo: "Proposta Enviada", cor: "bg-purple-500" },
@@ -53,6 +53,7 @@ export default function Kanban() {
   const [showNovaOportunidade, setShowNovaOportunidade] = useState(false);
   const [editingOportunidade, setEditingOportunidade] = useState<Opportunity | null>(null);
   const [draggedCard, setDraggedCard] = useState<{ id: string; fromEtapa: string } | null>(null);
+  const [colunas, setColunas] = useState(defaultColunas);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -80,7 +81,47 @@ export default function Kanban() {
     enabled: isAuthenticated,
   });
 
+  const { data: tagsData } = useQuery<any[]>({
+    queryKey: ["/api/tags"],
+    enabled: isAuthenticated,
+  });
+
   const clientes = clientesData?.clientes || [];
+  const tags = tagsData || [];
+
+  // Carregar preferência de colunas do localStorage e combinar com tags
+  useEffect(() => {
+    if (tags.length > 0) {
+      const stored = localStorage.getItem("kanban_colunas");
+      if (stored) {
+        try {
+          const storedIds = JSON.parse(stored);
+          const colunasFromTags = tags
+            .filter((tag: any) => storedIds.includes(tag.id))
+            .map((tag: any) => ({
+              id: tag.id,
+              titulo: tag.nome,
+              cor: tag.cor,
+            }));
+          if (colunasFromTags.length > 0) {
+            setColunas(colunasFromTags);
+            return;
+          }
+        } catch (e) {
+          // Fallback para padrão
+        }
+      }
+      // Se não há preferência, usa as tags como colunas
+      const tagsAsColunas = tags.map((tag: any) => ({
+        id: tag.id,
+        titulo: tag.nome,
+        cor: tag.cor,
+      }));
+      if (tagsAsColunas.length > 0) {
+        setColunas(tagsAsColunas);
+      }
+    }
+  }, [tags]);
 
   const moveCardMutation = useMutation({
     mutationFn: async ({ id, etapa }: { id: string; etapa: string }) => {
@@ -214,7 +255,7 @@ export default function Kanban() {
           </div>
 
           {/* Controls */}
-          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
             <Select value={filtroResponsavel} onValueChange={setFiltroResponsavel}>
               <SelectTrigger className="w-full sm:w-48 border-slate-200 dark:border-slate-700" data-testid="select-responsavel">
                 <SelectValue placeholder="Responsável" />
@@ -222,6 +263,19 @@ export default function Kanban() {
               <SelectContent>
                 <SelectItem value="todos">Todas as oportunidades</SelectItem>
                 <SelectItem value={user?.id ? String(user.id) : ""}>Minhas oportunidades</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select 
+              value={colunas.map(c => c.id).join(",")} 
+              onValueChange={() => {}}
+            >
+              <SelectTrigger className="w-full sm:w-48 border-slate-200 dark:border-slate-700" data-testid="select-etapas">
+                <SelectValue placeholder="Etapas customizadas" />
+              </SelectTrigger>
+              <SelectContent>
+                <div className="p-2 text-xs text-slate-600 dark:text-slate-400">
+                  {tags.length > 0 ? "Usando tags como etapas" : "Use as etapas padrões"}
+                </div>
               </SelectContent>
             </Select>
             <Button 
