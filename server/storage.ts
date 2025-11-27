@@ -727,34 +727,25 @@ export async function findConversationByPhoneAndUser(telefone: string, userId: s
   const phoneCom55 = `55${normalizado}`;
   
   // Find client by phone number - check both fields for exact or partial matches
-  let [client] = await db
+  const [client] = await db
     .select()
     .from(clients)
     .where(or(
-      ilike(clients.CELULAR_PRINCIPAL, phoneCom55),
-      ilike(clients.CELULAR_PRINCIPAL, normalizado),
-      ilike(clients.telefone, phoneCom55),
-      ilike(clients.telefone, normalizado)
+      eq(clients.CELULAR_PRINCIPAL, phoneCom55),
+      eq(clients.CELULAR_PRINCIPAL, normalizado),
+      eq(clients.telefone, phoneCom55),
+      eq(clients.telefone, normalizado),
+      ilike(clients.CELULAR_PRINCIPAL, `%${normalizado}%`),
+      ilike(clients.telefone, `%${normalizado}%`)
     ))
     .limit(1);
   
-  // ✨ AUTO-CREATE CLIENT IF NOT EXISTS
   if (!client) {
-    console.log(`🆕 Cliente não encontrado para ${telefone}, criando automaticamente...`);
-    const [newClient] = await db
-      .insert(clients)
-      .values({
-        nome: `Contato ${normalizado}`,
-        CELULAR_PRINCIPAL: `55${normalizado}`,
-        status: "lead",
-        createdBy: userId, // Atribuir ao usuário autenticado
-      })
-      .returning();
-    client = newClient;
-    console.log(`✅ Cliente criado: ${client.id}`);
+    console.log(`⚠️ Cliente não encontrado para ${telefone} no findConversationByPhoneAndUser`);
+    return undefined;
   }
   
-  if (!client) return undefined;
+  console.log(`✅ Cliente encontrado: ${client.id} (${client.nome})`);
   
   // Find or create conversation
   return await createOrGetConversation(client.id, userId);
