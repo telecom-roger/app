@@ -231,12 +231,7 @@ export default function Chat() {
   // Load saved business value when popup opens or client changes
   useEffect(() => {
     if (showClientInfo && detailedClient?.camposCustom?.valorEstimado) {
-      const valorEmCentavos = detailedClient.camposCustom.valorEstimado;
-      const formatted = new Intl.NumberFormat("pt-BR", {
-        style: "currency",
-        currency: "BRL"
-      }).format(valorEmCentavos / 100);
-      setBusinessValue(formatted);
+      setBusinessValue(detailedClient.camposCustom.valorEstimado);
     }
   }, [showClientInfo, detailedClient?.camposCustom?.valorEstimado]);
 
