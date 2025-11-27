@@ -1898,7 +1898,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== NOTIFICATIONS ROUTES ====================
   app.get("/api/notifications/unread-count", isAuthenticated, async (req, res) => {
     try {
-      const count = await storage.countAllUnreadMessages();
+      const user = req.user as any;
+      const count = await storage.countAllUnreadMessages(user.id);
       res.json({ count });
     } catch (error: any) {
       console.error("Error fetching unread messages count:", error);
@@ -1906,10 +1907,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Mark all messages as read
+  // Mark all messages as read for current user
   app.post("/api/notifications/mark-all-read", isAuthenticated, async (req, res) => {
     try {
-      await db.update(messages).set({ lido: true }).where(eq(messages.lido, false));
+      const user = req.user as any;
+      // Update messages that belong to conversations of the current user
+      await db
+        .update(messages)
+        .set({ lido: true })
+        .where(
+          and(
+            eq(messages.lido, false),
+            inArray(
+              messages.conversationId,
+              db.select({ id: conversations.id })
+                .from(conversations)
+                .where(eq(conversations.userId, user.id))
+            )
+          )
+        );
       res.json({ success: true, message: "All messages marked as read" });
     } catch (error: any) {
       console.error("Error marking messages as read:", error);
