@@ -102,40 +102,44 @@ export function ChatNotificationBell() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1">
-                        <p className="font-medium text-sm">{notif.titulo}</p>
-                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                          {notif.descricao}
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">
-                          {new Date(notif.createdAt).toLocaleDateString('pt-BR')}
-                        </p>
-                        {notif.clientId && (
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="h-auto p-0 mt-2 text-xs"
-                            onClick={() => handleViewClient(notif.clientId)}
-                            data-testid={`button-view-client-${notif.id}`}
-                          >
-                            Ver cliente <ExternalLink className="h-3 w-3 ml-1" />
-                          </Button>
-                        )}
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        {!notif.lida && (
-                          <div className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" />
-                        )}
-                        {!notif.lida && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-auto p-1 text-xs"
-                            onClick={() => handleMarkAsRead(notif.id)}
-                            data-testid={`button-mark-read-${notif.id}`}
-                          >
-                            Marcar como lida
-                          </Button>
-                        )}
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{notif.titulo}</p>
+                            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                              {notif.descricao}
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">
+                              {new Date(notif.createdAt).toLocaleDateString('pt-BR')}
+                            </p>
+                          </div>
+                          {!notif.lida && (
+                            <div className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0 mt-1" />
+                          )}
+                        </div>
+                        <div className="flex gap-2 mt-3">
+                          {notif.clientId && (
+                            <Button
+                              variant="link"
+                              size="sm"
+                              className="h-auto p-0 text-xs"
+                              onClick={() => handleViewClient(notif.clientId)}
+                              data-testid={`button-view-client-${notif.id}`}
+                            >
+                              Ver cliente
+                            </Button>
+                          )}
+                          {!notif.lida && (
+                            <Button
+                              variant="link"
+                              size="sm"
+                              className="h-auto p-0 text-xs"
+                              onClick={() => handleMarkAsRead(notif.id)}
+                              data-testid={`button-mark-read-${notif.id}`}
+                            >
+                              Marcar como lida
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
