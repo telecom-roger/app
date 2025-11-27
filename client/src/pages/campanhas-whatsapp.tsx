@@ -89,11 +89,18 @@ type ClientForImport = {
   telefone: string;
   email?: string;
   status?: string;
+  tags?: Array<{ id: string; nome: string; cor: string }>;
   ultimaCampanha?: {
     data: string;
     minutosPara: number;
     recente: boolean;
   };
+};
+
+type Tag = {
+  id: string;
+  nome: string;
+  cor: string;
 };
 
 export default function CampanhasWhatsApp() {
@@ -127,6 +134,7 @@ export default function CampanhasWhatsApp() {
   const [modoBackground, setModoBackground] = useState(true);
   const [templateSelecionado, setTemplateSelecionado] = useState("");
   const [quantidadeAleatoria, setQuantidadeAleatoria] = useState(50);
+  const [filtroTag, setFiltroTag] = useState("todos");
 
   // Fetch templates
   const { data: templates = [] } = useQuery<any[]>({
@@ -143,6 +151,12 @@ export default function CampanhasWhatsApp() {
   // Fetch clients with campaign history
   const { data: clientesDisponiveis = [], isLoading: carregandoClientes } = useQuery<ClientForImport[]>({
     queryKey: ["/api/clients/whatsapp-list"],
+    enabled: isAuthenticated && mostrarSeletorBD,
+  });
+
+  // Fetch available tags
+  const { data: tagsDisponiveis = [] } = useQuery<Tag[]>({
+    queryKey: ["/api/tags"],
     enabled: isAuthenticated && mostrarSeletorBD,
   });
 
@@ -165,11 +179,20 @@ export default function CampanhasWhatsApp() {
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
-  // Filter clients by search
-  const clientesFiltrados = clientesDisponiveis.filter((c) =>
-    c.nome.toLowerCase().includes(searchClientes.toLowerCase()) ||
-    c.telefone.includes(searchClientes)
-  );
+  // Filter clients by search, status and tag
+  const clientesFiltrados = clientesDisponiveis.filter((c) => {
+    // Search filter
+    const searchMatch = c.nome.toLowerCase().includes(searchClientes.toLowerCase()) ||
+      c.telefone.includes(searchClientes);
+    
+    // Status filter
+    const statusMatch = filtroStatus === "todos" || c.status?.toLowerCase() === filtroStatus.toLowerCase();
+    
+    // Tag filter
+    const tagMatch = filtroTag === "todos" || (c.tags && c.tags.some(t => t.id === filtroTag));
+    
+    return searchMatch && statusMatch && tagMatch;
+  });
 
   // Parse CSV when text changes
   useEffect(() => {
@@ -1217,6 +1240,31 @@ export default function CampanhasWhatsApp() {
                     <SelectItem value="fechado">Fechado</SelectItem>
                     <SelectItem value="perdido">Perdido</SelectItem>
                     <SelectItem value="inativo">Inativo</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={filtroTag} onValueChange={setFiltroTag}>
+                  <SelectTrigger className="w-40 border-slate-200 dark:border-slate-700" data-testid="select-tag-filter">
+                    <SelectValue placeholder="Etiqueta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todas as Etiquetas</SelectItem>
+                    {tagsDisponiveis.length > 0 ? (
+                      tagsDisponiveis.map((tag) => (
+                        <SelectItem key={tag.id} value={tag.id}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: tag.cor || "#999" }}
+                            ></div>
+                            {tag.nome}
+                          </div>
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="vazio" disabled>
+                        Nenhuma etiqueta disponível
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
