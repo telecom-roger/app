@@ -565,16 +565,14 @@ export default function Chat() {
           await apiRequest("DELETE", `/api/opportunities/${opp.id}`, {});
         }
         
-        // Criar nova oportunidade na etiqueta selecionada
-        if (businessValue) {
-          await apiRequest("POST", "/api/opportunities", {
-            clientId: currentClientId,
-            titulo: `${detailedClient.razaoSocial || detailedClient.nome}`,
-            etapa: tagName,
-            valorEstimado: businessValue,
-            responsavelId: detailedClient.createdBy,
-          });
-        }
+        // Criar nova oportunidade na etiqueta selecionada (mesmo sem valor)
+        await apiRequest("POST", "/api/opportunities", {
+          clientId: currentClientId,
+          titulo: `${detailedClient.razaoSocial || detailedClient.nome}`,
+          etapa: tagName,
+          valorEstimado: businessValue || "",
+          responsavelId: detailedClient.createdBy,
+        });
       } catch (err) {
         console.error("Erro ao gerenciar oportunidade:", err);
       }
