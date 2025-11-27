@@ -43,6 +43,47 @@ const defaultColunas = [
   { id: "perdido", titulo: "Perdido", cor: "bg-red-500" },
 ];
 
+// Função para extrair número de valores em qualquer formato
+function parseValue(value: string | undefined): number {
+  if (!value || typeof value !== 'string') return 0;
+  // Remove tudo que não é número ou vírgula/ponto
+  const cleanValue = value.replace(/[^\d.,]/g, '');
+  if (!cleanValue) return 0;
+  // Detecta se usa vírgula ou ponto como separador decimal
+  // Se houver separador de milhar, substitui
+  if (cleanValue.includes(',') && cleanValue.includes('.')) {
+    // Tem ambos - determinar qual é decimal
+    const lastCommaIndex = cleanValue.lastIndexOf(',');
+    const lastDotIndex = cleanValue.lastIndexOf('.');
+    if (lastCommaIndex > lastDotIndex) {
+      // Vírgula é decimal: "1.000,50" -> 1000.50
+      return parseFloat(cleanValue.replace(/\./g, '').replace(',', '.'));
+    } else {
+      // Ponto é decimal: "1,000.50" -> 1000.50
+      return parseFloat(cleanValue.replace(/,/g, ''));
+    }
+  } else if (cleanValue.includes(',')) {
+    // Só vírgula: pode ser "1,50" (decimal) ou "1.000,50" (com ponto escondido)
+    // Assume que último valor depois da vírgula é decimal
+    return parseFloat(cleanValue.replace('.', '').replace(',', '.'));
+  } else if (cleanValue.includes('.')) {
+    // Só ponto - pode ser "1.50" (decimal) ou "1.000" (inteiro)
+    // Se tiver 2+ dígitos após último ponto, é decimal; senão é milhar
+    const parts = cleanValue.split('.');
+    if (parts[parts.length - 1].length >= 2) {
+      return parseFloat(cleanValue);
+    } else {
+      return parseInt(cleanValue.replace(/\./g, ''), 10);
+    }
+  }
+  return parseInt(cleanValue, 10);
+}
+
+function formatValue(num: number): string {
+  if (num === 0) return '-';
+  return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export default function Kanban() {
   const { toast } = useToast();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -353,6 +394,9 @@ function KanbanColumn({
               <div className={`h-3 w-3 rounded-full ${coluna.cor}`} />
               <div className="flex flex-col">
                 <h3 className="font-semibold text-slate-900 dark:text-white">{coluna.titulo}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Total: R$ {formatValue(coluna.oportunidades.reduce((sum, opp) => sum + parseValue(opp.valorEstimado), 0))}
+                </p>
               </div>
             </div>
             <Badge variant="secondary" className="ml-auto bg-slate-100 dark:bg-slate-900">

@@ -29,6 +29,7 @@ import {
   ArrowDownRight,
   Zap,
   Activity,
+  DollarSign,
 } from "lucide-react";
 
 interface DashboardStats {
@@ -88,9 +89,45 @@ export default function Dashboard() {
     enabled: isAuthenticated,
   });
 
+  const { data: oportunidades, isLoading: oppLoading } = useQuery<any[]>({
+    queryKey: ["/api/opportunities"],
+    enabled: isAuthenticated,
+  });
+
   if (authLoading || !isAuthenticated) {
     return <DashboardSkeleton />;
   }
+
+  // Função para extrair número de valores em qualquer formato
+  const parseValue = (value: string | undefined): number => {
+    if (!value || typeof value !== 'string') return 0;
+    const cleanValue = value.replace(/[^\d.,]/g, '');
+    if (!cleanValue) return 0;
+    if (cleanValue.includes(',') && cleanValue.includes('.')) {
+      const lastCommaIndex = cleanValue.lastIndexOf(',');
+      const lastDotIndex = cleanValue.lastIndexOf('.');
+      if (lastCommaIndex > lastDotIndex) {
+        return parseFloat(cleanValue.replace(/\./g, '').replace(',', '.'));
+      } else {
+        return parseFloat(cleanValue.replace(/,/g, ''));
+      }
+    } else if (cleanValue.includes(',')) {
+      return parseFloat(cleanValue.replace('.', '').replace(',', '.'));
+    } else if (cleanValue.includes('.')) {
+      const parts = cleanValue.split('.');
+      if (parts[parts.length - 1].length >= 2) {
+        return parseFloat(cleanValue);
+      } else {
+        return parseInt(cleanValue.replace(/\./g, ''), 10);
+      }
+    }
+    return parseInt(cleanValue, 10);
+  };
+
+  // Calcular soma de valores em negociação
+  const totalValueNegotiation = oportunidades
+    ?.filter(opp => opp.etapa && opp.etapa !== 'fechado' && opp.etapa !== 'perdido')
+    .reduce((sum, opp) => sum + parseValue(opp.valorEstimado), 0) || 0;
 
   // Transformar dados para gráfico de funil
   const funnelChartData = funnelData
@@ -174,6 +211,27 @@ export default function Dashboard() {
               iconColor="text-purple-600 dark:text-purple-400"
             />
           </div>
+
+          {/* Value in Negotiation Card */}
+          <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  Total em Negociação
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {oppLoading ? (
+                <Skeleton className="h-12 w-40" />
+              ) : (
+                <div className="text-4xl font-bold text-emerald-600 dark:text-emerald-400">
+                  R$ {totalValueNegotiation.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Breakdown Card */}
           <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
