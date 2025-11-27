@@ -1277,136 +1277,120 @@ export default function CampanhasWhatsApp() {
 
       {/* Database Selector Dialog */}
       <Dialog open={mostrarSeletorBD} onOpenChange={setMostrarSeletorBD}>
-        <DialogContent className="max-w-7xl h-[95vh] flex flex-col">
-          <DialogHeader className="pb-4 border-b border-slate-200 dark:border-slate-700">
+        <DialogContent className="max-w-7xl h-[92vh] flex flex-col">
+          <DialogHeader className="pb-3 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
             <DialogTitle className="text-xl text-slate-900 dark:text-white">Selecionar Clientes da Base de Dados</DialogTitle>
-            <DialogDescription className="text-slate-600 dark:text-slate-400 mt-1">
-              Use os filtros de campanha para segmentar clientes, depois selecione e importe para sua campanha
+            <DialogDescription className="text-slate-600 dark:text-slate-400 mt-1 text-sm">
+              Use os filtros para segmentar clientes, depois selecione e importe para sua campanha
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-hidden flex flex-col gap-4 py-4">
-            {/* Filters Section */}
-            <div className="bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-700 rounded-lg p-4 space-y-3">
-              <div className="flex flex-col gap-3">
-                {/* Busca e Status */}
-                <div className="flex gap-2 items-end flex-wrap">
-                  <div className="flex-1 min-w-64">
-                    <Input
-                      placeholder="Buscar por razão social ou telefone..."
-                      value={searchClientes}
-                      onChange={(e) => setSearchClientes(e.target.value)}
-                      className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
-                      data-testid="input-search-clientes-db"
-                    />
-                  </div>
-                  <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-                    <SelectTrigger className="w-44 border-slate-200 dark:border-slate-700" data-testid="select-status-filter">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos os Status</SelectItem>
-                      <SelectItem value="lead">Lead</SelectItem>
-                      <SelectItem value="ativo">Ativo</SelectItem>
-                      <SelectItem value="proposta">Proposta</SelectItem>
-                      <SelectItem value="fechado">Fechado</SelectItem>
-                      <SelectItem value="perdido">Perdido</SelectItem>
-                      <SelectItem value="inativo">Inativo</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Período de Envio */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Período:</span>
-                  <DateRangeFilter
-                    startDate={dataEnvioInicio}
-                    endDate={dataEnvioFim}
-                    onStartDateChange={setDataEnvioInicio}
-                    onEndDateChange={setDataEnvioFim}
+          <div className="flex-1 overflow-hidden flex flex-col gap-3 py-3 px-1">
+            {/* Filters Section - Compacto */}
+            <div className="bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-700 rounded-lg p-3 space-y-2 flex-shrink-0">
+              {/* Linha 1: Busca e Status */}
+              <div className="flex gap-2 items-end flex-wrap">
+                <div className="flex-1 min-w-56">
+                  <Input
+                    placeholder="Buscar por razão social ou telefone..."
+                    value={searchClientes}
+                    onChange={(e) => setSearchClientes(e.target.value)}
+                    className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 h-9"
+                    data-testid="input-search-clientes-db"
                   />
                 </div>
+                <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+                  <SelectTrigger className="w-40 border-slate-200 dark:border-slate-700 h-9" data-testid="select-status-filter">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os Status</SelectItem>
+                    <SelectItem value="lead">Lead</SelectItem>
+                    <SelectItem value="ativo">Ativo</SelectItem>
+                    <SelectItem value="proposta">Proposta</SelectItem>
+                    <SelectItem value="fechado">Fechado</SelectItem>
+                    <SelectItem value="perdido">Perdido</SelectItem>
+                    <SelectItem value="inativo">Inativo</SelectItem>
+                  </SelectContent>
+                </Select>
 
-                {/* Status, Tipo, Carteira, Cidade */}
-                <div className="flex gap-2 flex-wrap items-center">
-                  <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-                    <SelectTrigger className="w-40 border-slate-200 dark:border-slate-700 h-9" data-testid="select-status-filter-2">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos Status</SelectItem>
-                      <SelectItem value="lead">Lead</SelectItem>
-                      <SelectItem value="ativo">Ativo</SelectItem>
-                      <SelectItem value="proposta">Proposta</SelectItem>
-                      <SelectItem value="fechado">Fechado</SelectItem>
-                      <SelectItem value="perdido">Perdido</SelectItem>
-                      <SelectItem value="inativo">Inativo</SelectItem>
-                    </SelectContent>
-                  </Select>
+                {/* Divider */}
+                <div className="h-6 w-px bg-border" />
 
-                  <MultiSelectFilter
-                    label="Tipo"
-                    options={tiposDisponiveis}
-                    selectedValues={selectedTiposFilter}
-                    onSelectionChange={setSelectedTiposFilter}
-                  />
+                {/* Período */}
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">Período:</span>
+                <DateRangeFilter
+                  startDate={dataEnvioInicio}
+                  endDate={dataEnvioFim}
+                  onStartDateChange={setDataEnvioInicio}
+                  onEndDateChange={setDataEnvioFim}
+                />
+              </div>
 
-                  <MultiSelectFilter
-                    label="Carteira"
-                    options={carteirasDisponiveis}
-                    selectedValues={selectedCarteirasFilter}
-                    onSelectionChange={setSelectedCarteirasFilter}
-                  />
+              {/* Linha 2: Filtros Multi-Select */}
+              <div className="flex gap-2 flex-wrap items-center">
+                <MultiSelectFilter
+                  label="Tipo"
+                  options={tiposDisponiveis}
+                  selectedValues={selectedTiposFilter}
+                  onSelectionChange={setSelectedTiposFilter}
+                />
 
-                  <MultiSelectFilter
-                    label="Cidade"
-                    options={cidadesDisponiveis.slice(0, 100)}
-                    selectedValues={selectedCidadesFilter}
-                    onSelectionChange={setSelectedCidadesFilter}
-                  />
+                <MultiSelectFilter
+                  label="Carteira"
+                  options={carteirasDisponiveis}
+                  selectedValues={selectedCarteirasFilter}
+                  onSelectionChange={setSelectedCarteirasFilter}
+                />
 
-                  <MultiSelectFilter
-                    label="Status Envio"
-                    options={["enviado", "nao_enviado", "erro"]}
-                    selectedValues={selectedSendStatusFilter}
-                    onSelectionChange={setSelectedSendStatusFilter}
-                  />
-                </div>
-                
-                {/* Tag Filters */}
-                <div className="flex gap-2 flex-wrap items-center">
+                <MultiSelectFilter
+                  label="Cidade"
+                  options={cidadesDisponiveis.slice(0, 100)}
+                  selectedValues={selectedCidadesFilter}
+                  onSelectionChange={setSelectedCidadesFilter}
+                />
+
+                <MultiSelectFilter
+                  label="Status Envio"
+                  options={["enviado", "nao_enviado", "erro"]}
+                  selectedValues={selectedSendStatusFilter}
+                  onSelectionChange={setSelectedSendStatusFilter}
+                />
+              </div>
+
+              {/* Linha 3: Tags */}
+              <div className="flex gap-2 flex-wrap items-center">
+                <Button
+                  variant={selectedTag === null ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedTag(null)}
+                  data-testid="button-filter-all-tags"
+                  className="h-8 px-2 text-xs rounded-full"
+                >
+                  Todas
+                </Button>
+                {tagsDisponiveis.length > 0 && tagsDisponiveis.map((tag) => (
                   <Button
-                    variant={selectedTag === null ? "default" : "outline"}
+                    key={tag.id}
+                    variant={selectedTag === tag.nome ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setSelectedTag(null)}
-                    data-testid="button-filter-all-tags"
-                    className="h-8 px-3 text-xs rounded-full"
+                    onClick={() => setSelectedTag(tag.nome)}
+                    data-testid={`button-filter-tag-${tag.id}`}
+                    className={`h-8 px-2 text-xs rounded-full ${
+                      selectedTag === tag.nome ? `text-white` : ""
+                    }`}
+                    style={selectedTag === tag.nome ? { backgroundColor: tag.cor } : {}}
                   >
-                    Todas Etiquetas
+                    {tag.nome}
                   </Button>
-                  {tagsDisponiveis.length > 0 && tagsDisponiveis.map((tag) => (
-                    <Button
-                      key={tag.id}
-                      variant={selectedTag === tag.nome ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedTag(tag.nome)}
-                      data-testid={`button-filter-tag-${tag.id}`}
-                      className={`h-8 px-3 text-xs rounded-full ${
-                        selectedTag === tag.nome ? `text-white` : ""
-                      }`}
-                      style={selectedTag === tag.nome ? { backgroundColor: tag.cor } : {}}
-                    >
-                      {tag.nome}
-                    </Button>
-                  ))}
-                </div>
+                ))}
+              </div>
 
-                {/* Counter */}
-                <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  <span className="text-blue-600 dark:text-blue-400">{clientesFiltrados.length}</span>
-                  {" cliente" + (clientesFiltrados.length !== 1 ? "s" : "")} encontrado{clientesFiltrados.length !== 1 ? "s" : ""}
-                  {clientesSelecionados.size > 0 && <span className="ml-4">• <span className="text-green-600 dark:text-green-400">{clientesSelecionados.size}</span> selecionado{clientesSelecionados.size !== 1 ? "s" : ""}</span>}
-                </div>
+              {/* Info Line: Counter */}
+              <div className="text-xs font-medium text-slate-700 dark:text-slate-300 pt-1">
+                <span className="text-blue-600 dark:text-blue-400">{clientesFiltrados.length}</span>
+                {" cliente" + (clientesFiltrados.length !== 1 ? "s" : "")} •
+                {clientesSelecionados.size > 0 && <span className="ml-2"><span className="text-green-600 dark:text-green-400">{clientesSelecionados.size}</span> selecionado{clientesSelecionados.size !== 1 ? "s" : ""}</span>}
               </div>
             </div>
 
@@ -1469,41 +1453,42 @@ export default function CampanhasWhatsApp() {
             )}
 
             {/* Quick Actions */}
-            {clientesFiltrados.length > 0 && (
-              <div className="bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-700 rounded-lg p-4 space-y-3">
-                <div className="text-sm font-semibold text-slate-900 dark:text-white">Ações Rápidas:</div>
-                <div className="flex gap-2 flex-wrap">
+            {clientesFiltrados.length > 0 && filtersInitiated && (
+              <div className="bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-700 rounded-lg p-2 flex gap-2 items-center flex-wrap flex-shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={selecionarTodos}
+                  disabled={clientesFiltrados.length === 0}
+                  className="h-8 text-xs"
+                  data-testid="button-selecionar-todos"
+                >
+                  ✓ Selecionar Todos
+                </Button>
+                <div className="flex gap-2 items-center">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={clientesFiltrados.length}
+                    value={quantidadeAleatoria}
+                    onChange={(e) => setQuantidadeAleatoria(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 h-8 w-16 text-xs"
+                    data-testid="input-quantidade-aleatoria"
+                  />
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={selecionarTodos}
+                    onClick={selecionarAleatorios}
                     disabled={clientesFiltrados.length === 0}
-                    className="text-slate-700 dark:text-slate-200"
-                    data-testid="button-selecionar-todos"
+                    className="h-8 text-xs"
+                    data-testid="button-selecionar-aleatorios"
                   >
-                    ✓ Selecionar Todos ({clientesFiltrados.length})
+                    🎲 Aleatórios
                   </Button>
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      type="number"
-                      min={1}
-                      max={clientesFiltrados.length}
-                      value={quantidadeAleatoria}
-                      onChange={(e) => setQuantidadeAleatoria(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 h-9 w-20"
-                      data-testid="input-quantidade-aleatoria"
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={selecionarAleatorios}
-                      disabled={clientesFiltrados.length === 0}
-                      className="text-slate-700 dark:text-slate-200"
-                      data-testid="button-selecionar-aleatorios"
-                    >
-                      🎲 Aleatórios
-                    </Button>
-                  </div>
+                </div>
+                <div className="h-5 w-px bg-border" />
+                <div className="text-xs font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                  Selecionados: <span className="text-green-600 dark:text-green-400 font-semibold">{clientesSelecionados.size}</span> / {clientesFiltrados.length}
                 </div>
               </div>
             )}
