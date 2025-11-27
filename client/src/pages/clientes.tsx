@@ -262,6 +262,12 @@ export default function Clientes() {
     refetchInterval: 5000,
   });
 
+  // Fetch all tipos
+  const { data: tiposDoDb = [] } = useQuery<string[]>({
+    queryKey: ["/api/clients/tipos"],
+    enabled: isAuthenticated,
+  });
+
   // Fetch clients with stats
   const { data, isLoading } = useQuery<{ clientes: Client[]; total: number }>({
     queryKey: [
@@ -325,8 +331,8 @@ export default function Clientes() {
   const clientesAtivos = data?.clientes?.filter(c => c.status === 'ativo').length || 0;
   const leads = data?.clientes?.filter(c => c.status === 'lead').length || 0;
 
-  // Get unique tipos
-  const tiposUnicos = [...new Set((data?.clientes || []).map(c => c.tipo).filter(Boolean))].sort();
+  // Use tipos from DB, fallback to loaded clients
+  const tiposUnicos = tiposDoDb.length > 0 ? tiposDoDb : [...new Set((data?.clientes || []).map(c => c.tipo).filter(Boolean))].sort();
 
   // Filter and sort clients
   const clientesFiltrados = (data?.clientes || [])

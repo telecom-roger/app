@@ -90,6 +90,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para listar todos os tipos únicos
+  app.get("/api/clients/tipos", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const whereCondition = user.role === 'admin' ? undefined : or(
+        eq(clients.createdBy, user.id),
+        sql`${clients.createdBy} IS NULL`
+      );
+      
+      const tiposResult = await db
+        .selectDistinct({ tipo: clients.tipo })
+        .from(clients)
+        .where(whereCondition);
+      
+      const tipos = tiposResult
+        .map(r => r.tipo)
+        .filter((t): t is string => t !== null && t !== undefined && t !== '')
+        .sort();
+      
+      res.json(tipos);
+    } catch (error: any) {
+      console.error("Error fetching tipos:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Endpoint para listar clientes com WhatsApp (MUST be before :id route)
   app.get("/api/clients/whatsapp-list", isAuthenticated, async (req, res) => {
     try {
