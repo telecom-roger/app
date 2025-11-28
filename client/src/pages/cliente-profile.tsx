@@ -63,9 +63,9 @@ export default function ClienteProfile() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Header */}
-      <div className="border-b px-4 py-3 flex items-center justify-between bg-card">
+      <div className="border-b px-4 py-3 flex items-center justify-between bg-white dark:bg-slate-900">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" asChild data-testid="button-back">
             <Link href="/clientes">
@@ -82,9 +82,9 @@ export default function ClienteProfile() {
       </div>
 
       {/* Main Layout - 3 Columns */}
-      <div className="flex flex-1 overflow-hidden bg-background">
+      <div className="flex flex-1 overflow-hidden">
         {/* LEFT SIDEBAR - Menu & Actions */}
-        <div className="w-64 border-r bg-card overflow-y-auto">
+        <div className="w-64 border-r bg-white dark:bg-slate-900 overflow-y-auto">
           <ScrollArea className="h-full">
             <div className="p-4 space-y-6">
               {/* Client Header Card */}
@@ -206,9 +206,9 @@ export default function ClienteProfile() {
         </div>
 
         {/* CENTER - Timeline/Chat Feed */}
-        <div className="flex-1 border-r flex flex-col bg-background">
+        <div className="flex-1 border-r flex flex-col">
           {/* Timeline Header */}
-          <div className="border-b px-6 py-4 bg-background">
+          <div className="border-b px-6 py-4 bg-white dark:bg-slate-900">
             <h3 className="font-semibold text-sm">Histórico de Interações</h3>
           </div>
 
@@ -247,7 +247,7 @@ export default function ClienteProfile() {
         </div>
 
         {/* RIGHT SIDEBAR - Client Information */}
-        <div className="w-80 bg-card border-l overflow-y-auto">
+        <div className="w-80 bg-white dark:bg-slate-900 border-l overflow-y-auto">
           <ScrollArea className="h-full">
             <div className="p-4 space-y-6">
               {/* Status Badge */}
