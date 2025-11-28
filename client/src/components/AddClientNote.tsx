@@ -209,13 +209,53 @@ export function AddClientNote({ clientId }: AddClientNoteProps) {
                 data-testid="input-data-atividade"
               />
             </div>
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" size="sm" onClick={handleCancel} className="text-xs h-7" data-testid="button-cancelar">
-                Cancelar
-              </Button>
-              <Button size="sm" onClick={handleSave} disabled={mutation.isPending} className="text-xs h-7" data-testid="button-salvar-atividade">
-                {mutation.isPending ? "Salvando..." : "Salvar"}
-              </Button>
+            
+            {anexos.length > 0 && (
+              <div className="bg-muted p-2 rounded text-xs space-y-1">
+                <p className="font-medium">Anexos:</p>
+                {anexos.map((anexo, idx) => (
+                  <div key={idx} className="flex items-center justify-between gap-2 bg-background p-1 rounded">
+                    <span className="truncate">{anexo.nome}</span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-5 w-5"
+                      onClick={() => setAnexos(anexos.filter((_, i) => i !== idx))}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-2 justify-between">
+              <div className="flex gap-1">
+                <input
+                  type="file"
+                  multiple
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  id="file-input-atividade"
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                />
+                <button
+                  type="button"
+                  onClick={() => document.getElementById("file-input-atividade")?.click()}
+                  className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Paperclip className="h-3 w-3" />
+                  <span>Anexar</span>
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => { handleCancel(); resetFileInput(); }} className="text-xs h-7" data-testid="button-cancelar">
+                  Cancelar
+                </Button>
+                <Button size="sm" onClick={() => { handleSave(); resetFileInput(); }} disabled={mutation.isPending} className="text-xs h-7" data-testid="button-salvar-atividade">
+                  {mutation.isPending ? "Salvando..." : "Salvar"}
+                </Button>
+              </div>
             </div>
           </TabsContent>
 
@@ -237,15 +277,50 @@ export function AddClientNote({ clientId }: AddClientNoteProps) {
                 data-testid="input-data-agendamento"
               />
             </div>
+            
+            {anexos.length > 0 && (
+              <div className="bg-muted p-2 rounded text-xs space-y-1">
+                <p className="font-medium">Anexos:</p>
+                {anexos.map((anexo, idx) => (
+                  <div key={idx} className="flex items-center justify-between gap-2 bg-background p-1 rounded">
+                    <span className="truncate">{anexo.nome}</span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-5 w-5"
+                      onClick={() => setAnexos(anexos.filter((_, i) => i !== idx))}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="flex gap-2 justify-between">
-              <Button size="icon" variant="ghost" className="h-7 w-7" data-testid="button-anexar-arquivo">
-                <Plus className="h-3 w-3" />
-              </Button>
+              <div className="flex gap-1">
+                <input
+                  type="file"
+                  multiple
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  id="file-input-agendamento"
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                />
+                <button
+                  type="button"
+                  onClick={() => document.getElementById("file-input-agendamento")?.click()}
+                  className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Paperclip className="h-3 w-3" />
+                  <span>Anexar</span>
+                </button>
+              </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleCancel} className="text-xs h-7" data-testid="button-cancelar">
+                <Button variant="outline" size="sm" onClick={() => { handleCancel(); resetFileInput(); }} className="text-xs h-7" data-testid="button-cancelar">
                   Cancelar
                 </Button>
-                <Button size="sm" onClick={handleSave} disabled={mutation.isPending} className="text-xs h-7" data-testid="button-salvar-agendamento">
+                <Button size="sm" onClick={() => { handleSave(); resetFileInput(); }} disabled={mutation.isPending} className="text-xs h-7" data-testid="button-salvar-agendamento">
                   {mutation.isPending ? "Salvando..." : "Salvar"}
                 </Button>
               </div>
