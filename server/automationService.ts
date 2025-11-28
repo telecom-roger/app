@@ -60,6 +60,9 @@ async function executeAutomationTask(task: any) {
     case "auto_send":
       await executeAutoSend(task);
       break;
+    case "kanban_move":
+      await executeKanbanMove(task);
+      break;
   }
 
   // Marcar como executado
@@ -239,6 +242,31 @@ export async function updateClientScore(clientId: string, userId: string) {
     console.log(`⭐ Score atualizado: ${scoreTotal}/100`);
   } catch (error) {
     console.error(`❌ Erro ao atualizar score:`, error);
+  }
+}
+
+// ======================== KANBAN MOVE AUTOMÁTICO ========================
+async function executeKanbanMove(task: any) {
+  try {
+    const taskData = task.dados || {};
+    const { oppId, toStage } = taskData;
+
+    console.log(`📊 Movendo oportunidade ${oppId} para: ${toStage}`);
+
+    if (!oppId || !toStage) {
+      console.error(`❌ Dados inválidos para kanban move:`, taskData);
+      return;
+    }
+
+    await db
+      .update(opportunities)
+      .set({ etapa: toStage })
+      .where(eq(opportunities.id, oppId));
+
+    console.log(`✅ Oportunidade movida para ${toStage}!`);
+  } catch (error) {
+    console.error(`❌ Erro ao mover Kanban:`, error);
+    throw error;
   }
 }
 
