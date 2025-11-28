@@ -45,10 +45,10 @@ function Router({ isAuthenticated }: { isAuthenticated: boolean }) {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/dashboard" component={Dashboard} />
-      <Route path="/clientes" component={Clientes} />
       <Route path="/clientes/novo" component={ClienteForm} />
       <Route path="/clientes/:id/editar" component={ClienteForm} />
       <Route path="/clientes/:id" component={ClienteProfile} />
+      <Route path="/clientes" component={Clientes} />
       <Route path="/clientes/editar/:id" component={ClienteForm} />
       <Route path="/oportunidades" component={Kanban} />
       <Route path="/kanban-settings" component={KanbanSettings} />
