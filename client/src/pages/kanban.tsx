@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -527,6 +528,8 @@ function OpportunityCard({
   draggedCard: { id: string; fromEtapa: string } | null;
   setDraggedCard: (card: { id: string; fromEtapa: string } | null) => void;
 }) {
+  const [, navigate] = useLocation();
+
   const handleDragStart = () => {
     setDraggedCard({ id: oportunidade.id, fromEtapa: oportunidade.etapa });
   };
@@ -551,7 +554,11 @@ function OpportunityCard({
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             {cliente?.razaoSocial && (
-              <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase truncate">
+              <p 
+                onClick={() => navigate(`/clientes/${cliente.id}`)}
+                className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase truncate hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors"
+                data-testid={`text-cliente-razao-${cliente.id}`}
+              >
                 {cliente.razaoSocial}
               </p>
             )}
