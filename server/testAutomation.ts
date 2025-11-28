@@ -343,51 +343,34 @@ export async function simulateClientResponse(clientId: string, userId: string, m
 
     console.log(`📊 IA retornou: ${analysis.sentimento} → ${analysis.etapa}`);
 
-    // 4. Mover Kanban se houver oportunidade
-    const opp = await db.query.opportunities.findFirst({
-      where: (o: any) => eq(o.clientId, clientId),
-    });
-
-    if (opp && analysis.etapa !== "automatico") {
-      await db.update(opportunities).set({ etapa: analysis.etapa }).where(eq(opportunities.id, opp.id));
-      console.log(`📈 Oportunidade movida para: ${analysis.etapa}`);
+    // 4. CRIAR NOVA oportunidade na etapa correta (teste manual)
+    if (analysis.etapa !== "automatico" && client) {
+      const newOpp = await db.insert(opportunities).values({
+        clientId,
+        titulo: `${client.nome || client.razaoSocial} - ${analysis.motivo}`,
+        etapa: analysis.etapa,
+        valorEstimado: "5000",
+        responsavelId: userId,
+        ordem: 0,
+      }).returning().then(r => r[0]);
+      
+      console.log(`✅ Oportunidade criada em "${analysis.etapa}": ${newOpp.id}`);
+      
+      return { 
+        success: true, 
+        clientId, 
+        message: `✅ Oportunidade criada em "${analysis.etapa}"\n📊 Sentimento: ${analysis.sentimento}\n💡 ${analysis.sugestao}`,
+        analysis,
+        opportunityId: newOpp.id,
+      };
     }
 
-    // 5. Criar 3 follow-ups automáticos
-    const now = new Date();
-    await db.insert(automationTasks).values({
-      userId,
-      clientId,
-      tipo: "follow_up",
-      status: "pendente",
-      proximaExecucao: new Date(now.getTime() - 10 * 1000),
-      dados: { numero: 1, conversationId: conv.id, dias: 1 },
-    });
-
-    await db.insert(automationTasks).values({
-      userId,
-      clientId,
-      tipo: "follow_up",
-      status: "pendente",
-      proximaExecucao: new Date(now.getTime() - 5 * 1000),
-      dados: { numero: 2, conversationId: conv.id, dias: 3 },
-    });
-
-    await db.insert(automationTasks).values({
-      userId,
-      clientId,
-      tipo: "follow_up",
-      status: "pendente",
-      proximaExecucao: new Date(now.getTime()),
-      dados: { numero: 3, conversationId: conv.id, dias: 7 },
-    });
-
-    console.log(`✅ Teste concluído: Mensagem criada + Kanban movido + 3 follow-ups agendados`);
+    console.log(`✅ Teste concluído: Mensagem criada + Oportunidade criada`);
     
     return { 
       success: true, 
       clientId, 
-      message: `IA respondeu: ${analysis.sentimento} → ${analysis.etapa}. Kanban movido + 3 follow-ups criados!`,
+      message: `IA respondeu: ${analysis.sentimento} → ${analysis.etapa}`,
       analysis,
     };
   } catch (error) {
