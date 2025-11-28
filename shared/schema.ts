@@ -615,3 +615,88 @@ export const insertCampaignGroupSchema = createInsertSchema(campaignGroups).omit
 
 export type CampaignGroup = typeof campaignGroups.$inferSelect;
 export type InsertCampaignGroup = z.infer<typeof insertCampaignGroupSchema>;
+
+// ==================== AUTOMATION TASKS ====================
+export const automationTasks = pgTable("automation_tasks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  tipo: varchar("tipo", { length: 50 }).notNull(), // "follow_up", "re_engagement", "score_update", "auto_send"
+  status: varchar("status", { length: 50 }).notNull().default("pendente"), // pendente, executado, erro
+  proximaExecucao: timestamp("proxima_execucao").notNull(),
+  dados: jsonb("dados").default(sql`'{}'::jsonb`), // { diasSinceLastContact, tentativas, mensagem, etc }
+  tentativas: integer("tentativas").default(0),
+  ultimaTentativa: timestamp("ultima_tentativa"),
+  erro: text("erro"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_automation_tasks_user").on(table.userId),
+  index("idx_automation_tasks_client").on(table.clientId),
+  index("idx_automation_tasks_status").on(table.status),
+  index("idx_automation_tasks_proxima").on(table.proximaExecucao),
+]);
+
+export const insertAutomationTaskSchema = createInsertSchema(automationTasks).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  tentativas: true,
+  ultimaTentativa: true,
+});
+
+export type AutomationTask = typeof automationTasks.$inferSelect;
+export type InsertAutomationTask = z.infer<typeof insertAutomationTaskSchema>;
+
+// ==================== FOLLOW UPS ====================
+export const followUps = pgTable("follow_ups", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  numero: integer("numero").notNull(), // 1, 2, 3 follow-up
+  diasSinceLastContact: integer("dias_since_last_contact").notNull(),
+  resultado: varchar("resultado", { length: 50 }), // "resposta", "sem_resposta", "recusou", "converteu"
+  executadoEm: timestamp("executado_em"),
+  proximoFollowUpEm: timestamp("proximo_follow_up_em"),
+  descricao: text("descricao"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_follow_ups_user").on(table.userId),
+  index("idx_follow_ups_client").on(table.clientId),
+  index("idx_follow_ups_numero").on(table.numero),
+  index("idx_follow_ups_executado").on(table.executadoEm),
+]);
+
+export const insertFollowUpSchema = createInsertSchema(followUps).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type FollowUp = typeof followUps.$inferSelect;
+export type InsertFollowUp = z.infer<typeof insertFollowUpSchema>;
+
+// ==================== CLIENT SCORES ====================
+export const clientScores = pgTable("client_scores", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  scoreIA: integer("score_ia").default(0), // 0-100 from AI analysis
+  scoreContato: integer("score_contato").default(0), // Contact frequency
+  scoreEngajamento: integer("score_engajamento").default(0), // Engagement level
+  scorePotencial: integer("score_potencial").default(0), // Revenue potential
+  scoreTotal: integer("score_total").default(0), // Weighted total
+  ultimaAtualizacao: timestamp("ultima_atualizacao").defaultNow(),
+  proximaAtualizacao: timestamp("proxima_atualizacao"),
+}, (table) => [
+  index("idx_client_scores_user").on(table.userId),
+  index("idx_client_scores_client").on(table.clientId),
+  index("idx_client_scores_total").on(table.scoreTotal),
+]);
+
+export const insertClientScoreSchema = createInsertSchema(clientScores).omit({
+  id: true,
+  ultimaAtualizacao: true,
+});
+
+export type ClientScore = typeof clientScores.$inferSelect;
+export type InsertClientScore = z.infer<typeof insertClientScoreSchema>;

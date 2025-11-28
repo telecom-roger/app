@@ -41,6 +41,12 @@ import type {
   InsertCampaignGroup,
   KanbanStage,
   InsertKanbanStage,
+  AutomationTask,
+  InsertAutomationTask,
+  FollowUp,
+  InsertFollowUp,
+  ClientScore,
+  InsertClientScore,
 } from "@shared/schema";
 import {
   clients,
@@ -64,6 +70,9 @@ import {
   campaignSendings,
   campaignGroups,
   kanbanStages,
+  automationTasks,
+  followUps,
+  clientScores,
 } from "@shared/schema";
 
 // ==================== USER STORAGE ====================

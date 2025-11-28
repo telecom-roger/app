@@ -1,0 +1,300 @@
+import * as storage from "./storage";
+import { db } from "./db";
+import { eq, and, lt, isNull, gte } from "drizzle-orm";
+import { automationTasks, followUps, clientScores, opportunities, clients as clientsTable, messages } from "@shared/schema";
+import { analyzeClientMessage } from "./aiService";
+
+// ======================== CRON JOB: Executar tarefas pendentes ========================
+export async function processAutomationTasks() {
+  try {
+    console.log(`\n🤖 [AUTOMATION] Processando tarefas agendadas...`);
+    
+    const now = new Date();
+    const pendingTasks = await db
+      .select()
+      .from(automationTasks)
+      .where(
+        and(
+          eq(automationTasks.status, "pendente"),
+          lt(automationTasks.proximaExecucao, now)
+        )
+      )
+      .limit(50); // Processar até 50 por vez
+
+    console.log(`📋 Encontradas ${pendingTasks.length} tarefas`);
+
+    for (const task of pendingTasks) {
+      try {
+        await executeAutomationTask(task);
+      } catch (error) {
+        console.error(`❌ Erro ao executar tarefa ${task.id}:`, error);
+        await db
+          .update(automationTasks)
+          .set({
+            status: "erro",
+            erro: String(error),
+            ultimaTentativa: new Date(),
+            tentativas: (task.tentativas || 0) + 1,
+          })
+          .where(eq(automationTasks.id, task.id));
+      }
+    }
+  } catch (error) {
+    console.error(`❌ Erro geral na automação:`, error);
+  }
+}
+
+async function executeAutomationTask(task: any) {
+  const taskData = task.dados || {};
+  
+  switch (task.tipo) {
+    case "follow_up":
+      await executeFollowUp(task);
+      break;
+    case "re_engagement":
+      await executeReEngagement(task);
+      break;
+    case "score_update":
+      await updateClientScore(task.clientId, task.userId);
+      break;
+    case "auto_send":
+      await executeAutoSend(task);
+      break;
+  }
+
+  // Marcar como executado
+  await db
+    .update(automationTasks)
+    .set({
+      status: "executado",
+      ultimaTentativa: new Date(),
+      tentativas: (task.tentativas || 0) + 1,
+    })
+    .where(eq(automationTasks.id, task.id));
+}
+
+// ======================== FOLLOW UP AUTOMÁTICO ========================
+async function executeFollowUp(task: any) {
+  const taskData = task.dados || {};
+  
+  console.log(`📞 Follow-up #${taskData.numero} para cliente ${task.clientId}`);
+
+  const client = await db.query.clients.findFirst({
+    where: (c: any) => eq(c.id, task.clientId),
+  });
+
+  if (!client) return;
+
+  // Buscar última interação
+  const lastMessage = await db
+    .select()
+    .from(messages)
+    .where(
+      and(
+        eq(messages.conversationId, taskData.conversationId || ""),
+        eq(messages.sender, "client")
+      )
+    )
+    .orderBy((m: any) => m.createdAt)
+    .limit(1);
+
+  const diasSinceContact = lastMessage?.[0] 
+    ? Math.floor((Date.now() - lastMessage[0].createdAt.getTime()) / (1000 * 60 * 60 * 24))
+    : 999;
+
+  // Criar notificação de follow-up
+  await storage.createNotification({
+    titulo: `📞 Follow-up #${taskData.numero} - ${client.nome}`,
+    descricao: `Cliente sem resposta há ${diasSinceContact} dias. Resgate agora!`,
+    clientId: task.clientId,
+    userId: task.userId,
+  });
+
+  // Registrar follow-up
+  await db.insert(followUps).values({
+    userId: task.userId,
+    clientId: task.clientId,
+    numero: taskData.numero || 1,
+    diasSinceLastContact: diasSinceContact,
+    executadoEm: new Date(),
+    descricao: `Follow-up automático executado`,
+  });
+}
+
+// ======================== RE-ENGAGEMENT ========================
+async function executeReEngagement(task: any) {
+  const taskData = task.dados || {};
+  
+  console.log(`♻️ Re-engagement para cliente ${task.clientId}`);
+
+  const client = await db.query.clients.findFirst({
+    where: (c: any) => eq(c.id, task.clientId),
+  });
+
+  if (!client) return;
+
+  // Notificar vendedor para re-engajar
+  await storage.createNotification({
+    titulo: `♻️ Re-engagement - ${client.nome}`,
+    descricao: `Cliente inativo há mais de 30 dias. Considere enviar uma mensagem personalizada!`,
+    clientId: task.clientId,
+    userId: task.userId,
+  });
+}
+
+// ======================== AUTO SEND (WhatsApp/Email) ========================
+async function executeAutoSend(task: any) {
+  const taskData = task.dados || {};
+  
+  console.log(`💬 Auto-send para cliente ${task.clientId}`);
+  
+  // Aqui você integraria com seu serviço de envio
+  // Por enquanto, apenas registra a tentativa
+  await storage.createNotification({
+    titulo: `💬 Mensagem automática enviada`,
+    descricao: `Mensagem: "${taskData.mensagem || "---}"}"`,
+    clientId: task.clientId,
+    userId: task.userId,
+  });
+}
+
+// ======================== SCORING AUTOMÁTICO ========================
+export async function updateClientScore(clientId: string, userId: string) {
+  try {
+    console.log(`⭐ Atualizando score para cliente ${clientId}`);
+
+    const client = await db.query.clients.findFirst({
+      where: (c: any) => eq(c.id, clientId),
+    });
+
+    if (!client) return;
+
+    // Buscar histórico de mensagens para engagement
+    const messageCount = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.conversationId, clientId));
+
+    // Buscar oportunidades
+    const opps = await db
+      .select()
+      .from(opportunities)
+      .where(eq(opportunities.clientId, clientId));
+
+    // Calcular scores
+    const scoreEngajamento = Math.min(messageCount.length * 10, 100); // 0-100
+    const scoreContato = opps.length > 0 ? 50 : 0; // Tem oportunidade?
+    const scorePotencial = client.valor_contrato ? 60 : 20; // Tem valor?
+    
+    // Score IA: baseado em última ação
+    let scoreIA = 40; // Default neutral
+    if (opps.length > 0) {
+      const lastOpp = opps[opps.length - 1];
+      if (lastOpp.etapa === "proposta") scoreIA = 80;
+      if (lastOpp.etapa === "fechado") scoreIA = 100;
+      if (lastOpp.etapa === "perdido") scoreIA = 10;
+    }
+
+    const scoreTotal = Math.round((scoreIA + scoreContato + scoreEngajamento + scorePotencial) / 4);
+
+    // Upsert score
+    const existing = await db
+      .select()
+      .from(clientScores)
+      .where(
+        and(
+          eq(clientScores.clientId, clientId),
+          eq(clientScores.userId, userId)
+        )
+      );
+
+    if (existing.length > 0) {
+      await db
+        .update(clientScores)
+        .set({
+          scoreIA,
+          scoreContato,
+          scoreEngajamento,
+          scorePotencial,
+          scoreTotal,
+          ultimaAtualizacao: new Date(),
+        })
+        .where(eq(clientScores.id, existing[0].id));
+    } else {
+      await db.insert(clientScores).values({
+        userId,
+        clientId,
+        scoreIA,
+        scoreContato,
+        scoreEngajamento,
+        scorePotencial,
+        scoreTotal,
+        proximaAtualizacao: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      });
+    }
+
+    console.log(`⭐ Score atualizado: ${scoreTotal}/100`);
+  } catch (error) {
+    console.error(`❌ Erro ao atualizar score:`, error);
+  }
+}
+
+// ======================== CRIAR FOLLOW-UP AUTOMÁTICO APÓS RESPOSTA ========================
+export async function createFollowUpAfterResponse(clientId: string, userId: string, conversationId: string) {
+  try {
+    // Follow-up 1: 1 dia
+    await db.insert(automationTasks).values({
+      userId,
+      clientId,
+      tipo: "follow_up",
+      proximaExecucao: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
+      dados: { numero: 1, conversationId, dias: 1 },
+    });
+
+    // Follow-up 2: 3 dias
+    await db.insert(automationTasks).values({
+      userId,
+      clientId,
+      tipo: "follow_up",
+      proximaExecucao: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      dados: { numero: 2, conversationId, dias: 3 },
+    });
+
+    // Follow-up 3: 7 dias
+    await db.insert(automationTasks).values({
+      userId,
+      clientId,
+      tipo: "follow_up",
+      proximaExecucao: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      dados: { numero: 3, conversationId, dias: 7 },
+    });
+
+    // Score update: 12 horas
+    await db.insert(automationTasks).values({
+      userId,
+      clientId,
+      tipo: "score_update",
+      proximaExecucao: new Date(Date.now() + 12 * 60 * 60 * 1000),
+      dados: { reason: "update_after_response" },
+    });
+
+    console.log(`✨ Follow-ups automáticos agendados para ${clientId}`);
+  } catch (error) {
+    console.error(`❌ Erro ao criar follow-ups:`, error);
+  }
+}
+
+// ======================== SCHEDULER DE CRON (executar a cada 5 minutos) ========================
+export function startAutomationCron() {
+  console.log(`\n⏰ [AUTOMATION CRON] Iniciando scheduler...`);
+  
+  // Executar a cada 5 minutos
+  const interval = setInterval(() => {
+    processAutomationTasks().catch(console.error);
+  }, 5 * 60 * 1000);
+
+  // Executar também na inicialização
+  processAutomationTasks().catch(console.error);
+
+  return () => clearInterval(interval);
+}

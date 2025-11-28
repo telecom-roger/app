@@ -43,3 +43,31 @@ The application features a professional design system utilizing a deep dark blue
 - **PapaParse**: For parsing CSV/XLSX files during client imports.
 - **Framer Motion**: For UI animations.
 - **Recharts**: For data visualization in the analytical dashboard.
+---
+
+## 🚀 FASE 4 IMPLEMENTADA - ESTRUTURA DE AUTOMAÇÃO (Nov 28, 16:40)
+
+**3 Novas Tabelas:**
+- `automation_tasks` - Agendador de tarefas (follow-up, re-engagement, scoring, auto-send)
+- `follow_ups` - Histórico de follow-ups (1º, 2º, 3º com status)  
+- `client_scores` - Scoring automático (4 métricas: IA, Contato, Engajamento, Potencial)
+
+**automationService.ts - Orquestrador Completo:**
+- `processAutomationTasks()` - Executa tarefas pendentes
+- `executeFollowUp()` - Follow-ups automáticos 1, 3, 7 dias
+- `executeReEngagement()` - Re-engaja clientes inativos > 30 dias
+- `updateClientScore()` - Calcula score total (0-100)
+- `startAutomationCron()` - Cron a cada 5 minutos
+
+**Integração:**
+- ✅ automationService inicializado em app.ts
+- ✅ npm run db:push executado com sucesso
+- ✅ Cron jobs rodando a cada 5 minutos
+- ✅ Banco de dados sincronizado
+
+**Fluxo Automático Completo:**
+Cliente responde → IA analisa → Move Kanban → Cria 3 follow-ups automáticos → Score atualizado → Vendedor notificado → Re-engagement se inativo
+
+---
+
+**Status:** ✅ Estrutura de Automação OPERACIONAL
