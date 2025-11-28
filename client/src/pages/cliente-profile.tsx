@@ -60,6 +60,7 @@ export default function ClienteProfile() {
   const { data: timeline, isLoading: timelineLoading } = useQuery<Interaction[]>({
     queryKey: ["/api/timeline", id],
     enabled: isAuthenticated && !!id,
+    refetchOnWindowFocus: true,
   });
 
   const { data: clientNotes, isLoading: notesLoading } = useQuery<ClientNote[]>({
