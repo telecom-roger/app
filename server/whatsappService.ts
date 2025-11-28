@@ -278,6 +278,7 @@ async function processIncomingMessages(sessionId: string, m: any) {
               status: "Lead",
               carteira: "Dominio",
               score: 0,
+              createdBy: userId, // Atrelar ao usuário que recebeu a mensagem
             });
             
             console.log(`✅ Novo cliente criado: ${novoCliente.id} (${senderPhone})`);

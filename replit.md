@@ -265,6 +265,26 @@ Isso inicia:
    - Solução: Publicar em Reserved VM para deixar sempre online
    - Status: ✅ Botão de publicação disponível (usuário em processo de publicar)
 
+4. ✅ **ISOLAMENTO POR USUÁRIO EM CAMPANHAS AGENDADAS** (Nov 28, 16:00)
+   - Problema: Scheduler executava TODAS as campanhas com TODOS os clientes de TODOS usuários
+   - Solução: MODO 1 (Isolado por Usuário) implementado
+   - Detalhes: 
+     - Scheduler agora carrega campanhas agendadas
+     - Para cada campanha, identifica o `createdBy` (dono)
+     - Carrega APENAS clientes daquele usuário
+     - Executa isoladamente
+   - Arquivos: `server/routes.ts` (scheduler actualizado)
+   - Benefícios: ✅ Segurança, ✅ Privacidade, ✅ Auditoria completa
+   - Status: ✅ Implementado e funcionando
+
+5. ✅ **NOVO CLIENTE CRIADO COM createdBy ATRELADO AO USUÁRIO** (Nov 28, 16:10)
+   - Problema: Quando WhatsApp criava novo contato automaticamente, não estava atrelado ao usuário
+   - Solução: Adicionado `createdBy: userId` em ambos os locais:
+     - `whatsappService.ts` (linha 284) - criação automática por WhatsApp
+     - `routes.ts` - endpoint de teste (removido após teste)
+   - Resultado: Novo cliente agora aparece com `createdBy` correto
+   - Status: ✅ Corrigido e validado
+
 **Próximas Ações (Fase 3):**
 1. Teste de respostas de clientes (validar se novo contato não é mais criado)
 2. Dashboard de performance por vendedor
