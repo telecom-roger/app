@@ -22,7 +22,7 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
       sentimento: "fornecedor",
       confianca: 90,
       motivo: "Mensagem automática ou resposta de fornecedor detectada",
-      etapa: "Fornecedor",
+      etapa: "FORNECEDOR",
       sugestao: "Aguardando confirmação ou contato posterior",
     };
   }
@@ -32,7 +32,7 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
       sentimento: "positivo",
       confianca: 95,
       motivo: "Resposta positiva detectada",
-      etapa: "Proposta Enviada",
+      etapa: "PROPOSTA ENVIADA",
       sugestao: "Aguardar resposta do cliente",
     };
   }
@@ -42,7 +42,7 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
       sentimento: "negativo",
       confianca: 90,
       motivo: "Resposta negativa detectada",
-      etapa: "Perdido",
+      etapa: "PERDIDO",
       sugestao: "Arquivar ou tentar resgate posterior",
     };
   }
@@ -52,7 +52,7 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
       sentimento: "positivo",
       confianca: 85,
       motivo: "Pergunta sobre preço",
-      etapa: "Lead",
+      etapa: "LEAD",
       sugestao: "Enviar tabela de preços",
     };
   }
@@ -87,15 +87,15 @@ MENSAGEM: "${mensagem}"
 CLIENTE: ${clienteInfo?.razaoSocial || clienteInfo?.nome || "Desconhecido"}
 
 REGRAS DE CLASSIFICAÇÃO - SIGA EXATAMENTE:
-1. "OK", "SIM", "TOPA", "MANDA", qualquer aprovação → etapa "Proposta Enviada", sentimento "positivo"
-2. "NÃO", "RECUSO", "CANCELAR", rejeição → etapa "Perdido", sentimento "negativo"
-3. "QUANTO", "PREÇO", "VALOR" → etapa "Lead", sentimento "positivo"
-4. AUTOMÁTICA, "BREVE", "DEIXE SEU CONTATO", "ENTRO EM CONTATO", mensagens automáticas → etapa "Fornecedor", sentimento "fornecedor"
-5. Empresa/fornecedor/NF/protocolo/CNPJ → etapa "Fornecedor", sentimento "fornecedor"
+1. "OK", "SIM", "TOPA", "MANDA", qualquer aprovação → etapa "PROPOSTA ENVIADA", sentimento "positivo"
+2. "NÃO", "RECUSO", "CANCELAR", rejeição → etapa "PERDIDO", sentimento "negativo"
+3. "QUANTO", "PREÇO", "VALOR" → etapa "LEAD", sentimento "positivo"
+4. AUTOMÁTICA, "BREVE", "DEIXE SEU CONTATO", "ENTRO EM CONTATO", mensagens automáticas → etapa "FORNECEDOR", sentimento "fornecedor"
+5. Empresa/fornecedor/NF/protocolo/CNPJ → etapa "FORNECEDOR", sentimento "fornecedor"
 6. Só confirmou recebimento → etapa "automatico", sentimento "neutro"
 
 Responda APENAS com JSON (sem markdown):
-{"sentimento":"positivo","confianca":90,"motivo":"Respondeu OK","etapa":"Proposta Enviada","sugestao":"Aguardar resposta"}`;
+{"sentimento":"positivo","confianca":90,"motivo":"Respondeu OK","etapa":"PROPOSTA ENVIADA","sugestao":"Aguardar resposta"}`;
 
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
