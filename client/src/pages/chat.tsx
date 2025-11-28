@@ -768,23 +768,33 @@ export default function Chat() {
   // Create opportunity mutation
   const createOpportunityMutation = useMutation({
     mutationFn: async () => {
-      if (!currentClientId || !selectedStage || !detailedClient) return;
-      await apiRequest("POST", "/api/opportunities", {
+      if (!currentClientId) throw new Error("Cliente não selecionado");
+      if (!selectedStage) throw new Error("Etapa não selecionada");
+      if (!detailedClient) throw new Error("Dados do cliente não carregados");
+      
+      console.log("Criando oportunidade:", { currentClientId, selectedStage, businessValue, responsavelId: detailedClient.createdBy });
+      
+      const response = await apiRequest("POST", "/api/opportunities", {
         clientId: currentClientId,
-        titulo: detailedClient.razaoSocial || detailedClient.nome,
+        titulo: detailedClient.razaoSocial || detailedClient.nome || "Sem título",
         etapa: selectedStage,
         valorEstimado: businessValue || "",
-        responsavelId: detailedClient.createdBy,
+        responsavelId: detailedClient.createdBy || "sem-responsavel",
       });
+      
+      console.log("Oportunidade criada:", response);
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
       setSelectedStage("");
+      setBusinessValue("");
       setShowClientInfo(false);
       toast({ title: "Negócio criado!", description: "Oportunidade adicionada ao Kanban", variant: "default" });
     },
     onError: (error: any) => {
-      toast({ title: "Erro ao criar negócio", description: error.message, variant: "destructive" });
+      console.error("Erro ao criar negócio:", error);
+      toast({ title: "Erro ao criar negócio", description: error.message || "Tente novamente", variant: "destructive" });
     },
   });
 
@@ -1228,6 +1238,7 @@ export default function Chat() {
         }
       }}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+          <DialogTitle className="sr-only">Informações do Cliente</DialogTitle>
           {clientDetailLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-purple-600 dark:text-purple-400" />
@@ -1404,6 +1415,7 @@ export default function Chat() {
       {/* Image Viewer Modal */}
       <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>
         <DialogContent className="max-w-2xl p-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+          <DialogTitle className="sr-only">Imagem Expandida</DialogTitle>
           <div className="relative w-full h-auto flex items-center justify-center">
             {selectedImage && (
               <>
