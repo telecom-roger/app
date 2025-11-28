@@ -7,9 +7,26 @@ import { apiRequest } from "@/lib/queryClient";
 
 export default function TestAutomation() {
   const { toast } = useToast();
-  const [clientId, setClientId] = useState("925a3eb3-c22d-42fe-bab2-c5f4d3e8b1a7");
-  const [userId, setUserId] = useState("187f6e5e-e5b9-4232-9dac-42296aa84414");
+  const [clientId, setClientId] = useState("");
+  const [userId, setUserId] = useState("");
   const [message, setMessage] = useState("Ótimo! Gostei da proposta");
+
+  // Get clients and users list
+  const { data: testData = { clients: [], users: [] }, isLoading: loadingTestData } = useQuery({
+    queryKey: ["/api/test/clients-list"],
+    queryFn: async () => {
+      const response = await fetch("/api/test/clients-list");
+      return response.json();
+    },
+  });
+
+  // Auto-set first client and user
+  if (testData.clients.length > 0 && !clientId && testData.clients[0]?.id) {
+    setClientId(testData.clients[0].id);
+  }
+  if (testData.users.length > 0 && !userId && testData.users[0]?.id) {
+    setUserId(testData.users[0].id);
+  }
 
   // Simulate response
   const simulateMutation = useMutation({
@@ -69,27 +86,41 @@ export default function TestAutomation() {
       <Card className="p-6 bg-slate-800 border-purple-500/20">
         <h2 className="text-xl font-bold text-white mb-4">1️⃣ Simular Resposta do Cliente</h2>
         
+        {loadingTestData && <p className="text-slate-300 mb-4">Carregando clientes...</p>}
+
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Client ID</label>
-            <input
-              type="text"
+            <label className="block text-sm font-medium text-slate-300 mb-2">Cliente</label>
+            <select
               value={clientId}
               onChange={(e) => setClientId(e.target.value)}
               className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600 text-xs"
-              data-testid="input-client-id"
-            />
+              data-testid="select-client"
+            >
+              <option value="">Selecionar cliente...</option>
+              {testData.clients.map((client: any) => (
+                <option key={client.id} value={client.id}>
+                  {client.nome} ({client.id.slice(0, 8)})
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">User ID</label>
-            <input
-              type="text"
+            <label className="block text-sm font-medium text-slate-300 mb-2">Vendedor</label>
+            <select
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
               className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600 text-xs"
-              data-testid="input-user-id"
-            />
+              data-testid="select-user"
+            >
+              <option value="">Selecionar vendedor...</option>
+              {testData.users.map((user: any) => (
+                <option key={user.id} value={user.id}>
+                  {user.email} ({user.id.slice(0, 8)})
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -105,7 +136,7 @@ export default function TestAutomation() {
 
           <Button
             onClick={() => simulateMutation.mutate()}
-            disabled={simulateMutation.isPending}
+            disabled={simulateMutation.isPending || !clientId || !userId}
             className="w-full bg-purple-600 hover:bg-purple-700"
             data-testid="button-simulate"
           >
@@ -227,6 +258,7 @@ export default function TestAutomation() {
       <Card className="p-6 bg-slate-800 border-slate-700">
         <h3 className="text-lg font-bold text-white mb-3">📖 Como Funciona:</h3>
         <ul className="space-y-2 text-slate-300 text-sm">
+          <li>✅ Selecione um cliente e vendedor nos dropdowns acima</li>
           <li>✅ Clique em "Simular Resposta" para criar uma resposta de cliente</li>
           <li>✅ Isso automaticamente cria 3 follow-ups (1, 3, 7 dias)</li>
           <li>✅ Clique em "Atualizar" para ver as tarefas sendo processadas</li>

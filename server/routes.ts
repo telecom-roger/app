@@ -2638,6 +2638,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ==================== TESTE DE AUTOMAÇÃO ====================
+  app.get("/api/test/clients-list", async (req, res) => {
+    try {
+      const clientsList = await db.query.clients.findMany({ limit: 10 });
+      const users = await db.query.users.findMany({ limit: 5 });
+      res.json({ clients: clientsList, users: users });
+    } catch (error) {
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
   app.post("/api/test/simulate-response", async (req, res) => {
     try {
       const { clientId, userId, messageText } = req.body;
