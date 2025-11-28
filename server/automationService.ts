@@ -338,12 +338,12 @@ async function executeContractReminder(task: any) {
   
   console.log(`💬 Enviando cobrança de contrato - Dia ${daysSinceCreation} para ${client.nome}`);
   
-  // Mensagens naturais progressivas
+  // Mensagens naturais progressivas - SEM nome do cliente, usando CTAs assertivas
   const messages_templates: Record<number, string> = {
-    0: `Oi ${client.nome}, tudo bem? Recebemos a proposta aqui com sucesso. Pode confirmar o recebimento pra gente?`,
-    1: `${client.nome}, só para confirmar se chegou tudo bem aí. Ficou com alguma dúvida sobre a proposta?`,
-    2: `${client.nome}, podemos seguir com a melhoria que ofertamos? Vamos fechar isso aí?`,
-    3: `Última tentativa, ${client.nome}. Vamos seguir com a contratação? Estamos aqui pra ajudar!`,
+    0: `Oi, tudo bem? Você recebeu a proposta? Pode confirmar o recebimento pra gente?`,
+    1: `Só para confirmar se chegou tudo bem aí. Ficou com alguma dúvida sobre a proposta?`,
+    2: `Podemos seguir com a contratação? Vamos fechar isso aí?`,
+    3: `Última tentativa! Vamos seguir com a contratação? Estamos aqui pra ajudar!`,
   };
   
   const mensagem = messages_templates[Math.min(daysSinceCreation, 3)] || messages_templates[3];
