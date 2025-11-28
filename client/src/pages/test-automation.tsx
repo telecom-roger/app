@@ -67,6 +67,24 @@ export default function TestAutomation() {
     },
   });
 
+  // Test contrato enviado
+  const contratoEnviadoMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/test/contrato-enviado", {
+        clientId,
+        userId,
+      });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({ title: "✅ Contrato Enviado!", description: `Etapa: ${data.oportunidade_etapa}` });
+      refetchTestOpps();
+    },
+    onError: (error: any) => {
+      toast({ title: "❌ Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
   // Test 4th day auto-move to PERDIDO
   const fourthDayMutation = useMutation({
     mutationFn: async () => {
@@ -237,9 +255,30 @@ export default function TestAutomation() {
         )}
       </Card>
 
+      {/* CONTRATO ENVIADO TEST */}
+      <Card className="p-6 bg-slate-800 border-blue-500/20">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-white">4️⃣ Teste Contrato Enviado</h2>
+          <span className="text-xs text-blue-400 bg-blue-500/10 px-2 py-1 rounded">NOVO!</span>
+        </div>
+
+        <p className="text-slate-300 mb-4 text-xs">
+          Move uma opportunity para CONTRATO ENVIADO e envia mensagem automática com TOKEN
+        </p>
+
+        <Button
+          onClick={() => contratoEnviadoMutation.mutate()}
+          disabled={contratoEnviadoMutation.isPending || !clientId || !userId}
+          className="w-full bg-blue-600 hover:bg-blue-700 mb-4"
+          data-testid="button-test-contrato-enviado"
+        >
+          {contratoEnviadoMutation.isPending ? "Enviando..." : "📄 Testar Contrato Enviado"}
+        </Button>
+      </Card>
+
       {/* 4º DIA - AUTO-MOVE PERDIDO */}
       <Card className="p-6 bg-slate-800 border-red-500/20">
-        <h2 className="text-xl font-bold text-white mb-4">4️⃣ Teste 4º Dia (Auto-Move PERDIDO)</h2>
+        <h2 className="text-xl font-bold text-white mb-4">5️⃣ Teste 4º Dia (Auto-Move PERDIDO)</h2>
         
         <p className="text-slate-300 mb-4 text-xs">
           Simula que passaram 4 dias sem resposta e o sistema automaticamente move para PERDIDO com timeline

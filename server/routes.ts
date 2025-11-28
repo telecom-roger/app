@@ -2842,6 +2842,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== TEST CONTRATO ENVIADO - Dispara automação ====================
+  app.post("/api/test/contrato-enviado", async (req, res) => {
+    try {
+      const { clientId, userId } = req.body;
+      
+      if (!clientId || !userId) {
+        return res.status(400).json({ error: "clientId e userId são obrigatórios" });
+      }
+
+      // 1. Fetch client
+      const client = await db.query.clients.findFirst({
+        where: (c: any) => eq(c.id, clientId),
+      });
+
+      if (!client) {
+        return res.status(404).json({ error: "Cliente não encontrado" });
+      }
+
+      // 2. Buscar ÚLTIMA opportunity ou criar uma teste
+      let opp = await db.query.opportunities.findFirst({
+        where: (o: any) => eq(o.clientId, clientId),
+        orderBy: (o: any) => desc(o.createdAt),
+      });
+
+      // Se não houver, criar uma para teste
+      if (!opp) {
+        const [newOpp] = await db
+          .insert(opportunities)
+          .values({
+            clientId,
+            titulo: `TESTE: Contrato Enviado`,
+            etapa: "PROPOSTA ENVIADA",
+            responsavelId: userId,
+          })
+          .returning();
+        opp = newOpp;
+      }
+
+      // 3. Mover para CONTRATO ENVIADO (dispara automação)
+      await db
+        .update(opportunities)
+        .set({ etapa: "CONTRATO ENVIADO" })
+        .where(eq(opportunities.id, opp.id));
+
+      // 4. Registrar na timeline - mensagem randomizada
+      const messages = [
+        `Oi!\nSeu contrato já chegou no seu e-mail.\nÉ só abrir o link, colocar a data de nascimento do gestor e seguir as etapas.\n\nVocê vai receber um e-mail com o TOKEN de confirmação.\nInforme o código e pronto — assinatura concluída.\n\nQualquer dúvida estou por aqui!`,
+        `Olá!\nO contrato foi enviado para o seu e-mail.\nÉ só clicar no link, inserir a data de nascimento do gestor e avançar.\n\nDepois disso, você vai receber um e-mail com o TOKEN.\nBasta inserir no campo solicitado e finalizar a assinatura.\n\nQualquer dúvida, estou à disposição.`,
+      ];
+      const randomIdx = Math.floor(Math.random() * messages.length);
+      const mensagem = messages[randomIdx];
+      
+      await db.insert(interactions).values({
+        clientId,
+        tipo: "contrato_enviado",
+        origem: "automation",
+        titulo: "Contrato Enviado ao Cliente",
+        texto: mensagem,
+        meta: { opportunityId: opp.id },
+        createdBy: userId,
+      });
+
+      res.json({
+        success: true,
+        message: "✅ Contrato Enviado - Mensagem registrada na timeline!",
+        cliente: client.nome,
+        oportunidade_etapa: "CONTRATO ENVIADO",
+        mensagem_enviada: mensagem.substring(0, 50) + "...",
+      });
+    } catch (error) {
+      console.error("❌ Test contrato enviado error:", error);
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
   // ==================== TEST 4º DIA - AUTO-MOVE PERDIDO ====================
   app.post("/api/test/contract-reminder-4th-day", async (req, res) => {
     try {
