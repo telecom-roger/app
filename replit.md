@@ -285,6 +285,17 @@ Isso inicia:
    - Resultado: Novo cliente agora aparece com `createdBy` correto
    - Status: ✅ Corrigido e validado
 
+6. ✅ **ROTA DE PERFIL DO CLIENTE CORRIGIDA** (Nov 28, 16:15)
+   - Problema: Rotas de clientes conflitando - `/clientes` vinha antes de `/clientes/:id`
+   - Solução: Reordenado em `App.tsx` para que rotas específicas venham PRIMEIRO:
+     - `/clientes/novo` → ClienteForm
+     - `/clientes/:id/editar` → ClienteForm
+     - `/clientes/:id` → ClienteProfile (rotas com parâmetro)
+     - `/clientes` → Clientes (rota geral - vem por último)
+   - Detalhes: Bot no bell/chat agora direciona corretamente para `/clientes/{id}`
+   - Arquivos: `App.tsx`, `chat-notification-bell.tsx`, `chat.tsx`
+   - Status: ✅ Funcionando corretamente
+
 **Próximas Ações (Fase 3):**
 1. Teste de respostas de clientes (validar se novo contato não é mais criado)
 2. Dashboard de performance por vendedor
