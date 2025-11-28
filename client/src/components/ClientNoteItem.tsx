@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { MessageSquare, CheckCircle2, Calendar, Trash2 } from "lucide-react";
+import { MessageSquare, CheckCircle2, Calendar, Trash2, Download } from "lucide-react";
 import type { ClientNote } from "@shared/schema";
 
 interface ClientNoteItemProps {
@@ -152,6 +152,22 @@ export function ClientNoteItem({ note, clientId }: ClientNoteItemProps) {
     return `${day}/${month} ${hours}:${minutes}`;
   };
 
+  const handleDownloadAnexo = (anexo: any) => {
+    const byteCharacters = atob(anexo.conteudo_base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: anexo.tipo });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = anexo.nome;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Card 
       className="hover-elevate bg-card border-border cursor-pointer"
@@ -165,6 +181,22 @@ export function ClientNoteItem({ note, clientId }: ClientNoteItemProps) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium break-words leading-snug">{note.conteudo}</p>
+            
+            {note.anexos && note.anexos.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {(note.anexos as any[]).map((anexo, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleDownloadAnexo(anexo)}
+                    className="flex items-center gap-1 text-[10px] text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    <Download className="h-3 w-3" />
+                    {anexo.nome}
+                  </button>
+                ))}
+              </div>
+            )}
+            
             <div className="flex justify-between items-center mt-1 gap-2 flex-wrap">
               <p className="text-[10px] text-muted-foreground">
                 {formatDateWithoutSeconds(note.createdAt)}

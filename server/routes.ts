@@ -1991,7 +1991,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       const { clientId } = req.params;
-      const { conteudo, cor, tipo, dataPlanejada } = req.body;
+      const { conteudo, cor, tipo, dataPlanejada, anexos } = req.body;
       
       const note = await storage.createClientNote({
         userId: user.id,
@@ -1999,6 +1999,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         conteudo,
         tipo: tipo || "comentario",
         dataPlanejada: dataPlanejada ? new Date(dataPlanejada) : null,
+        anexos: anexos || [],
         cor: cor || "bg-blue-500",
       });
       res.json(note);
@@ -2013,7 +2014,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       const { clientId } = req.params;
-      const { conteudo, cor, tipo, dataPlanejada } = req.body;
+      const { conteudo, cor, tipo, dataPlanejada, anexos } = req.body;
       
       const note = await storage.createClientNote({
         userId: user.id,
@@ -2021,6 +2022,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         conteudo,
         tipo: tipo || "comentario",
         dataPlanejada: dataPlanejada ? new Date(dataPlanejada) : null,
+        anexos: anexos || [],
         cor: cor || "bg-blue-500",
       });
       res.json(note);
@@ -2033,13 +2035,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/client-notes/:id", isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
-      const { conteudo, cor, tipo, dataPlanejada } = req.body;
+      const { conteudo, cor, tipo, dataPlanejada, anexos } = req.body;
       
       const note = await storage.updateClientNote(id, { 
         conteudo, 
         cor,
         tipo,
         dataPlanejada: dataPlanejada ? new Date(dataPlanejada) : null,
+        anexos,
       });
       if (!note) return res.status(404).json({ error: "Note not found" });
       res.json(note);

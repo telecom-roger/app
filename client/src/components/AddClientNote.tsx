@@ -7,7 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { MessageSquare, CheckCircle2, Calendar, Plus } from "lucide-react";
+import { MessageSquare, CheckCircle2, Calendar, Plus, Paperclip, X } from "lucide-react";
+
+interface Anexo {
+  nome: string;
+  tipo: string;
+  conteudo_base64: string;
+}
 
 interface AddClientNoteProps {
   clientId: string;
@@ -17,7 +23,32 @@ export function AddClientNote({ clientId }: AddClientNoteProps) {
   const [tipo, setTipo] = useState<string>("comentario");
   const [conteudo, setConteudo] = useState("");
   const [dataPlanejada, setDataPlanejada] = useState("");
+  const [anexos, setAnexos] = useState<Anexo[]>([]);
   const { toast } = useToast();
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.currentTarget.files;
+    if (!files) return;
+
+    for (const file of Array.from(files)) {
+      try {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const base64 = event.target?.result as string;
+          const conteudo_base64 = base64.split(",")[1] || base64;
+          setAnexos((prev) => [...prev, {
+            nome: file.name,
+            tipo: file.type,
+            conteudo_base64,
+          }]);
+        };
+        reader.readAsDataURL(file);
+      } catch (error) {
+        toast({ title: "Erro", description: "Falha ao processar arquivo", variant: "destructive" });
+      }
+    }
+    e.currentTarget.value = "";
+  };
 
   const mutation = useMutation({
     mutationFn: async (data: any) => {
@@ -65,12 +96,14 @@ export function AddClientNote({ clientId }: AddClientNoteProps) {
       tipo: tipo as "comentario" | "atividade" | "agendamento",
       conteudo,
       dataPlanejada: dataPlanejada ? new Date(dataPlanejada).toISOString() : null,
+      anexos: anexos.length > 0 ? anexos : undefined,
     });
   };
 
   const handleCancel = () => {
     setConteudo("");
     setDataPlanejada("");
+    setAnexos([]);
   };
 
   return (
@@ -100,13 +133,54 @@ export function AddClientNote({ clientId }: AddClientNoteProps) {
               className="min-h-20 text-xs"
               data-testid="textarea-comentario"
             />
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" size="sm" onClick={handleCancel} className="text-xs h-7" data-testid="button-cancelar">
-                Cancelar
-              </Button>
-              <Button size="sm" onClick={handleSave} disabled={mutation.isPending} className="text-xs h-7" data-testid="button-salvar-comentario">
-                {mutation.isPending ? "Salvando..." : "Salvar"}
-              </Button>
+            
+            {anexos.length > 0 && (
+              <div className="bg-muted p-2 rounded text-xs space-y-1">
+                <p className="font-medium">Anexos:</p>
+                {anexos.map((anexo, idx) => (
+                  <div key={idx} className="flex items-center justify-between gap-2 bg-background p-1 rounded">
+                    <span className="truncate">{anexo.nome}</span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-5 w-5"
+                      onClick={() => setAnexos(anexos.filter((_, i) => i !== idx))}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-2 justify-between">
+              <div className="flex gap-1">
+                <input
+                  type="file"
+                  multiple
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  id="file-input-comentario"
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs h-7 gap-1"
+                  onClick={() => document.getElementById("file-input-comentario")?.click()}
+                >
+                  <Paperclip className="h-3 w-3" />
+                  Anexar
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleCancel} className="text-xs h-7" data-testid="button-cancelar">
+                  Cancelar
+                </Button>
+                <Button size="sm" onClick={handleSave} disabled={mutation.isPending} className="text-xs h-7" data-testid="button-salvar-comentario">
+                  {mutation.isPending ? "Salvando..." : "Salvar"}
+                </Button>
+              </div>
             </div>
           </TabsContent>
 
