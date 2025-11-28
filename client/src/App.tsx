@@ -36,6 +36,7 @@ import CampanhasEmExecucao from "@/pages/campanhas-em-execucao";
 import CampanhasHistorico from "@/pages/campanhas-historico";
 import QuickRepliesConfig from "@/pages/quick-replies-config";
 import TagsConfig from "@/pages/tags-config";
+import TestAutomation from "@/pages/test-automation";
 import NotFound from "@/pages/not-found";
 
 function Router({ isAuthenticated }: { isAuthenticated: boolean }) {
@@ -67,6 +68,7 @@ function Router({ isAuthenticated }: { isAuthenticated: boolean }) {
       <Route path="/importacao" component={Importacao} />
       <Route path="/admin/usuarios" component={AdminUsuarios} />
       <Route path="/admin/templates" component={AdminTemplates} />
+      <Route path="/test/automation" component={TestAutomation} />
       <Route component={NotFound} />
     </Switch>
   );
