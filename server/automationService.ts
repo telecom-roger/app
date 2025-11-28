@@ -411,7 +411,7 @@ export async function checkPropostaEnviadaTimeouts() {
           titulo: "Oportunidade Movida para Perdido",
           texto: "Cliente tinha interesse em renovar mas não finalizou a contratação após 4 dias sem resposta",
           meta: { opportunityId: opp.id, etapa_anterior: "PROPOSTA ENVIADA", etapa_nova: "PERDIDO", dias_sem_resposta: daysSinceEnvio },
-          createdBy: opp.responsavelId,
+          createdBy: opp.responsavelId || undefined,
         });
         
         console.log(`✅ Timeline registrada para movimento para PERDIDO`);
