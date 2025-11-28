@@ -9,15 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Target } from "lucide-react";
-import type { Client } from "@shared/schema";
+import type { Client, KanbanStage } from "@shared/schema";
 
 interface CreateOpportunityPopoverProps {
   client: Client;
-}
-
-interface Tag {
-  id: string;
-  nome: string;
 }
 
 const ETAPA_LABELS: Record<string, string> = {
@@ -38,9 +33,9 @@ export function CreateOpportunityPopover({ client }: CreateOpportunityPopoverPro
   const [etapa, setEtapa] = useState("lead");
   const [valor, setValor] = useState("");
 
-  // Fetch tags for etiquetas
-  const { data: tags = [] } = useQuery<Tag[]>({
-    queryKey: ["/api/tags"],
+  // Fetch kanban stages for etapas
+  const { data: stages = [] } = useQuery<KanbanStage[]>({
+    queryKey: ["/api/kanban-stages"],
     refetchInterval: 5000,
   });
 
@@ -109,7 +104,7 @@ export function CreateOpportunityPopover({ client }: CreateOpportunityPopoverPro
     if (!etapa.trim()) {
       toast({
         title: "Erro",
-        description: "Selecione uma etiqueta",
+        description: "Selecione uma etapa",
         variant: "destructive",
       });
       return;
@@ -156,17 +151,17 @@ export function CreateOpportunityPopover({ client }: CreateOpportunityPopoverPro
             />
           </div>
 
-          {/* Etiqueta */}
+          {/* Etapa */}
           <div>
-            <label className="text-xs font-medium mb-1 block">Etiqueta</label>
+            <label className="text-xs font-medium mb-1 block">Etapa</label>
             <Select value={etapa} onValueChange={setEtapa}>
               <SelectTrigger className="text-xs h-8" data-testid="select-etapa">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {tags.map((tag) => (
-                  <SelectItem key={tag.id} value={tag.nome} data-testid={`option-tag-${tag.id}`}>
-                    {tag.nome}
+                {stages.sort((a, b) => a.ordem - b.ordem).map((stage) => (
+                  <SelectItem key={stage.id} value={stage.titulo} data-testid={`option-stage-${stage.id}`}>
+                    {stage.titulo}
                   </SelectItem>
                 ))}
               </SelectContent>
