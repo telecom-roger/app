@@ -1,4 +1,4 @@
-import { type Server } from "node:http";
+import { createServer, type Server } from "node:http";
 
 import express, {
   type Express,
@@ -29,9 +29,14 @@ declare module 'http' {
   }
 }
 
-// ⚡ ULTRA-FAST HEALTH CHECK - responds immediately before any middleware
+// ⚡ ULTRA-FAST HEALTH CHECKS - responds immediately before any middleware
 app.get("/health", (req, res) => {
   res.status(200).json({ ok: true });
+});
+
+// ⚡ ROOT ENDPOINT - also responds immediately
+app.get("/", (req, res) => {
+  res.status(200).send("OK");
 });
 
 app.use(express.json({
@@ -75,7 +80,12 @@ app.use((req, res, next) => {
 export default async function runApp(
   setup: (app: Express, server: Server) => Promise<void>,
 ) {
-  const server = await registerRoutes(app);
+  const server = createServer(app);
+  
+  // Register routes without blocking - start in background
+  registerRoutes(app).catch(err => {
+    log(`❌ Error registering routes: ${err.message}`, 'error');
+  });
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -85,9 +95,10 @@ export default async function runApp(
     throw err;
   });
 
-  // importantly run the final setup after setting up all the other routes so
-  // the catch-all route doesn't interfere with the other routes
-  await setup(app, server);
+  // Setup static files without blocking
+  setup(app, server).catch(err => {
+    log(`❌ Error in setup: ${err.message}`, 'error');
+  });
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.
