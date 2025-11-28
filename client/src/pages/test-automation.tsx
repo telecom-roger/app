@@ -109,6 +109,16 @@ export default function TestAutomation() {
     },
   });
 
+  // Get test opportunities
+  const { data: testOpps = [], refetch: refetchTestOpps, isLoading: loadingTestOpps } = useQuery({
+    queryKey: ["/api/test/opportunities"],
+    refetchInterval: 3000, // Auto-refresh para testes
+    queryFn: async () => {
+      const response = await fetch("/api/test/opportunities");
+      return response.json();
+    },
+  });
+
   return (
     <div className="p-6 space-y-6 bg-gradient-to-br from-slate-900 to-slate-800 min-h-screen">
       <div>
@@ -304,6 +314,43 @@ export default function TestAutomation() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </Card>
+
+      {/* Test Opportunities Section */}
+      <Card className="p-6 bg-slate-800 border-cyan-500/20">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-white">5️⃣ Oportunidades (Teste)</h2>
+          <Button
+            onClick={() => refetchTestOpps()}
+            variant="outline"
+            size="sm"
+            data-testid="button-refresh-test-opps"
+          >
+            🔄 Atualizar
+          </Button>
+        </div>
+
+        {loadingTestOpps ? (
+          <p className="text-slate-400">Carregando...</p>
+        ) : testOpps.length === 0 ? (
+          <p className="text-slate-400">Nenhuma oportunidade</p>
+        ) : (
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {testOpps
+              .filter((opp: any) => opp.titulo?.includes("Test"))
+              .map((opp: any) => (
+                <div
+                  key={opp.id}
+                  className="p-3 bg-slate-700/50 rounded border border-cyan-500/30 text-xs"
+                  data-testid={`test-opp-${opp.id}`}
+                >
+                  <p className="text-cyan-300 font-bold">{opp.titulo}</p>
+                  <p className="text-slate-300">Etapa: <span className="text-green-400">{opp.etapa}</span></p>
+                  <p className="text-slate-400">R$: {opp.valorEstimado}</p>
+                </div>
+              ))}
           </div>
         )}
       </Card>
