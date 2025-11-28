@@ -48,7 +48,7 @@ export async function createTestFollowUps(clientId: string, userId: string, conv
 // ======================== MOVIMENTO AUTOMÁTICO NO KANBAN ========================
 export async function createTestKanbanMovement(clientId: string, userId: string) {
   try {
-    console.log(`🧪 [TEST MODE] Criando movimento automático no Kanban...`);
+    console.log(`🧪 [TEST MODE] Criando 3 oportunidades de teste com fluxo completo...`);
 
     const client = await db.query.clients.findFirst({
       where: (c: any) => eq(c.id, clientId),
@@ -56,54 +56,69 @@ export async function createTestKanbanMovement(clientId: string, userId: string)
 
     if (!client) throw new Error("Cliente não encontrado");
 
-    const opp1 = await db.query.opportunities.findFirst({
-      where: (o: any) => and(eq(o.clientId, clientId), eq(o.etapa, "lead")),
-    });
-
     const now = new Date();
+    const timestamp = now.getTime();
     
-    if (opp1) {
-      await db.insert(automationTasks).values({
-        userId,
-        clientId,
-        tipo: "kanban_move",
-        status: "pendente",
-        proximaExecucao: new Date(now.getTime() - 10 * 1000), // 10 segundos no passado = EXECUTA AGORA
-        dados: { oppId: opp1.id, fromStage: "lead", toStage: "contato" },
-      });
-    }
+    // Cria 3 oportunidades de teste NOVAS com etapas diferentes
+    const opp1 = await db.insert(opportunities).values({
+      clientId,
+      titulo: `Test Kanban 1 - Lead (${timestamp})`,
+      etapa: "lead",
+      valorEstimado: "1000",
+      responsavelId: userId,
+      ordem: 0,
+    }).returning().then(r => r[0]);
 
-    const opp2 = await db.query.opportunities.findFirst({
-      where: (o: any) => and(eq(o.clientId, clientId), eq(o.etapa, "contato")),
+    const opp2 = await db.insert(opportunities).values({
+      clientId,
+      titulo: `Test Kanban 2 - Contato (${timestamp})`,
+      etapa: "contato",
+      valorEstimado: "2000",
+      responsavelId: userId,
+      ordem: 1,
+    }).returning().then(r => r[0]);
+
+    const opp3 = await db.insert(opportunities).values({
+      clientId,
+      titulo: `Test Kanban 3 - Proposta (${timestamp})`,
+      etapa: "proposta",
+      valorEstimado: "3000",
+      responsavelId: userId,
+      ordem: 2,
+    }).returning().then(r => r[0]);
+
+    // Agenda movimentos automáticos em sequência
+    // Opp1: lead → contato (executa em 5s)
+    await db.insert(automationTasks).values({
+      userId,
+      clientId,
+      tipo: "kanban_move",
+      status: "pendente",
+      proximaExecucao: new Date(now.getTime() - 10 * 1000),
+      dados: { oppId: opp1.id, toStage: "contato" },
     });
 
-    if (opp2) {
-      await db.insert(automationTasks).values({
-        userId,
-        clientId,
-        tipo: "kanban_move",
-        status: "pendente",
-        proximaExecucao: new Date(now.getTime() - 5 * 1000), // 5 segundos no passado = EXECUTA AGORA
-        dados: { oppId: opp2.id, fromStage: "contato", toStage: "proposta" },
-      });
-    }
-
-    const opp3 = await db.query.opportunities.findFirst({
-      where: (o: any) => and(eq(o.clientId, clientId), eq(o.etapa, "proposta")),
+    // Opp2: contato → proposta (executa em 5s)
+    await db.insert(automationTasks).values({
+      userId,
+      clientId,
+      tipo: "kanban_move",
+      status: "pendente",
+      proximaExecucao: new Date(now.getTime() - 5 * 1000),
+      dados: { oppId: opp2.id, toStage: "proposta" },
     });
 
-    if (opp3) {
-      await db.insert(automationTasks).values({
-        userId,
-        clientId,
-        tipo: "kanban_move",
-        status: "pendente",
-        proximaExecucao: new Date(now.getTime()), // AGORA
-        dados: { oppId: opp3.id, fromStage: "proposta", toStage: "fechado" },
-      });
-    }
+    // Opp3: proposta → fechado (executa agora)
+    await db.insert(automationTasks).values({
+      userId,
+      clientId,
+      tipo: "kanban_move",
+      status: "pendente",
+      proximaExecucao: new Date(now.getTime()),
+      dados: { oppId: opp3.id, toStage: "fechado" },
+    });
 
-    console.log(`✅ Movimentos de Kanban agendados`);
+    console.log(`✅ 3 oportunidades criadas + 3 movimentos agendados (lead→contato→proposta→fechado)`);
   } catch (error) {
     console.error(`❌ Erro:`, error);
     throw error;
