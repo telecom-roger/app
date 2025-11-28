@@ -135,6 +135,19 @@ export function ClientNoteItem({ note, clientId }: ClientNoteItemProps) {
     );
   }
 
+  const formatTimeOnly = (date: string) => {
+    return new Date(date).toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit' }).replace(/\s/g, '');
+  };
+
+  const formatDateWithoutSeconds = (date: string) => {
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${day}/${month} ${hours}:${minutes}`;
+  };
+
   return (
     <Card 
       className="hover-elevate bg-card border-border cursor-pointer"
@@ -147,10 +160,17 @@ export function ClientNoteItem({ note, clientId }: ClientNoteItemProps) {
             {getIcon()}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-muted-foreground mb-0.5">
-              {new Date(note.createdAt).toLocaleString('pt-BR')}
-            </p>
             <p className="text-xs font-medium break-words leading-snug">{note.conteudo}</p>
+            <div className="flex justify-between items-center mt-1 gap-2 flex-wrap">
+              <p className="text-[10px] text-muted-foreground">
+                {formatDateWithoutSeconds(note.createdAt)}
+              </p>
+              {note.dataPlanejada && (
+                <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">
+                  Ag: {formatDateWithoutSeconds(note.dataPlanejada)}
+                </p>
+              )}
+            </div>
           </div>
           <Button
             size="icon"
