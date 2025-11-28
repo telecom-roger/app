@@ -1,6 +1,6 @@
 import * as storage from "./storage";
 import { db } from "./db";
-import { eq, and, lt } from "drizzle-orm";
+import { eq, and, lt, asc } from "drizzle-orm";
 import { automationTasks, followUps, clientScores, opportunities, messages, conversations } from "@shared/schema";
 import { analyzeClientMessage } from "./aiService";
 
@@ -48,7 +48,7 @@ export async function createTestFollowUps(clientId: string, userId: string, conv
 // ======================== MOVIMENTO AUTOMÁTICO NO KANBAN ========================
 export async function createTestKanbanMovement(clientId: string, userId: string) {
   try {
-    console.log(`🧪 [TEST MODE] Criando 3 oportunidades de teste com fluxo completo...`);
+    console.log(`🧪 [TEST MODE] Criando 3 oportunidades com fluxo completo...`);
 
     const client = await db.query.clients.findFirst({
       where: (c: any) => eq(c.id, clientId),
@@ -63,7 +63,7 @@ export async function createTestKanbanMovement(clientId: string, userId: string)
     const opp1 = await db.insert(opportunities).values({
       clientId,
       titulo: `Test Kanban 1 - Lead (${timestamp})`,
-      etapa: "lead",
+      etapa: "Lead",
       valorEstimado: "1000",
       responsavelId: userId,
       ordem: 0,
@@ -72,7 +72,7 @@ export async function createTestKanbanMovement(clientId: string, userId: string)
     const opp2 = await db.insert(opportunities).values({
       clientId,
       titulo: `Test Kanban 2 - Contato (${timestamp})`,
-      etapa: "contato",
+      etapa: "Contato",
       valorEstimado: "2000",
       responsavelId: userId,
       ordem: 1,
@@ -81,44 +81,44 @@ export async function createTestKanbanMovement(clientId: string, userId: string)
     const opp3 = await db.insert(opportunities).values({
       clientId,
       titulo: `Test Kanban 3 - Proposta (${timestamp})`,
-      etapa: "proposta",
+      etapa: "Proposta",
       valorEstimado: "3000",
       responsavelId: userId,
       ordem: 2,
     }).returning().then(r => r[0]);
 
     // Agenda movimentos automáticos em sequência
-    // Opp1: lead → contato (executa em 5s)
+    // Opp1: Lead → Contato (executa em 5s)
     await db.insert(automationTasks).values({
       userId,
       clientId,
       tipo: "kanban_move",
       status: "pendente",
       proximaExecucao: new Date(now.getTime() - 10 * 1000),
-      dados: { oppId: opp1.id, toStage: "contato" },
+      dados: { oppId: opp1.id, toStage: "Contato" },
     });
 
-    // Opp2: contato → proposta (executa em 5s)
+    // Opp2: Contato → Proposta (executa em 5s)
     await db.insert(automationTasks).values({
       userId,
       clientId,
       tipo: "kanban_move",
       status: "pendente",
       proximaExecucao: new Date(now.getTime() - 5 * 1000),
-      dados: { oppId: opp2.id, toStage: "proposta" },
+      dados: { oppId: opp2.id, toStage: "Proposta" },
     });
 
-    // Opp3: proposta → fechado (executa agora)
+    // Opp3: Proposta → Fechado (executa agora)
     await db.insert(automationTasks).values({
       userId,
       clientId,
       tipo: "kanban_move",
       status: "pendente",
       proximaExecucao: new Date(now.getTime()),
-      dados: { oppId: opp3.id, toStage: "fechado" },
+      dados: { oppId: opp3.id, toStage: "Fechado" },
     });
 
-    console.log(`✅ 3 oportunidades criadas + 3 movimentos agendados (lead→contato→proposta→fechado)`);
+    console.log(`✅ 3 oportunidades criadas + 3 movimentos agendados (Lead→Contato→Proposta→Fechado)`);
   } catch (error) {
     console.error(`❌ Erro:`, error);
     throw error;

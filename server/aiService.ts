@@ -16,6 +16,17 @@ export interface MessageAnalysis {
 function analyzeLocalTest(mensagem: string): MessageAnalysis {
   const msg = mensagem.toLowerCase();
   
+  // Fornecedor - contexto de empresa/fornecedor respondendo
+  if (msg.includes("fornecedor") || msg.includes("empresa") || msg.includes("nfe") || msg.includes("protocolo") || msg.includes("cnpj")) {
+    return {
+      sentimento: "fornecedor",
+      confianca: 90,
+      motivo: "Resposta de fornecedor/empresa detectada",
+      etapa: "fornecedor",
+      sugestao: "Aguardando confirmação do fornecedor",
+    };
+  }
+  
   if (msg.includes("ótimo") || msg.includes("gostei") || msg.includes("ok") || msg.includes("sim") || msg.includes("topa")) {
     return {
       sentimento: "positivo",
