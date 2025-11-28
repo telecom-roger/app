@@ -65,7 +65,7 @@ export default function ClienteProfile() {
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
-      <div className="border-b px-4 py-3 flex items-center justify-between bg-background">
+      <div className="border-b px-4 py-3 flex items-center justify-between bg-card">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" asChild data-testid="button-back">
             <Link href="/clientes">
@@ -82,7 +82,7 @@ export default function ClienteProfile() {
       </div>
 
       {/* Main Layout - 3 Columns */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden bg-background">
         {/* LEFT SIDEBAR - Menu & Actions */}
         <div className="w-64 border-r bg-card overflow-y-auto">
           <ScrollArea className="h-full">
@@ -208,7 +208,7 @@ export default function ClienteProfile() {
         {/* CENTER - Timeline/Chat Feed */}
         <div className="flex-1 border-r flex flex-col bg-background">
           {/* Timeline Header */}
-          <div className="border-b px-6 py-4 bg-card">
+          <div className="border-b px-6 py-4 bg-background">
             <h3 className="font-semibold text-sm">Histórico de Interações</h3>
           </div>
 
@@ -390,10 +390,10 @@ function TimelineItem({ item }: { item: Interaction }) {
   };
 
   return (
-    <Card className="hover-elevate">
+    <Card className="hover-elevate bg-card border-border">
       <CardContent className="pt-4">
         <div className="flex gap-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary flex-shrink-0">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary flex-shrink-0">
             {iconMap[item.tipo] || <FileText className="h-5 w-5" />}
           </div>
           <div className="flex-1 min-w-0">
