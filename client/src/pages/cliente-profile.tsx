@@ -130,6 +130,7 @@ export default function ClienteProfile() {
                 <Button 
                   variant="ghost" 
                   className="w-full justify-start text-sm" 
+                  onClick={() => navigate(`/chat?clientId=${id}`)}
                   data-testid="button-enviar-whatsapp"
                 >
                   <MessageSquare className="h-4 w-4 mr-2" />
