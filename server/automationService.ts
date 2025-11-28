@@ -356,6 +356,20 @@ async function executeContractReminder(task: any) {
     conteudo: mensagem,
     createdAt: new Date(),
   });
+
+  // 📋 REGISTRAR NA TIMELINE DO CLIENTE
+  const { interactions } = await import("@shared/schema");
+  await db.insert(interactions).values({
+    clientId: opportunity.clientId,
+    tipo: "contract_reminder",
+    origem: "automation",
+    titulo: `Cobrança de Contrato Enviada (Dia ${daysSinceCreation})`,
+    texto: mensagem,
+    meta: { opportunityId: opportunity.id, daysSinceCreation },
+    createdBy: task.userId,
+  });
+  
+  console.log(`✅ Mensagem registrada na timeline de ${client.nome}`);
 }
 
 // ======================== VERIFICAR PROPOSTAS ENVIADAS - Lógica de 2h timeout + 3 dias + horários comerciais ========================

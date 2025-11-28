@@ -68,6 +68,26 @@ export default function TestAutomation() {
     },
   });
 
+  // Test 4th day auto-move to PERDIDO
+  const fourthDayMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/test/contract-reminder-4th-day", {
+        clientId,
+        userId,
+      });
+    },
+    onSuccess: (data) => {
+      toast({ 
+        title: data.opportunity.moved ? "✅ Movido para PERDIDO!" : "❌ Não moveu", 
+        description: `Oportunidade: ${data.opportunity.etapaAntes} → ${data.opportunity.etapaAgora}` 
+      });
+      refetchTestOpps();
+    },
+    onError: (error: any) => {
+      toast({ title: "❌ Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
   // Get test opportunities
   const { data: testOpps = [], refetch: refetchTestOpps, isLoading: loadingTestOpps } = useQuery({
     queryKey: ["/api/test/opportunities"],
@@ -215,11 +235,10 @@ export default function TestAutomation() {
               {contractReminderResult.opportunity && (
                 <>
                   <p className="text-slate-300">Opportunity: <span className="text-green-400">{contractReminderResult.opportunity.etapa}</span></p>
-                  <p className="text-slate-300">ID: <span className="text-slate-400 text-xs">{contractReminderResult.opportunity.id?.slice(0, 8)}</span></p>
+                  <p className="text-slate-300">Timeline: ✅ Registrada</p>
                 </>
               )}
               <p className="text-slate-300">Tasks criadas: <span className="text-blue-400">{contractReminderResult.tasks_created}</span></p>
-              <p className="text-slate-300">Mensagens: <span className="text-purple-400">{contractReminderResult.messages_sent}</span></p>
             </div>
 
             {contractReminderResult.details && contractReminderResult.details.tasks && contractReminderResult.details.tasks.length > 0 && (
@@ -236,6 +255,24 @@ export default function TestAutomation() {
             )}
           </div>
         )}
+      </Card>
+
+      {/* 4º DIA - AUTO-MOVE PERDIDO */}
+      <Card className="p-6 bg-slate-800 border-red-500/20">
+        <h2 className="text-xl font-bold text-white mb-4">4️⃣ Teste 4º Dia (Auto-Move PERDIDO)</h2>
+        
+        <p className="text-slate-300 mb-4 text-xs">
+          Simula que passaram 4 dias sem resposta e o sistema automaticamente move para PERDIDO com timeline
+        </p>
+
+        <Button
+          onClick={() => fourthDayMutation.mutate()}
+          disabled={fourthDayMutation.isPending || !clientId || !userId}
+          className="w-full bg-red-600 hover:bg-red-700"
+          data-testid="button-test-4th-day"
+        >
+          {fourthDayMutation.isPending ? "Executando..." : "⏰ Testar 4º Dia"}
+        </Button>
       </Card>
 
       {/* Instructions */}

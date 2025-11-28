@@ -2839,6 +2839,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== TEST 4º DIA - AUTO-MOVE PERDIDO ====================
+  app.post("/api/test/contract-reminder-4th-day", async (req, res) => {
+    try {
+      const { clientId, userId } = req.body;
+      
+      if (!clientId || !userId) {
+        return res.status(400).json({ error: "clientId e userId são obrigatórios" });
+      }
+
+      // 1. Fetch client
+      const client = await db.query.clients.findFirst({
+        where: (c: any) => eq(c.id, clientId),
+      });
+
+      if (!client) {
+        return res.status(404).json({ error: "Cliente não encontrado" });
+      }
+
+      // 2. Create opportunity in PROPOSTA ENVIADA with 4 days + 1 min ago timestamp
+      const fourDaysAgo = new Date(Date.now() - (4 * 24 * 60 * 60 * 1000) - (1 * 60 * 1000));
+      
+      const [opp] = await db
+        .insert(opportunities)
+        .values({
+          clientId,
+          titulo: `Teste 4º Dia Auto-Move - ${new Date().toLocaleTimeString()}`,
+          etapa: "PROPOSTA ENVIADA",
+          responsavelId: userId,
+          updatedAt: fourDaysAgo,
+        })
+        .returning();
+
+      console.log(`✅ [TEST 4º DIA] Opportunity criada com 4 dias de timeout: ${opp.id}`);
+
+      // 3. Run contract reminder check immediately
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      await checkPropostaEnviadaTimeouts();
+
+      // 4. Fetch the updated opportunity (should be PERDIDO now)
+      const updatedOpp = await db.query.opportunities.findFirst({
+        where: (o: any) => eq(o.id, opp.id),
+      });
+
+      res.json({
+        success: true,
+        message: "Teste do 4º dia executado",
+        opportunity: {
+          id: updatedOpp?.id,
+          etapaAntes: "PROPOSTA ENVIADA",
+          etapaAgora: updatedOpp?.etapa,
+          moved: updatedOpp?.etapa === "PERDIDO",
+          timeline: updatedOpp?.notas,
+        },
+      });
+    } catch (error) {
+      console.error("❌ Test 4th day error:", error);
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
