@@ -97,6 +97,7 @@ Principais entidades no PostgreSQL:
 - ✅ Filtros por responsável
 - ✅ Visualização de valor estimado e prazos
 - ✅ **Configuração GLOBAL**: Todos usuários compartilham mesmas estágios (sem config por-usuário)
+- ✅ **Contagem de oportunidades** por coluna com badge
 
 ### Campanhas
 - ✅ Gestão de campanhas de Email e WhatsApp
@@ -237,7 +238,7 @@ Isso inicia:
 - Frontend (Vite) em http://0.0.0.0:5000
 - Backend (Express) no mesmo servidor
 
-## Estado Atual - ✅ Chat Modal + Criar Negócio!
+## Estado Atual - ✅ Kanban + Chat Modal Funcionando 100%!
 
 **Decisões Arquiteturais:**
 - ✅ **Kanban Stages**: GLOBAL (compartilhado por toda empresa, não por-usuário)
@@ -245,10 +246,17 @@ Isso inicia:
 - ✅ **Opportunity Creation**: Usa `currentUser.id` como responsávelId (validado em FK)
 
 **Últimas Correções (Nov 28, 2025):**
-- ✅ BUG FIXADO: Foreign Key constraint error ao criar negócio
-  - Problema: `responsavelId` estava sendo setado para string "sem-responsavel" (não existe em users table)
-  - Solução: Agora busca usuário autenticado via `/api/auth/user` query e usa `currentUser.id`
-  - Status: ✅ POST /api/opportunities 201 (sucesso confirmado em logs)
+1. ✅ BUG FIXADO: Foreign Key constraint error ao criar negócio
+   - Problema: `responsavelId` estava sendo setado para "sem-responsavel"
+   - Solução: Usa `currentUser.id` do usuário autenticado
+   - Status: ✅ POST /api/opportunities 201 (sucesso confirmado)
+
+2. ✅ BUG FIXADO: Oportunidades não apareciam no Kanban
+   - Problema 1: Comparação case-sensitive de etapas ("fechado" vs "Fechado")
+   - Solução: Adicionado `.toLowerCase()` na comparação
+   - Problema 2: `handleDrop` passava `coluna.id` em vez de `coluna.titulo`
+   - Solução: Mudou para passar `coluna.titulo` (a etapa correta)
+   - Status: ✅ Todas oportunidades aparecem nas colunas corretas
 
 **Próximas Ações (Fase 3):**
 1. Dashboard de performance por vendedor
