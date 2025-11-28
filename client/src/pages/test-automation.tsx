@@ -51,10 +51,11 @@ export default function TestAutomation() {
   // Test contract reminder (1 minute timeout)
   const contractReminderMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest("POST", "/api/test/contract-reminder", {
+      const res = await apiRequest("POST", "/api/test/contract-reminder", {
         clientId,
         userId,
       });
+      return res.json();
     },
     onSuccess: (data) => {
       setContractReminderResult(data);
@@ -69,10 +70,11 @@ export default function TestAutomation() {
   // Test 4th day auto-move to PERDIDO
   const fourthDayMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest("POST", "/api/test/contract-reminder-4th-day", {
+      const res = await apiRequest("POST", "/api/test/contract-reminder-4th-day", {
         clientId,
         userId,
       });
+      return res.json();
     },
     onSuccess: (data) => {
       toast({ 
