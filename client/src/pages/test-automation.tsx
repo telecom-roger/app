@@ -58,7 +58,9 @@ export default function TestAutomation() {
     },
     onSuccess: (data) => {
       setContractReminderResult(data);
-      toast({ title: "✅ Contract Reminder testado!", description: `${data.tasks_created} tasks criadas` });
+      const taskCount = data?.tasks_created || 0;
+      const msgCount = data?.messages_sent || 0;
+      toast({ title: "✅ Contract Reminder testado!", description: `${taskCount} tasks criadas, ${msgCount} mensagens` });
       refetchTestOpps();
     },
     onError: (error: any) => {
