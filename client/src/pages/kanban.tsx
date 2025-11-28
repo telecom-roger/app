@@ -436,16 +436,9 @@ function KanbanColumn({
                 </p>
               </div>
             </div>
-            <div className="flex gap-2 ml-auto">
-              <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-900">
-                {coluna.oportunidades.length}
-              </Badge>
-              {coluna.titulo === "Fechado" && (
-                <Badge variant="default" className="bg-emerald-500 dark:bg-emerald-600">
-                  ✓ {coluna.oportunidades.length}
-                </Badge>
-              )}
-            </div>
+            <Badge variant="secondary" className="ml-auto bg-slate-100 dark:bg-slate-900">
+              {coluna.oportunidades.length}
+            </Badge>
           </div>
         </CardHeader>
         <CardContent className="flex-1 space-y-3 overflow-y-auto max-h-[calc(100vh-300px)] pt-4">
