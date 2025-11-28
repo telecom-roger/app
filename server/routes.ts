@@ -2883,15 +2883,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         where: (o: any) => eq(o.id, opp.id),
       });
 
+      const wasMoved = updatedOpp?.etapa === "PERDIDO";
+      
       res.json({
         success: true,
         message: "Teste do 4º dia executado",
         opportunity: {
-          id: updatedOpp?.id,
+          id: updatedOpp?.id || opp.id,
           etapaAntes: "PROPOSTA ENVIADA",
-          etapaAgora: updatedOpp?.etapa,
-          moved: updatedOpp?.etapa === "PERDIDO",
-          timeline: updatedOpp?.notas,
+          etapaAgora: updatedOpp?.etapa || "DESCONHECIDO",
+          moved: wasMoved,
+          timeline: wasMoved ? "✅ Registrada" : "❌ Não registrada",
         },
       });
     } catch (error) {

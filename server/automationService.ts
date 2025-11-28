@@ -1,7 +1,7 @@
 import * as storage from "./storage";
 import { db } from "./db";
-import { eq, and, lt, isNull, gte } from "drizzle-orm";
-import { automationTasks, followUps, clientScores, opportunities, clients as clientsTable, messages } from "@shared/schema";
+import { eq, and, lt, isNull, gte, desc, sql } from "drizzle-orm";
+import { automationTasks, followUps, clientScores, opportunities, clients as clientsTable, messages, interactions } from "@shared/schema";
 import { analyzeClientMessage } from "./aiService";
 
 // ======================== CRON JOB: Executar tarefas pendentes ========================
@@ -358,7 +358,6 @@ async function executeContractReminder(task: any) {
   });
 
   // 📋 REGISTRAR NA TIMELINE DO CLIENTE
-  const { interactions } = await import("@shared/schema");
   await db.insert(interactions).values({
     clientId: opportunity.clientId,
     tipo: "contract_reminder",
@@ -403,6 +402,19 @@ export async function checkPropostaEnviadaTimeouts() {
             notas: sql`jsonb_insert(coalesce(notas, '[]'::jsonb), '{0}', jsonb_build_object('type', 'timeline', 'data', jsonb_build_object('titulo', 'Movido para Perdido', 'msg', 'Cliente tinha interesse em renovar mas não finalizou', 'timestamp', now())))`,
           })
           .where(eq(opportunities.id, opp.id));
+
+        // 📋 REGISTRAR NA TIMELINE DO CLIENTE - MOVIMENTO PARA PERDIDO
+        await db.insert(interactions).values({
+          clientId: opp.clientId,
+          tipo: "status_mudou",
+          origem: "automation",
+          titulo: "Oportunidade Movida para Perdido",
+          texto: "Cliente tinha interesse em renovar mas não finalizou a contratação após 4 dias sem resposta",
+          meta: { opportunityId: opp.id, etapa_anterior: "PROPOSTA ENVIADA", etapa_nova: "PERDIDO", dias_sem_resposta: daysSinceEnvio },
+          createdBy: opp.responsavelId,
+        });
+        
+        console.log(`✅ Timeline registrada para movimento para PERDIDO`);
         continue;
       }
       
