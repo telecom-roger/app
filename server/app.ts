@@ -29,14 +29,9 @@ declare module 'http' {
   }
 }
 
-// ⚡ ULTRA-FAST HEALTH CHECKS - responds immediately before any middleware
+// ⚡ ULTRA-FAST HEALTH CHECK - responds immediately before any middleware
 app.get("/health", (req, res) => {
   res.status(200).json({ ok: true });
-});
-
-// ⚡ ROOT ENDPOINT - also responds immediately
-app.get("/", (req, res) => {
-  res.status(200).send("OK");
 });
 
 app.use(express.json({
