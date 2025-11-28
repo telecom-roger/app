@@ -2792,9 +2792,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 3. Registrar na timeline (mensagem enviada) - Randomizar dia 0
       const day0Messages = [
-        `Olá, tudo bem? Podemos seguir com a contratação? Caso tenha alguma dúvida é só me avisar.`,
-        `Oi, chegou bem? Vamos agendar a contratação? Qualquer dúvida, é só avisar!`,
-        `Olá! Tudo certo aí? Podemos prosseguir com a contratação?`,
+        `Olá, tudo bem? Podemos seguir com a contratação? Qualquer dúvida é só me chamar.`,
+        `Oi! Tudo certo? Conseguimos avançar com o plano? Estou por aqui caso precise de algo.`,
+        `Olá, tudo bem? Podemos finalizar sua contratação agora? Ficou com alguma dúvida?`,
+        `Oi! Só confirmando: deseja seguir com o plano que conversamos? Se quiser ajustar algo, me avise!`,
+        `Olá! Tudo bem por aí? Posso dar andamento na contratação para você? Qualquer dúvida me avisa.`,
+        `Olá, tudo bem? Qualquer dúvida sobre o plano ou condições, estou à disposição. Podemos avançar?`,
+        `Olá, tudo bem? Só passando pra saber se deseja continuar com a contratação. Qualquer dúvida me avisa.`,
       ];
       const randomIdx = Math.floor(Math.random() * day0Messages.length);
       const mensagem = day0Messages[randomIdx];
