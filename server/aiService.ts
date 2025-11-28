@@ -32,8 +32,8 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
       sentimento: "positivo",
       confianca: 95,
       motivo: "Resposta positiva detectada",
-      etapa: "PROPOSTA ENVIADA",
-      sugestao: "Aguardar resposta do cliente",
+      etapa: "PROPOSTA",
+      sugestao: "Enviar contrato para assinatura",
     };
   }
   
@@ -52,7 +52,7 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
       sentimento: "positivo",
       confianca: 85,
       motivo: "Pergunta sobre preço",
-      etapa: "LEAD",
+      etapa: "CONTATO",
       sugestao: "Enviar tabela de preços",
     };
   }
@@ -86,16 +86,16 @@ export async function analyzeClientMessage(
 MENSAGEM: "${mensagem}"
 CLIENTE: ${clienteInfo?.razaoSocial || clienteInfo?.nome || "Desconhecido"}
 
-REGRAS DE CLASSIFICAÇÃO - SIGA EXATAMENTE:
-1. "OK", "SIM", "TOPA", "MANDA", qualquer aprovação → etapa "PROPOSTA ENVIADA", sentimento "positivo"
+REGRAS DE CLASSIFICAÇÃO - SIGA EXATAMENTE (IA só trabalha em 4 etapas):
+1. "OK", "SIM", "TOPA", "MANDA", qualquer aprovação → etapa "PROPOSTA", sentimento "positivo"
 2. "NÃO", "RECUSO", "CANCELAR", rejeição → etapa "PERDIDO", sentimento "negativo"
-3. "QUANTO", "PREÇO", "VALOR" → etapa "LEAD", sentimento "positivo"
+3. "QUANTO", "PREÇO", "VALOR" → etapa "CONTATO", sentimento "positivo"
 4. AUTOMÁTICA, "BREVE", "DEIXE SEU CONTATO", "ENTRO EM CONTATO", mensagens automáticas → etapa "FORNECEDOR", sentimento "fornecedor"
 5. Empresa/fornecedor/NF/protocolo/CNPJ → etapa "FORNECEDOR", sentimento "fornecedor"
-6. Só confirmou recebimento → etapa "automatico", sentimento "neutro"
+6. Qualquer outra mensagem → retorne "CONTATO" como etapa padrão
 
 Responda APENAS com JSON (sem markdown):
-{"sentimento":"positivo","confianca":90,"motivo":"Respondeu OK","etapa":"PROPOSTA ENVIADA","sugestao":"Aguardar resposta"}`;
+{"sentimento":"positivo","confianca":90,"motivo":"Respondeu OK","etapa":"PROPOSTA","sugestao":"Enviar contrato"}`;
 
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",

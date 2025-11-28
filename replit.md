@@ -22,10 +22,10 @@ The application features a professional design system utilizing a deep dark blue
 - **Authentication**: Replit Auth with local Passport strategy (email + bcrypt) and role-based access control (Admin, Gerente, Agente).
 - **CRM**: Full CRUD for clients with 16 custom telecom fields, contact management, tagging, lead scoring, interaction timeline, and advanced search/filters.
 - **Client Import**: A 4-step wizard supports CSV/XLSX imports with interactive column mapping, Brazilian phone normalization, duplicate detection, and detailed validation reports.
-- **Kanban**: Drag-and-drop functionality for opportunities across 6 global stages: Lead, Contato, Proposta, Fechado, Perdido, Fornecedor. Supports inline editing and filtering by assignee.
+- **Kanban**: Drag-and-drop functionality for opportunities across **8 global stages** (LEAD, CONTATO, PROPOSTA, PROPOSTA ENVIADA, AGUARDANDO ACEITE, FECHADO, PERDIDO, FORNECEDOR). All titles in UPPERCASE. Supports inline editing and filtering by assignee.
 - **Campaigns**: Management of Email and WhatsApp campaigns with template selection, dynamic variables, scheduling, and status tracking.
 - **WhatsApp Integration**: Bidirectional chat, message sending, active listeners, phone number normalization (removes 55 prefix for storage), automatic conversation creation for new contacts, and voice note support.
-- **AI Automation**: Integrated with OpenAI GPT-4o Mini for sentiment analysis of WhatsApp responses, automatically moving Kanban opportunities based on sentiment (e.g., "OK" to "Proposta", "Não" to "Perdido"), creating opportunities, and generating intelligent notifications.
+- **AI Automation**: Integrated with OpenAI GPT-4o Mini for sentiment analysis of WhatsApp responses. **IA now works ONLY on 4 stages**: PROPOSTA, CONTATO, FORNECEDOR, PERDIDO. Other stages (LEAD, PROPOSTA ENVIADA, AGUARDANDO ACEITE, FECHADO) are manual-only. Automatically moves Kanban opportunities based on sentiment and creating intelligent notifications.
 
 ### System Design Choices
 - **Folder Structure**: Organized into `client/src` (components, pages, hooks, lib, assets), `server` (app, routes, storage, auth, whatsapp service), and `shared` (Drizzle schemas, shared types).
@@ -43,38 +43,55 @@ The application features a professional design system utilizing a deep dark blue
 - **PapaParse**: For parsing CSV/XLSX files during client imports.
 - **Framer Motion**: For UI animations.
 - **Recharts**: For data visualization in the analytical dashboard.
----
-
-## 🚀 FASE 4 IMPLEMENTADA - ESTRUTURA DE AUTOMAÇÃO (Nov 28, 16:40)
-
-**3 Novas Tabelas:**
-- `automation_tasks` - Agendador de tarefas (follow-up, re-engagement, scoring, auto-send, kanban_move)
-- `follow_ups` - Histórico de follow-ups (1º, 2º, 3º com status)  
-- `client_scores` - Scoring automático (4 métricas: IA, Contato, Engajamento, Potencial)
-
-**automationService.ts - Orquestrador Completo:**
-- `processAutomationTasks()` - Executa tarefas pendentes
-- `executeFollowUp()` - Follow-ups automáticos 1, 3, 7 dias
-- `executeReEngagement()` - Re-engaja clientes inativos > 30 dias
-- `updateClientScore()` - Calcula score total (0-100)
-- `executeKanbanMove()` - Move oportunidades automáticamente entre estágios
-- `startAutomationCron()` - Cron a cada 30 segundos
-
-**Integração:**
-- ✅ automationService inicializado em app.ts
-- ✅ npm run db:push executado com sucesso
-- ✅ Cron jobs rodando a cada 30 segundos (otimizado para testes)
-- ✅ Banco de dados sincronizado
-- ✅ Tarefas kanban_move criadas com `proximaExecucao` no passado para execução imediata
-
-**Fluxo Automático Completo:**
-Cliente responde → IA analisa → Move Kanban → Cria 3 follow-ups automáticos → Score atualizado → Vendedor notificado → Re-engagement se inativo
-
-**Teste de Kanban Move (Nov 28, 16:59):**
-- ✅ Endpoint `/api/test/kanban-movement` funcional
-- ✅ 3 oportunidades (lead→contato→proposta→fechado) movidas automaticamente
-- ✅ Cron Job executa tarefas em ~30 segundos após criação
 
 ---
 
-**Status:** ✅ Estrutura de Automação OPERACIONAL - Kanban Move TESTADO E CONFIRMADO
+## 🚀 FASE 5 - INTELIGÊNCIA IA LIMITADA + CONTRACT REMINDER (Nov 28, 18:15)
+
+### ✅ Novas Etapas do Kanban (8 total):
+- **LEAD** (0) - Manual
+- **CONTATO** (1) - IA trabalha aqui
+- **PROPOSTA** (2) - IA trabalha aqui
+- **PROPOSTA ENVIADA** (3) - Manual (cobrado automaticamente após 24h)
+- **AGUARDANDO ACEITE** (4) - Manual
+- **FECHADO** (5) - Manual
+- **PERDIDO** (6) - IA trabalha aqui
+- **FORNECEDOR** (7) - IA trabalha aqui
+
+### 🤖 Regras de IA Implementadas:
+IA **TRABALHA APENAS** em 4 etapas:
+1. **PROPOSTA** - "OK", "SIM", "TOPA", "MANDA" → cliente aprovou proposta
+2. **CONTATO** - "PREÇO", "VALOR", "QUANTO" → cliente quer mais info
+3. **FORNECEDOR** - Mensagens automáticas, "DEIXE SEU CONTATO", "BREVE", etc
+4. **PERDIDO** - "NÃO", "RECUSO", "CANCELAR" → cliente rejeitou
+
+**Outras etapas são 100% manuais** (vendedor move no Kanban):
+- LEAD, PROPOSTA ENVIADA, AGUARDANDO ACEITE, FECHADO
+
+### 📋 Contract Reminder Job (NOVO):
+- **Executa a cada 30 segundos** (via cron job)
+- **Verifica**: Oportunidades em "PROPOSTA ENVIADA" há **24h+ sem movimento**
+- **Ação**: Envia lembrete cobrando assinatura do contrato via mensagem
+- **Função**: `checkPropostaEnviadaTimeouts()` + `executeContractReminder()`
+- **Tabela**: Usa `automation_tasks` com tipo `contract_reminder`
+- **Log**: Registra mensagens em `messages` com `sender="bot"`
+
+### 📡 Integração:
+- ✅ 8 etapas criadas em `kanban_stages` com títulos em UPPERCASE
+- ✅ AI Service atualizado: apenas 4 etapas permitidas
+- ✅ Contract Reminder job implementado em `automationService.ts`
+- ✅ Cron job roda a cada 30 segundos
+- ✅ Testes confirmados:
+  - "Ok, topa!" → **PROPOSTA** ✅
+  - "Qual preço?" → **CONTATO** ✅
+  - "Deixe seu contato" → **FORNECEDOR** ✅
+  - "Não quero" → **PERDIDO** ✅
+
+### 🎯 Próximas Fases:
+1. Integração WhatsApp para enviar reminders de contrato via WhatsApp
+2. Dashboard mostrando métricas de propostas pendentes
+3. Configuração de templates customizáveis para mensagens de reminder
+
+---
+
+**Status:** ✅ IA LIMITADA A 4 ETAPAS + CONTRACT REMINDER OPERACIONAL

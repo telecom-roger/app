@@ -63,6 +63,9 @@ async function executeAutomationTask(task: any) {
     case "kanban_move":
       await executeKanbanMove(task);
       break;
+    case "contract_reminder":
+      await executeContractReminder(task);
+      break;
   }
 
   // Marcar como executado
@@ -315,6 +318,84 @@ export async function createFollowUpAfterResponse(clientId: string, userId: stri
   }
 }
 
+// ======================== CONTRACT REMINDER - Cobrar assinatura após 24h ========================
+async function executeContractReminder(task: any) {
+  console.log(`📋 Contract reminder para ${task.clientId}`);
+  
+  const opportunity = await db.query.opportunities.findFirst({
+    where: (o: any) => eq(o.id, task.dados?.opportunityId || ""),
+  });
+  
+  if (!opportunity) return;
+  
+  const client = await db.query.clients.findFirst({
+    where: (c: any) => eq(c.id, opportunity.clientId),
+  });
+  
+  if (!client) return;
+  
+  console.log(`💬 Enviando lembrete de assinatura para ${client.nome}`);
+  
+  // Log da ação (pode ser integrado com WhatsApp depois)
+  await db.insert(messages).values({
+    conversationId: `reminder-${opportunity.id}`,
+    sender: "bot",
+    tipo: "text",
+    conteudo: `Olá ${client.nome}, confirmamos recebimento da proposta. Aguardamos assinatura do contrato. Pode fazer isso em: [LINK_CONTRATO]. Qualquer dúvida, estou à disposição!`,
+    createdAt: new Date(),
+  });
+}
+
+// ======================== VERIFICAR PROPOSTAS ENVIADAS (Job agendado) ========================
+async function checkPropostaEnviadaTimeouts() {
+  try {
+    console.log(`\n⏰ [CONTRACT CHECK] Verificando propostas enviadas há 24h...`);
+    
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    
+    // Buscar oportunidades em PROPOSTA ENVIADA há mais de 24h
+    const proposatasComTimeout = await db
+      .select()
+      .from(opportunities)
+      .where(
+        and(
+          eq(opportunities.etapa, "PROPOSTA ENVIADA"),
+          lt(opportunities.updatedAt, oneDayAgo)
+        )
+      );
+    
+    console.log(`📋 Encontradas ${proposatasComTimeout.length} propostas com timeout`);
+    
+    for (const opp of proposatasComTimeout) {
+      // Verificar se já foi enviado um reminder
+      const existingReminder = await db
+        .select()
+        .from(automationTasks)
+        .where(
+          and(
+            eq(automationTasks.tipo, "contract_reminder"),
+            eq(automationTasks.dados, JSON.stringify({ opportunityId: opp.id }))
+          )
+        )
+        .limit(1);
+      
+      if (!existingReminder || existingReminder.length === 0) {
+        // Criar novo task de reminder
+        await db.insert(automationTasks).values({
+          userId: opp.responsavelId,
+          clientId: opp.clientId,
+          tipo: "contract_reminder",
+          proximaExecucao: new Date(),
+          dados: { opportunityId: opp.id },
+        });
+        console.log(`✅ Reminder agendado para oportunidade ${opp.id}`);
+      }
+    }
+  } catch (error) {
+    console.error(`❌ Erro ao verificar propostas enviadas:`, error);
+  }
+}
+
 // ======================== SCHEDULER DE CRON (executar a cada 30 segundos) ========================
 export function startAutomationCron() {
   console.log(`\n⏰ [AUTOMATION CRON] Iniciando scheduler...`);
@@ -322,10 +403,12 @@ export function startAutomationCron() {
   // Executar a cada 30 segundos (para testes rápidos)
   const interval = setInterval(() => {
     processAutomationTasks().catch(console.error);
+    checkPropostaEnviadaTimeouts().catch(console.error);
   }, 30 * 1000);
 
   // Executar também na inicialização
   processAutomationTasks().catch(console.error);
+  checkPropostaEnviadaTimeouts().catch(console.error);
 
   return () => clearInterval(interval);
 }
