@@ -49,12 +49,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (dueCampaigns.length > 0) {
         console.log(`⏰ SCHEDULER: Encontradas ${dueCampaigns.length} campanhas para executar`);
-        
-        const allClients = await storage.getClients({ limit: 10000, isAdmin: true });
-        const clientsList = allClients.clientes || [];
 
+        // Executa cada campanha com isolamento por usuário
         for (const campaign of dueCampaigns) {
-          await whatsappService.executeCampaign(campaign, db, clientsList);
+          try {
+            const ownerId = campaign.createdBy;
+            console.log(`🔒 Executando campanha ${campaign.id} do usuário ${ownerId}`);
+            
+            // Carrega APENAS clientes do dono da campanha
+            const userClients = await storage.getClients({ 
+              userId: ownerId,
+              limit: 10000,
+              isAdmin: false 
+            });
+            const clientsList = userClients.clientes || [];
+
+            if (clientsList.length === 0) {
+              console.warn(`⚠️ Nenhum cliente encontrado para usuário ${ownerId}`);
+              continue;
+            }
+
+            console.log(`📤 Campanha ${campaign.id}: ${clientsList.length} clientes do usuário ${ownerId}`);
+            await whatsappService.executeCampaign(campaign, db, clientsList);
+          } catch (campaignError) {
+            console.error(`❌ Erro ao executar campanha ${campaign.id}:`, campaignError);
+          }
         }
       }
     } catch (error) {
