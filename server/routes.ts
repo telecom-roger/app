@@ -2791,7 +2791,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // 3. Registrar na timeline (mensagem enviada)
-      const mensagem = `Oi ${client.nome}, tudo bem? Recebemos a proposta aqui com sucesso. Pode confirmar o recebimento pra gente?`;
+      const mensagem = `Olá, tudo bem? Podemos seguir com a contratação? Caso tenha alguma dúvida é só me avisar.`;
       
       await db.insert(interactions).values({
         clientId,
