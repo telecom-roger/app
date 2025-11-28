@@ -23,16 +23,16 @@ export function ClientNoteItem({ note, clientId }: ClientNoteItemProps) {
   const { toast } = useToast();
 
   const updateMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (data: { conteudo?: string; dataPlanejada?: string }) => {
       await apiRequest("PATCH", `/api/client-notes/${note.id}`, {
-        conteudo,
+        conteudo: data.conteudo ?? conteudo,
         cor: note.cor,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/timeline", clientId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/client-notes", clientId] });
       setIsEditing(false);
-      toast({ title: "Sucesso", description: "Observação atualizada!" });
     },
     onError: (error: any) => {
       toast({
@@ -42,6 +42,14 @@ export function ClientNoteItem({ note, clientId }: ClientNoteItemProps) {
       });
     },
   });
+
+  const handleSaveField = (field: "conteudo" | "data") => {
+    if (field === "conteudo" && conteudo.trim() !== note.conteudo) {
+      updateMutation.mutate({ conteudo });
+    } else if (field === "data" && dataPlanejada !== note.createdAt) {
+      updateMutation.mutate({ dataPlanejada });
+    }
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -79,6 +87,7 @@ export function ClientNoteItem({ note, clientId }: ClientNoteItemProps) {
             <Textarea
               value={conteudo}
               onChange={(e) => setConteudo(e.target.value)}
+              onBlur={() => handleSaveField("conteudo")}
               className="min-h-20"
               data-testid={`edit-textarea-${note.id}`}
             />
@@ -88,6 +97,7 @@ export function ClientNoteItem({ note, clientId }: ClientNoteItemProps) {
                 type="datetime-local"
                 value={dataPlanejada}
                 onChange={(e) => setDataPlanejada(e.target.value)}
+                onBlur={() => handleSaveField("data")}
                 data-testid={`edit-date-${note.id}`}
               />
             </div>
@@ -95,14 +105,21 @@ export function ClientNoteItem({ note, clientId }: ClientNoteItemProps) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setIsEditing(false)}
+                onClick={() => {
+                  setConteudo(note.conteudo);
+                  setDataPlanejada(note.createdAt ? new Date(note.createdAt).toISOString().slice(0, 16) : "");
+                  setIsEditing(false);
+                }}
                 data-testid={`button-cancelar-${note.id}`}
               >
                 Cancelar
               </Button>
               <Button
                 size="sm"
-                onClick={() => updateMutation.mutate()}
+                onClick={() => {
+                  handleSaveField("conteudo");
+                  setIsEditing(false);
+                }}
                 disabled={updateMutation.isPending}
                 data-testid={`button-salvar-${note.id}`}
               >
