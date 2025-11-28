@@ -150,6 +150,17 @@ export default function Chat() {
     if (clientId && isInitializingFromUrl) {
       setIsInitializingFromUrl(false);
       
+      // Fetch client data to populate search field
+      apiRequest("GET", `/api/clients/${clientId}`, {})
+        .then((client) => {
+          // Set search term to client's razaoSocial for automatic filtering
+          setSearchTerm(client.razaoSocial || client.nome || "");
+          setShowSearchResults(true);
+        })
+        .catch((error) => {
+          console.error("Erro ao buscar dados do cliente:", error);
+        });
+      
       // Create or get conversation for this client
       apiRequest("POST", `/api/chat/start-conversation/${clientId}`, {})
         .then((conversa) => {
