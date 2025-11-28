@@ -170,17 +170,21 @@ async function executeAutomationTask(task: any) {
 async function executeFollowUp(task: any) {
   const taskData = task.dados || {};
   
-  console.log(`📞 Follow-up #${taskData.numero}`);
+  console.log(`📞 Follow-up #${taskData.numero} para cliente ${task.clientId}`);
 
   const client = await db.query.clients.findFirst({
     where: (c: any) => eq(c.id, task.clientId),
   });
 
-  if (!client) return;
+  if (!client) {
+    console.error(`❌ Cliente não encontrado: ${task.clientId}`);
+    return;
+  }
 
   await storage.createNotification({
+    tipo: "follow_up",
     titulo: `📞 Follow-up #${taskData.numero} - ${client.nome}`,
-    descricao: `Cliente sem resposta. Resgate agora!`,
+    descricao: `Cliente sem resposta há ${taskData.dias || 1} dias. Resgate agora!`,
     clientId: task.clientId,
     userId: task.userId,
   });
@@ -193,6 +197,8 @@ async function executeFollowUp(task: any) {
     executadoEm: new Date(),
     descricao: `Follow-up #${taskData.numero} executado`,
   });
+
+  console.log(`✅ Follow-up #${taskData.numero} executado`);
 }
 
 export async function updateClientScore(clientId: string, userId: string) {

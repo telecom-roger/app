@@ -104,6 +104,7 @@ async function executeFollowUp(task: any) {
 
   // Criar notificação de follow-up
   await storage.createNotification({
+    tipo: "follow_up",
     titulo: `📞 Follow-up #${taskData.numero} - ${client.nome}`,
     descricao: `Cliente sem resposta há ${diasSinceContact} dias. Resgate agora!`,
     clientId: task.clientId,
@@ -135,6 +136,7 @@ async function executeReEngagement(task: any) {
 
   // Notificar vendedor para re-engajar
   await storage.createNotification({
+    tipo: "re_engagement",
     titulo: `♻️ Re-engagement - ${client.nome}`,
     descricao: `Cliente inativo há mais de 30 dias. Considere enviar uma mensagem personalizada!`,
     clientId: task.clientId,
@@ -151,6 +153,7 @@ async function executeAutoSend(task: any) {
   // Aqui você integraria com seu serviço de envio
   // Por enquanto, apenas registra a tentativa
   await storage.createNotification({
+    tipo: "auto_send",
     titulo: `💬 Mensagem automática enviada`,
     descricao: `Mensagem: "${taskData.mensagem || "---}"}"`,
     clientId: task.clientId,
