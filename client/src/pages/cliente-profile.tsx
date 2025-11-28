@@ -247,7 +247,7 @@ export default function ClienteProfile() {
                   {timeline && timeline.length > 0 && (
                     <>
                       <Separator className="my-4" />
-                      {timeline.map((item) => (
+                      {[...timeline].reverse().map((item) => (
                         <TimelineItem key={item.id} item={item} />
                       ))}
                     </>
@@ -255,7 +255,7 @@ export default function ClienteProfile() {
                 </div>
               ) : timeline && timeline.length > 0 ? (
                 <div className="space-y-4">
-                  {timeline.map((item) => (
+                  {[...timeline].reverse().map((item) => (
                     <TimelineItem key={item.id} item={item} />
                   ))}
                 </div>
@@ -446,16 +446,16 @@ function TimelineItem({ item }: { item: Interaction }) {
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <h4 className="font-semibold text-sm" data-testid={`timeline-item-title-${item.id}`}>
+                <h4 className="font-semibold text-xs" data-testid={`timeline-item-title-${item.id}`}>
                   {item.titulo || item.tipo}
                 </h4>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[10px] text-muted-foreground">
                   {item.createdAt ? new Date(item.createdAt).toLocaleString('pt-BR') : 'Data desconhecida'}
                 </p>
               </div>
             </div>
             {item.texto && (
-              <p className="text-sm text-muted-foreground mt-2 leading-relaxed break-words">
+              <p className="text-xs text-muted-foreground mt-2 leading-relaxed break-words">
                 {item.texto}
               </p>
             )}
