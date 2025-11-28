@@ -89,6 +89,7 @@ function formatValue(num: number): string {
 }
 
 export default function Kanban() {
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [filtroResponsavel, setFiltroResponsavel] = useState<string>("todos");
@@ -237,6 +238,15 @@ export default function Kanban() {
                 Gerencie seu funil de vendas com drag and drop
               </p>
             </div>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate("/kanban-settings")}
+              data-testid="button-kanban-settings"
+              title="Configurar Kanban"
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
           </div>
         </div>
       </div>
