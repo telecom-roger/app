@@ -58,11 +58,12 @@ export async function createTestKanbanMovement(clientId: string, userId: string)
 
     const now = new Date();
     const timestamp = now.getTime();
+    const clientName = client.nome || client.razaoSocial || "Cliente Desconhecido";
     
     // Cria 3 oportunidades de teste NOVAS com etapas diferentes
     const opp1 = await db.insert(opportunities).values({
       clientId,
-      titulo: `Test Kanban 1 - Lead (${timestamp})`,
+      titulo: `${clientName} - Lead`,
       etapa: "Lead",
       valorEstimado: "1000",
       responsavelId: userId,
@@ -71,7 +72,7 @@ export async function createTestKanbanMovement(clientId: string, userId: string)
 
     const opp2 = await db.insert(opportunities).values({
       clientId,
-      titulo: `Test Kanban 2 - Contato (${timestamp})`,
+      titulo: `${clientName} - Contato`,
       etapa: "Contato",
       valorEstimado: "2000",
       responsavelId: userId,
@@ -80,7 +81,7 @@ export async function createTestKanbanMovement(clientId: string, userId: string)
 
     const opp3 = await db.insert(opportunities).values({
       clientId,
-      titulo: `Test Kanban 3 - Proposta (${timestamp})`,
+      titulo: `${clientName} - Proposta`,
       etapa: "Proposta",
       valorEstimado: "3000",
       responsavelId: userId,
