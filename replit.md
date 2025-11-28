@@ -46,14 +46,14 @@ The application features a professional design system utilizing a deep dark blue
 
 ---
 
-## 🚀 FASE 6 - KANBAN 9 ETAPAS + IA 5 ESTÁGIOS + CONTRACT REMINDER (Nov 28, 18:45)
+## 🚀 FASE 6 - KANBAN 9 ETAPAS + IA 5 ESTÁGIOS + CONTRACT REMINDER (Nov 28, 19:00)
 
-### ✅ Kanban Stages (9 total - REORDENADAS):
-1. **LEAD** (0) - Manual
+### ✅ Kanban Stages (9 total - FINAIS):
+1. **LEAD** (0) - Manual apenas
 2. **CONTATO** (1) - IA trabalha aqui
 3. **PROPOSTA** (2) - IA trabalha aqui
-4. **PROPOSTA ENVIADA** (3) - Manual
-5. **AGUARDANDO CONTRATO** (4) - Nova etapa! Manual
+4. **PROPOSTA ENVIADA** (3) - Manual + Job automático
+5. **AGUARDANDO CONTRATO** (4) - Manual
 6. **AGUARDANDO ACEITE** (5) - Manual
 7. **FECHADO** (6) - Manual
 8. **PERDIDO** (7) - IA trabalha aqui
@@ -80,21 +80,36 @@ The application features a professional design system utilizing a deep dark blue
 - Dia 2: "[Nome], podemos seguir com a melhoria que ofertamos? Vamos fechar isso aí?"
 - Dia 3: "Última tentativa, [Nome]. Vamos seguir com a contratação? Estamos aqui pra ajudar!"
 
-### 📡 Implementação:
+### 🧪 Teste Endpoint (1 MINUTO TIMEOUT):
+**Endpoint:** `POST /api/test/contract-reminder`
+```json
+{
+  "clientId": "1b67afd8-b174-4d57-a386-43e6eae28945",
+  "userId": "187f6e5e-e5b9-4232-9dac-42296aa84414"
+}
+```
+**O que faz:**
+- ✅ Cria opportunity em PROPOSTA ENVIADA com timestamp 1 minuto atrás
+- ✅ Executa job de Contract Reminder imediatamente
+- ✅ Retorna mensagens enviadas e tasks criadas
+- ✅ Perfeito para testar na página de testes!
+
+### 📡 Implementação Completa:
 - ✅ 9 etapas do Kanban criadas com lazy initialization em `storage.ts`
 - ✅ AI Service atualizado para 5 estágios (CONTATO, PROPOSTA, FORNECEDOR, FECHADO, PERDIDO)
 - ✅ Contract Reminder job em `automationService.ts` com:
   - `executeContractReminder()` - Envia mensagens naturais progressivas
-  - `checkPropostaEnviadaTimeouts()` - Verifica 2h timeout + horários comerciais + 3 dias + auto-move PERDIDO
-- ✅ Cron job roda a cada 30 segundos
-- ✅ Testes confirmados
+  - `checkPropostaEnviadaTimeouts()` - **EXPORTADA** para reutilização
+- ✅ Novo endpoint `/api/test/contract-reminder` em `routes.ts`
+- ✅ Cron job roda a cada 30 segundos (2h real, 1 minuto nos testes)
+- ✅ Pronto para testar na página de testes do frontend
 
 ### 🎯 Próximas Fases:
-1. WhatsApp integration para enviar reminders via WA ao invés de apenas chat
+1. Integração WhatsApp para enviar reminders via WA
 2. Dashboard mostrando métricas de propostas pendentes
-3. Configuração de templates customizáveis para mensagens de reminder
-4. Integração com Google Calendar para reagendar followups
+3. Configuração de templates customizáveis
+4. Calendário/reagendamento de followups
 
 ---
 
-**Status:** ✅ FASE 6 COMPLETA - Kanban 9 etapas + IA 5 estágios + Contract Reminder com horários comerciais e ciclo 3 dias OPERACIONAL
+**Status:** ✅ FASE 6 COMPLETA + ENDPOINT DE TESTE - Pronto para testar na página de testes!

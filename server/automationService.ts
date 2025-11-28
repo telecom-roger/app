@@ -359,7 +359,7 @@ async function executeContractReminder(task: any) {
 }
 
 // ======================== VERIFICAR PROPOSTAS ENVIADAS - Lógica de 2h timeout + 3 dias + horários comerciais ========================
-async function checkPropostaEnviadaTimeouts() {
+export async function checkPropostaEnviadaTimeouts() {
   try {
     console.log(`\n⏰ [CONTRACT CHECK] Verificando propostas enviadas com timeout de 2h...`);
     

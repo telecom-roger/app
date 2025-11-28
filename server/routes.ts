@@ -3,12 +3,13 @@ import { createServer, type Server } from "http";
 import { z } from "zod";
 import { eq, and, or, ilike, desc, sql, lte, inArray, isNull, gte, between } from "drizzle-orm";
 import cron from "node-cron";
-import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, insertClientSharingSchema, whatsappSessions, clients, interactions, conversations, messages, campaigns as campaignsTable, templates as templatesTable, tags, clientSharing, notifications, users, campaignSendings, campaignGroups, opportunities } from "@shared/schema";
+import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, insertClientSharingSchema, whatsappSessions, clients, interactions, conversations, messages, campaigns as campaignsTable, templates as templatesTable, tags, clientSharing, notifications, users, campaignSendings, campaignGroups, opportunities, automationTasks } from "@shared/schema";
 import * as storage from "./storage";
 import * as whatsappService from "./whatsappService";
 import { setupAuth, isAuthenticated } from "./localAuth";
 import { db } from "./db";
 import { simulateClientResponse, getAllAutomationTasks, getAllFollowUps, getAllClientScores, createTestFollowUps, createTestKanbanMovement, processBatchResponses } from "./testAutomation";
+import { checkPropostaEnviadaTimeouts } from "./automationService";
 
 // Track campaigns in progress
 const campanhasEmProgresso = new Map<string, {
@@ -2741,6 +2742,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allOpps = await db.select().from(opportunities).orderBy(opportunities.etapa);
       res.json(allOpps);
     } catch (error) {
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
+  // ==================== TEST CONTRACT REMINDER (1 MINUTO TIMEOUT) ====================
+  app.post("/api/test/contract-reminder", async (req, res) => {
+    try {
+      const { clientId, userId } = req.body;
+      
+      if (!clientId || !userId) {
+        return res.status(400).json({ error: "clientId e userId são obrigatórios" });
+      }
+
+      // 1. Fetch or create client
+      const client = await db.query.clients.findFirst({
+        where: (c: any) => eq(c.id, clientId),
+      });
+
+      if (!client) {
+        return res.status(404).json({ error: "Cliente não encontrado" });
+      }
+
+      // 2. Create opportunity in PROPOSTA ENVIADA with 1 minute ago timestamp
+      const oneMinuteAgo = new Date(Date.now() - 1 * 60 * 1000);
+      
+      const [opp] = await db
+        .insert(opportunities)
+        .values({
+          clientId,
+          titulo: `Teste Contract Reminder - ${new Date().toLocaleTimeString()}`,
+          etapa: "PROPOSTA ENVIADA",
+          responsavelId: userId,
+          updatedAt: oneMinuteAgo,
+        })
+        .returning();
+
+      console.log(`✅ [TEST] Opportunity criada em PROPOSTA ENVIADA: ${opp.id}`);
+      console.log(`   Data da última atualização: ${oneMinuteAgo.toISOString()}`);
+
+      // 3. Run contract reminder check immediately
+      await new Promise(resolve => setTimeout(resolve, 500)); // Small delay to ensure DB sync
+      
+      const beforeCheck = new Date();
+      await checkPropostaEnviadaTimeouts();
+      const afterCheck = new Date();
+
+      console.log(`✅ [TEST] Job de Contract Reminder executado (${afterCheck.getTime() - beforeCheck.getTime()}ms)`);
+
+      // 4. Fetch the updated opportunity
+      const updatedOpp = await db.query.opportunities.findFirst({
+        where: (o: any) => eq(o.id, opp.id),
+      });
+
+      // 5. Fetch messages sent
+      const messages_sent = await db
+        .select()
+        .from(messages)
+        .where(ilike(messages.conversationId, `reminder-%`))
+        .orderBy((m: any) => desc(m.createdAt))
+        .limit(5);
+
+      // 6. Fetch automation tasks created
+      const tasks_created = await db
+        .select()
+        .from(automationTasks)
+        .where(eq(automationTasks.clientId, clientId))
+        .orderBy((t: any) => desc(t.proximaExecucao))
+        .limit(5);
+
+      res.json({
+        success: true,
+        message: "Contract Reminder testado com 1 minuto de timeout",
+        opportunity: {
+          id: updatedOpp?.id,
+          etapa: updatedOpp?.etapa,
+          updatedAt: updatedOpp?.updatedAt,
+        },
+        messages_sent: messages_sent.length,
+        tasks_created: tasks_created.length,
+        details: {
+          messages: messages_sent.map((m: any) => ({
+            conteudo: m.conteudo.substring(0, 80) + "...",
+            createdAt: m.createdAt,
+          })),
+          tasks: tasks_created.map((t: any) => ({
+            tipo: t.tipo,
+            status: t.status,
+            proximaExecucao: t.proximaExecucao,
+          })),
+        },
+      });
+    } catch (error) {
+      console.error("❌ Test contract reminder error:", error);
       res.status(500).json({ error: String(error) });
     }
   });
