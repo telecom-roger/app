@@ -151,7 +151,8 @@ export default function Chat() {
       setIsInitializingFromUrl(false);
       
       // Fetch client data to populate search field
-      apiRequest("GET", `/api/clients/${clientId}`, {})
+      fetch(`/api/clients/${clientId}`)
+        .then(res => res.json())
         .then((client) => {
           // Set search term to client's razaoSocial for automatic filtering
           setSearchTerm(client.razaoSocial || client.nome || "");
