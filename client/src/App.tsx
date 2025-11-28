@@ -77,7 +77,7 @@ function Router({ isAuthenticated }: { isAuthenticated: boolean }) {
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
   
-  // Sidebar width configuration
+  // Sidebar width configuration - responsive
   const style = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",
@@ -107,9 +107,9 @@ function AppContent() {
       <div className="flex h-screen w-full">
         <AppSidebar />
         <div className="flex flex-col flex-1 overflow-hidden">
-          <header className="flex items-center justify-between px-6 py-3 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <SidebarTrigger data-testid="button-sidebar-toggle" />
-            <div className="flex items-center gap-2">
+          <header className="flex items-center justify-between px-3 md:px-6 py-2 md:py-3 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 gap-2">
+            <SidebarTrigger data-testid="button-sidebar-toggle" className="h-8 w-8" />
+            <div className="flex items-center gap-1 md:gap-2 ml-auto">
               <ChatNotificationBell />
               <NotificationBell />
               <ThemeToggle />
