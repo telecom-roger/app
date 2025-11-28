@@ -30,6 +30,7 @@ import {
 import { EditableField } from "@/components/EditableField";
 import { AddClientNote } from "@/components/AddClientNote";
 import { ClientNoteItem } from "@/components/ClientNoteItem";
+import { CreateOpportunityPopover } from "@/components/CreateOpportunityPopover";
 import type { Client, Interaction, ClientNote } from "@shared/schema";
 
 export default function ClienteProfile() {
@@ -144,14 +145,7 @@ export default function ClienteProfile() {
                   <Mail className="h-4 w-4 mr-2" />
                   Enviar Email
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start text-sm"
-                  data-testid="button-criar-oportunidade"
-                >
-                  <Target className="h-4 w-4 mr-2" />
-                  Criar Oportunidade
-                </Button>
+                {cliente && <CreateOpportunityPopover client={cliente} />}
                 <Button 
                   variant="ghost" 
                   className="w-full justify-start text-sm"
