@@ -71,10 +71,6 @@ export default async function runApp(
 ) {
   const server = await registerRoutes(app);
 
-  // Start automation cron jobs
-  const stopCron = startAutomationCron();
-  log("🤖 Automation Cron Jobs iniciados!");
-
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -98,5 +94,11 @@ export default async function runApp(
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Start automation cron jobs AFTER server is listening (non-blocking)
+    setImmediate(() => {
+      startAutomationCron();
+      log("🤖 Automation Cron Jobs iniciados!");
+    });
   });
 }

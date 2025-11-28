@@ -34,6 +34,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
   await setupAuth(app);
 
+  // ==================== HEALTH CHECK ====================
+  // Fast health check endpoint for deployment
+  app.get("/", (req, res) => {
+    res.status(200).json({ ok: true, status: "healthy" });
+  });
+
   // ==================== SCHEDULER: CAMPANHAS AGENDADAS ====================
   // Executa a cada 1 minuto
   cron.schedule('* * * * *', async () => {
