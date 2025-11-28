@@ -59,6 +59,7 @@ export function ClientNoteItem({ note, clientId }: ClientNoteItemProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/timeline", clientId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/client-notes", clientId] });
       toast({ title: "Sucesso", description: "Observação deletada!" });
     },
     onError: (error: any) => {
