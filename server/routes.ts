@@ -8,7 +8,7 @@ import * as storage from "./storage";
 import * as whatsappService from "./whatsappService";
 import { setupAuth, isAuthenticated } from "./localAuth";
 import { db } from "./db";
-import { simulateClientResponse, getAllAutomationTasks, getAllFollowUps, getAllClientScores } from "./testAutomation";
+import { simulateClientResponse, getAllAutomationTasks, getAllFollowUps, getAllClientScores, createTestFollowUps, createTestKanbanMovement } from "./testAutomation";
 
 // Track campaigns in progress
 const campanhasEmProgresso = new Map<string, {
@@ -2643,6 +2643,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clientsList = await db.query.clients.findMany({ limit: 10 });
       const users = await db.query.users.findMany({ limit: 5 });
       res.json({ clients: clientsList, users: users });
+    } catch (error) {
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
+  app.post("/api/test/quick-followups", async (req, res) => {
+    try {
+      const { clientId, userId, conversationId } = req.body;
+      
+      if (!clientId || !userId) {
+        return res.status(400).json({ error: "clientId, userId são obrigatórios" });
+      }
+
+      const convId = conversationId || clientId;
+      await createTestFollowUps(clientId, userId, convId);
+      res.json({ success: true, message: "Follow-ups rápidos criados (1, 2, 3 minutos)" });
+    } catch (error) {
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
+  app.post("/api/test/kanban-movement", async (req, res) => {
+    try {
+      const { clientId, userId } = req.body;
+      
+      if (!clientId || !userId) {
+        return res.status(400).json({ error: "clientId, userId são obrigatórios" });
+      }
+
+      await createTestKanbanMovement(clientId, userId);
+      res.json({ success: true, message: "Movimento automático no Kanban agendado (Lead→Contato→Proposta→Fechado)" });
     } catch (error) {
       res.status(500).json({ error: String(error) });
     }

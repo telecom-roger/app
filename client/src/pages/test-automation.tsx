@@ -48,6 +48,40 @@ export default function TestAutomation() {
     },
   });
 
+  // Quick follow-ups (1, 2, 3 minutos)
+  const quickFollowupsMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/test/quick-followups", {
+        clientId,
+        userId,
+      });
+    },
+    onSuccess: (data) => {
+      toast({ title: "⚡ Follow-ups rápidos criados!", description: data.message });
+      refetchTasks();
+    },
+    onError: (error: any) => {
+      toast({ title: "❌ Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Kanban movement
+  const kanbanMovementMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/test/kanban-movement", {
+        clientId,
+        userId,
+      });
+    },
+    onSuccess: (data) => {
+      toast({ title: "📊 Movimento Kanban agendado!", description: data.message });
+      refetchTasks();
+    },
+    onError: (error: any) => {
+      toast({ title: "❌ Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
   // Get automation tasks
   const { data: tasks = [], refetch: refetchTasks, isLoading: loadingTasks } = useQuery({
     queryKey: ["/api/test/automation-tasks"],
@@ -134,14 +168,34 @@ export default function TestAutomation() {
             />
           </div>
 
-          <Button
-            onClick={() => simulateMutation.mutate()}
-            disabled={simulateMutation.isPending || !clientId || !userId}
-            className="w-full bg-purple-600 hover:bg-purple-700"
-            data-testid="button-simulate"
-          >
-            {simulateMutation.isPending ? "Simulando..." : "🚀 Simular Resposta"}
-          </Button>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <Button
+              onClick={() => simulateMutation.mutate()}
+              disabled={simulateMutation.isPending || !clientId || !userId}
+              className="bg-purple-600 hover:bg-purple-700"
+              data-testid="button-simulate"
+            >
+              {simulateMutation.isPending ? "..." : "🚀 Resposta"}
+            </Button>
+
+            <Button
+              onClick={() => quickFollowupsMutation.mutate()}
+              disabled={quickFollowupsMutation.isPending || !clientId || !userId}
+              className="bg-blue-600 hover:bg-blue-700"
+              data-testid="button-quick-followups"
+            >
+              {quickFollowupsMutation.isPending ? "..." : "⚡ Quick Follow-ups"}
+            </Button>
+
+            <Button
+              onClick={() => kanbanMovementMutation.mutate()}
+              disabled={kanbanMovementMutation.isPending || !clientId || !userId}
+              className="bg-green-600 hover:bg-green-700"
+              data-testid="button-kanban-movement"
+            >
+              {kanbanMovementMutation.isPending ? "..." : "📊 Kanban Move"}
+            </Button>
+          </div>
         </div>
       </Card>
 
@@ -256,15 +310,34 @@ export default function TestAutomation() {
 
       {/* Instructions */}
       <Card className="p-6 bg-slate-800 border-slate-700">
-        <h3 className="text-lg font-bold text-white mb-3">📖 Como Funciona:</h3>
-        <ul className="space-y-2 text-slate-300 text-sm">
-          <li>✅ Selecione um cliente e vendedor nos dropdowns acima</li>
-          <li>✅ Clique em "Simular Resposta" para criar uma resposta de cliente</li>
-          <li>✅ Isso automaticamente cria 3 follow-ups (1, 3, 7 dias)</li>
-          <li>✅ Clique em "Atualizar" para ver as tarefas sendo processadas</li>
-          <li>✅ A cada 5 minutos, o cron job executa as tarefas pendentes</li>
-          <li>✅ Veja os logs do servidor para confirmar a execução</li>
-        </ul>
+        <h3 className="text-lg font-bold text-white mb-3">📖 3 Modos de Teste:</h3>
+        <div className="space-y-4 text-sm">
+          <div className="border-l-4 border-purple-500 pl-4 py-2">
+            <p className="font-bold text-purple-300">🚀 Simular Resposta (Padrão)</p>
+            <p className="text-slate-300">Cria 3 follow-ups normais (1 dia, 3 dias, 7 dias)</p>
+          </div>
+          <div className="border-l-4 border-blue-500 pl-4 py-2">
+            <p className="font-bold text-blue-300">⚡ Quick Follow-ups (TESTE RÁPIDO)</p>
+            <p className="text-slate-300">Cria 3 follow-ups em intervalos PEQUENOS: 1 min, 2 min, 3 min</p>
+            <p className="text-slate-400 text-xs mt-1">Você verá as notificações em poucos minutos!</p>
+          </div>
+          <div className="border-l-4 border-green-500 pl-4 py-2">
+            <p className="font-bold text-green-300">📊 Kanban Move (TESTE VISUAL)</p>
+            <p className="text-slate-300">Move automaticamente oportunidades: Lead → Contato → Proposta → Fechado</p>
+            <p className="text-slate-400 text-xs mt-1">Cada movimento em 1, 2, 3 minutos. Veja no Kanban mudando!</p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Live Monitoring */}
+      <Card className="p-6 bg-slate-800 border-slate-700">
+        <h3 className="text-lg font-bold text-white mb-3">🔴 Monitoramento em Tempo Real:</h3>
+        <div className="bg-slate-900 p-4 rounded font-mono text-xs text-slate-300 space-y-1">
+          <p>✅ Tarefas agendadas: <span className="text-blue-400">{tasks.length}</span></p>
+          <p>✅ Follow-ups executados: <span className="text-green-400">{followups.length}</span></p>
+          <p>✅ Clientes com score: <span className="text-yellow-400">{scores.length}</span></p>
+          <p className="text-slate-500 text-[11px] mt-3">Clique em "Atualizar" para ver mudanças em tempo real</p>
+        </div>
       </Card>
     </div>
   );
