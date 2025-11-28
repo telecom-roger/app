@@ -1037,20 +1037,21 @@ export async function getAllKanbanStages(): Promise<KanbanStage[]> {
   const existingStages = await db.select().from(kanbanStages).orderBy(asc(kanbanStages.ordem));
   
   if (existingStages.length === 0) {
-    // Lazy initialize with 9 stages
+    // Lazy initialize with 10 stages
     const defaultStages = [
       { ordem: 0, titulo: "LEAD", descricao: "Leads iniciais" },
       { ordem: 1, titulo: "CONTATO", descricao: "Em contato com cliente" },
       { ordem: 2, titulo: "PROPOSTA", descricao: "Proposta enviada" },
       { ordem: 3, titulo: "PROPOSTA ENVIADA", descricao: "Aguardando resposta" },
-      { ordem: 4, titulo: "AGUARDANDO CONTRATO", descricao: "Assinatura de contrato" },
-      { ordem: 5, titulo: "AGUARDANDO ACEITE", descricao: "Aguardando aceitação" },
-      { ordem: 6, titulo: "FECHADO", descricao: "Negócio fechado" },
-      { ordem: 7, titulo: "PERDIDO", descricao: "Negócio perdido" },
-      { ordem: 8, titulo: "FORNECEDOR", descricao: "Resposta automática/Fornecedor" },
+      { ordem: 4, titulo: "CONTRATO ENVIADO", descricao: "Contrato enviado ao cliente" },
+      { ordem: 5, titulo: "AGUARDANDO CONTRATO", descricao: "Assinatura de contrato" },
+      { ordem: 6, titulo: "AGUARDANDO ACEITE", descricao: "Aguardando aceitação" },
+      { ordem: 7, titulo: "FECHADO", descricao: "Negócio fechado" },
+      { ordem: 8, titulo: "PERDIDO", descricao: "Negócio perdido" },
+      { ordem: 9, titulo: "FORNECEDOR", descricao: "Resposta automática/Fornecedor" },
     ];
     
-    console.log("📋 Inicializando 9 etapas do Kanban...");
+    console.log("📋 Inicializando 10 etapas do Kanban...");
     const inserted = await db.insert(kanbanStages).values(defaultStages).returning();
     return inserted;
   }

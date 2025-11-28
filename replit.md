@@ -22,7 +22,7 @@ The application features a professional design system utilizing a deep dark blue
 - **Authentication**: Replit Auth with local Passport strategy (email + bcrypt) and role-based access control (Admin, Gerente, Agente).
 - **CRM**: Full CRUD for clients with 16 custom telecom fields, contact management, tagging, lead scoring, interaction timeline, and advanced search/filters.
 - **Client Import**: A 4-step wizard supports CSV/XLSX imports with interactive column mapping, Brazilian phone normalization, duplicate detection, and detailed validation reports.
-- **Kanban**: Drag-and-drop functionality for opportunities across **9 global stages** (LEAD, CONTATO, PROPOSTA, PROPOSTA ENVIADA, AGUARDANDO CONTRATO, AGUARDANDO ACEITE, FECHADO, PERDIDO, FORNECEDOR). All titles in UPPERCASE. Supports inline editing and filtering by assignee.
+- **Kanban**: Drag-and-drop functionality for opportunities across **10 global stages** (LEAD, CONTATO, PROPOSTA, PROPOSTA ENVIADA, CONTRATO ENVIADO, AGUARDANDO CONTRATO, AGUARDANDO ACEITE, FECHADO, PERDIDO, FORNECEDOR). All titles in UPPERCASE. Supports inline editing and filtering by assignee.
 - **Campaigns**: Management of Email and WhatsApp campaigns with template selection, dynamic variables, scheduling, and status tracking.
 - **WhatsApp Integration**: Bidirectional chat, message sending, active listeners, phone number normalization (removes 55 prefix for storage), automatic conversation creation for new contacts, and voice note support.
 - **AI Automation**: Integrated with OpenAI GPT-4o Mini for sentiment analysis of WhatsApp responses. **IA now works ONLY on 5 stages**: CONTATO, PROPOSTA, FORNECEDOR, FECHADO, PERDIDO. Other stages (LEAD, PROPOSTA ENVIADA, AGUARDANDO CONTRATO, AGUARDANDO ACEITE) are manual-only. Automatically moves Kanban opportunities based on sentiment and creating intelligent notifications.
@@ -46,18 +46,19 @@ The application features a professional design system utilizing a deep dark blue
 
 ---
 
-## 🚀 FASE 6 - KANBAN 9 ETAPAS + IA 5 ESTÁGIOS + CONTRACT REMINDER (Nov 28, 19:00)
+## 🚀 FASE 6 - KANBAN 10 ETAPAS + IA 5 ESTÁGIOS + CONTRACT REMINDER (Nov 28, 19:00)
 
-### ✅ Kanban Stages (9 total - FINAIS):
+### ✅ Kanban Stages (10 total - FINAIS):
 1. **LEAD** (0) - Manual apenas
 2. **CONTATO** (1) - IA trabalha aqui
 3. **PROPOSTA** (2) - IA trabalha aqui
 4. **PROPOSTA ENVIADA** (3) - Manual + Job automático
-5. **AGUARDANDO CONTRATO** (4) - Manual
-6. **AGUARDANDO ACEITE** (5) - Manual
-7. **FECHADO** (6) - Manual
-8. **PERDIDO** (7) - IA trabalha aqui
-9. **FORNECEDOR** (8) - IA trabalha aqui
+5. **CONTRATO ENVIADO** (4) - Manual - Novo estágio!
+6. **AGUARDANDO CONTRATO** (5) - Manual
+7. **AGUARDANDO ACEITE** (6) - Manual
+8. **FECHADO** (7) - Manual
+9. **PERDIDO** (8) - IA trabalha aqui
+10. **FORNECEDOR** (9) - IA trabalha aqui
 
 ### 🤖 IA Trabalha em 5 Etapas:
 1. **CONTATO** - "PREÇO", "VALOR", "QUANTO", "CUSTA" → Quer informações
