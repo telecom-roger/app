@@ -27,6 +27,7 @@ import {
   Share2,
   MoreVertical,
 } from "lucide-react";
+import { EditableField } from "@/components/EditableField";
 import type { Client, Interaction } from "@shared/schema";
 
 export default function ClienteProfile() {
@@ -273,24 +274,24 @@ export default function ClienteProfile() {
                   </>
                 ) : (
                   <div className="space-y-3">
-                    {cliente?.email && (
-                      <div className="flex items-start gap-2">
-                        <Mail className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs text-muted-foreground">Email</p>
-                          <p className="text-sm font-medium break-all">{cliente.email}</p>
-                        </div>
-                      </div>
-                    )}
-                    {cliente?.telefone && (
-                      <div className="flex items-start gap-2">
-                        <Phone className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs text-muted-foreground">Telefone</p>
-                          <p className="text-sm font-medium">{cliente.telefone}</p>
-                        </div>
-                      </div>
-                    )}
+                    <EditableField
+                      value={cliente?.email}
+                      field="email"
+                      clientId={id || ""}
+                      label="Email"
+                    />
+                    <EditableField
+                      value={cliente?.telefone}
+                      field="telefone"
+                      clientId={id || ""}
+                      label="Telefone"
+                    />
+                    <EditableField
+                      value={cliente?.contato}
+                      field="contato"
+                      clientId={id || ""}
+                      label="Pessoa de Contato"
+                    />
                   </div>
                 )}
               </div>
@@ -301,25 +302,25 @@ export default function ClienteProfile() {
               {!clienteLoading && cliente && (
                 <div className="space-y-3">
                   <p className="text-xs font-semibold text-muted-foreground">NEGÓCIO</p>
-                  <div className="space-y-2 text-sm">
-                    {cliente?.razaoSocial && (
-                      <div>
-                        <p className="text-xs text-muted-foreground">Razão Social</p>
-                        <p className="font-medium">{cliente.razaoSocial}</p>
-                      </div>
-                    )}
-                    {cliente?.carteira && (
-                      <div>
-                        <p className="text-xs text-muted-foreground">Carteira</p>
-                        <p className="font-medium">{cliente.carteira}</p>
-                      </div>
-                    )}
-                    {cliente?.planoAtual && (
-                      <div>
-                        <p className="text-xs text-muted-foreground">Plano</p>
-                        <p className="font-medium">{cliente.planoAtual}</p>
-                      </div>
-                    )}
+                  <div className="space-y-2">
+                    <EditableField
+                      value={cliente?.razaoSocial}
+                      field="razaoSocial"
+                      clientId={id || ""}
+                      label="Razão Social"
+                    />
+                    <EditableField
+                      value={cliente?.carteira}
+                      field="carteira"
+                      clientId={id || ""}
+                      label="Carteira"
+                    />
+                    <EditableField
+                      value={cliente?.planoAtual}
+                      field="planoAtual"
+                      clientId={id || ""}
+                      label="Plano"
+                    />
                   </div>
                 </div>
               )}
@@ -327,25 +328,46 @@ export default function ClienteProfile() {
               <Separator />
 
               {/* Address Information */}
-              {!clienteLoading && cliente?.endereco && (
+              {!clienteLoading && cliente && (
                 <div className="space-y-3">
                   <p className="text-xs font-semibold text-muted-foreground">ENDEREÇO</p>
-                  <div className="flex items-start gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                    <div className="text-sm">
-                      <p className="font-medium">
-                        {cliente.endereco} {cliente.numero && `nº ${cliente.numero}`}
-                      </p>
-                      {cliente.complemento && (
-                        <p className="text-xs text-muted-foreground">{cliente.complemento}</p>
-                      )}
-                      {cliente.cidade && (
-                        <p className="text-xs text-muted-foreground">
-                          {cliente.cidade} {cliente.uf && `- ${cliente.uf}`}
-                          {cliente.cep && ` - ${cliente.cep}`}
-                        </p>
-                      )}
-                    </div>
+                  <div className="space-y-2">
+                    <EditableField
+                      value={cliente?.endereco}
+                      field="endereco"
+                      clientId={id || ""}
+                      label="Endereço"
+                    />
+                    <EditableField
+                      value={cliente?.numero}
+                      field="numero"
+                      clientId={id || ""}
+                      label="Número"
+                    />
+                    <EditableField
+                      value={cliente?.complemento}
+                      field="complemento"
+                      clientId={id || ""}
+                      label="Complemento"
+                    />
+                    <EditableField
+                      value={cliente?.cidade}
+                      field="cidade"
+                      clientId={id || ""}
+                      label="Cidade"
+                    />
+                    <EditableField
+                      value={cliente?.uf}
+                      field="uf"
+                      clientId={id || ""}
+                      label="UF"
+                    />
+                    <EditableField
+                      value={cliente?.cep}
+                      field="cep"
+                      clientId={id || ""}
+                      label="CEP"
+                    />
                   </div>
                 </div>
               )}
@@ -356,19 +378,19 @@ export default function ClienteProfile() {
               {!clienteLoading && cliente && (
                 <div className="space-y-3">
                   <p className="text-xs font-semibold text-muted-foreground">DADOS ADICIONAIS</p>
-                  <div className="space-y-2 text-sm">
-                    {cliente?.cpfCnpj && (
-                      <div>
-                        <p className="text-xs text-muted-foreground">CPF/CNPJ</p>
-                        <p className="font-mono font-medium text-xs">{cliente.cpfCnpj}</p>
-                      </div>
-                    )}
-                    {cliente?.contato && (
-                      <div>
-                        <p className="text-xs text-muted-foreground">Pessoa de Contato</p>
-                        <p className="font-medium">{cliente.contato}</p>
-                      </div>
-                    )}
+                  <div className="space-y-2">
+                    <EditableField
+                      value={cliente?.cpfCnpj}
+                      field="cpfCnpj"
+                      clientId={id || ""}
+                      label="CPF/CNPJ"
+                    />
+                    <EditableField
+                      value={cliente?.observacoes}
+                      field="observacoes"
+                      clientId={id || ""}
+                      label="Observações"
+                    />
                   </div>
                 </div>
               )}

@@ -43,7 +43,7 @@ Plataforma completa para gerenciar 500k+ clientes de operadoras de telecom com C
   routes.ts       - Definição de rotas da API
   storage.ts      - Interface de storage e implementações
   replitAuth.ts   - Configuração do Replit Auth
-  whatsappService.ts - Gerenciamento de sessões WhatsApp e recebi
+  whatsappService.ts - Gerenciamento de sessões WhatsApp
 
 /shared
   schema.ts       - Schemas Drizzle e tipos TypeScript compartilhados
@@ -127,6 +127,22 @@ Principais entidades no PostgreSQL:
 - ⏳ Auto-criar conversas para novos contatos
 - ⏳ Listar conversas recentes com mensagens não lidas
 
+### Perfil de Cliente - Layout Social Media (NOVO! Fase 2)
+- ✅ Layout em 3 colunas (Esquerda: Menu | Centro: Timeline | Direita: Informações)
+- ✅ Menu com ações rápidas (WhatsApp, Email, Nota, Editar, Compartilhar, Configurações)
+- ✅ Timeline de interações com scroll infinito
+- ✅ Sidebar direita com informações completas do cliente
+- ✅ Status Badge e dados de negócio visíveis
+- ✅ Cores seguindo design do Dashboard (gradient slate)
+
+### Edição Inline de Campos (NOVO! Fase 2)
+- ✅ Clique em qualquer campo para editar inline
+- ✅ Campos editáveis: Email, Telefone, Contato, Razão Social, Carteira, Plano, Endereço completo, CPF/CNPJ, Observações
+- ✅ Salva automaticamente ao fazer Enter ou clicar fora
+- ✅ Validação de campos
+- ✅ Toast de sucesso/erro
+- ✅ Logs de auditoria das alterações
+
 ### Admin Panel
 - ✅ Templates CRUD completo (criar, listar, deletar)
 - ✅ Gerenciamento de usuários
@@ -152,6 +168,7 @@ Principais entidades no PostgreSQL:
 
 ### APIs REST Completas
 - ✅ GET/POST/DELETE /api/clients (com paginação e filtros)
+- ✅ PATCH /api/clients/:id (edição inline de campos)
 - ✅ GET/POST/DELETE /api/opportunities (com drag-and-drop)
 - ✅ GET/POST /api/campaigns
 - ✅ GET/POST/PATCH/DELETE /api/templates (CRUD completo)
@@ -210,24 +227,28 @@ Isso inicia:
 - Frontend (Vite) em http://0.0.0.0:5000
 - Backend (Express) no mesmo servidor
 
-## Estado Atual - ✅ Chat Bidirecional com Voz Funcionando!
+## Estado Atual - ✅ Perfil de Cliente com Edição Inline!
 
-**Implementação completada:**
-- ✅ Mensagens de texto: Enviadas e recebidas perfeitamente
-- ✅ Notas de voz: Gravação em WebM → Conversão para M4A/AAC → Reprodução em smartphones
-- ✅ Chat UI: Interface bidirecional pronta em `/chat`
-- ✅ Auto-criação de conversas: Funcionando para novos contatos
-- ✅ Listeners Baileys: Ativos e normalizando telefones
+**Implementação completada (Fase 2):**
+- ✅ Layout em 3 colunas tipo rede social
+- ✅ Menu com ações rápidas na esquerda
+- ✅ Timeline de interações em scroll infinito
+- ✅ Informações do cliente na direita com edição inline
+- ✅ Cores seguindo o design do Dashboard (gradient slate)
+- ✅ Todos campos editáveis: Email, Telefone, Contato, Razão Social, Carteira, Plano, Endereço, CEP, Cidade, UF, CPF/CNPJ, Observações
+- ✅ Salva automaticamente ao editar
+- ✅ Validação e logs de auditoria
 
-**Fluxo de áudio funcionando:**
-1. Usuário grava no navegador (MediaRecorder WebM)
-2. Frontend envia base64 para backend
-3. Backend converte WebM → M4A/AAC (128kbps, mono) via ffmpeg
-4. WhatsApp recebe com `mimetype: audio/aac` e `ptt: true`
-5. Reproduz como nota de voz em iOS e Android
+**Fluxo de edição funcionando:**
+1. Clique em qualquer campo
+2. Campo vira input editável
+3. Digite o novo valor
+4. Pressione Enter ou clique fora
+5. Salva automaticamente no banco ✅
+6. Volta ao formato de exibição
 
-**Próximas ações (Fase 2):**
-1. Página de histórico de campanhas enviadas
-2. Filtros por status em campanhas-agendadas
-3. Relatório detalhado de envios
-4. Testes de fluxo completo
+**Próximas ações (Fase 3):**
+1. Dashboard de performance por vendedor
+2. Relatórios de campanhas enviadas
+3. Filtros avançados em campanhas-agendadas
+4. Integração com IA para sugestões de contato
