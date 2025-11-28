@@ -59,7 +59,7 @@ export function CreateOpportunityPopover({ client }: CreateOpportunityPopoverPro
       // Create interaction/timeline entry
       try {
         const etapaLabel = ETAPA_LABELS[etapa] || etapa;
-        await apiRequest("POST", `/api/interactions`, {
+        const interactionRes = await apiRequest("POST", `/api/interactions`, {
           clientId: client.id,
           tipo: "oportunidade_criada",
           origem: "user",
@@ -73,12 +73,18 @@ export function CreateOpportunityPopover({ client }: CreateOpportunityPopoverPro
           },
           createdBy: user?.id,
         });
+        
+        const newInteraction = await interactionRes.json();
+        
+        // Update timeline cache immediately in real-time
+        queryClient.setQueryData(["/api/timeline", client.id], (oldData: any[] = []) => {
+          return [newInteraction, ...oldData];
+        });
       } catch (error) {
         console.error("Erro ao criar timeline entry:", error);
       }
 
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/timeline", client.id] });
       
       setTitulo("");
       setEtapa("lead");
