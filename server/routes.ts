@@ -2746,7 +2746,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== TEST CONTRACT REMINDER (1 MINUTO TIMEOUT) ====================
+  // ==================== TEST CONTRACT REMINDER (1 MINUTO TIMEOUT) - SÓ REGISTRA TIMELINE ====================
   app.post("/api/test/contract-reminder", async (req, res) => {
     try {
       const { clientId, userId } = req.body;
@@ -2755,7 +2755,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "clientId e userId são obrigatórios" });
       }
 
-      // 1. Fetch or create client
+      // 1. Fetch client
       const client = await db.query.clients.findFirst({
         where: (c: any) => eq(c.id, clientId),
       });
@@ -2764,74 +2764,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Cliente não encontrado" });
       }
 
-      // 2. Create opportunity in PROPOSTA ENVIADA with 1 minute ago timestamp
-      const oneMinuteAgo = new Date(Date.now() - 1 * 60 * 1000);
-      
-      const [opp] = await db
-        .insert(opportunities)
-        .values({
-          clientId,
-          titulo: `Teste Contract Reminder - ${new Date().toLocaleTimeString()}`,
-          etapa: "PROPOSTA ENVIADA",
-          responsavelId: userId,
-          updatedAt: oneMinuteAgo,
-        })
-        .returning();
-
-      console.log(`✅ [TEST] Opportunity criada em PROPOSTA ENVIADA: ${opp.id}`);
-      console.log(`   Data da última atualização: ${oneMinuteAgo.toISOString()}`);
-
-      // 3. Run contract reminder check immediately
-      await new Promise(resolve => setTimeout(resolve, 500)); // Small delay to ensure DB sync
-      
-      const beforeCheck = new Date();
-      await checkPropostaEnviadaTimeouts();
-      const afterCheck = new Date();
-
-      console.log(`✅ [TEST] Job de Contract Reminder executado (${afterCheck.getTime() - beforeCheck.getTime()}ms)`);
-
-      // 4. Fetch the updated opportunity
-      const updatedOpp = await db.query.opportunities.findFirst({
-        where: (o: any) => eq(o.id, opp.id),
+      // 2. Buscar ÚLTIMA opportunity em PROPOSTA ENVIADA deste cliente (ou criar uma teste)
+      let opp = await db.query.opportunities.findFirst({
+        where: (o: any) => 
+          and(
+            eq(o.clientId, clientId),
+            eq(o.etapa, "PROPOSTA ENVIADA")
+          ),
+        orderBy: (o: any) => desc(o.createdAt),
       });
 
-      // 5. Fetch messages sent
-      const messages_sent = await db
-        .select()
-        .from(messages)
-        .where(ilike(messages.conversationId, `reminder-%`))
-        .orderBy((m: any) => desc(m.createdAt))
-        .limit(5);
+      // Se não houver, criar uma para teste com 1 minuto atrás
+      if (!opp) {
+        const oneMinuteAgo = new Date(Date.now() - 1 * 60 * 1000);
+        const [newOpp] = await db
+          .insert(opportunities)
+          .values({
+            clientId,
+            titulo: `TESTE: Cobrança de Contrato`,
+            etapa: "PROPOSTA ENVIADA",
+            responsavelId: userId,
+            updatedAt: oneMinuteAgo,
+          })
+          .returning();
+        opp = newOpp;
+      }
 
-      // 6. Fetch automation tasks created
-      const tasks_created = await db
-        .select()
-        .from(automationTasks)
-        .where(eq(automationTasks.clientId, clientId))
-        .orderBy((t: any) => desc(t.proximaExecucao))
-        .limit(5);
+      // 3. Registrar na timeline (mensagem enviada)
+      const mensagem = `Oi ${client.nome}, tudo bem? Recebemos a proposta aqui com sucesso. Pode confirmar o recebimento pra gente?`;
+      
+      await db.insert(interactions).values({
+        clientId,
+        tipo: "contract_reminder",
+        origem: "automation",
+        titulo: "Cobrança de Contrato Enviada",
+        texto: mensagem,
+        meta: { opportunityId: opp!.id, daysSinceCreation: 0 },
+        createdBy: userId,
+      });
 
       res.json({
         success: true,
-        message: "Contract Reminder testado com 1 minuto de timeout",
-        opportunity: {
-          id: updatedOpp?.id,
-          etapa: updatedOpp?.etapa,
-          updatedAt: updatedOpp?.updatedAt,
-        },
-        messages_sent: messages_sent.length,
-        tasks_created: tasks_created.length,
-        details: {
-          messages: messages_sent.map((m: any) => ({
-            conteudo: m.conteudo.substring(0, 80) + "...",
-            createdAt: m.createdAt,
-          })),
-          tasks: tasks_created.map((t: any) => ({
-            tipo: t.tipo,
-            status: t.status,
-            proximaExecucao: t.proximaExecucao,
-          })),
-        },
+        message: "✅ Mensagem registrada na timeline do cliente",
+        timeline_registered: true,
+        cliente: client.nome,
       });
     } catch (error) {
       console.error("❌ Test contract reminder error:", error);
@@ -2864,7 +2840,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .insert(opportunities)
         .values({
           clientId,
-          titulo: `Teste 4º Dia Auto-Move - ${new Date().toLocaleTimeString()}`,
+          titulo: `TESTE: 4º Dia Auto-Move`,
           etapa: "PROPOSTA ENVIADA",
           responsavelId: userId,
           updatedAt: fourDaysAgo,
@@ -2883,22 +2859,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         where: (o: any) => eq(o.id, opp.id),
       });
 
-      const wasMoved = updatedOpp?.etapa === "PERDIDO";
+      const wasMoved = updatedOpp && updatedOpp.etapa === "PERDIDO";
       
       res.json({
         success: true,
-        message: "Teste do 4º dia executado",
+        message: wasMoved ? "✅ Movido para PERDIDO!" : "❌ Não moveu",
         opportunity: {
-          id: updatedOpp?.id || opp.id,
+          id: opp.id,
           etapaAntes: "PROPOSTA ENVIADA",
-          etapaAgora: updatedOpp?.etapa || "DESCONHECIDO",
-          moved: wasMoved,
+          etapaAgora: updatedOpp?.etapa || "ERRO",
+          moved: Boolean(wasMoved),
           timeline: wasMoved ? "✅ Registrada" : "❌ Não registrada",
         },
       });
     } catch (error) {
       console.error("❌ Test 4th day error:", error);
-      res.status(500).json({ error: String(error) });
+      res.status(500).json({ error: String(error), moved: false });
     }
   });
 

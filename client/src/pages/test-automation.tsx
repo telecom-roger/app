@@ -58,9 +58,7 @@ export default function TestAutomation() {
     },
     onSuccess: (data) => {
       setContractReminderResult(data);
-      const taskCount = data?.tasks_created || 0;
-      const msgCount = data?.messages_sent || 0;
-      toast({ title: "✅ Contract Reminder testado!", description: `${taskCount} tasks criadas, ${msgCount} mensagens` });
+      toast({ title: "✅ Registrado na Timeline!", description: `Mensagem para ${data.cliente}` });
       refetchTestOpps();
     },
     onError: (error: any) => {
@@ -229,30 +227,10 @@ export default function TestAutomation() {
         </Button>
 
         {contractReminderResult && (
-          <div className="space-y-3 text-xs">
-            <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded">
-              <p className="text-orange-300 font-bold">✅ {contractReminderResult.message}</p>
-              {contractReminderResult.opportunity && (
-                <>
-                  <p className="text-slate-300">Opportunity: <span className="text-green-400">{contractReminderResult.opportunity.etapa}</span></p>
-                  <p className="text-slate-300">Timeline: ✅ Registrada</p>
-                </>
-              )}
-              <p className="text-slate-300">Tasks criadas: <span className="text-blue-400">{contractReminderResult.tasks_created}</span></p>
-            </div>
-
-            {contractReminderResult.details && contractReminderResult.details.tasks && contractReminderResult.details.tasks.length > 0 && (
-              <div className="p-3 bg-slate-700/30 border border-slate-600/30 rounded">
-                <p className="text-slate-300 font-bold mb-2">📋 Tasks Criadas:</p>
-                <div className="space-y-1 max-h-40 overflow-y-auto">
-                  {contractReminderResult.details.tasks.map((task: any, idx: number) => (
-                    <div key={idx} className="text-slate-400 text-xs">
-                      • {task.tipo} - {task.status}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+          <div className="p-3 bg-green-500/10 border border-green-500/30 rounded">
+            <p className="text-green-300 font-bold">✅ {contractReminderResult.message}</p>
+            <p className="text-slate-300 text-xs mt-2">Cliente: <span className="text-slate-200">{contractReminderResult.cliente}</span></p>
+            <p className="text-slate-300 text-xs">📍 Verifique na timeline do cliente em /clientes/ID</p>
           </div>
         )}
       </Card>
