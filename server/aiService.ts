@@ -12,11 +12,64 @@ export interface MessageAnalysis {
   sugestao: string;
 }
 
+// Modo de teste local (sem OpenAI API)
+function analyzeLocalTest(mensagem: string): MessageAnalysis {
+  const msg = mensagem.toLowerCase();
+  
+  if (msg.includes("ótimo") || msg.includes("gostei") || msg.includes("ok") || msg.includes("sim") || msg.includes("topa")) {
+    return {
+      sentimento: "positivo",
+      confianca: 95,
+      motivo: "Resposta positiva detectada",
+      etapa: "proposta",
+      sugestao: "Enviar simulador ou contrato",
+    };
+  }
+  
+  if (msg.includes("não") || msg.includes("nãoquero") || msg.includes("recuso") || msg.includes("cancelar") || msg.includes("obrigado")) {
+    return {
+      sentimento: "negativo",
+      confianca: 90,
+      motivo: "Resposta negativa detectada",
+      etapa: "perdido",
+      sugestao: "Arquivar ou tentar resgate posterior",
+    };
+  }
+  
+  if (msg.includes("preço") || msg.includes("quanto") || msg.includes("valor") || msg.includes("custa")) {
+    return {
+      sentimento: "positivo",
+      confianca: 85,
+      motivo: "Pergunta sobre preço",
+      etapa: "lead",
+      sugestao: "Enviar tabela de preços",
+    };
+  }
+  
+  return {
+    sentimento: "neutro",
+    confianca: 50,
+    motivo: "Mensagem neutra",
+    etapa: "automatico",
+    sugestao: "Revisar manualmente",
+  };
+}
+
 export async function analyzeClientMessage(
   mensagem: string,
   clienteInfo?: { nome?: string; razaoSocial?: string }
 ): Promise<MessageAnalysis> {
   try {
+    // MODO TESTE: Usar análise local se não tiver créditos OpenAI
+    const useLocalMode = !process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.length < 10;
+    
+    if (useLocalMode) {
+      console.log(`🧪 [MODO TESTE] Analisando sem OpenAI API`);
+      const analysis = analyzeLocalTest(mensagem);
+      console.log(`🤖 IA (LOCAL): ${analysis.sentimento} (${analysis.confianca}%) → ${analysis.etapa}`);
+      return analysis;
+    }
+
     const prompt = `Analise RAPIDAMENTE essa resposta de cliente e retorne JSON PURO (sem markdown):
 
 MENSAGEM: "${mensagem}"
@@ -42,16 +95,11 @@ Responda APENAS com JSON válido (sem markdown, sem código blocks):
     if (!messageContent) throw new Error("Empty response from AI");
 
     const analysis = JSON.parse(messageContent) as MessageAnalysis;
-    console.log(`🤖 IA: ${analysis.sentimento} (${analysis.confianca}%) → ${analysis.etapa}`);
+    console.log(`🤖 IA (OPENAI): ${analysis.sentimento} (${analysis.confianca}%) → ${analysis.etapa}`);
     return analysis;
   } catch (error) {
     console.error("❌ Erro IA:", error);
-    return {
-      sentimento: "neutro",
-      confianca: 0,
-      motivo: "Erro ao analisar",
-      etapa: "automatico",
-      sugestao: "Revisar manualmente",
-    };
+    console.log(`🧪 Caindo para análise local...`);
+    return analyzeLocalTest(mensagem);
   }
 }
