@@ -2821,7 +2821,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { clientId, userId } = req.body;
       
       if (!clientId || !userId) {
-        return res.status(400).json({ error: "clientId e userId são obrigatórios" });
+        return res.status(400).json({ error: "clientId e userId são obrigatórios", moved: false });
       }
 
       // 1. Fetch client
@@ -2830,24 +2830,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (!client) {
-        return res.status(404).json({ error: "Cliente não encontrado" });
+        return res.status(404).json({ error: "Cliente não encontrado", moved: false });
       }
 
-      // 2. Create opportunity in PROPOSTA ENVIADA with 4 days + 1 min ago timestamp
-      const fourDaysAgo = new Date(Date.now() - (4 * 24 * 60 * 60 * 1000) - (1 * 60 * 1000));
-      
-      const [opp] = await db
-        .insert(opportunities)
-        .values({
-          clientId,
-          titulo: `TESTE: 4º Dia Auto-Move`,
-          etapa: "PROPOSTA ENVIADA",
-          responsavelId: userId,
-          updatedAt: fourDaysAgo,
-        })
-        .returning();
+      // 2. Buscar ÚLTIMA opportunity em PROPOSTA ENVIADA deste cliente
+      let opp = await db.query.opportunities.findFirst({
+        where: (o: any) => 
+          and(
+            eq(o.clientId, clientId),
+            eq(o.etapa, "PROPOSTA ENVIADA")
+          ),
+        orderBy: (o: any) => desc(o.createdAt),
+      });
 
-      console.log(`✅ [TEST 4º DIA] Opportunity criada com 4 dias de timeout: ${opp.id}`);
+      // Se não houver, criar uma com 4 dias de idade
+      if (!opp) {
+        const fourDaysAgo = new Date(Date.now() - (4 * 24 * 60 * 60 * 1000) - (1 * 60 * 1000));
+        const [newOpp] = await db
+          .insert(opportunities)
+          .values({
+            clientId,
+            titulo: `TESTE: 4º Dia Auto-Move`,
+            etapa: "PROPOSTA ENVIADA",
+            responsavelId: userId,
+            updatedAt: fourDaysAgo,
+          })
+          .returning();
+        opp = newOpp;
+        console.log(`✅ [TEST 4º DIA] Opportunity criada com 4 dias: ${opp.id}`);
+      } else {
+        // Atualizar o updatedAt da oportunidade existente para 4 dias atrás
+        await db
+          .update(opportunities)
+          .set({
+            updatedAt: new Date(Date.now() - (4 * 24 * 60 * 60 * 1000) - (1 * 60 * 1000)),
+          })
+          .where(eq(opportunities.id, opp.id));
+        console.log(`✅ [TEST 4º DIA] Opportunity reutilizada com idade atualizada: ${opp.id}`);
+      }
 
       // 3. Run contract reminder check immediately
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -2856,7 +2876,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 4. Fetch the updated opportunity (should be PERDIDO now)
       const updatedOpp = await db.query.opportunities.findFirst({
-        where: (o: any) => eq(o.id, opp.id),
+        where: (o: any) => eq(o.id, opp!.id),
       });
 
       const wasMoved = updatedOpp && updatedOpp.etapa === "PERDIDO";
@@ -2865,7 +2885,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         message: wasMoved ? "✅ Movido para PERDIDO!" : "❌ Não moveu",
         opportunity: {
-          id: opp.id,
+          id: opp!.id,
           etapaAntes: "PROPOSTA ENVIADA",
           etapaAgora: updatedOpp?.etapa || "ERRO",
           moved: Boolean(wasMoved),
