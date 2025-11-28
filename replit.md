@@ -64,6 +64,7 @@ Principais entidades no PostgreSQL:
 - **auditLogs**: Logs de auditoria completos
 - **importJobs**: Jobs de importação CSV/XLSX
 - **whatsappSessions**: Sessões do WhatsApp conectadas
+- **kanban_stages**: Estágios do Kanban (Lead, Contato, Proposta, Fechado, Perdido) - **GLOBAL para toda empresa**
 
 ## Funcionalidades MVP (Fase 1 - ✅ CONCLUÍDA!)
 
@@ -95,6 +96,7 @@ Principais entidades no PostgreSQL:
 - ✅ Modais de edição inline com formulários validados
 - ✅ Filtros por responsável
 - ✅ Visualização de valor estimado e prazos
+- ✅ **Configuração GLOBAL**: Todos usuários compartilham mesmas estágios (sem config por-usuário)
 
 ### Campanhas
 - ✅ Gestão de campanhas de Email e WhatsApp
@@ -104,30 +106,38 @@ Principais entidades no PostgreSQL:
 - ✅ Agendamento de envios
 - ✅ Status tracking (rascunho, agendada, enviando, concluída)
 
-### Modelos de Mensagens (NOVO!)
+### Modelos de Mensagens
 - ✅ Criação de templates com título, tipo, conteúdo e imagem
 - ✅ Suporte a variáveis dinâmicas {{variavel}}
 - ✅ Edição e exclusão de modelos
 - ✅ Separação por tipo (WhatsApp/Email)
 - ✅ Página dedicada: `/modelos-mensagens`
 
-### Campanhas Agendadas (NOVO!)
+### Campanhas Agendadas
 - ✅ Agendamento de campanhas para data/hora específica
 - ✅ Campanhas executadas automaticamente no horário agendado
 - ✅ Listagem com status e data de envio
 - ✅ Cancelamento de campanhas agendadas
 - ✅ Página dedicada: `/campanhas-agendadas`
 
-### Chat Bidirecional WhatsApp (IMPLEMENTANDO!)
+### Chat Bidirecional WhatsApp
 - ✅ Envio de mensagens via WhatsApp (200+ testadas)
 - ✅ Listeners ativos recebendo mensagens de clientes
 - ✅ Interface de chat em `/chat` com auto-refresh 3s
 - ✅ Normalização de formato de telefone (remover @s.whatsapp.net, @lid, @c.us)
-- ⏳ Auto-salvamento de mensagens recebidas
-- ⏳ Auto-criar conversas para novos contatos
-- ⏳ Listar conversas recentes com mensagens não lidas
+- ✅ Auto-salvamento de mensagens recebidas
+- ✅ Auto-criar conversas para novos contatos
+- ✅ Listar conversas recentes com mensagens não lidas
 
-### Perfil de Cliente - Layout Social Media (NOVO! Fase 2)
+### Chat Modal - Criar Negócio (NOVO!)
+- ✅ Modal com informações completas do cliente (3 colunas)
+- ✅ Entrada de valor estimado (TEXT type para preservar input)
+- ✅ Seleção de etapa do Kanban
+- ✅ Botão "Criar Negócio" que adiciona oportunidade ao Kanban
+- ✅ **BUG FIXADO**: Agora usa `currentUser.id` como responsávelId (FK validada)
+- ✅ Toast de sucesso/erro
+
+### Perfil de Cliente - Layout Social Media
 - ✅ Layout em 3 colunas (Esquerda: Menu | Centro: Timeline | Direita: Informações)
 - ✅ Menu com ações rápidas (WhatsApp, Email, Nota, Editar, Compartilhar, Configurações)
 - ✅ Timeline de interações com scroll infinito
@@ -135,7 +145,7 @@ Principais entidades no PostgreSQL:
 - ✅ Status Badge e dados de negócio visíveis
 - ✅ Cores seguindo design do Dashboard (gradient slate)
 
-### Edição Inline de Campos (NOVO! Fase 2)
+### Edição Inline de Campos
 - ✅ Clique em qualquer campo para editar inline
 - ✅ Campos editáveis: Email, Telefone, Contato, Razão Social, Carteira, Plano, Endereço completo, CPF/CNPJ, Observações
 - ✅ Salva automaticamente ao fazer Enter ou clicar fora
@@ -183,7 +193,7 @@ Principais entidades no PostgreSQL:
 - ✅ POST /api/chat/messages/:conversationId (enviar)
 
 ### Banco de Dados PostgreSQL
-- ✅ Tabelas: users, sessions, clients, contacts, opportunities, campaigns, templates, interactions, auditLogs, customFields, tags, conversations, messages, whatsappSessions
+- ✅ Tabelas: users, sessions, clients, contacts, opportunities, campaigns, templates, interactions, auditLogs, customFields, tags, conversations, messages, whatsappSessions, kanban_stages
 - ✅ Relacionamentos configurados corretamente
 - ✅ Índices em chaves estrangeiras para performance
 - ✅ Express payload limit aumentado para 50MB (importações em massa)
@@ -227,28 +237,22 @@ Isso inicia:
 - Frontend (Vite) em http://0.0.0.0:5000
 - Backend (Express) no mesmo servidor
 
-## Estado Atual - ✅ Perfil de Cliente com Edição Inline!
+## Estado Atual - ✅ Chat Modal + Criar Negócio!
 
-**Implementação completada (Fase 2):**
-- ✅ Layout em 3 colunas tipo rede social
-- ✅ Menu com ações rápidas na esquerda
-- ✅ Timeline de interações em scroll infinito
-- ✅ Informações do cliente na direita com edição inline
-- ✅ Cores seguindo o design do Dashboard (gradient slate)
-- ✅ Todos campos editáveis: Email, Telefone, Contato, Razão Social, Carteira, Plano, Endereço, CEP, Cidade, UF, CPF/CNPJ, Observações
-- ✅ Salva automaticamente ao editar
-- ✅ Validação e logs de auditoria
+**Decisões Arquiteturais:**
+- ✅ **Kanban Stages**: GLOBAL (compartilhado por toda empresa, não por-usuário)
+- ✅ **Chat Modal**: Mostra dados completos do cliente + criação de negócio integrada
+- ✅ **Opportunity Creation**: Usa `currentUser.id` como responsávelId (validado em FK)
 
-**Fluxo de edição funcionando:**
-1. Clique em qualquer campo
-2. Campo vira input editável
-3. Digite o novo valor
-4. Pressione Enter ou clique fora
-5. Salva automaticamente no banco ✅
-6. Volta ao formato de exibição
+**Últimas Correções (Nov 28, 2025):**
+- ✅ BUG FIXADO: Foreign Key constraint error ao criar negócio
+  - Problema: `responsavelId` estava sendo setado para string "sem-responsavel" (não existe em users table)
+  - Solução: Agora busca usuário autenticado via `/api/auth/user` query e usa `currentUser.id`
+  - Status: ✅ POST /api/opportunities 201 (sucesso confirmado em logs)
 
-**Próximas ações (Fase 3):**
+**Próximas Ações (Fase 3):**
 1. Dashboard de performance por vendedor
 2. Relatórios de campanhas enviadas
 3. Filtros avançados em campanhas-agendadas
 4. Integração com IA para sugestões de contato
+5. Melhorias de performance (caching, otimizações)
