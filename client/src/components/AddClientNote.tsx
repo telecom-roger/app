@@ -24,6 +24,7 @@ export function AddClientNote({ clientId }: AddClientNoteProps) {
       await apiRequest("POST", `/api/client-notes/${clientId}`, data);
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/client-notes", clientId] });
       queryClient.invalidateQueries({ queryKey: ["/api/timeline", clientId] });
       setConteudo("");
       setDataPlanejada("");

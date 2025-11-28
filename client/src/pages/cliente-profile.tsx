@@ -29,7 +29,8 @@ import {
 } from "lucide-react";
 import { EditableField } from "@/components/EditableField";
 import { AddClientNote } from "@/components/AddClientNote";
-import type { Client, Interaction } from "@shared/schema";
+import { ClientNoteItem } from "@/components/ClientNoteItem";
+import type { Client, Interaction, ClientNote } from "@shared/schema";
 
 export default function ClienteProfile() {
   const { id } = useParams<{ id: string }>();
@@ -57,6 +58,11 @@ export default function ClienteProfile() {
 
   const { data: timeline, isLoading: timelineLoading } = useQuery<Interaction[]>({
     queryKey: ["/api/timeline", id],
+    enabled: isAuthenticated && !!id,
+  });
+
+  const { data: clientNotes, isLoading: notesLoading } = useQuery<ClientNote[]>({
+    queryKey: ["/api/client-notes", id],
     enabled: isAuthenticated && !!id,
   });
 
@@ -224,7 +230,7 @@ export default function ClienteProfile() {
                   <Separator className="my-4" />
                 </>
               )}
-              {timelineLoading ? (
+              {timelineLoading || notesLoading ? (
                 <div className="space-y-4">
                   {Array.from({ length: 3 }).map((_, i) => (
                     <div key={i} className="flex gap-4">
@@ -235,6 +241,22 @@ export default function ClienteProfile() {
                       </div>
                     </div>
                   ))}
+                </div>
+              ) : clientNotes && clientNotes.length > 0 ? (
+                <div className="space-y-4">
+                  {/* Mostrar client notes primeiro (mais recentes no topo) */}
+                  {clientNotes.map((note) => (
+                    <ClientNoteItem key={note.id} note={note} clientId={id || ""} />
+                  ))}
+                  {/* Depois mostrar timeline items */}
+                  {timeline && timeline.length > 0 && (
+                    <>
+                      <Separator className="my-4" />
+                      {timeline.map((item) => (
+                        <TimelineItem key={item.id} item={item} />
+                      ))}
+                    </>
+                  )}
                 </div>
               ) : timeline && timeline.length > 0 ? (
                 <div className="space-y-4">
