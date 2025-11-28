@@ -105,11 +105,22 @@ interface Tag {
   createdAt: string;
 }
 
+interface User {
+  id: string;
+  email: string;
+  role: string;
+}
+
 export default function Chat() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  
+  // Get current authenticated user
+  const { data: currentUser } = useQuery<User>({
+    queryKey: ["/api/auth/user"],
+  });
   const [messageText, setMessageText] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [isInitializingFromUrl, setIsInitializingFromUrl] = useState(true);
@@ -771,18 +782,16 @@ export default function Chat() {
       if (!currentClientId) throw new Error("Cliente não selecionado");
       if (!selectedStage) throw new Error("Etapa não selecionada");
       if (!detailedClient) throw new Error("Dados do cliente não carregados");
-      
-      console.log("Criando oportunidade:", { currentClientId, selectedStage, businessValue, responsavelId: detailedClient.createdBy });
+      if (!currentUser?.id) throw new Error("Usuário não autenticado");
       
       const response = await apiRequest("POST", "/api/opportunities", {
         clientId: currentClientId,
         titulo: detailedClient.razaoSocial || detailedClient.nome || "Sem título",
         etapa: selectedStage,
         valorEstimado: businessValue || "",
-        responsavelId: detailedClient.createdBy || "sem-responsavel",
+        responsavelId: currentUser.id,
       });
       
-      console.log("Oportunidade criada:", response);
       return response;
     },
     onSuccess: () => {
