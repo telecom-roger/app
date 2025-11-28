@@ -279,6 +279,9 @@ export default function CampanhasAgendadas() {
       totalRecipients: 0,
       agendadaPara: new Date().toISOString(),
       filtros: {},
+      tempoFixoSegundos: 21,
+      tempoAleatorioMin: 10,
+      tempoAleatorioMax: 60,
     },
   });
 
@@ -527,6 +530,77 @@ export default function CampanhasAgendadas() {
                     </FormItem>
                   )}
                 />
+
+                <div className="grid grid-cols-3 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="tempoFixoSegundos"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tempo Fixo (segundos)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="300"
+                            placeholder="Ex: 21"
+                            {...field}
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                            data-testid="input-tempo-fixo"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="tempoAleatorioMin"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Aleatorio Mín. (seg)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="300"
+                            placeholder="Ex: 10"
+                            {...field}
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                            data-testid="input-tempo-aleatorio-min"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="tempoAleatorioMax"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Aleatorio Máx. (seg)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="300"
+                            placeholder="Ex: 60"
+                            {...field}
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                            data-testid="input-tempo-aleatorio-max"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded text-sm text-muted-foreground">
                   <Clock className="w-4 h-4 inline mr-2" />

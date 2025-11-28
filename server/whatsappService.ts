@@ -628,10 +628,10 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
     let enviados = 0;
     let erros = 0;
 
-    // Padrão de delay: 21 segundos + 10-60 segundos aleatório (31-81 segundos total)
-    const tempoDelay = 21; // segundos
-    const tempoRandomMin = 10; // segundos
-    const tempoRandomMax = 60; // segundos
+    // Usa valores da campanha ou padrão
+    const tempoDelay = campaign.tempoFixoSegundos || 21; // segundos
+    const tempoRandomMin = campaign.tempoAleatorioMin || 10; // segundos
+    const tempoRandomMax = campaign.tempoAleatorioMax || 60; // segundos
 
     // Pega a primeira sessão ativa para enviar mensagens
     const activeSessions = getAllActiveSessions();

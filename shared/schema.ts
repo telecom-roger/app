@@ -240,6 +240,9 @@ export const campaigns = pgTable("campaigns", {
   totalCliques: integer("total_cliques").default(0),
   totalErros: integer("total_erros").default(0),
   agendadaPara: timestamp("agendada_para"),
+  tempoFixoSegundos: integer("tempo_fixo_segundos").default(21), // segundos fixo entre mensagens
+  tempoAleatorioMin: integer("tempo_aleatorio_min").default(10), // segundos mínimo aleatório
+  tempoAleatorioMax: integer("tempo_aleatorio_max").default(60), // segundos máximo aleatório
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -251,6 +254,9 @@ export const insertCampaignSchema = createInsertSchema(campaigns).omit({
   updatedAt: true,
 }).extend({
   agendadaPara: z.union([z.date(), z.string().datetime()]).transform(val => typeof val === 'string' ? new Date(val) : val),
+  tempoFixoSegundos: z.number().int().min(1).max(300).default(21),
+  tempoAleatorioMin: z.number().int().min(0).max(300).default(10),
+  tempoAleatorioMax: z.number().int().min(0).max(300).default(60),
 });
 
 export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
