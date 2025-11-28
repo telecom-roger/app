@@ -22,10 +22,10 @@ The application features a professional design system utilizing a deep dark blue
 - **Authentication**: Replit Auth with local Passport strategy (email + bcrypt) and role-based access control (Admin, Gerente, Agente).
 - **CRM**: Full CRUD for clients with 16 custom telecom fields, contact management, tagging, lead scoring, interaction timeline, and advanced search/filters.
 - **Client Import**: A 4-step wizard supports CSV/XLSX imports with interactive column mapping, Brazilian phone normalization, duplicate detection, and detailed validation reports.
-- **Kanban**: Drag-and-drop functionality for opportunities across **8 global stages** (LEAD, CONTATO, PROPOSTA, PROPOSTA ENVIADA, AGUARDANDO ACEITE, FECHADO, PERDIDO, FORNECEDOR). All titles in UPPERCASE. Supports inline editing and filtering by assignee.
+- **Kanban**: Drag-and-drop functionality for opportunities across **9 global stages** (LEAD, CONTATO, PROPOSTA, PROPOSTA ENVIADA, AGUARDANDO CONTRATO, AGUARDANDO ACEITE, FECHADO, PERDIDO, FORNECEDOR). All titles in UPPERCASE. Supports inline editing and filtering by assignee.
 - **Campaigns**: Management of Email and WhatsApp campaigns with template selection, dynamic variables, scheduling, and status tracking.
 - **WhatsApp Integration**: Bidirectional chat, message sending, active listeners, phone number normalization (removes 55 prefix for storage), automatic conversation creation for new contacts, and voice note support.
-- **AI Automation**: Integrated with OpenAI GPT-4o Mini for sentiment analysis of WhatsApp responses. **IA now works ONLY on 4 stages**: PROPOSTA, CONTATO, FORNECEDOR, PERDIDO. Other stages (LEAD, PROPOSTA ENVIADA, AGUARDANDO ACEITE, FECHADO) are manual-only. Automatically moves Kanban opportunities based on sentiment and creating intelligent notifications.
+- **AI Automation**: Integrated with OpenAI GPT-4o Mini for sentiment analysis of WhatsApp responses. **IA now works ONLY on 5 stages**: CONTATO, PROPOSTA, FORNECEDOR, FECHADO, PERDIDO. Other stages (LEAD, PROPOSTA ENVIADA, AGUARDANDO CONTRATO, AGUARDANDO ACEITE) are manual-only. Automatically moves Kanban opportunities based on sentiment and creating intelligent notifications.
 
 ### System Design Choices
 - **Folder Structure**: Organized into `client/src` (components, pages, hooks, lib, assets), `server` (app, routes, storage, auth, whatsapp service), and `shared` (Drizzle schemas, shared types).
@@ -46,52 +46,55 @@ The application features a professional design system utilizing a deep dark blue
 
 ---
 
-## 🚀 FASE 5 - INTELIGÊNCIA IA LIMITADA + CONTRACT REMINDER (Nov 28, 18:15)
+## 🚀 FASE 6 - KANBAN 9 ETAPAS + IA 5 ESTÁGIOS + CONTRACT REMINDER (Nov 28, 18:45)
 
-### ✅ Novas Etapas do Kanban (8 total):
-- **LEAD** (0) - Manual
-- **CONTATO** (1) - IA trabalha aqui
-- **PROPOSTA** (2) - IA trabalha aqui
-- **PROPOSTA ENVIADA** (3) - Manual (cobrado automaticamente após 24h)
-- **AGUARDANDO ACEITE** (4) - Manual
-- **FECHADO** (5) - Manual
-- **PERDIDO** (6) - IA trabalha aqui
-- **FORNECEDOR** (7) - IA trabalha aqui
+### ✅ Kanban Stages (9 total - REORDENADAS):
+1. **LEAD** (0) - Manual
+2. **CONTATO** (1) - IA trabalha aqui
+3. **PROPOSTA** (2) - IA trabalha aqui
+4. **PROPOSTA ENVIADA** (3) - Manual
+5. **AGUARDANDO CONTRATO** (4) - Nova etapa! Manual
+6. **AGUARDANDO ACEITE** (5) - Manual
+7. **FECHADO** (6) - Manual
+8. **PERDIDO** (7) - IA trabalha aqui
+9. **FORNECEDOR** (8) - IA trabalha aqui
 
-### 🤖 Regras de IA Implementadas:
-IA **TRABALHA APENAS** em 4 etapas:
-1. **PROPOSTA** - "OK", "SIM", "TOPA", "MANDA" → cliente aprovou proposta
-2. **CONTATO** - "PREÇO", "VALOR", "QUANTO" → cliente quer mais info
+### 🤖 IA Trabalha em 5 Etapas:
+1. **CONTATO** - "PREÇO", "VALOR", "QUANTO", "CUSTA" → Quer informações
+2. **PROPOSTA** - "OK", "SIM", "TOPA", "MANDA" → Aprovação
 3. **FORNECEDOR** - Mensagens automáticas, "DEIXE SEU CONTATO", "BREVE", etc
-4. **PERDIDO** - "NÃO", "RECUSO", "CANCELAR" → cliente rejeitou
+4. **FECHADO** - "CONTRATADO", "APROVADO" → Negócio fechado
+5. **PERDIDO** - "NÃO", "RECUSO", "CANCELAR" → Rejeição
 
-**Outras etapas são 100% manuais** (vendedor move no Kanban):
-- LEAD, PROPOSTA ENVIADA, AGUARDANDO ACEITE, FECHADO
+### 📋 Contract Reminder Job (PROPOSTA ENVIADA):
+**Regra de Negócio:**
+- ⏰ Verifica se passou **2h** sem movimento manual para AGUARDANDO ACEITE
+- 📲 Se passado 2h: envia cobrança natural via WhatsApp/chat
+- 🕐 **Horários comerciais**: 08:00, 11:50, 17:00 (São Paulo)
+- 📅 **Ciclo**: 3 dias com reenvios nos horários acima
+- ❌ **Dia 4**: Auto-move para PERDIDO com timeline: *"Cliente tinha interesse em renovar mas não finalizou"*
 
-### 📋 Contract Reminder Job (NOVO):
-- **Executa a cada 30 segundos** (via cron job)
-- **Verifica**: Oportunidades em "PROPOSTA ENVIADA" há **24h+ sem movimento**
-- **Ação**: Envia lembrete cobrando assinatura do contrato via mensagem
-- **Função**: `checkPropostaEnviadaTimeouts()` + `executeContractReminder()`
-- **Tabela**: Usa `automation_tasks` com tipo `contract_reminder`
-- **Log**: Registra mensagens em `messages` com `sender="bot"`
+**Mensagens Progressivas (naturais, não-robóticas):**
+- Dia 0: "Oi [Nome], tudo bem? Recebemos a proposta aqui com sucesso. Pode confirmar o recebimento pra gente?"
+- Dia 1: "[Nome], só para confirmar se chegou tudo bem aí. Ficou com alguma dúvida sobre a proposta?"
+- Dia 2: "[Nome], podemos seguir com a melhoria que ofertamos? Vamos fechar isso aí?"
+- Dia 3: "Última tentativa, [Nome]. Vamos seguir com a contratação? Estamos aqui pra ajudar!"
 
-### 📡 Integração:
-- ✅ 8 etapas criadas em `kanban_stages` com títulos em UPPERCASE
-- ✅ AI Service atualizado: apenas 4 etapas permitidas
-- ✅ Contract Reminder job implementado em `automationService.ts`
+### 📡 Implementação:
+- ✅ 9 etapas do Kanban criadas com lazy initialization em `storage.ts`
+- ✅ AI Service atualizado para 5 estágios (CONTATO, PROPOSTA, FORNECEDOR, FECHADO, PERDIDO)
+- ✅ Contract Reminder job em `automationService.ts` com:
+  - `executeContractReminder()` - Envia mensagens naturais progressivas
+  - `checkPropostaEnviadaTimeouts()` - Verifica 2h timeout + horários comerciais + 3 dias + auto-move PERDIDO
 - ✅ Cron job roda a cada 30 segundos
-- ✅ Testes confirmados:
-  - "Ok, topa!" → **PROPOSTA** ✅
-  - "Qual preço?" → **CONTATO** ✅
-  - "Deixe seu contato" → **FORNECEDOR** ✅
-  - "Não quero" → **PERDIDO** ✅
+- ✅ Testes confirmados
 
 ### 🎯 Próximas Fases:
-1. Integração WhatsApp para enviar reminders de contrato via WhatsApp
+1. WhatsApp integration para enviar reminders via WA ao invés de apenas chat
 2. Dashboard mostrando métricas de propostas pendentes
 3. Configuração de templates customizáveis para mensagens de reminder
+4. Integração com Google Calendar para reagendar followups
 
 ---
 
-**Status:** ✅ IA LIMITADA A 4 ETAPAS + CONTRACT REMINDER OPERACIONAL
+**Status:** ✅ FASE 6 COMPLETA - Kanban 9 etapas + IA 5 estágios + Contract Reminder com horários comerciais e ciclo 3 dias OPERACIONAL

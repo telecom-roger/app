@@ -86,13 +86,14 @@ export async function analyzeClientMessage(
 MENSAGEM: "${mensagem}"
 CLIENTE: ${clienteInfo?.razaoSocial || clienteInfo?.nome || "Desconhecido"}
 
-REGRAS DE CLASSIFICAÇÃO - SIGA EXATAMENTE (IA só trabalha em 4 etapas):
+REGRAS DE CLASSIFICAÇÃO - SIGA EXATAMENTE (IA só trabalha em 5 etapas):
 1. "OK", "SIM", "TOPA", "MANDA", qualquer aprovação → etapa "PROPOSTA", sentimento "positivo"
 2. "NÃO", "RECUSO", "CANCELAR", rejeição → etapa "PERDIDO", sentimento "negativo"
-3. "QUANTO", "PREÇO", "VALOR" → etapa "CONTATO", sentimento "positivo"
+3. "QUANTO", "PREÇO", "VALOR", "CUSTA" → etapa "CONTATO", sentimento "positivo"
 4. AUTOMÁTICA, "BREVE", "DEIXE SEU CONTATO", "ENTRO EM CONTATO", mensagens automáticas → etapa "FORNECEDOR", sentimento "fornecedor"
 5. Empresa/fornecedor/NF/protocolo/CNPJ → etapa "FORNECEDOR", sentimento "fornecedor"
-6. Qualquer outra mensagem → retorne "CONTATO" como etapa padrão
+6. "FECHADO", "CONTRATADO", "APROVADO" (após Aguardando Aceite) → etapa "FECHADO", sentimento "positivo"
+7. Qualquer outra mensagem → retorne "CONTATO" como etapa padrão
 
 Responda APENAS com JSON (sem markdown):
 {"sentimento":"positivo","confianca":90,"motivo":"Respondeu OK","etapa":"PROPOSTA","sugestao":"Enviar contrato"}`;

@@ -318,7 +318,7 @@ export async function createFollowUpAfterResponse(clientId: string, userId: stri
   }
 }
 
-// ======================== CONTRACT REMINDER - Cobrar assinatura após 24h ========================
+// ======================== CONTRACT REMINDER - Cobrança em horários comerciais 08:00, 11:50, 17:00 ========================
 async function executeContractReminder(task: any) {
   console.log(`📋 Contract reminder para ${task.clientId}`);
   
@@ -334,61 +334,100 @@ async function executeContractReminder(task: any) {
   
   if (!client) return;
   
-  console.log(`💬 Enviando lembrete de assinatura para ${client.nome}`);
+  const daysSinceCreation = task.dados?.daysSinceCreation || 0;
   
-  // Log da ação (pode ser integrado com WhatsApp depois)
+  console.log(`💬 Enviando cobrança de contrato - Dia ${daysSinceCreation} para ${client.nome}`);
+  
+  // Mensagens naturais progressivas
+  const messages_templates: Record<number, string> = {
+    0: `Oi ${client.nome}, tudo bem? Recebemos a proposta aqui com sucesso. Pode confirmar o recebimento pra gente?`,
+    1: `${client.nome}, só para confirmar se chegou tudo bem aí. Ficou com alguma dúvida sobre a proposta?`,
+    2: `${client.nome}, podemos seguir com a melhoria que ofertamos? Vamos fechar isso aí?`,
+    3: `Última tentativa, ${client.nome}. Vamos seguir com a contratação? Estamos aqui pra ajudar!`,
+  };
+  
+  const mensagem = messages_templates[Math.min(daysSinceCreation, 3)] || messages_templates[3];
+  
+  // Registrar mensagem no banco
   await db.insert(messages).values({
     conversationId: `reminder-${opportunity.id}`,
     sender: "bot",
     tipo: "text",
-    conteudo: `Olá ${client.nome}, confirmamos recebimento da proposta. Aguardamos assinatura do contrato. Pode fazer isso em: [LINK_CONTRATO]. Qualquer dúvida, estou à disposição!`,
+    conteudo: mensagem,
     createdAt: new Date(),
   });
 }
 
-// ======================== VERIFICAR PROPOSTAS ENVIADAS (Job agendado) ========================
+// ======================== VERIFICAR PROPOSTAS ENVIADAS - Lógica de 2h timeout + 3 dias + horários comerciais ========================
 async function checkPropostaEnviadaTimeouts() {
   try {
-    console.log(`\n⏰ [CONTRACT CHECK] Verificando propostas enviadas há 24h...`);
+    console.log(`\n⏰ [CONTRACT CHECK] Verificando propostas enviadas com timeout de 2h...`);
     
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    const fourDaysAgo = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000);
     
-    // Buscar oportunidades em PROPOSTA ENVIADA há mais de 24h
-    const proposatasComTimeout = await db
+    // Buscar oportunidades em PROPOSTA ENVIADA
+    const propostas = await db
       .select()
       .from(opportunities)
-      .where(
-        and(
-          eq(opportunities.etapa, "PROPOSTA ENVIADA"),
-          lt(opportunities.updatedAt, oneDayAgo)
-        )
-      );
+      .where(eq(opportunities.etapa, "PROPOSTA ENVIADA"));
     
-    console.log(`📋 Encontradas ${proposatasComTimeout.length} propostas com timeout`);
+    console.log(`📋 Encontradas ${propostas.length} propostas em PROPOSTA ENVIADA`);
     
-    for (const opp of proposatasComTimeout) {
-      // Verificar se já foi enviado um reminder
-      const existingReminder = await db
-        .select()
-        .from(automationTasks)
-        .where(
-          and(
-            eq(automationTasks.tipo, "contract_reminder"),
-            eq(automationTasks.dados, JSON.stringify({ opportunityId: opp.id }))
-          )
-        )
-        .limit(1);
+    for (const opp of propostas) {
+      const lastUpdate = opp.updatedAt || new Date();
+      const daysSinceEnvio = Math.floor((Date.now() - lastUpdate.getTime()) / (24 * 60 * 60 * 1000));
       
-      if (!existingReminder || existingReminder.length === 0) {
-        // Criar novo task de reminder
-        await db.insert(automationTasks).values({
-          userId: opp.responsavelId,
-          clientId: opp.clientId,
-          tipo: "contract_reminder",
-          proximaExecucao: new Date(),
-          dados: { opportunityId: opp.id },
-        });
-        console.log(`✅ Reminder agendado para oportunidade ${opp.id}`);
+      // Se passou 4 dias, move para PERDIDO
+      if (daysSinceEnvio >= 4) {
+        console.log(`❌ Movendo ${opp.id} para PERDIDO após 4 dias sem resposta`);
+        await db
+          .update(opportunities)
+          .set({
+            etapa: "PERDIDO",
+            updatedAt: new Date(),
+            notas: sql`jsonb_insert(coalesce(notas, '[]'::jsonb), '{0}', jsonb_build_object('type', 'timeline', 'data', jsonb_build_object('titulo', 'Movido para Perdido', 'msg', 'Cliente tinha interesse em renovar mas não finalizou', 'timestamp', now())))`,
+          })
+          .where(eq(opportunities.id, opp.id));
+        continue;
+      }
+      
+      // Se passou 2h, criar task de reminder
+      if (lastUpdate < twoHoursAgo) {
+        // Verificar horário comercial (08:00-18:00 SP)
+        const now = new Date();
+        const spTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+        const currentHour = spTime.getHours();
+        
+        // Horários permitidos: 08:00, 11:50, 17:00
+        const isValidTime = (currentHour === 8 || currentHour === 11 || currentHour === 17);
+        
+        if (isValidTime || daysSinceEnvio > 0) { // Em dias seguintes, enviar sempre
+          // Verificar se já foi enviado task nesta hora/dia
+          const lastTask = await db
+            .select()
+            .from(automationTasks)
+            .where(
+              and(
+                eq(automationTasks.tipo, "contract_reminder"),
+                eq(automationTasks.clientId, opp.clientId)
+              )
+            )
+            .orderBy((t: any) => desc(t.proximaExecucao))
+            .limit(1);
+          
+          if (!lastTask || lastTask.length === 0 || lastTask[0].status === "executado") {
+            // Criar novo task
+            await db.insert(automationTasks).values({
+              userId: opp.responsavelId,
+              clientId: opp.clientId,
+              tipo: "contract_reminder",
+              proximaExecucao: new Date(),
+              dados: { opportunityId: opp.id, daysSinceCreation: daysSinceEnvio },
+            });
+            console.log(`✅ Reminder agendado para oportunidade ${opp.id} (dia ${daysSinceEnvio})`);
+          }
+        }
       }
     }
   } catch (error) {

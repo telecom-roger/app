@@ -1033,7 +1033,29 @@ export async function deleteCampaignGroup(id: string, userId: string): Promise<v
 
 // ==================== KANBAN STAGES STORAGE ====================
 export async function getAllKanbanStages(): Promise<KanbanStage[]> {
-  return await db.select().from(kanbanStages).orderBy(asc(kanbanStages.ordem));
+  // Check if stages already exist
+  const existingStages = await db.select().from(kanbanStages).orderBy(asc(kanbanStages.ordem));
+  
+  if (existingStages.length === 0) {
+    // Lazy initialize with 9 stages
+    const defaultStages = [
+      { ordem: 0, titulo: "LEAD", descricao: "Leads iniciais" },
+      { ordem: 1, titulo: "CONTATO", descricao: "Em contato com cliente" },
+      { ordem: 2, titulo: "PROPOSTA", descricao: "Proposta enviada" },
+      { ordem: 3, titulo: "PROPOSTA ENVIADA", descricao: "Aguardando resposta" },
+      { ordem: 4, titulo: "AGUARDANDO CONTRATO", descricao: "Assinatura de contrato" },
+      { ordem: 5, titulo: "AGUARDANDO ACEITE", descricao: "Aguardando aceitação" },
+      { ordem: 6, titulo: "FECHADO", descricao: "Negócio fechado" },
+      { ordem: 7, titulo: "PERDIDO", descricao: "Negócio perdido" },
+      { ordem: 8, titulo: "FORNECEDOR", descricao: "Resposta automática/Fornecedor" },
+    ];
+    
+    console.log("📋 Inicializando 9 etapas do Kanban...");
+    const inserted = await db.insert(kanbanStages).values(defaultStages).returning();
+    return inserted;
+  }
+  
+  return existingStages;
 }
 
 export async function createKanbanStage(data: InsertKanbanStage): Promise<KanbanStage> {
