@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -20,7 +22,10 @@ interface Tag {
 
 export function CreateOpportunityPopover({ client }: CreateOpportunityPopoverProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [, navigate] = useLocation();
   const [open, setOpen] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [titulo, setTitulo] = useState("");
   const [etapa, setEtapa] = useState("lead");
   const [valor, setValor] = useState("");
@@ -42,16 +47,41 @@ export function CreateOpportunityPopover({ client }: CreateOpportunityPopoverPro
       });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: async (opp) => {
+      // Create interaction/timeline entry
+      try {
+        const now = new Date();
+        const dataFormatada = now.toLocaleString("pt-BR");
+        await apiRequest("POST", `/api/interactions`, {
+          clientId: client.id,
+          tipo: "oportunidade_criada",
+          origem: "user",
+          titulo: `Oportunidade criada: ${etapa}`,
+          texto: `Nova oportunidade criada em ${dataFormatada}. Título: ${titulo || client.razaoSocial || client.nome}${valor ? `. Valor: ${valor}` : ""}`,
+          meta: {
+            opportunityId: opp.id,
+            etapa,
+            titulo: titulo || client.razaoSocial || client.nome,
+            valor: valor || "",
+          },
+          createdBy: user?.id,
+        });
+      } catch (error) {
+        console.error("Erro ao criar timeline entry:", error);
+      }
+
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/timeline", client.id] });
+      
+      setTitulo("");
+      setEtapa("lead");
+      setValor("");
+      setShowSuccess(true);
+
       toast({
         title: "Sucesso",
         description: "Oportunidade criada!",
       });
-      setTitulo("");
-      setEtapa("lead");
-      setValor("");
-      setOpen(false);
     },
     onError: (error: any) => {
       toast({
@@ -142,26 +172,65 @@ export function CreateOpportunityPopover({ client }: CreateOpportunityPopoverPro
             />
           </div>
 
+          {/* Success State */}
+          {showSuccess && (
+            <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded p-2 text-xs">
+              <p className="text-green-700 dark:text-green-300 font-medium">✓ Oportunidade criada com sucesso!</p>
+              <p className="text-green-600 dark:text-green-400 text-xs mt-1">Uma entrada foi adicionada na timeline.</p>
+            </div>
+          )}
+
           {/* Buttons */}
           <div className="flex gap-2 justify-end pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setOpen(false)}
-              className="text-xs h-7"
-              data-testid="button-cancelar-oportunidade"
-            >
-              Cancelar
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={mutation.isPending}
-              className="text-xs h-7"
-              data-testid="button-salvar-oportunidade"
-            >
-              {mutation.isPending ? "Salvando..." : "Salvar"}
-            </Button>
+            {showSuccess ? (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setOpen(false);
+                    setShowSuccess(false);
+                  }}
+                  className="text-xs h-7"
+                  data-testid="button-fechar-oportunidade"
+                >
+                  Fechar
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setOpen(false);
+                    setShowSuccess(false);
+                    navigate("/kanban");
+                  }}
+                  className="text-xs h-7"
+                  data-testid="button-ver-kanban"
+                >
+                  Ver no Kanban
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setOpen(false)}
+                  className="text-xs h-7"
+                  data-testid="button-cancelar-oportunidade"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={mutation.isPending}
+                  className="text-xs h-7"
+                  data-testid="button-salvar-oportunidade"
+                >
+                  {mutation.isPending ? "Salvando..." : "Salvar"}
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </PopoverContent>
