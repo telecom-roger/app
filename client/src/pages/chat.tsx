@@ -1300,6 +1300,46 @@ export default function Chat() {
                 )}
               </div>
 
+              {/* Etiquetas/Tags */}
+              {allTags && allTags.length > 0 && (
+                <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">Etiquetas</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {allTags.map((tag) => {
+                      const isCurrentTag = detailedClient?.tags?.[0] === tag.nome;
+                      return (
+                        <Button
+                          key={tag.id}
+                          size="sm"
+                          variant={isCurrentTag ? "default" : "outline"}
+                          className={`${isCurrentTag ? `${tag.cor}` : "opacity-60"} rounded-full text-xs`}
+                          onClick={() => {
+                            if (isCurrentTag) {
+                              handleDeleteTag(tag.nome);
+                            } else {
+                              addTagMutation.mutate(tag.nome);
+                            }
+                          }}
+                          disabled={addTagMutation.isPending || removeTagMutation.isPending}
+                          data-testid={`button-tag-${tag.id}`}
+                        >
+                          {addTagMutation.isPending || removeTagMutation.isPending ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : isCurrentTag ? (
+                            <span className="flex items-center gap-1">
+                              {tag.nome}
+                              <X className="h-3 w-3 ml-0.5" />
+                            </span>
+                          ) : (
+                            tag.nome
+                          )}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Criar Negócio - Card Principal */}
               <Card className="border border-purple-200 dark:border-purple-800 bg-purple-50/30 dark:bg-purple-950/20 p-4">
                 <div className="space-y-4">
@@ -1363,7 +1403,7 @@ export default function Chat() {
 
       {/* Image Viewer Modal */}
       <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>
-        <DialogContent className="max-w-2xl p-0 bg-black border-0">
+        <DialogContent className="max-w-2xl p-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
           <div className="relative w-full h-auto flex items-center justify-center">
             {selectedImage && (
               <>
@@ -1371,7 +1411,7 @@ export default function Chat() {
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="absolute top-4 right-4 bg-black/50 hover:bg-black/70"
+                  className="absolute top-4 right-4 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600"
                   onClick={() => {
                     const link = document.createElement("a");
                     link.href = selectedImage;
@@ -1380,14 +1420,14 @@ export default function Chat() {
                   }}
                   data-testid="button-download-image"
                 >
-                  <Download className="h-5 w-5 text-white" />
+                  <Download className="h-5 w-5 text-slate-600 dark:text-slate-400" />
                 </Button>
                 <button
                   onClick={() => setSelectedImage(null)}
-                  className="absolute top-4 left-4 bg-black/50 hover:bg-black/70 rounded-full p-2 transition-colors"
+                  className="absolute top-4 left-4 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-full p-2 transition-colors"
                   data-testid="button-close-image"
                 >
-                  <X className="h-5 w-5 text-white" />
+                  <X className="h-5 w-5 text-slate-600 dark:text-slate-400" />
                 </button>
               </>
             )}
