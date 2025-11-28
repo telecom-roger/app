@@ -8,6 +8,7 @@ import * as storage from "./storage";
 import * as whatsappService from "./whatsappService";
 import { setupAuth, isAuthenticated } from "./localAuth";
 import { db } from "./db";
+import { simulateClientResponse, getAllAutomationTasks, getAllFollowUps, getAllClientScores } from "./testAutomation";
 
 // Track campaigns in progress
 const campanhasEmProgresso = new Map<string, {
@@ -2636,7 +2637,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== TESTE DE AUTOMAÇÃO ====================
+  app.post("/api/test/simulate-response", async (req, res) => {
+    try {
+      const { clientId, userId, messageText } = req.body;
+      
+      if (!clientId || !userId || !messageText) {
+        return res.status(400).json({ error: "clientId, userId, messageText são obrigatórios" });
+      }
+
+      const result = await simulateClientResponse(clientId, userId, messageText);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
+  app.get("/api/test/automation-tasks", async (req, res) => {
+    try {
+      const tasks = await getAllAutomationTasks();
+      res.json(tasks);
+    } catch (error) {
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
+  app.get("/api/test/follow-ups", async (req, res) => {
+    try {
+      const followups = await getAllFollowUps();
+      res.json(followups);
+    } catch (error) {
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
+  app.get("/api/test/client-scores", async (req, res) => {
+    try {
+      const scores = await getAllClientScores();
+      res.json(scores);
+    } catch (error) {
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
 }
+
