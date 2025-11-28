@@ -497,6 +497,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userAgent: req.get("user-agent"),
       });
 
+      // 🚀 TRIGGER: Se moveu para CONTRATO ENVIADO, dispara automação
+      if (opportunity && etapa === "CONTRATO ENVIADO" && oldOpportunity.etapa !== "CONTRATO ENVIADO") {
+        console.log(`🚀 Disparando automação de Contrato Enviado para ${opportunity.id}`);
+        try {
+          await db.insert(automationTasks).values({
+            userId: (req.user as any).id,
+            clientId: opportunity.clientId,
+            tipo: "contrato_enviado_message",
+            proximaExecucao: new Date(), // Executar imediatamente
+            dados: { opportunityId: opportunity.id },
+          });
+          console.log(`✅ Task de Contrato Enviado criada`);
+        } catch (error) {
+          console.error(`❌ Erro ao criar task de contrato enviado:`, error);
+        }
+      }
+
       res.json(opportunity);
     } catch (error: any) {
       console.error("Error moving opportunity:", error);

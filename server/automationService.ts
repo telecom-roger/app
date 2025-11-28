@@ -66,6 +66,9 @@ async function executeAutomationTask(task: any) {
     case "contract_reminder":
       await executeContractReminder(task);
       break;
+    case "contrato_enviado_message":
+      await executeContratoEnviadoMessage(task);
+      break;
   }
 
   // Marcar como executado
@@ -392,6 +395,55 @@ async function executeContractReminder(task: any) {
   });
   
   console.log(`✅ Mensagem registrada na timeline de ${client.nome}`);
+}
+
+// ======================== CONTRATO ENVIADO - Envio automático quando opportunity muda para essa etapa ========================
+async function executeContratoEnviadoMessage(task: any) {
+  console.log(`📄 Contrato Enviado para ${task.clientId}`);
+  
+  const opportunity = await db.query.opportunities.findFirst({
+    where: (o: any) => eq(o.id, task.dados?.opportunityId || ""),
+  });
+  
+  if (!opportunity) return;
+  
+  const client = await db.query.clients.findFirst({
+    where: (c: any) => eq(c.id, opportunity.clientId),
+  });
+  
+  if (!client) return;
+  
+  // 2 mensagens randomizadas
+  const messages_templates: string[] = [
+    `Oi!\nSeu contrato já chegou no seu e-mail.\nÉ só abrir o link, colocar a data de nascimento do gestor e seguir as etapas.\n\nVocê vai receber um e-mail com o TOKEN de confirmação.\nInforme o código e pronto — assinatura concluída.\n\nQualquer dúvida estou por aqui!`,
+    `Olá!\nO contrato foi enviado para o seu e-mail.\nÉ só clicar no link, inserir a data de nascimento do gestor e avançar.\n\nDepois disso, você vai receber um e-mail com o TOKEN.\nBasta inserir no campo solicitado e finalizar a assinatura.\n\nQualquer dúvida, estou à disposição.`,
+  ];
+  
+  // Pegar mensagem randomizada
+  const randomIndex = Math.floor(Math.random() * messages_templates.length);
+  const mensagem = messages_templates[randomIndex];
+  
+  // Registrar mensagem no banco
+  await db.insert(messages).values({
+    conversationId: `contrato-enviado-${opportunity.id}`,
+    sender: "bot",
+    tipo: "text",
+    conteudo: mensagem,
+    createdAt: new Date(),
+  });
+
+  // 📋 REGISTRAR NA TIMELINE DO CLIENTE
+  await db.insert(interactions).values({
+    clientId: opportunity.clientId,
+    tipo: "contrato_enviado",
+    origem: "automation",
+    titulo: `Contrato Enviado ao Cliente`,
+    texto: mensagem,
+    meta: { opportunityId: opportunity.id },
+    createdBy: task.userId,
+  });
+  
+  console.log(`✅ Mensagem de Contrato Enviado registrada para ${client.nome}`);
 }
 
 // ======================== VERIFICAR PROPOSTAS ENVIADAS - Lógica de 2h timeout + 3 dias + horários comerciais ========================
