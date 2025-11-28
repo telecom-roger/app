@@ -644,23 +644,29 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
         // Substitui variáveis no template (suporta {variavel} e {{variavel}})
         let conteudo = template.conteudo;
         
+        // Prepara fallbacks para garantir valores
+        const empresa = client.razaoSocial || client.nome || '';
+        const emailValue = client.EMAIL_PRINCIPAL || client.email || '';
+        const telefoneValue = client.CELULAR_PRINCIPAL || client.telefone || '';
+        const nomeContato = client.NOME_CONTATO || client.contato || client.nome || '';
+        
         // Com duas chaves {{variavel}}
-        conteudo = conteudo.replace(/{{razao_social}}/g, client.razaoSocial || '');
-        conteudo = conteudo.replace(/{{empresa}}/g, client.razaoSocial || '');
-        conteudo = conteudo.replace(/{{telefone}}/g, client.telefone || '');
-        conteudo = conteudo.replace(/{{email}}/g, client.email || '');
+        conteudo = conteudo.replace(/{{razao_social}}/g, empresa);
+        conteudo = conteudo.replace(/{{empresa}}/g, empresa);
+        conteudo = conteudo.replace(/{{telefone}}/g, telefoneValue);
+        conteudo = conteudo.replace(/{{email}}/g, emailValue);
         conteudo = conteudo.replace(/{{CELULAR_PRINCIPAL}}/g, client.CELULAR_PRINCIPAL || '');
-        conteudo = conteudo.replace(/{{NOME_CONTATO}}/g, client.NOME_CONTATO || '');
+        conteudo = conteudo.replace(/{{NOME_CONTATO}}/g, nomeContato);
         
         // Com uma chave {variavel} - igual a campanhas WhatsApp
-        conteudo = conteudo.replace(/{razao_social}/g, client.razaoSocial || '');
-        conteudo = conteudo.replace(/{empresa}/g, client.razaoSocial || '');
-        conteudo = conteudo.replace(/{telefone}/g, client.telefone || '');
-        conteudo = conteudo.replace(/{email}/g, client.email || '');
+        conteudo = conteudo.replace(/{razao_social}/g, empresa);
+        conteudo = conteudo.replace(/{empresa}/g, empresa);
+        conteudo = conteudo.replace(/{telefone}/g, telefoneValue);
+        conteudo = conteudo.replace(/{email}/g, emailValue);
         conteudo = conteudo.replace(/{CELULAR_PRINCIPAL}/g, client.CELULAR_PRINCIPAL || '');
-        conteudo = conteudo.replace(/{NOME_CONTATO}/g, client.NOME_CONTATO || '');
+        conteudo = conteudo.replace(/{NOME_CONTATO}/g, nomeContato);
 
-        console.log(`📤 [${index + 1}/${recipientClients.length}] Enviando para ${client.razaoSocial} (${client.telefone})...`);
+        console.log(`📤 [${index + 1}/${recipientClients.length}] Enviando para ${empresa} (${telefoneValue})...`);
         
         // Tenta enviar via WhatsApp se houver sessão ativa
         let mensagemEnviada = false;
@@ -690,7 +696,7 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
         });
 
         enviados++;
-        console.log(`✅ Enviado para ${client.razaoSocial}`);
+        console.log(`✅ Enviado para ${empresa}`);
 
         // Delay entre mensagens: 21s + 10-60s aleatório (total 31-81s)
         if (index < recipientClients.length - 1) {
@@ -701,7 +707,8 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
           await new Promise((resolve) => setTimeout(resolve, totalDelay));
         }
       } catch (error) {
-        console.error(`❌ Erro ao enviar para ${client.razaoSocial}:`, error);
+        const empresa = client.razaoSocial || client.nome || 'cliente desconhecido';
+        console.error(`❌ Erro ao enviar para ${empresa}:`, error);
         erros++;
 
         // Mesmo com erro, aplica o delay
