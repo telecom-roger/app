@@ -1,7 +1,8 @@
 import * as storage from "./storage";
 import { db } from "./db";
 import { eq, and, lt } from "drizzle-orm";
-import { automationTasks, followUps, clientScores, opportunities, messages } from "@shared/schema";
+import { automationTasks, followUps, clientScores, opportunities, messages, conversations } from "@shared/schema";
+import { analyzeClientMessage } from "./aiService";
 
 // ======================== TESTE RÁPIDO: Intervalos pequenos para teste ========================
 export async function createTestFollowUps(clientId: string, userId: string, conversationId: string) {
@@ -287,6 +288,94 @@ export async function getAllClientScores() {
 }
 
 export async function simulateClientResponse(clientId: string, userId: string, messageText: string) {
-  console.log(`\n🧪 [TEST] Simulando resposta do cliente ${clientId}...`);
-  return { success: true, clientId, message: "Teste criado" };
+  try {
+    console.log(`\n🧪 [TEST] Simulando resposta do cliente ${clientId}...\nMensagem: "${messageText}"`);
+
+    // 1. Buscar ou criar conversa
+    let conv = await db.query.conversations.findFirst({
+      where: (c: any) => eq(c.clientId, clientId),
+    });
+
+    if (!conv) {
+      const [newConv] = await db
+        .insert(conversations)
+        .values({
+          clientId,
+          userId,
+          ultimaMensagem: new Date(),
+        })
+        .returning();
+      conv = newConv;
+    }
+
+    // 2. Criar mensagem
+    const msg = await db.insert(messages).values({
+      conversationId: conv.id,
+      sender: "client",
+      tipo: "texto",
+      conteudo: messageText,
+    }).returning().then(r => r[0]);
+
+    // 3. Analisar com IA
+    const client = await db.query.clients.findFirst({
+      where: (c: any) => eq(c.id, clientId),
+    });
+    const analysis = await analyzeClientMessage(messageText, {
+      nome: client?.nome,
+      razaoSocial: client?.nomeFantasia,
+    });
+
+    console.log(`📊 IA retornou: ${analysis.sentimento} → ${analysis.etapa}`);
+
+    // 4. Mover Kanban se houver oportunidade
+    const opp = await db.query.opportunities.findFirst({
+      where: (o: any) => eq(o.clientId, clientId),
+    });
+
+    if (opp && analysis.etapa !== "automatico") {
+      await db.update(opportunities).set({ etapa: analysis.etapa }).where(eq(opportunities.id, opp.id));
+      console.log(`📈 Oportunidade movida para: ${analysis.etapa}`);
+    }
+
+    // 5. Criar 3 follow-ups automáticos
+    const now = new Date();
+    await db.insert(automationTasks).values({
+      userId,
+      clientId,
+      tipo: "follow_up",
+      status: "pendente",
+      proximaExecucao: new Date(now.getTime() - 10 * 1000),
+      dados: { numero: 1, conversationId: conv.id, dias: 1 },
+    });
+
+    await db.insert(automationTasks).values({
+      userId,
+      clientId,
+      tipo: "follow_up",
+      status: "pendente",
+      proximaExecucao: new Date(now.getTime() - 5 * 1000),
+      dados: { numero: 2, conversationId: conv.id, dias: 3 },
+    });
+
+    await db.insert(automationTasks).values({
+      userId,
+      clientId,
+      tipo: "follow_up",
+      status: "pendente",
+      proximaExecucao: new Date(now.getTime()),
+      dados: { numero: 3, conversationId: conv.id, dias: 7 },
+    });
+
+    console.log(`✅ Teste concluído: Mensagem criada + Kanban movido + 3 follow-ups agendados`);
+    
+    return { 
+      success: true, 
+      clientId, 
+      message: `IA respondeu: ${analysis.sentimento} → ${analysis.etapa}. Kanban movido + 3 follow-ups criados!`,
+      analysis,
+    };
+  } catch (error) {
+    console.error(`❌ Erro:`, error);
+    throw error;
+  }
 }
