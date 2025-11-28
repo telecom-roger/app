@@ -50,6 +50,11 @@ export function AddClientNote({ clientId }: AddClientNoteProps) {
     e.currentTarget.value = "";
   };
 
+  const resetFileInput = () => {
+    const input = document.getElementById("file-input-comentario") as HTMLInputElement;
+    if (input) input.value = "";
+  };
+
   const mutation = useMutation({
     mutationFn: async (data: any) => {
       await apiRequest("POST", `/api/client-notes/${clientId}`, data);
@@ -163,21 +168,20 @@ export function AddClientNote({ clientId }: AddClientNoteProps) {
                   id="file-input-comentario"
                   accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
                 />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-xs h-7 gap-1"
+                <button
+                  type="button"
                   onClick={() => document.getElementById("file-input-comentario")?.click()}
+                  className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <Paperclip className="h-3 w-3" />
-                  Anexar
-                </Button>
+                  <span>Anexar</span>
+                </button>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleCancel} className="text-xs h-7" data-testid="button-cancelar">
+                <Button variant="outline" size="sm" onClick={() => { handleCancel(); resetFileInput(); }} className="text-xs h-7" data-testid="button-cancelar">
                   Cancelar
                 </Button>
-                <Button size="sm" onClick={handleSave} disabled={mutation.isPending} className="text-xs h-7" data-testid="button-salvar-comentario">
+                <Button size="sm" onClick={() => { handleSave(); resetFileInput(); }} disabled={mutation.isPending} className="text-xs h-7" data-testid="button-salvar-comentario">
                   {mutation.isPending ? "Salvando..." : "Salvar"}
                 </Button>
               </div>
