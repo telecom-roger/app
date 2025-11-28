@@ -201,7 +201,7 @@ export function CreateOpportunityPopover({ client }: CreateOpportunityPopoverPro
                   onClick={() => {
                     setOpen(false);
                     setShowSuccess(false);
-                    navigate("/kanban");
+                    navigate("/oportunidades");
                   }}
                   className="text-xs h-7"
                   data-testid="button-ver-kanban"
