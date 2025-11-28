@@ -8,12 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle, Download, Plus, Info } from "lucide-react";
+import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle, Download, Plus, Info, ExternalLink, Zap } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { KanbanStage } from "@shared/schema";
 
 interface Message {
   id: string;
@@ -105,7 +107,7 @@ interface Tag {
 
 export default function Chat() {
   const { toast } = useToast();
-  const [location] = useLocation();
+  const [, navigate] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [messageText, setMessageText] = useState("");
@@ -136,6 +138,8 @@ export default function Chat() {
   const [contextMenuConvId, setContextMenuConvId] = useState<string | null>(null);
   const [showClientInfo, setShowClientInfo] = useState(false);
   const [businessValue, setBusinessValue] = useState<string>("");
+  const [selectedStage, setSelectedStage] = useState<string>("");
+  const [creatingOpportunity, setCreatingOpportunity] = useState(false);
 
   // Persist closed conversations to localStorage
   useEffect(() => {
@@ -213,6 +217,12 @@ export default function Chat() {
   // Fetch predefined tags
   const { data: allTags = [] } = useQuery<Tag[]>({
     queryKey: ["/api/tags"],
+    refetchInterval: 5000,
+  });
+
+  // Fetch kanban stages
+  const { data: kanbanStages = [] } = useQuery<KanbanStage[]>({
+    queryKey: ["/api/kanban-stages"],
     refetchInterval: 5000,
   });
 
@@ -755,6 +765,29 @@ export default function Chat() {
     },
   });
 
+  // Create opportunity mutation
+  const createOpportunityMutation = useMutation({
+    mutationFn: async () => {
+      if (!currentClientId || !selectedStage || !detailedClient) return;
+      await apiRequest("POST", "/api/opportunities", {
+        clientId: currentClientId,
+        titulo: detailedClient.razaoSocial || detailedClient.nome,
+        etapa: selectedStage,
+        valorEstimado: businessValue || "",
+        responsavelId: detailedClient.createdBy,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      setSelectedStage("");
+      setShowClientInfo(false);
+      toast({ title: "Negócio criado!", description: "Oportunidade adicionada ao Kanban", variant: "default" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro ao criar negócio", description: error.message, variant: "destructive" });
+    },
+  });
+
   const handleSelectQuickReply = (reply: string) => {
     setMessageText(reply);
     setShowQuickReplies(false);
@@ -1186,23 +1219,26 @@ export default function Chat() {
               </div>
             </ScrollArea>
 
-      {/* Client Info Modal */}
+      {/* Client Info Modal - Modern UI */}
       <Dialog open={showClientInfo} onOpenChange={(open) => {
         setShowClientInfo(open);
-        if (!open) setBusinessValue("");
+        if (!open) {
+          setBusinessValue("");
+          setSelectedStage("");
+        }
       }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
           {clientDetailLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-5 w-5 animate-spin text-slate-600 dark:text-slate-400" />
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-purple-600 dark:text-purple-400" />
             </div>
           ) : detailedClient ? (
             <div className="space-y-6">
-              {/* Header com Informações do Cliente */}
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/20 rounded-lg p-5 border border-purple-200 dark:border-purple-800/50">
-                <div className="flex items-start gap-4 mb-4">
-                  <Avatar className="h-14 w-14 flex-shrink-0">
-                    <AvatarFallback className="bg-purple-200 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-bold text-lg">
+              {/* Header - Cliente */}
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-4">
+                  <Avatar className="h-16 w-16 flex-shrink-0 border-2 border-purple-600/20 dark:border-purple-400/20">
+                    <AvatarFallback className="bg-purple-600/10 dark:bg-purple-400/10 text-purple-700 dark:text-purple-300 font-bold text-xl">
                       {(detailedClient.nome || detailedClient.razaoSocial || "C")
                         .split(" ")
                         .slice(0, 2)
@@ -1211,118 +1247,111 @@ export default function Chat() {
                         .toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex-1">
-                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">
                       {detailedClient.nome || "Sem nome"}
                     </h2>
-                    {detailedClient.razaoSocial && (
-                      <p className="text-sm text-slate-600 dark:text-slate-400">{detailedClient.razaoSocial}</p>
-                    )}
-                    {detailedClient.CELULAR_PRINCIPAL || detailedClient.telefone && (
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
-                        {detailedClient.CELULAR_PRINCIPAL || detailedClient.telefone}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Dados do Cliente em Grid */}
-                <div className="grid grid-cols-2 gap-3">
-                  {detailedClient.email && (
-                    <div>
-                      <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">EMAIL</p>
-                      <p className="text-sm text-slate-900 dark:text-white truncate">{detailedClient.email}</p>
-                    </div>
-                  )}
-                  {detailedClient.carteira && (
-                    <div>
-                      <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">CARTEIRA</p>
-                      <p className="text-sm text-slate-900 dark:text-white">{detailedClient.carteira}</p>
-                    </div>
-                  )}
-                  {detailedClient.cpfCnpj && (
-                    <div className="col-span-2">
-                      <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">CPF/CNPJ</p>
-                      <p className="text-sm text-slate-900 dark:text-white font-mono">{detailedClient.cpfCnpj}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Gerenciamento de Etapas e Valor */}
-              <div className="space-y-4 border-t border-slate-200 dark:border-slate-700 pt-6">
-                {/* Valor do Negócio */}
-                <div>
-                  <label className="text-sm font-semibold text-slate-900 dark:text-slate-100">Valor do Negócio</label>
-                  <div className="flex gap-2 mt-2">
-                    <Input
-                      type="text"
-                      placeholder="Ex: R$ 5.000,00 ou 5000"
-                      value={businessValue}
-                      onChange={(e) => setBusinessValue(e.target.value)}
-                      className="flex-1"
-                      data-testid="input-business-value"
-                    />
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => saveBusinessValueMutation.mutate()}
-                      disabled={saveBusinessValueMutation.isPending || businessValue === ""}
-                      className="whitespace-nowrap"
-                      data-testid="button-save-value"
+                    <button
+                      onClick={() => {
+                        navigate(`/cliente-profile/${detailedClient.id}`);
+                        setShowClientInfo(false);
+                      }}
+                      className="flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400 hover:underline hover-elevate mt-1 transition-colors"
+                      data-testid="button-edit-client"
                     >
-                      {saveBusinessValueMutation.isPending ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        "Salvar"
-                      )}
-                    </Button>
+                      {detailedClient.razaoSocial && <span className="font-semibold">{detailedClient.razaoSocial}</span>}
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 </div>
-                
-                {/* Etapas */}
-                <div>
-                  <label className="text-sm font-semibold text-slate-900 dark:text-slate-100">Etapas</label>
-                  {allTags && allTags.length > 0 ? (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {allTags.map((tag) => {
-                        const isCurrentTag = detailedClient?.tags?.[0] === tag.nome;
-                        return (
-                          <div key={tag.id} className="relative group">
-                            <Button
-                              size="sm"
-                              variant={isCurrentTag ? "default" : "outline"}
-                              className={`${isCurrentTag ? `${tag.cor}` : "opacity-60"} rounded-full`}
-                              onClick={() => {
-                                if (isCurrentTag) {
-                                  handleDeleteTag(tag.nome);
-                                } else {
-                                  addTagMutation.mutate(tag.nome);
-                                }
-                              }}
-                              disabled={addTagMutation.isPending || removeTagMutation.isPending}
-                              data-testid={`button-tag-${tag.id}`}
-                            >
-                              {addTagMutation.isPending || removeTagMutation.isPending ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : isCurrentTag ? (
-                                <span className="flex items-center gap-1">
-                                  {tag.nome}
-                                  <X className="h-3 w-3 ml-0.5" />
-                                </span>
-                              ) : (
-                                tag.nome
-                              )}
-                            </Button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">Nenhuma etapa criada. Crie em "Etiquetas"</p>
-                  )}
-                </div>
               </div>
+
+              {/* Dados do Cliente - Grid 3 colunas */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {detailedClient.CELULAR_PRINCIPAL && (
+                  <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
+                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">TELEFONE</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">{detailedClient.CELULAR_PRINCIPAL}</p>
+                  </div>
+                )}
+                {detailedClient.email && (
+                  <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
+                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">EMAIL</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{detailedClient.email}</p>
+                  </div>
+                )}
+                {detailedClient.carteira && (
+                  <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
+                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">CARTEIRA</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">{detailedClient.carteira}</p>
+                  </div>
+                )}
+                {detailedClient.cpfCnpj && (
+                  <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
+                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">CPF/CNPJ</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white font-mono">{detailedClient.cpfCnpj}</p>
+                  </div>
+                )}
+                {detailedClient.status && (
+                  <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
+                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">STATUS</p>
+                    <Badge variant="outline">{detailedClient.status}</Badge>
+                  </div>
+                )}
+              </div>
+
+              {/* Criar Negócio - Card Principal */}
+              <Card className="border border-purple-200 dark:border-purple-800 bg-purple-50/30 dark:bg-purple-950/20 p-4">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                    <h3 className="font-semibold text-slate-900 dark:text-white">Criar Novo Negócio</h3>
+                  </div>
+                  
+                  {/* Valor + Etapa em linha */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2 block">Valor Estimado</label>
+                      <Input
+                        type="text"
+                        placeholder="Ex: 5000 ou R$ 5.000"
+                        value={businessValue}
+                        onChange={(e) => setBusinessValue(e.target.value)}
+                        className="text-sm h-9"
+                        data-testid="input-opp-value"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2 block">Etapa</label>
+                      <Select value={selectedStage} onValueChange={setSelectedStage}>
+                        <SelectTrigger className="h-9 text-sm" data-testid="select-opp-stage">
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {kanbanStages.sort((a, b) => a.ordem - b.ordem).map((stage) => (
+                            <SelectItem key={stage.id} value={stage.titulo}>{stage.titulo}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Botão Criar */}
+                  <Button
+                    onClick={() => createOpportunityMutation.mutate()}
+                    disabled={!selectedStage || createOpportunityMutation.isPending}
+                    className="w-full bg-purple-600 hover:bg-purple-700 dark:bg-purple-600 dark:hover:bg-purple-700 text-white"
+                    data-testid="button-create-opportunity"
+                  >
+                    {createOpportunityMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Plus className="h-4 w-4 mr-2" />
+                    )}
+                    Criar Negócio
+                  </Button>
+                </div>
+              </Card>
             </div>
           ) : (
             <p className="text-sm text-slate-600 dark:text-slate-400 text-center py-8">
