@@ -1991,7 +1991,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       const { clientId } = req.params;
-      const { conteudo, cor } = req.body;
+      const { conteudo, cor, tipo, dataPlanejada } = req.body;
+      
+      const note = await storage.createClientNote({
+        userId: user.id,
+        clientId,
+        conteudo,
+        cor: cor || "bg-blue-500",
+      });
+      res.json(note);
+    } catch (error: any) {
+      console.error("Error creating client note:", error);
+      res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
+  // Alias route for compatibility
+  app.post("/api/clients/:clientId/notes", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const { clientId } = req.params;
+      const { conteudo, cor, tipo, dataPlanejada } = req.body;
       
       const note = await storage.createClientNote({
         userId: user.id,

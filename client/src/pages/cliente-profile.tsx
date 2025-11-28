@@ -28,6 +28,7 @@ import {
   MoreVertical,
 } from "lucide-react";
 import { EditableField } from "@/components/EditableField";
+import { AddClientNote } from "@/components/AddClientNote";
 import type { Client, Interaction } from "@shared/schema";
 
 export default function ClienteProfile() {
@@ -216,6 +217,13 @@ export default function ClienteProfile() {
           {/* Timeline Feed */}
           <ScrollArea className="flex-1">
             <div className="p-6 space-y-6">
+              {/* Add Client Note Card */}
+              {!clienteLoading && cliente && (
+                <>
+                  <AddClientNote clientId={cliente.id} />
+                  <Separator className="my-4" />
+                </>
+              )}
               {timelineLoading ? (
                 <div className="space-y-4">
                   {Array.from({ length: 3 }).map((_, i) => (
