@@ -73,7 +73,7 @@ export default function ClienteProfile() {
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h2 className="font-semibold text-lg">{cliente?.nome || "Cliente"}</h2>
+          <h2 className="font-semibold text-lg">{cliente?.razaoSocial || "Cliente"}</h2>
         </div>
         <div className="flex items-center gap-2">
           <Button size="icon" variant="ghost" data-testid="button-options">
@@ -99,12 +99,12 @@ export default function ClienteProfile() {
                 <div className="space-y-3">
                   <Avatar className="h-12 w-12">
                     <AvatarFallback className="bg-primary text-primary-foreground">
-                      {cliente?.nome?.[0]?.toUpperCase() || "?"}
+                      {cliente?.razaoSocial?.[0]?.toUpperCase() || "?"}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <h3 className="font-semibold text-sm" data-testid="text-cliente-nome">
-                      {cliente?.nome}
+                      {cliente?.razaoSocial}
                     </h3>
                     {cliente?.status && (
                       <Badge variant="outline" className="text-xs mt-1" data-testid="badge-status">
