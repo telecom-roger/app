@@ -253,8 +253,12 @@ async function processIncomingMessages(sessionId: string, m: any) {
             .where(or(
               eq(clientsTable.CELULAR_PRINCIPAL, senderPhone),
               eq(clientsTable.telefone, senderPhone),
+              eq(clientsTable.CELULAR, senderPhone),
+              eq(clientsTable.TELEFONE_COMERCIAL, senderPhone),
               ilike(clientsTable.CELULAR_PRINCIPAL, `%${senderPhone}%`),
-              ilike(clientsTable.telefone, `%${senderPhone}%`)
+              ilike(clientsTable.telefone, `%${senderPhone}%`),
+              ilike(clientsTable.CELULAR, `%${senderPhone}%`),
+              ilike(clientsTable.TELEFONE_COMERCIAL, `%${senderPhone}%`)
             ))
             .limit(1);
           

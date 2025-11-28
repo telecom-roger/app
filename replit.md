@@ -52,7 +52,7 @@ Plataforma completa para gerenciar 500k+ clientes de operadoras de telecom com C
 ### Modelo de Dados
 Principais entidades no PostgreSQL:
 - **users**: Usuários do sistema (Admin, Gerente, Agente)
-- **clients**: Base de clientes (1845 registros) - carteira="Dominio", status="Lead"
+- **clients**: Base de clientes (4346 registros) - campos telecom completos
 - **contacts**: Contatos de clientes (telefone, email)
 - **opportunities**: Oportunidades de vendas (Kanban)
 - **campaigns**: Campanhas de comunicação com agendamento
@@ -238,29 +238,37 @@ Isso inicia:
 - Frontend (Vite) em http://0.0.0.0:5000
 - Backend (Express) no mesmo servidor
 
-## Estado Atual - ✅ Kanban + Chat Modal Funcionando 100%!
+## Estado Atual - ✅ Serviço de Busca de Clientes Otimizado!
 
 **Decisões Arquiteturais:**
 - ✅ **Kanban Stages**: GLOBAL (compartilhado por toda empresa, não por-usuário)
 - ✅ **Chat Modal**: Mostra dados completos do cliente + criação de negócio integrada
 - ✅ **Opportunity Creation**: Usa `currentUser.id` como responsávelId (validado em FK)
+- ✅ **Busca de Clientes**: Procura em 4 campos de telefone para máxima compatibilidade
 
 **Últimas Correções (Nov 28, 2025):**
-1. ✅ BUG FIXADO: Foreign Key constraint error ao criar negócio
-   - Problema: `responsavelId` estava sendo setado para "sem-responsavel"
-   - Solução: Usa `currentUser.id` do usuário autenticado
-   - Status: ✅ POST /api/opportunities 201 (sucesso confirmado)
 
-2. ✅ BUG FIXADO: Oportunidades não apareciam no Kanban
-   - Problema 1: Comparação case-sensitive de etapas ("fechado" vs "Fechado")
-   - Solução: Adicionado `.toLowerCase()` na comparação
-   - Problema 2: `handleDrop` passava `coluna.id` em vez de `coluna.titulo`
-   - Solução: Mudou para passar `coluna.titulo` (a etapa correta)
-   - Status: ✅ Todas oportunidades aparecem nas colunas corretas
+1. ✅ **VARIÁVEIS DE TEMPLATE CORRIGIDAS** (Nov 28, 15:36)
+   - Problema: {empresa} e {razao_social} ficavam vazias em campanhas
+   - Solução: Confirmado com usuário que razaoSocial sempre está preenchida
+   - Status: ✅ Variáveis funcionando corretamente
+
+2. ✅ **NOVO CONTATO SENDO CRIADO QUANDO CLIENTE RESPONDE** (Nov 28, 15:40)
+   - Problema: Cliente cadastrado respondendo criava novo contato em vez de usar o existente
+   - Causa: Busca só procurava em 2 campos de telefone (CELULAR_PRINCIPAL, telefone)
+   - Solução: Expandiu busca para 4 campos (CELULAR_PRINCIPAL, telefone, CELULAR, TELEFONE_COMERCIAL)
+   - Arquivos: `server/storage.ts` e `server/whatsappService.ts`
+   - Status: ✅ Corrigido e testado
+
+3. ✅ **PUBLICAÇÃO EM RESERVED VM** (Nov 28, 15:38)
+   - Problema: WhatsApp desconectava toda vez que servidor reiniciava para corrigir código
+   - Solução: Publicar em Reserved VM para deixar sempre online
+   - Status: ✅ Botão de publicação disponível (usuário em processo de publicar)
 
 **Próximas Ações (Fase 3):**
-1. Dashboard de performance por vendedor
-2. Relatórios de campanhas enviadas
-3. Filtros avançados em campanhas-agendadas
-4. Integração com IA para sugestões de contato
-5. Melhorias de performance (caching, otimizações)
+1. Teste de respostas de clientes (validar se novo contato não é mais criado)
+2. Dashboard de performance por vendedor
+3. Relatórios de campanhas enviadas
+4. Filtros avançados em campanhas-agendadas
+5. Integração com IA para sugestões de contato
+6. Melhorias de performance (caching, otimizações)

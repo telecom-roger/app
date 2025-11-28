@@ -730,15 +730,19 @@ export async function findConversationByPhoneAndUser(telefone: string, userId: s
   
   console.log(`🔍 findConversationByPhoneAndUser: buscando por "${normalizado}"`);
   
-  // Find client by phone number - search only SEM 55 format
+  // Find client by phone number - search SEM 55 format across ALL phone fields
   const [client] = await db
     .select()
     .from(clients)
     .where(or(
       eq(clients.CELULAR_PRINCIPAL, normalizado),
       eq(clients.telefone, normalizado),
+      eq(clients.CELULAR, normalizado),
+      eq(clients.TELEFONE_COMERCIAL, normalizado),
       ilike(clients.CELULAR_PRINCIPAL, `%${normalizado}%`),
-      ilike(clients.telefone, `%${normalizado}%`)
+      ilike(clients.telefone, `%${normalizado}%`),
+      ilike(clients.CELULAR, `%${normalizado}%`),
+      ilike(clients.TELEFONE_COMERCIAL, `%${normalizado}%`)
     ))
     .limit(1);
   
