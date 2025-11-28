@@ -1273,7 +1273,7 @@ export default function Chat() {
                     </h2>
                     <button
                       onClick={() => {
-                        navigate(`/cliente-profile/${detailedClient.id}`);
+                        navigate(`/clientes/${detailedClient.id}`);
                         setShowClientInfo(false);
                       }}
                       className="flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400 hover:underline hover-elevate mt-1 transition-colors"
