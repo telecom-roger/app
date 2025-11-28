@@ -281,8 +281,8 @@ export default function ClienteProfile() {
                       label="Email"
                     />
                     <EditableField
-                      value={cliente?.telefone}
-                      field="telefone"
+                      value={cliente?.CELULAR_PRINCIPAL}
+                      field="CELULAR_PRINCIPAL"
                       clientId={id || ""}
                       label="Telefone"
                     />
