@@ -39,6 +39,8 @@ import type {
   InsertCampaignSending,
   CampaignGroup,
   InsertCampaignGroup,
+  KanbanStage,
+  InsertKanbanStage,
 } from "@shared/schema";
 import {
   clients,
@@ -61,6 +63,7 @@ import {
   notifications,
   campaignSendings,
   campaignGroups,
+  kanbanStages,
 } from "@shared/schema";
 
 // ==================== USER STORAGE ====================
@@ -1013,4 +1016,27 @@ export async function updateCampaignGroup(id: string, userId: string, data: Part
 
 export async function deleteCampaignGroup(id: string, userId: string): Promise<void> {
   await db.delete(campaignGroups).where(and(eq(campaignGroups.id, id), eq(campaignGroups.userId, userId)));
+}
+
+// ==================== KANBAN STAGES STORAGE ====================
+export async function getAllKanbanStages(): Promise<KanbanStage[]> {
+  return await db.select().from(kanbanStages).orderBy(asc(kanbanStages.ordem));
+}
+
+export async function createKanbanStage(data: InsertKanbanStage): Promise<KanbanStage> {
+  const [result] = await db.insert(kanbanStages).values(data).returning();
+  return result;
+}
+
+export async function updateKanbanStage(id: string, data: Partial<InsertKanbanStage>): Promise<KanbanStage | undefined> {
+  const [result] = await db
+    .update(kanbanStages)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(kanbanStages.id, id))
+    .returning();
+  return result;
+}
+
+export async function deleteKanbanStage(id: string): Promise<void> {
+  await db.delete(kanbanStages).where(eq(kanbanStages.id, id));
 }

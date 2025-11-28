@@ -179,6 +179,27 @@ export const insertOpportunitySchema = createInsertSchema(opportunities).omit({
 export type InsertOpportunity = z.infer<typeof insertOpportunitySchema>;
 export type Opportunity = typeof opportunities.$inferSelect;
 
+// ==================== KANBAN STAGES ====================
+export const kanbanStages = pgTable("kanban_stages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ordem: integer("ordem").notNull().default(0),
+  titulo: text("titulo").notNull(),
+  descricao: text("descricao"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_kanban_stages_ordem").on(table.ordem),
+]);
+
+export const insertKanbanStageSchema = createInsertSchema(kanbanStages).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertKanbanStage = z.infer<typeof insertKanbanStageSchema>;
+export type KanbanStage = typeof kanbanStages.$inferSelect;
+
 // ==================== TEMPLATES ====================
 export const templates = pgTable("templates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
