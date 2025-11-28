@@ -16,14 +16,14 @@ export interface MessageAnalysis {
 function analyzeLocalTest(mensagem: string): MessageAnalysis {
   const msg = mensagem.toLowerCase();
   
-  // Fornecedor - contexto de empresa/fornecedor respondendo
-  if (msg.includes("fornecedor") || msg.includes("empresa") || msg.includes("nfe") || msg.includes("protocolo") || msg.includes("cnpj")) {
+  // Fornecedor/Mensagem Automática - contexto de empresa/fornecedor respondendo OU mensagem automática
+  if (msg.includes("fornecedor") || msg.includes("empresa") || msg.includes("nfe") || msg.includes("protocolo") || msg.includes("cnpj") || msg.includes("automático") || msg.includes("automática") || msg.includes("automaticas") || msg.includes("entro em contato") || msg.includes("deixe seu contato") || msg.includes("em contato em breve") || msg.includes("assim que") || msg.includes("breve entraremos") || msg.includes("breve")) {
     return {
       sentimento: "fornecedor",
       confianca: 90,
-      motivo: "Resposta de fornecedor/empresa detectada",
+      motivo: "Mensagem automática ou resposta de fornecedor detectada",
       etapa: "fornecedor",
-      sugestao: "Aguardando confirmação do fornecedor",
+      sugestao: "Aguardando confirmação ou contato posterior",
     };
   }
   
@@ -86,14 +86,15 @@ export async function analyzeClientMessage(
 MENSAGEM: "${mensagem}"
 CLIENTE: ${clienteInfo?.razaoSocial || clienteInfo?.nome || "Desconhecido"}
 
-Classificação rápida:
-- "OK", "SIM", "TOPA", "MANDA" → sentimento positivo, etapa proposta
-- "NÃO", "RECUSO", "DELETAR" → sentimento negativo, etapa perdido  
-- Pergunta sobre preço/info → sentimento positivo, etapa lead
-- Empresa/fornecedor respondendo → sentimento fornecedor, etapa fornecedor
-- Só confirmou recebimento → sentimento neutro, etapa automatico
+REGRAS DE CLASSIFICAÇÃO - SIGA EXATAMENTE:
+1. "OK", "SIM", "TOPA", "MANDA", qualquer aprovação → etapa "proposta", sentimento "positivo"
+2. "NÃO", "RECUSO", "CANCELAR", rejeição → etapa "perdido", sentimento "negativo"
+3. "QUANTO", "PREÇO", "VALOR" → etapa "lead", sentimento "positivo"
+4. AUTOMÁTICA, "BREVE", "DEIXE SEU CONTATO", "ENTRO EM CONTATO", mensagens automáticas → etapa "fornecedor", sentimento "fornecedor"
+5. Empresa/fornecedor/NF/protocolo/CNPJ → etapa "fornecedor", sentimento "fornecedor"
+6. Só confirmou recebimento → etapa "automatico", sentimento "neutro"
 
-Responda APENAS com JSON válido (sem markdown, sem código blocks):
+Responda APENAS com JSON (sem markdown):
 {"sentimento":"positivo","confianca":90,"motivo":"Respondeu OK","etapa":"proposta","sugestao":"Enviar simulador"}`;
 
     const response = await client.chat.completions.create({
