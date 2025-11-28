@@ -717,22 +717,18 @@ export default function Clientes() {
                         </TableCell>
                         <TableCell className="cursor-pointer">
                           <Link href={`/clientes/${cliente.id}`}>
-                            <div className="space-y-1">
-                              <div className="font-semibold text-base text-slate-900 dark:text-white" data-testid={`text-cliente-nome-${cliente.id}`}>
-                                {cliente.nome}
-                              </div>
+                            <div>
+                              <div className="font-medium text-slate-900 dark:text-white">{cliente.nome}</div>
                               {cliente.razaoSocial && (
-                                <div className="text-sm font-medium text-slate-700 dark:text-slate-300" data-testid={`text-razao-social-${cliente.id}`}>
+                                <div className="text-sm text-slate-600 dark:text-slate-400">
                                   {cliente.razaoSocial}
                                 </div>
                               )}
                             </div>
                           </Link>
                         </TableCell>
-                        <TableCell>
-                          <div className="font-mono font-semibold text-sm text-slate-900 dark:text-white" data-testid={`text-cnpj-${cliente.id}`}>
-                            {cliente.cpfCnpj || '-'}
-                          </div>
+                        <TableCell className="font-mono text-sm text-slate-700 dark:text-slate-300">
+                          {cliente.cpfCnpj || '-'}
                         </TableCell>
                         <TableCell className="text-sm text-slate-700 dark:text-slate-300">
                           {formatPhoneNumber(cliente.CELULAR_PRINCIPAL || cliente.telefone)}
