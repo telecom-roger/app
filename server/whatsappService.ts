@@ -9,6 +9,7 @@ import * as storage from "./storage";
 import { db } from "./db";
 import { or, ilike, eq } from "drizzle-orm";
 import { clients as clientsTable } from "@shared/schema";
+import { analyzeClientMessage } from "./aiService";
 
 const execAsync = promisify(exec);
 
@@ -300,6 +301,51 @@ async function processIncomingMessages(sessionId: string, m: any) {
         });
 
         console.log(`📥 ✅ RECEBIDO E SALVO DE ${senderPhone}: "${conteudo}"`);
+
+        // 🤖 IA: Analisar mensagem e criar/mover oportunidade automaticamente
+        if (tipo === "texto" && conteudo && conversation.clientId) {
+          try {
+            console.log(`\n🤖 Iniciando análise com IA...`);
+            const analysis = await analyzeClientMessage(conteudo, {
+              nome: conversation.client?.nome,
+              razaoSocial: conversation.client?.razaoSocial,
+            });
+
+            // Procurar por oportunidade existente
+            const existingOpps = await storage.getOpportunities({
+              userId,
+              etapa: undefined,
+            });
+            const existingOpp = existingOpps.find((o) => o.clientId === conversation.clientId);
+
+            if (existingOpp && existingOpp.etapa !== analysis.etapa) {
+              // Mover oportunidade existente
+              await storage.updateOpportunity(existingOpp.id, {
+                etapa: analysis.etapa,
+              });
+              console.log(`✅ Oportunidade MOVIDA para: ${analysis.etapa} (${analysis.motivo})`);
+            } else if (!existingOpp && analysis.etapa !== "automatico") {
+              // Criar nova oportunidade se não existir
+              const novaOpp = await storage.createOpportunity({
+                clientId: conversation.clientId,
+                titulo: `${conversation.client?.razaoSocial || conversation.client?.nome} - Resposta IA`,
+                etapa: analysis.etapa,
+                responsavelId: userId,
+              });
+              console.log(`✨ Oportunidade CRIADA em: ${analysis.etapa}`);
+            }
+
+            // Notificar vendedor
+            await storage.createNotification({
+              titulo: `🤖 IA: ${analysis.sentimento.toUpperCase()}`,
+              descricao: `${analysis.motivo}. Sugestão: ${analysis.sugestao}`,
+              clientId: conversation.clientId,
+              userId,
+            });
+          } catch (error) {
+            console.error(`⚠️ Erro ao processar IA:`, error);
+          }
+        }
       } catch (error) {
         console.error(`[RECEBIMENTO] Erro ao processar:`, error);
       }
