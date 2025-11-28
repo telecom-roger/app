@@ -187,8 +187,10 @@ export default function Kanban() {
 
   // Filtrar oportunidades por responsável e data
   const oportunidadesFiltradas = (oportunidades || []).filter(op => {
-    // Filtro responsável
-    if (filtroResponsavel !== "todos" && op.responsavelId !== filtroResponsavel) return false;
+    // Filtro responsável - se filtro está ativo E responsável é diferente, exclui
+    if (filtroResponsavel !== "todos") {
+      if (op.responsavelId !== filtroResponsavel) return false;
+    }
     
     // Filtro data
     if (filtroDataInicio && op.createdAt && new Date(op.createdAt) < new Date(filtroDataInicio)) return false;
@@ -413,7 +415,7 @@ function KanbanColumn({
     setIsDragOver(false);
 
     if (draggedCard && draggedCard.id) {
-      onMoveCard(draggedCard.id, coluna.id);
+      onMoveCard(draggedCard.id, coluna.titulo);
     }
   };
 
