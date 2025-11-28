@@ -216,10 +216,10 @@ export default function ClienteForm() {
                 name="nome"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome *</FormLabel>
+                    <FormLabel>Razão Social *</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Nome do cliente"
+                        placeholder="Razão Social"
                         {...field}
                         data-testid="input-nome-cliente"
                       />
@@ -235,10 +235,10 @@ export default function ClienteForm() {
                   name="razaoSocial"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Razão Social</FormLabel>
+                      <FormLabel>Nome do Cliente</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Razão social"
+                          placeholder="Nome do cliente"
                           {...field}
                           data-testid="input-razao-social"
                         />
@@ -415,10 +415,10 @@ export default function ClienteForm() {
                   name="contato"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Pessoa de Contato</FormLabel>
+                      <FormLabel>Nome do Cliente</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Nome do contato"
+                          placeholder="Nome do cliente"
                           {...field}
                           data-testid="input-contato"
                         />
