@@ -10,6 +10,7 @@ export default function TestAutomation() {
   const [clientId, setClientId] = useState("");
   const [userId, setUserId] = useState("");
   const [message, setMessage] = useState("Ótimo! Gostei da proposta");
+  const [contractReminderResult, setContractReminderResult] = useState<any>(null);
 
   // Get clients and users list
   const { data: testData = { clients: [], users: [] }, isLoading: loadingTestData } = useQuery({
@@ -41,6 +42,24 @@ export default function TestAutomation() {
       toast({ title: "✅ Teste simulado com sucesso!", description: data.message });
       refetchTestOpps();
       setMessage("Ótimo! Gostei da proposta");
+    },
+    onError: (error: any) => {
+      toast({ title: "❌ Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Test contract reminder (1 minute timeout)
+  const contractReminderMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/test/contract-reminder", {
+        clientId,
+        userId,
+      });
+    },
+    onSuccess: (data) => {
+      setContractReminderResult(data);
+      toast({ title: "✅ Contract Reminder testado!", description: `${data.tasks_created} tasks criadas` });
+      refetchTestOpps();
     },
     onError: (error: any) => {
       toast({ title: "❌ Erro", description: error.message, variant: "destructive" });
@@ -167,19 +186,79 @@ export default function TestAutomation() {
         )}
       </Card>
 
+      {/* Contract Reminder Test Section */}
+      <Card className="p-6 bg-slate-800 border-orange-500/20">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-white">3️⃣ Teste Contract Reminder (1 min)</h2>
+          <span className="text-xs text-orange-400 bg-orange-500/10 px-2 py-1 rounded">PROPOSTA ENVIADA</span>
+        </div>
+
+        <p className="text-slate-300 mb-4 text-xs">
+          Cria uma opportunity em PROPOSTA ENVIADA com timestamp de 1 minuto atrás e executa o job automaticamente
+        </p>
+
+        <Button
+          onClick={() => contractReminderMutation.mutate()}
+          disabled={contractReminderMutation.isPending || !clientId || !userId}
+          className="w-full bg-orange-600 hover:bg-orange-700 mb-4"
+          data-testid="button-test-contract-reminder"
+        >
+          {contractReminderMutation.isPending ? "Executando..." : "📋 Testar Contract Reminder"}
+        </Button>
+
+        {contractReminderResult && (
+          <div className="space-y-3 text-xs">
+            <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded">
+              <p className="text-orange-300 font-bold">✅ {contractReminderResult.message}</p>
+              {contractReminderResult.opportunity && (
+                <>
+                  <p className="text-slate-300">Opportunity: <span className="text-green-400">{contractReminderResult.opportunity.etapa}</span></p>
+                  <p className="text-slate-300">ID: <span className="text-slate-400 text-xs">{contractReminderResult.opportunity.id?.slice(0, 8)}</span></p>
+                </>
+              )}
+              <p className="text-slate-300">Tasks criadas: <span className="text-blue-400">{contractReminderResult.tasks_created}</span></p>
+              <p className="text-slate-300">Mensagens: <span className="text-purple-400">{contractReminderResult.messages_sent}</span></p>
+            </div>
+
+            {contractReminderResult.details && contractReminderResult.details.tasks && contractReminderResult.details.tasks.length > 0 && (
+              <div className="p-3 bg-slate-700/30 border border-slate-600/30 rounded">
+                <p className="text-slate-300 font-bold mb-2">📋 Tasks Criadas:</p>
+                <div className="space-y-1 max-h-40 overflow-y-auto">
+                  {contractReminderResult.details.tasks.map((task: any, idx: number) => (
+                    <div key={idx} className="text-slate-400 text-xs">
+                      • {task.tipo} - {task.status}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
+
       {/* Instructions */}
       <Card className="p-6 bg-slate-800 border-slate-700">
         <h3 className="text-lg font-bold text-white mb-3">📖 Como Usar:</h3>
         <div className="space-y-4 text-sm text-slate-300">
-          <p>1️⃣ <span className="text-purple-300 font-bold">Selecione</span> um cliente e um vendedor</p>
-          <p>2️⃣ <span className="text-purple-300 font-bold">Digite</span> uma mensagem de resposta do cliente</p>
-          <p>3️⃣ <span className="text-purple-300 font-bold">Clique</span> em "🚀 Simular IA"</p>
-          <p>4️⃣ <span className="text-green-300 font-bold">Automaticamente</span> a IA analisa e cria uma oportunidade na etapa correta</p>
-          <p className="mt-3 text-xs text-slate-400">Exemplos de mensagens:</p>
+          <div>
+            <p className="font-bold text-purple-300 mb-2">Teste 1 - Simular IA:</p>
+            <p>1️⃣ <span className="text-purple-300 font-bold">Selecione</span> um cliente e um vendedor</p>
+            <p>2️⃣ <span className="text-purple-300 font-bold">Digite</span> uma mensagem de resposta do cliente</p>
+            <p>3️⃣ <span className="text-purple-300 font-bold">Clique</span> em "🚀 Simular IA"</p>
+            <p>4️⃣ <span className="text-green-300 font-bold">Automaticamente</span> a IA analisa e cria uma oportunidade</p>
+          </div>
+          <div>
+            <p className="font-bold text-orange-300 mb-2">Teste 2 - Contract Reminder:</p>
+            <p>1️⃣ <span className="text-orange-300 font-bold">Selecione</span> um cliente e um vendedor</p>
+            <p>2️⃣ <span className="text-orange-300 font-bold">Clique</span> em "📋 Testar Contract Reminder"</p>
+            <p>3️⃣ <span className="text-green-300 font-bold">Sistema cria</span> opportunity em PROPOSTA ENVIADA</p>
+            <p>4️⃣ <span className="text-green-300 font-bold">Job executa</span> e envia cobrança automática (1 minuto = 2h real)</p>
+          </div>
+          <p className="mt-3 text-xs text-slate-400">Exemplos de mensagens (IA):</p>
           <ul className="list-disc list-inside text-xs text-slate-400 ml-2 space-y-1">
             <li>"OK, quero levar!" → <span className="text-green-300">Proposta</span></li>
             <li>"Não tenho interesse" → <span className="text-red-300">Perdido</span></li>
-            <li>"Qual o preço?" → <span className="text-blue-300">Lead</span></li>
+            <li>"Qual o preço?" → <span className="text-blue-300">Contato</span></li>
             <li>"Aqui é o fornecedor com NF" → <span className="text-yellow-300">Fornecedor</span></li>
           </ul>
         </div>
