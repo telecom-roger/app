@@ -52,7 +52,7 @@ export function ChatNotificationBell() {
 
   const handleViewClient = (clientId: string | undefined) => {
     if (clientId) {
-      navigate(`/clientes/${clientId}`);
+      navigate(`/clientes/${clientId}/editar`);
       setOpen(false);
     }
   };
