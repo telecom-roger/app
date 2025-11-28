@@ -6,13 +6,16 @@ import { automationTasks, followUps, clientScores, opportunities, messages } fro
 // ======================== TESTE RÁPIDO: Intervalos pequenos para teste ========================
 export async function createTestFollowUps(clientId: string, userId: string, conversationId: string) {
   try {
-    console.log(`🧪 [TEST MODE] Criando follow-ups de teste (1, 2, 3 minutos)...`);
+    console.log(`🧪 [TEST MODE] Criando follow-ups de teste (execução imediata)...`);
 
+    const now = new Date();
+    
     await db.insert(automationTasks).values({
       userId,
       clientId,
       tipo: "follow_up",
-      proximaExecucao: new Date(Date.now() + 1 * 60 * 1000),
+      status: "pendente",
+      proximaExecucao: new Date(now.getTime() - 10 * 1000), // 10 segundos no passado = EXECUTA AGORA
       dados: { numero: 1, conversationId, dias: 1 },
     });
 
@@ -20,7 +23,8 @@ export async function createTestFollowUps(clientId: string, userId: string, conv
       userId,
       clientId,
       tipo: "follow_up",
-      proximaExecucao: new Date(Date.now() + 2 * 60 * 1000),
+      status: "pendente",
+      proximaExecucao: new Date(now.getTime() - 5 * 1000), // 5 segundos no passado = EXECUTA AGORA
       dados: { numero: 2, conversationId, dias: 2 },
     });
 
@@ -28,11 +32,12 @@ export async function createTestFollowUps(clientId: string, userId: string, conv
       userId,
       clientId,
       tipo: "follow_up",
-      proximaExecucao: new Date(Date.now() + 3 * 60 * 1000),
+      status: "pendente",
+      proximaExecucao: new Date(now.getTime()), // AGORA
       dados: { numero: 3, conversationId, dias: 3 },
     });
 
-    console.log(`✅ Follow-ups de teste criados (1min, 2min, 3min)`);
+    console.log(`✅ Follow-ups de teste criados (execução imediata)`);
   } catch (error) {
     console.error(`❌ Erro:`, error);
     throw error;
@@ -54,12 +59,15 @@ export async function createTestKanbanMovement(clientId: string, userId: string)
       where: (o: any) => and(eq(o.clientId, clientId), eq(o.etapa, "lead")),
     });
 
+    const now = new Date();
+    
     if (opp1) {
       await db.insert(automationTasks).values({
         userId,
         clientId,
         tipo: "kanban_move",
-        proximaExecucao: new Date(Date.now() + 1 * 60 * 1000),
+        status: "pendente",
+        proximaExecucao: new Date(now.getTime() - 10 * 1000), // 10 segundos no passado = EXECUTA AGORA
         dados: { oppId: opp1.id, fromStage: "lead", toStage: "contato" },
       });
     }
@@ -73,7 +81,8 @@ export async function createTestKanbanMovement(clientId: string, userId: string)
         userId,
         clientId,
         tipo: "kanban_move",
-        proximaExecucao: new Date(Date.now() + 2 * 60 * 1000),
+        status: "pendente",
+        proximaExecucao: new Date(now.getTime() - 5 * 1000), // 5 segundos no passado = EXECUTA AGORA
         dados: { oppId: opp2.id, fromStage: "contato", toStage: "proposta" },
       });
     }
@@ -87,7 +96,8 @@ export async function createTestKanbanMovement(clientId: string, userId: string)
         userId,
         clientId,
         tipo: "kanban_move",
-        proximaExecucao: new Date(Date.now() + 3 * 60 * 1000),
+        status: "pendente",
+        proximaExecucao: new Date(now.getTime()), // AGORA
         dados: { oppId: opp3.id, fromStage: "proposta", toStage: "fechado" },
       });
     }

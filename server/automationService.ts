@@ -315,14 +315,14 @@ export async function createFollowUpAfterResponse(clientId: string, userId: stri
   }
 }
 
-// ======================== SCHEDULER DE CRON (executar a cada 5 minutos) ========================
+// ======================== SCHEDULER DE CRON (executar a cada 30 segundos) ========================
 export function startAutomationCron() {
   console.log(`\n⏰ [AUTOMATION CRON] Iniciando scheduler...`);
   
-  // Executar a cada 5 minutos
+  // Executar a cada 30 segundos (para testes rápidos)
   const interval = setInterval(() => {
     processAutomationTasks().catch(console.error);
-  }, 5 * 60 * 1000);
+  }, 30 * 1000);
 
   // Executar também na inicialização
   processAutomationTasks().catch(console.error);

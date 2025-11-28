@@ -48,7 +48,7 @@ The application features a professional design system utilizing a deep dark blue
 ## 🚀 FASE 4 IMPLEMENTADA - ESTRUTURA DE AUTOMAÇÃO (Nov 28, 16:40)
 
 **3 Novas Tabelas:**
-- `automation_tasks` - Agendador de tarefas (follow-up, re-engagement, scoring, auto-send)
+- `automation_tasks` - Agendador de tarefas (follow-up, re-engagement, scoring, auto-send, kanban_move)
 - `follow_ups` - Histórico de follow-ups (1º, 2º, 3º com status)  
 - `client_scores` - Scoring automático (4 métricas: IA, Contato, Engajamento, Potencial)
 
@@ -57,17 +57,24 @@ The application features a professional design system utilizing a deep dark blue
 - `executeFollowUp()` - Follow-ups automáticos 1, 3, 7 dias
 - `executeReEngagement()` - Re-engaja clientes inativos > 30 dias
 - `updateClientScore()` - Calcula score total (0-100)
-- `startAutomationCron()` - Cron a cada 5 minutos
+- `executeKanbanMove()` - Move oportunidades automáticamente entre estágios
+- `startAutomationCron()` - Cron a cada 30 segundos
 
 **Integração:**
 - ✅ automationService inicializado em app.ts
 - ✅ npm run db:push executado com sucesso
-- ✅ Cron jobs rodando a cada 5 minutos
+- ✅ Cron jobs rodando a cada 30 segundos (otimizado para testes)
 - ✅ Banco de dados sincronizado
+- ✅ Tarefas kanban_move criadas com `proximaExecucao` no passado para execução imediata
 
 **Fluxo Automático Completo:**
 Cliente responde → IA analisa → Move Kanban → Cria 3 follow-ups automáticos → Score atualizado → Vendedor notificado → Re-engagement se inativo
 
+**Teste de Kanban Move (Nov 28, 16:59):**
+- ✅ Endpoint `/api/test/kanban-movement` funcional
+- ✅ 3 oportunidades (lead→contato→proposta→fechado) movidas automaticamente
+- ✅ Cron Job executa tarefas em ~30 segundos após criação
+
 ---
 
-**Status:** ✅ Estrutura de Automação OPERACIONAL
+**Status:** ✅ Estrutura de Automação OPERACIONAL - Kanban Move TESTADO E CONFIRMADO
