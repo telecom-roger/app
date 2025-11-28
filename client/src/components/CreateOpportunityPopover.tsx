@@ -20,6 +20,14 @@ interface Tag {
   nome: string;
 }
 
+const ETAPA_LABELS: Record<string, string> = {
+  lead: "Lead",
+  contato: "Contato",
+  proposta: "Proposta",
+  fechado: "Fechado",
+  perdido: "Perdido",
+};
+
 export function CreateOpportunityPopover({ client }: CreateOpportunityPopoverProps) {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -50,14 +58,13 @@ export function CreateOpportunityPopover({ client }: CreateOpportunityPopoverPro
     onSuccess: async (opp) => {
       // Create interaction/timeline entry
       try {
-        const now = new Date();
-        const dataFormatada = now.toLocaleString("pt-BR");
+        const etapaLabel = ETAPA_LABELS[etapa] || etapa;
         await apiRequest("POST", `/api/interactions`, {
           clientId: client.id,
           tipo: "oportunidade_criada",
           origem: "user",
-          titulo: `Oportunidade criada: ${etapa}`,
-          texto: `Nova oportunidade criada em ${dataFormatada}. Título: ${titulo || client.razaoSocial || client.nome}${valor ? `. Valor: ${valor}` : ""}`,
+          titulo: `Oportunidade de Negócio - ${etapaLabel}`,
+          texto: `${valor ? `Valor: ${valor}` : ""}`,
           meta: {
             opportunityId: opp.id,
             etapa,

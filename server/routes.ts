@@ -877,6 +877,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/interactions", isAuthenticated, async (req, res) => {
+    try {
+      const { clientId, tipo, origem, titulo, texto, meta, createdBy } = req.body;
+      
+      if (!clientId || !tipo) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const interaction = await storage.createInteraction({
+        clientId,
+        tipo,
+        origem: origem || "user",
+        titulo,
+        texto,
+        meta: meta || {},
+        createdBy: createdBy || (req.user as any).id,
+      });
+
+      res.status(201).json(interaction);
+    } catch (error: any) {
+      console.error("Error creating interaction:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // ==================== IMPORT ROUTES ====================
   app.post("/api/import/clients", isAuthenticated, async (req, res) => {
     try {
