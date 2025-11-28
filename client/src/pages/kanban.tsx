@@ -35,13 +35,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, GripVertical, User, DollarSign, Trash2, Edit2, TrendingUp, Zap } from "lucide-react";
-import type { Opportunity } from "@shared/schema";
+import { Plus, GripVertical, User, DollarSign, Trash2, Edit2, TrendingUp, Zap, Settings } from "lucide-react";
+import type { Opportunity, KanbanStage } from "@shared/schema";
 import { insertOpportunitySchema } from "@shared/schema";
 
-const defaultColunas = [
-  { id: "fechado", titulo: "Fechado", cor: "bg-green-500" },
-  { id: "perdido", titulo: "Perdido", cor: "bg-red-500" },
+const DEFAULT_STAGES = [
+  { id: "lead", titulo: "Lead", ordem: 1 },
+  { id: "contato", titulo: "Contato", ordem: 2 },
+  { id: "proposta", titulo: "Proposta", ordem: 3 },
+  { id: "fechado", titulo: "Fechado", ordem: 4 },
+  { id: "perdido", titulo: "Perdido", ordem: 5 },
 ];
 
 // Função para extrair número de valores em qualquer formato
@@ -95,7 +98,6 @@ export default function Kanban() {
   const [showNovaOportunidade, setShowNovaOportunidade] = useState(false);
   const [editingOportunidade, setEditingOportunidade] = useState<Opportunity | null>(null);
   const [draggedCard, setDraggedCard] = useState<{ id: string; fromEtapa: string } | null>(null);
-  const [colunas, setColunas] = useState(defaultColunas);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -110,6 +112,12 @@ export default function Kanban() {
     }
   }, [isAuthenticated, authLoading, toast]);
 
+  // Fetch kanban stages
+  const { data: stages = [] } = useQuery<KanbanStage[]>({
+    queryKey: ["/api/kanban-stages"],
+    enabled: isAuthenticated,
+  });
+
   const { data: oportunidades, isLoading } = useQuery<Opportunity[]>({
     queryKey: ["/api/opportunities"],
     enabled: isAuthenticated,
@@ -120,26 +128,8 @@ export default function Kanban() {
     enabled: isAuthenticated,
   });
 
-  const { data: tagsData } = useQuery<any[]>({
-    queryKey: ["/api/tags"],
-    enabled: isAuthenticated,
-  });
-
   const clientes = clientesData?.clientes || [];
-  const tags = tagsData || [];
-
-  // Combinar colunas padrão com tags
-  useEffect(() => {
-    const tagsAsColunas = tags.map((tag: any) => ({
-      id: tag.nome,  // Usar nome como id (match com op.etapa)
-      titulo: tag.nome,
-      cor: tag.cor,
-    }));
-    
-    // Manter as colunas padrão E adicionar as tags como colunas adicionais
-    const todasAsColunas = [...defaultColunas, ...tagsAsColunas];
-    setColunas(todasAsColunas);
-  }, [tags]);
+  const colunas = stages.length > 0 ? stages.sort((a, b) => a.ordem - b.ordem) : DEFAULT_STAGES;
 
   const moveCardMutation = useMutation({
     mutationFn: async ({ id, etapa }: { id: string; etapa: string }) => {

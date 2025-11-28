@@ -902,6 +902,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== KANBAN STAGES ROUTES ====================
+  app.get("/api/kanban-stages", isAuthenticated, async (req, res) => {
+    try {
+      const stages = await storage.getAllKanbanStages();
+      res.json(stages);
+    } catch (error: any) {
+      console.error("Error fetching kanban stages:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.put("/api/kanban-stages/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { titulo, descricao, ordem } = req.body;
+      const updated = await storage.updateKanbanStage(req.params.id, { titulo, descricao, ordem });
+      if (!updated) {
+        return res.status(404).json({ error: "Stage not found" });
+      }
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error updating kanban stage:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/kanban-stages", isAuthenticated, async (req, res) => {
+    try {
+      const { titulo, descricao, ordem } = req.body;
+      const stage = await storage.createKanbanStage({ titulo, descricao, ordem: ordem || 0 });
+      res.status(201).json(stage);
+    } catch (error: any) {
+      console.error("Error creating kanban stage:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/kanban-stages/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteKanbanStage(req.params.id);
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting kanban stage:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // ==================== IMPORT ROUTES ====================
   app.post("/api/import/clients", isAuthenticated, async (req, res) => {
     try {

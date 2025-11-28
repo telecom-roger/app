@@ -20,6 +20,7 @@ import Clientes from "@/pages/clientes";
 import ClienteForm from "@/pages/cliente-form";
 import ClienteProfile from "@/pages/cliente-profile";
 import Kanban from "@/pages/kanban";
+import KanbanSettings from "@/pages/kanban-settings";
 import Campanhas from "@/pages/campanhas";
 import CampanhaNova from "@/pages/campanhas-nova";
 import CampanhasWhatsApp from "@/pages/campanhas-whatsapp";
@@ -50,6 +51,7 @@ function Router({ isAuthenticated }: { isAuthenticated: boolean }) {
       <Route path="/clientes/:id" component={ClienteProfile} />
       <Route path="/clientes/editar/:id" component={ClienteForm} />
       <Route path="/oportunidades" component={Kanban} />
+      <Route path="/kanban-settings" component={KanbanSettings} />
       <Route path="/campanhas" component={Campanhas} />
       <Route path="/campanhas/nova" component={CampanhaNova} />
       <Route path="/campanhas/whatsapp" component={CampanhasWhatsApp} />
