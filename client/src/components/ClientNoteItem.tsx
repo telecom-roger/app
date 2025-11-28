@@ -82,13 +82,13 @@ export function ClientNoteItem({ note, clientId }: ClientNoteItemProps) {
   if (isEditing) {
     return (
       <Card className="hover-elevate bg-card border-border">
-        <CardContent className="pt-4">
-          <div className="space-y-3">
+        <CardContent className="pt-3 pb-3">
+          <div className="space-y-2">
             <Textarea
               value={conteudo}
               onChange={(e) => setConteudo(e.target.value)}
               onBlur={() => handleSaveField("conteudo")}
-              className="min-h-20"
+              className="min-h-16 text-xs"
               data-testid={`edit-textarea-${note.id}`}
             />
             <div>
@@ -98,6 +98,7 @@ export function ClientNoteItem({ note, clientId }: ClientNoteItemProps) {
                 value={dataPlanejada}
                 onChange={(e) => setDataPlanejada(e.target.value)}
                 onBlur={() => handleSaveField("data")}
+                className="text-xs h-8"
                 data-testid={`edit-date-${note.id}`}
               />
             </div>
@@ -110,6 +111,7 @@ export function ClientNoteItem({ note, clientId }: ClientNoteItemProps) {
                   setDataPlanejada(note.createdAt ? new Date(note.createdAt).toISOString().slice(0, 16) : "");
                   setIsEditing(false);
                 }}
+                className="text-xs h-7"
                 data-testid={`button-cancelar-${note.id}`}
               >
                 Cancelar
@@ -121,6 +123,7 @@ export function ClientNoteItem({ note, clientId }: ClientNoteItemProps) {
                   setIsEditing(false);
                 }}
                 disabled={updateMutation.isPending}
+                className="text-xs h-7"
                 data-testid={`button-salvar-${note.id}`}
               >
                 {updateMutation.isPending ? "Salvando..." : "Salvar"}
@@ -138,16 +141,16 @@ export function ClientNoteItem({ note, clientId }: ClientNoteItemProps) {
       onClick={() => setIsEditing(true)}
       data-testid={`card-note-${note.id}`}
     >
-      <CardContent className="pt-4">
-        <div className="flex gap-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary flex-shrink-0">
+      <CardContent className="pt-3 pb-3">
+        <div className="flex gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-primary flex-shrink-0 text-xs">
             {getIcon()}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-muted-foreground mb-1">
+            <p className="text-xs text-muted-foreground mb-0.5">
               {new Date(note.createdAt).toLocaleString('pt-BR')}
             </p>
-            <p className="text-sm font-medium break-words">{note.conteudo}</p>
+            <p className="text-xs font-medium break-words leading-snug">{note.conteudo}</p>
           </div>
           <Button
             size="icon"
