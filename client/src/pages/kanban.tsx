@@ -212,7 +212,7 @@ export default function Kanban() {
 
   const oportunidadesPorEtapaFiltradas = colunas.map(coluna => ({
     ...coluna,
-    oportunidades: oportunidadesFiltradas.filter(op => op.etapa === coluna.titulo),
+    oportunidades: oportunidadesFiltradas.filter(op => op.etapa?.toLowerCase() === coluna.titulo.toLowerCase()),
   }));
 
   if (authLoading || !isAuthenticated) {
