@@ -52,11 +52,19 @@ export function AddClientNote({ clientId }: AddClientNoteProps) {
       return;
     }
 
+    if ((tipo === "atividade" || tipo === "agendamento") && !dataPlanejada) {
+      toast({
+        title: "Erro",
+        description: "Data é obrigatória para " + (tipo === "atividade" ? "atividade" : "agendamento"),
+        variant: "destructive",
+      });
+      return;
+    }
+
     mutation.mutate({
-      tipo,
+      tipo: tipo as "comentario" | "atividade" | "agendamento",
       conteudo,
       dataPlanejada: dataPlanejada ? new Date(dataPlanejada).toISOString() : null,
-      cor: "bg-blue-500",
     });
   };
 

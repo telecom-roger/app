@@ -18,7 +18,7 @@ export function ClientNoteItem({ note, clientId }: ClientNoteItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [conteudo, setConteudo] = useState(note.conteudo);
   const [dataPlanejada, setDataPlanejada] = useState(
-    note.createdAt ? new Date(note.createdAt).toISOString().slice(0, 16) : ""
+    note.dataPlanejada ? new Date(note.dataPlanejada).toISOString().slice(0, 16) : ""
   );
   const { toast } = useToast();
 
@@ -26,13 +26,15 @@ export function ClientNoteItem({ note, clientId }: ClientNoteItemProps) {
     mutationFn: async (data: { conteudo?: string; dataPlanejada?: string }) => {
       await apiRequest("PATCH", `/api/client-notes/${note.id}`, {
         conteudo: data.conteudo ?? conteudo,
-        cor: note.cor,
+        dataPlanejada: data.dataPlanejada ? new Date(data.dataPlanejada).toISOString() : null,
+        tipo: note.tipo,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/timeline", clientId] });
       queryClient.invalidateQueries({ queryKey: ["/api/client-notes", clientId] });
       setIsEditing(false);
+      toast({ title: "Sucesso", description: "Observação atualizada!" });
     },
     onError: (error: any) => {
       toast({
@@ -46,7 +48,7 @@ export function ClientNoteItem({ note, clientId }: ClientNoteItemProps) {
   const handleSaveField = (field: "conteudo" | "data") => {
     if (field === "conteudo" && conteudo.trim() !== note.conteudo) {
       updateMutation.mutate({ conteudo });
-    } else if (field === "data" && dataPlanejada !== note.createdAt) {
+    } else if (field === "data" && dataPlanejada) {
       updateMutation.mutate({ dataPlanejada });
     }
   };
@@ -69,11 +71,12 @@ export function ClientNoteItem({ note, clientId }: ClientNoteItemProps) {
   });
 
   const getIcon = () => {
-    switch (note.cor) {
-      case "bg-green-500":
+    switch (note.tipo) {
+      case "atividade":
         return <CheckCircle2 className="h-5 w-5" />;
-      case "bg-orange-500":
+      case "agendamento":
         return <Calendar className="h-5 w-5" />;
+      case "comentario":
       default:
         return <MessageSquare className="h-5 w-5" />;
     }
@@ -108,7 +111,7 @@ export function ClientNoteItem({ note, clientId }: ClientNoteItemProps) {
                 size="sm"
                 onClick={() => {
                   setConteudo(note.conteudo);
-                  setDataPlanejada(note.createdAt ? new Date(note.createdAt).toISOString().slice(0, 16) : "");
+                  setDataPlanejada(note.dataPlanejada ? new Date(note.dataPlanejada).toISOString().slice(0, 16) : "");
                   setIsEditing(false);
                 }}
                 className="text-xs h-7"
@@ -165,9 +168,9 @@ export function ClientNoteItem({ note, clientId }: ClientNoteItemProps) {
               <p className="text-[10px] text-muted-foreground">
                 {formatDateWithoutSeconds(note.createdAt)}
               </p>
-              {note.dataPlanejada && (
+              {note.tipo === "agendamento" && note.dataPlanejada && (
                 <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">
-                  Ag: {formatDateWithoutSeconds(note.dataPlanejada)}
+                  📅 {formatDateWithoutSeconds(note.dataPlanejada)}
                 </p>
               )}
             </div>

@@ -433,6 +433,8 @@ export const clientNotes = pgTable("client_notes", {
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
   conteudo: text("conteudo").notNull(),
+  tipo: varchar("tipo", { length: 20 }).notNull().default("comentario"), // comentario, atividade, agendamento
+  dataPlanejada: timestamp("data_planejada"), // for agendamento type
   cor: varchar("cor", { length: 20 }).default("bg-blue-500"), // color class for badge
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -448,6 +450,8 @@ export const insertClientNoteSchema = createInsertSchema(clientNotes).omit({
   updatedAt: true,
 }).extend({
   conteudo: z.string().min(1, "Nota não pode estar vazia").max(500, "Nota muito longa"),
+  tipo: z.enum(["comentario", "atividade", "agendamento"]).optional(),
+  dataPlanejada: z.date().optional().nullable(),
   cor: z.string().optional(),
 });
 
