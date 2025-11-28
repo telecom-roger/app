@@ -338,15 +338,34 @@ async function executeContractReminder(task: any) {
   
   console.log(`💬 Enviando cobrança de contrato - Dia ${daysSinceCreation} para ${client.nome}`);
   
-  // Mensagens naturais progressivas - SEM nome do cliente, usando CTAs assertivas
-  const messages_templates: Record<number, string> = {
-    0: `Olá, tudo bem? Podemos seguir com a contratação? Caso tenha alguma dúvida é só me avisar.`,
-    1: `Oi, tudo bem? Vamos seguir com a renovação do plano? Ficou com alguma dúvida?`,
-    2: `Oi, tudo bem? Vamos seguir com a renovação do plano? Ficou com alguma dúvida?`,
-    3: `Oi, tudo bem? Vamos seguir com a renovação do plano? Ficou com alguma dúvida?`,
+  // Mensagens randomizadas por dia
+  const messages_templates: Record<number, string[]> = {
+    0: [
+      `Olá, tudo bem? Podemos seguir com a contratação? Caso tenha alguma dúvida é só me avisar.`,
+      `Oi, chegou bem? Vamos agendar a contratação? Qualquer dúvida, é só avisar!`,
+      `Olá! Tudo certo aí? Podemos prosseguir com a contratação?`,
+    ],
+    1: [
+      `Oi, tudo bem? Vamos seguir com a renovação do plano? Ficou com alguma dúvida?`,
+      `Oi! Só checando aqui - chegou tudo ok? Alguma dúvida na proposta?`,
+      `E aí? Tudo bem com a proposta? Vamos contratar?`,
+    ],
+    2: [
+      `Oi, tudo bem? Vamos seguir com a renovação do plano? Ficou com alguma dúvida?`,
+      `Chegou aqui o momento da decisão! Vamos prosseguir com a contratação?`,
+      `Está tudo pronto para contratar. Quando podemos começar?`,
+    ],
+    3: [
+      `Oi, tudo bem? Vamos seguir com a renovação do plano? Ficou com alguma dúvida?`,
+      `Última tentativa! Vamos contratar? Estamos aqui pra ajudar!`,
+      `Essa é a última mensagem - vamos fechar isso aí? Estamos esperando!`,
+    ],
   };
   
-  const mensagem = messages_templates[Math.min(daysSinceCreation, 3)] || messages_templates[3];
+  // Pegar array de mensagens do dia e randomizar
+  const dayMessages = messages_templates[Math.min(daysSinceCreation, 3)] || messages_templates[3];
+  const randomIndex = Math.floor(Math.random() * dayMessages.length);
+  const mensagem = dayMessages[randomIndex];
   
   // Registrar mensagem no banco
   await db.insert(messages).values({
