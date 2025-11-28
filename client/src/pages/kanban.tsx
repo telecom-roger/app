@@ -94,7 +94,6 @@ export default function Kanban() {
   const [filtroResponsavel, setFiltroResponsavel] = useState<string>("todos");
   const [filtroDataInicio, setFiltroDataInicio] = useState<string>("");
   const [filtroDataFim, setFiltroDataFim] = useState<string>("");
-  const [filtroTags, setFiltroTags] = useState<Set<string>>(new Set());
   const [showNovaOportunidade, setShowNovaOportunidade] = useState(false);
   const [editingOportunidade, setEditingOportunidade] = useState<Opportunity | null>(null);
   const [draggedCard, setDraggedCard] = useState<{ id: string; fromEtapa: string } | null>(null);
@@ -185,7 +184,7 @@ export default function Kanban() {
     },
   });
 
-  // Filtrar oportunidades por responsável, data e tags
+  // Filtrar oportunidades por responsável e data
   const oportunidadesFiltradas = (oportunidades || []).filter(op => {
     // Filtro responsável
     if (filtroResponsavel !== "todos" && op.responsavelId !== filtroResponsavel) return false;
@@ -193,13 +192,6 @@ export default function Kanban() {
     // Filtro data
     if (filtroDataInicio && op.createdAt && new Date(op.createdAt) < new Date(filtroDataInicio)) return false;
     if (filtroDataFim && op.createdAt && new Date(op.createdAt) > new Date(filtroDataFim)) return false;
-    
-    // Filtro tags - se filtroTags não vazio, só inclui se tem tag selecionada
-    if (filtroTags.size > 0) {
-      const clienteTags = clientes.find(c => c.id === op.clientId)?.tags || [];
-      const temTagSelecionada = clienteTags.some(tag => filtroTags.has(tag));
-      if (!temTagSelecionada) return false;
-    }
     
     return true;
   });
@@ -332,42 +324,6 @@ export default function Kanban() {
               </Button>
             </div>
 
-            {/* Filtro Tags */}
-            {tags.length > 0 && (
-              <div className="flex gap-2 flex-wrap items-center">
-                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Filtrar por Tags:</span>
-                <Button
-                  variant={filtroTags.size === 0 ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setFiltroTags(new Set())}
-                  className="h-8 text-xs"
-                  data-testid="button-limpar-filtro-tags"
-                >
-                  Todas
-                </Button>
-                {tags.map((tag: any) => (
-                  <Button
-                    key={tag.id}
-                    variant={filtroTags.has(tag.nome) ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => {
-                      const newTags = new Set(filtroTags);
-                      if (newTags.has(tag.nome)) {
-                        newTags.delete(tag.nome);
-                      } else {
-                        newTags.add(tag.nome);
-                      }
-                      setFiltroTags(newTags);
-                    }}
-                    className="h-8 px-2 text-xs rounded-full"
-                    data-testid={`button-filtro-tag-${tag.id}`}
-                    style={filtroTags.has(tag.nome) ? { backgroundColor: tag.cor } : {}}
-                  >
-                    {tag.nome}
-                  </Button>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Kanban Board */}
