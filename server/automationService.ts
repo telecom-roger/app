@@ -340,10 +340,10 @@ async function executeContractReminder(task: any) {
   
   // Mensagens naturais progressivas - SEM nome do cliente, usando CTAs assertivas
   const messages_templates: Record<number, string> = {
-    0: `Oi, tudo bem? Você recebeu a proposta? Pode confirmar o recebimento pra gente?`,
-    1: `Só para confirmar se chegou tudo bem aí. Ficou com alguma dúvida sobre a proposta?`,
-    2: `Podemos seguir com a contratação? Vamos fechar isso aí?`,
-    3: `Última tentativa! Vamos seguir com a contratação? Estamos aqui pra ajudar!`,
+    0: `Olá, tudo bem? Podemos seguir com a contratação? Caso tenha alguma dúvida é só me avisar.`,
+    1: `Oi, tudo bem? Vamos seguir com a renovação do plano? Ficou com alguma dúvida?`,
+    2: `Oi, tudo bem? Vamos seguir com a renovação do plano? Ficou com alguma dúvida?`,
+    3: `Oi, tudo bem? Vamos seguir com a renovação do plano? Ficou com alguma dúvida?`,
   };
   
   const mensagem = messages_templates[Math.min(daysSinceCreation, 3)] || messages_templates[3];
