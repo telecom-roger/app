@@ -32,16 +32,16 @@ Classificação rápida:
 Responda APENAS com JSON válido (sem markdown, sem código blocks):
 {"sentimento":"positivo","confianca":90,"motivo":"Respondeu OK","etapa":"proposta","sugestao":"Enviar simulador"}`;
 
-    const response = await client.messages.create({
+    const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       max_tokens: 300,
       messages: [{ role: "user", content: prompt }],
     });
 
-    const content = response.content[0];
-    if (content.type !== "text") throw new Error("Invalid response");
+    const messageContent = response.choices[0].message.content;
+    if (!messageContent) throw new Error("Empty response from AI");
 
-    const analysis = JSON.parse(content.text) as MessageAnalysis;
+    const analysis = JSON.parse(messageContent) as MessageAnalysis;
     console.log(`🤖 IA: ${analysis.sentimento} (${analysis.confianca}%) → ${analysis.etapa}`);
     return analysis;
   } catch (error) {
