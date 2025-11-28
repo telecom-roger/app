@@ -8,7 +8,7 @@ import * as storage from "./storage";
 import * as whatsappService from "./whatsappService";
 import { setupAuth, isAuthenticated } from "./localAuth";
 import { db } from "./db";
-import { simulateClientResponse, getAllAutomationTasks, getAllFollowUps, getAllClientScores, createTestFollowUps, createTestKanbanMovement } from "./testAutomation";
+import { simulateClientResponse, getAllAutomationTasks, getAllFollowUps, getAllClientScores, createTestFollowUps, createTestKanbanMovement, processBatchResponses } from "./testAutomation";
 
 // Track campaigns in progress
 const campanhasEmProgresso = new Map<string, {
@@ -2688,6 +2688,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const result = await simulateClientResponse(clientId, userId, messageText);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
+  app.post("/api/test/process-batch", async (req, res) => {
+    try {
+      const { userId, responses } = req.body;
+      
+      if (!userId || !Array.isArray(responses) || responses.length === 0) {
+        return res.status(400).json({ error: "userId e responses (array) são obrigatórios" });
+      }
+
+      const result = await processBatchResponses(userId, responses);
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: String(error) });

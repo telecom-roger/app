@@ -40,13 +40,12 @@ export default function TestAutomation() {
     onSuccess: (data) => {
       toast({ title: "✅ Teste simulado com sucesso!", description: data.message });
       refetchTestOpps();
+      setMessage("Ótimo! Gostei da proposta");
     },
     onError: (error: any) => {
       toast({ title: "❌ Erro", description: error.message, variant: "destructive" });
     },
   });
-
-
 
   // Get test opportunities
   const { data: testOpps = [], refetch: refetchTestOpps, isLoading: loadingTestOpps } = useQuery({
@@ -68,7 +67,7 @@ export default function TestAutomation() {
       {/* Input Section */}
       <Card className="p-6 bg-slate-800 border-purple-500/20">
         <h2 className="text-xl font-bold text-white mb-4">1️⃣ Simular Resposta do Cliente</h2>
-        
+
         {loadingTestData && <p className="text-slate-300 mb-4">Carregando clientes...</p>}
 
         <div className="space-y-4">
@@ -131,7 +130,7 @@ export default function TestAutomation() {
       {/* Test Opportunities Section */}
       <Card className="p-6 bg-slate-800 border-cyan-500/20">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-white">2️⃣ Oportunidades Criadas (Teste)</h2>
+          <h2 className="text-xl font-bold text-white">2️⃣ Oportunidades Criadas</h2>
           <Button
             onClick={() => refetchTestOpps()}
             variant="outline"
@@ -158,7 +157,9 @@ export default function TestAutomation() {
                   data-testid={`test-opp-${opp.id}`}
                 >
                   <p className="text-cyan-300 font-bold">{opp.titulo}</p>
-                  <p className="text-slate-300">Etapa: <span className="text-green-400">{opp.etapa}</span></p>
+                  <p className="text-slate-300">
+                    Etapa: <span className="text-green-400">{opp.etapa}</span>
+                  </p>
                   <p className="text-slate-400">R$: {opp.valorEstimado}</p>
                 </div>
               ))}

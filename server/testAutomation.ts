@@ -378,3 +378,36 @@ export async function simulateClientResponse(clientId: string, userId: string, m
     throw error;
   }
 }
+
+export async function processBatchResponses(userId: string, responses: Array<{ clientId: string; message: string }>) {
+  try {
+    console.log(`\n📦 [BATCH TEST] Processando ${responses.length} respostas...`);
+    
+    const results = [];
+    
+    for (const resp of responses) {
+      try {
+        const result = await simulateClientResponse(resp.clientId, userId, resp.message);
+        results.push({
+          clientId: resp.clientId,
+          success: true,
+          message: result.message,
+          analysis: result.analysis,
+        });
+      } catch (err) {
+        results.push({
+          clientId: resp.clientId,
+          success: false,
+          error: String(err),
+        });
+      }
+    }
+    
+    console.log(`✅ Batch concluído: ${results.filter((r: any) => r.success).length}/${responses.length} com sucesso`);
+    
+    return { success: true, results };
+  } catch (error) {
+    console.error(`❌ Erro:`, error);
+    throw error;
+  }
+}
