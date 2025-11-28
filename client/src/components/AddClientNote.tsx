@@ -64,6 +64,8 @@ export function AddClientNote({ clientId }: AddClientNoteProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/timeline", clientId] });
       setConteudo("");
       setDataPlanejada("");
+      setAnexos([]);
+      resetFileInput();
       toast({
         title: "Sucesso",
         description: "Observação adicionada!",
@@ -109,6 +111,7 @@ export function AddClientNote({ clientId }: AddClientNoteProps) {
     setConteudo("");
     setDataPlanejada("");
     setAnexos([]);
+    resetFileInput();
   };
 
   return (
