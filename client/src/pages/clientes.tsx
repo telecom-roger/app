@@ -94,6 +94,13 @@ interface User {
   lastName?: string;
 }
 
+interface ClientSharing {
+  clientId: string;
+  ownerId: string;
+  sharedWithUserId: string;
+  permissao: string;
+}
+
 function ShareClientDialog({ clientId, clientName }: { clientId: string; clientName: string }) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -101,6 +108,11 @@ function ShareClientDialog({ clientId, clientName }: { clientId: string; clientN
   
   const { data: users = [] } = useQuery<User[]>({
     queryKey: ["/api/users-list"],
+    enabled: open,
+  });
+
+  const { data: sharings = [] } = useQuery<ClientSharing[]>({
+    queryKey: [`/api/clients/${clientId}/sharings`],
     enabled: open,
   });
 
@@ -113,14 +125,35 @@ function ShareClientDialog({ clientId, clientName }: { clientId: string; clientN
         title: "Sucesso",
         description: "Cliente compartilhado com sucesso",
       });
-      setOpen(false);
       setSelectedUserId("");
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}/sharings`] });
     },
     onError: (error: any) => {
       toast({
         title: "Erro",
         description: error.message || "Falha ao compartilhar cliente",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: async (sharedWithUserId: string) => {
+      await apiRequest("DELETE", `/api/clients/${clientId}/share/${sharedWithUserId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Sucesso",
+        description: "Compartilhamento removido com sucesso",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}/sharings`] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Falha ao remover compartilhamento",
         variant: "destructive",
       });
     },
@@ -134,22 +167,52 @@ function ShareClientDialog({ clientId, clientName }: { clientId: string; clientN
           Compartilhar
         </DropdownMenuItem>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Compartilhar "{clientName}"</DialogTitle>
           <DialogDescription>Selecione um usuário para compartilhar este cliente</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
+          {/* Compartilhamentos Existentes */}
+          {sharings.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold">Compartilhado com:</h3>
+              <div className="space-y-1 bg-muted p-2 rounded-md">
+                {sharings.map(sharing => {
+                  const user = users.find(u => u.id === sharing.sharedWithUserId);
+                  return (
+                    <div key={sharing.sharedWithUserId} className="flex items-center justify-between text-sm py-1">
+                      <span>{user?.email || sharing.sharedWithUserId}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => removeMutation.mutate(sharing.sharedWithUserId)}
+                        disabled={removeMutation.isPending}
+                        data-testid={`button-remove-share-${sharing.sharedWithUserId}`}
+                        className="h-auto px-2 py-0"
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Novo Compartilhamento */}
           <Select value={selectedUserId} onValueChange={setSelectedUserId}>
             <SelectTrigger data-testid="select-share-user">
               <SelectValue placeholder="Escolha um usuário..." />
             </SelectTrigger>
             <SelectContent>
-              {users.map(user => (
-                <SelectItem key={user.id} value={user.id}>
-                  {user.email}
-                </SelectItem>
-              ))}
+              {users
+                .filter(u => !sharings.some(s => s.sharedWithUserId === u.id))
+                .map(user => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.email}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
           <div className="flex gap-3 justify-end">

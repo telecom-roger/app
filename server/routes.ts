@@ -2531,7 +2531,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get sharing info for a client
-  app.get("/api/clients/:clientId/sharing", isAuthenticated, async (req, res) => {
+  app.get("/api/clients/:clientId/sharings", isAuthenticated, async (req, res) => {
     try {
       const { clientId } = req.params;
       const user = req.user as any;
