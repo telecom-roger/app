@@ -233,13 +233,12 @@ function ShareClientDialog({ clientId, clientName }: { clientId: string; clientN
 
 interface BulkShareDialogProps {
   selectedClientIds: string[];
-  totalAccumulatedSelected: number;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
   open: boolean;
 }
 
-function BulkShareDialog({ selectedClientIds, totalAccumulatedSelected, onOpenChange, onSuccess, open }: BulkShareDialogProps) {
+function BulkShareDialog({ selectedClientIds, onOpenChange, onSuccess, open }: BulkShareDialogProps) {
   const { toast } = useToast();
   const [selectedUserId, setSelectedUserId] = useState("");
   
@@ -248,7 +247,7 @@ function BulkShareDialog({ selectedClientIds, totalAccumulatedSelected, onOpenCh
     enabled: open,
   });
 
-  const totalClients = totalAccumulatedSelected + selectedClientIds.length;
+  const totalClients = selectedClientIds.length;
   
   const bulkShareMutation = useMutation({
     mutationFn: async (userId: string) => {
@@ -277,11 +276,8 @@ function BulkShareDialog({ selectedClientIds, totalAccumulatedSelected, onOpenCh
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Compartilhar {totalAccumulatedSelected + selectedClientIds.length} cliente(s)</DialogTitle>
-          <DialogDescription>
-            {totalAccumulatedSelected > 0 && <span>Total: {totalAccumulatedSelected + selectedClientIds.length} (Página: {selectedClientIds.length}, Anterior: {totalAccumulatedSelected})</span>}
-            {totalAccumulatedSelected === 0 && <span>Selecione um usuário para compartilhar</span>}
-          </DialogDescription>
+          <DialogTitle>Compartilhar {selectedClientIds.length} cliente(s)</DialogTitle>
+          <DialogDescription>Selecione um usuário para compartilhar</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <Select value={selectedUserId} onValueChange={setSelectedUserId}>
@@ -1001,7 +997,6 @@ export default function Clientes() {
 
     <BulkShareDialog 
       selectedClientIds={Array.from(new Set([...Array.from(allSelectedClientIds), ...Array.from(selectedClientIds)]))} 
-      totalAccumulatedSelected={allSelectedClientIds.size}
       onOpenChange={setBulkShareDialogOpen}
       onSuccess={onBulkShareSuccess}
       open={bulkShareDialogOpen}
