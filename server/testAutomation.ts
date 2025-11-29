@@ -415,9 +415,11 @@ export async function simulateClientResponse(clientId: string, userId: string, m
       let actionType: "criar" | "mover" | "bloqueado" = "criar";
       let statusAtualizado: string | null = null;
       
-      if (existingOpp && existingOpp.etapa !== analysis.etapa) {
+      if (existingOpp && existingOpp.etapa !== analysis.etapa.toUpperCase()) {
         // 4b. VALIDAR se o movimento é permitido (não retrocede, não mexe em manuais)
-        const validacao = isValidMovement(existingOpp.etapa, analysis.etapa);
+        // Normalizar etapa da IA para MAIÚSCULA para validação
+        const etapaNormalizada = analysis.etapa.toUpperCase();
+        const validacao = isValidMovement(existingOpp.etapa, etapaNormalizada);
         
         if (!validacao.permitido) {
           console.log(`🚫 MOVIMENTO BLOQUEADO: ${validacao.motivo}`);
@@ -432,13 +434,13 @@ export async function simulateClientResponse(clientId: string, userId: string, m
         }
         
         // ✅ Movimento válido - MOVER opp existente
-        console.log(`🔄 MOVENDO opp existente ${existingOpp.id} de ${existingOpp.etapa} → ${analysis.etapa}`);
+        console.log(`🔄 MOVENDO opp existente ${existingOpp.id} de ${existingOpp.etapa} → ${etapaNormalizada}`);
         const etapaAntes = existingOpp.etapa;
         
         resultOpp = await db
           .update(opportunities)
           .set({ 
-            etapa: analysis.etapa,
+            etapa: etapaNormalizada,
             titulo: `${client.nome} - ${analysis.motivo}`,
             updatedAt: new Date()
           })
@@ -446,15 +448,16 @@ export async function simulateClientResponse(clientId: string, userId: string, m
           .returning()
           .then(r => r[0]);
         
-        console.log(`✅ Oportunidade MOVIDA: ${etapaAntes} → ${analysis.etapa}`);
+        console.log(`✅ Oportunidade MOVIDA: ${etapaAntes} → ${etapaNormalizada}`);
         actionType = "mover";
       } else if (!existingOpp) {
         // 4c. CRIAR nova opp se não houver aberta
-        console.log(`🔍 Criando nova opportunity com userId=${userId}, etapa=${analysis.etapa}`);
+        const etapaNormalizada = analysis.etapa.toUpperCase();
+        console.log(`🔍 Criando nova opportunity com userId=${userId}, etapa=${etapaNormalizada}`);
         resultOpp = await db.insert(opportunities).values({
           clientId,
           titulo: `${client.nome} - ${analysis.motivo}`,
-          etapa: analysis.etapa,
+          etapa: etapaNormalizada,
           valorEstimado: "5000",
           responsavelId: userId,
           ordem: 0,
@@ -465,7 +468,7 @@ export async function simulateClientResponse(clientId: string, userId: string, m
       } else {
         // Opp já está na etapa correta
         resultOpp = existingOpp;
-        console.log(`ℹ️ Oportunidade já está em ${analysis.etapa}, sem mudanças`);
+        console.log(`ℹ️ Oportunidade já está em ${analysis.etapa.toUpperCase()}, sem mudanças`);
       }
       
       // 🔄 RECALCULATE CLIENT STATUS
@@ -473,9 +476,10 @@ export async function simulateClientResponse(clientId: string, userId: string, m
       await storage.updateClient(clientId, { status: statusAtualizado });
       console.log(`🔄 Status do cliente atualizado: ${statusAtualizado.toUpperCase()}`);
       
+      const etapaNormalizada = analysis.etapa.toUpperCase();
       const actionMessage = actionType === "mover" 
-        ? `✅ Oportunidade MOVIDA para "${analysis.etapa}"`
-        : `✅ Nova oportunidade criada em "${analysis.etapa}"`;
+        ? `✅ Oportunidade MOVIDA para "${etapaNormalizada}"`
+        : `✅ Nova oportunidade criada em "${etapaNormalizada}"`;
       
       return { 
         success: true, 
