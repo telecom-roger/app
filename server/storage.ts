@@ -961,6 +961,34 @@ export async function getSharedClientsForUser(userId: string): Promise<ClientSha
     .where(eq(clientSharing.sharedWithUserId, userId));
 }
 
+// Check if user can access a client (owner or shared)
+// Returns { canAccess, permissao }
+export async function checkClientAccess(clientId: string, userId: string): Promise<{ canAccess: boolean; permissao: string }> {
+  // Check if user is the owner
+  const [client] = await db
+    .select()
+    .from(clients)
+    .where(and(eq(clients.id, clientId), eq(clients.createdBy, userId)))
+    .limit(1);
+
+  if (client) {
+    return { canAccess: true, permissao: "proprietario" };
+  }
+
+  // Check if client is shared with user
+  const [sharing] = await db
+    .select()
+    .from(clientSharing)
+    .where(and(eq(clientSharing.clientId, clientId), eq(clientSharing.sharedWithUserId, userId)))
+    .limit(1);
+
+  if (sharing) {
+    return { canAccess: true, permissao: sharing.permissao };
+  }
+
+  return { canAccess: false, permissao: "" };
+}
+
 // Share multiple clients with a user
 export async function shareClientsWithUser(clientIds: string[], sharedWithUserId: string, ownerId: string): Promise<ClientSharing[]> {
   const sharings = clientIds.map(clientId => ({

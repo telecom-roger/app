@@ -364,6 +364,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Client not found" });
       }
 
+      // Verificar permissão ao cliente compartilhado
+      const user = req.user as any;
+      const access = await storage.checkClientAccess(req.params.id, user.id);
+      if (!access.canAccess) {
+        return res.status(403).json({ error: "Você não tem acesso a este cliente" });
+      }
+      // Se tiver permissão "visualizar", não pode editar
+      if (access.permissao === "visualizar") {
+        return res.status(403).json({ error: "Você só pode visualizar este cliente, não pode editá-lo" });
+      }
+
       const validatedData = insertClientSchema.partial().parse(req.body);
       const client = await storage.updateClient(req.params.id, validatedData);
 
@@ -470,6 +481,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Opportunity not found" });
       }
 
+      // Verificar permissão ao cliente da oportunidade
+      const user = req.user as any;
+      if (oldOpportunity.clientId) {
+        const access = await storage.checkClientAccess(oldOpportunity.clientId, user.id);
+        if (!access.canAccess) {
+          return res.status(403).json({ error: "Você não tem acesso a este cliente" });
+        }
+        // Se tiver permissão "visualizar", não pode mover oportunidade
+        if (access.permissao === "visualizar") {
+          return res.status(403).json({ error: "Você só pode visualizar este cliente, não pode mover oportunidades" });
+        }
+      }
+
       const opportunity = await storage.updateOpportunity(req.params.id, { etapa });
 
       // Atualizar tag do cliente para manter sincronizado
@@ -527,6 +551,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const oldOpportunity = await storage.getOpportunityById(req.params.id);
       if (!oldOpportunity) {
         return res.status(404).json({ error: "Opportunity not found" });
+      }
+
+      // Verificar permissão ao cliente da oportunidade
+      const user = req.user as any;
+      if (oldOpportunity.clientId) {
+        const access = await storage.checkClientAccess(oldOpportunity.clientId, user.id);
+        if (!access.canAccess) {
+          return res.status(403).json({ error: "Você não tem acesso a este cliente" });
+        }
+        // Se tiver permissão "visualizar", não pode editar oportunidade
+        if (access.permissao === "visualizar") {
+          return res.status(403).json({ error: "Você só pode visualizar este cliente, não pode editá-lo" });
+        }
       }
 
       const validatedData = insertOpportunitySchema.partial().parse(req.body);
@@ -1782,6 +1819,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!conversation) {
         return res.status(403).json({ error: "Acesso negado" });
+      }
+
+      // Verificar permissão ao cliente compartilhado
+      if (conversation.clientId) {
+        const access = await storage.checkClientAccess(conversation.clientId, user.id);
+        if (!access.canAccess) {
+          return res.status(403).json({ error: "Você não tem acesso a este cliente" });
+        }
+        // Se tiver permissão "visualizar", não pode enviar mensagens
+        if (access.permissao === "visualizar") {
+          return res.status(403).json({ error: "Você só pode visualizar este cliente, não pode enviar mensagens" });
+        }
       }
 
       const mensagem = await storage.createMessage({
