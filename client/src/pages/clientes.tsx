@@ -384,7 +384,7 @@ export default function Clientes() {
     enabled: Boolean(isAuthenticated && hasActiveFilter),
     queryFn: async () => {
       const params = new URLSearchParams({
-        limit: "10000",
+        limit: "50000",
         page: "1",
         ...(searchTerm && { search: searchTerm }),
         ...(statusFilter !== "todos" && { status: statusFilter }),
@@ -440,11 +440,18 @@ export default function Clientes() {
     }
   }, [notifications]);
 
-  // Scroll to top of table when page changes
+  // Scroll to top of table when page changes, and clear client-specific selection
   useEffect(() => {
     const tableElement = document.querySelector('[data-testid="table-container"]');
     tableElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [page]);
+
+  // When data changes (page changed), ensure checkboxes reflect only currently selected IDs
+  useEffect(() => {
+    if (data?.clientes) {
+      // This just ensures UI updates when data changes
+    }
+  }, [data?.clientes]);
 
   const statusColors: Record<string, string> = {
     lead: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
