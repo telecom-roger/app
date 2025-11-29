@@ -87,6 +87,7 @@ export const clients = pgTable("clients", {
   PROP_MOVEL_AVANCADA: varchar("prop_movel_avancada", { length: 255 }),
   SERASA: varchar("serasa", { length: 255 }),
   MENSAGEM_SERASA: text("mensagem_serasa"),
+  PARCEIRO: varchar("parceiro", { length: 255 }), // Partner/vendor name (Mirai, Dominio, 3M, Best, Flex, Singular, etc)
   tags: text("tags").array().default(sql`ARRAY[]::text[]`),
   camposCustom: jsonb("campos_custom").default(sql`'{}'::jsonb`), // flexible custom fields
   createdAt: timestamp("created_at").defaultNow(),
@@ -123,6 +124,7 @@ export const insertClientSchema = createInsertSchema(clients)
     PROP_MOVEL_AVANCADA: z.string().optional().nullable(),
     SERASA: z.string().optional().nullable(),
     MENSAGEM_SERASA: z.string().optional().nullable(),
+    PARCEIRO: z.string().optional().nullable(),
   });
 
 export type InsertClient = z.infer<typeof insertClientSchema>;
