@@ -55,7 +55,7 @@ export const clients = pgTable("clients", {
   planoAtual: text("plano_atual"),
   produtoAtual: text("produto_atual"),
   // Contact fields
-  telefone: varchar("telefone", { length: 20 }),
+  celular: varchar("celular", { length: 20 }),
   email: varchar("email", { length: 255 }),
   contato: text("contato"), // Contact person name
   // Address fields
@@ -105,7 +105,7 @@ export const insertClientSchema = createInsertSchema(clients)
     uf: z.string().max(2).optional().nullable(),
     cep: z.string().regex(/^\d{5}-?\d{3}$|^$/, "CEP inválido").optional().nullable(),
     email: z.string().email("Email inválido").optional().nullable(),
-    telefone: z.string().min(10, "Telefone inválido").optional().nullable(),
+    celular: z.string().min(10, "Celular inválido").optional().nullable(),
     tipo: z.string().optional().nullable(),
     // Telecom fields - make all optional
     APARELHO_LIBERADO: z.string().optional().nullable(),

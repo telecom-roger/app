@@ -1397,11 +1397,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Queue messages for sending (async, non-blocking)
       let enfileiradas = 0;
       for (const cliente of clientes) {
-        const telefone = cliente.CELULAR_PRINCIPAL || cliente.telefone;
-        if (telefone) {
+        const celular = cliente.CELULAR_PRINCIPAL || cliente.celular;
+        if (celular) {
           // Queue message asynchronously (don't wait)
-          whatsappService.sendMessage(session.sessionId, telefone, mensagem).catch(err => {
-            console.error(`Erro ao enviar para ${telefone}:`, err);
+          whatsappService.sendMessage(session.sessionId, celular, mensagem).catch(err => {
+            console.error(`Erro ao enviar para ${celular}:`, err);
           });
           enfileiradas++;
         }
@@ -1475,10 +1475,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           try {
             const contato = contatos[i];
-            const telefone = contato.celular || "";
+            const celular = contato.celular || "";
             const clientId = contato.id || "";
             
-            if (!telefone) continue;
+            if (!celular) continue;
 
             // Replace variables in template
             let mensagem = template;
@@ -1495,7 +1495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 break;
               }
 
-              await whatsappService.sendMessage(sessaoConectada.sessionId, telefone, mensagem);
+              await whatsappService.sendMessage(sessaoConectada.sessionId, celular, mensagem);
               enviadas++;
               
               // Update client status to "enviado"
@@ -1518,7 +1518,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     titulo: "Mensagem WhatsApp enviada",
                     texto: mensagem.substring(0, 200),
                     meta: {
-                      telefone,
+                      celular,
                       sessionId: sessaoConectada.sessionId,
                       timestamp: new Date().toISOString(),
                     } as any,
@@ -1529,7 +1529,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
               }
             } catch (err) {
-              console.error(`Erro ao enviar para ${telefone}:`, err);
+              console.error(`Erro ao enviar para ${celular}:`, err);
               erros++;
             }
 
@@ -1655,10 +1655,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // New endpoint for single message sending from campaigns page
   app.post("/api/whatsapp/enviar-broadcast", isAuthenticated, async (req, res) => {
     try {
-      const { telefone, mensagem, clientId } = req.body;
+      const { celular, mensagem, clientId } = req.body;
       
-      if (!telefone || !mensagem) {
-        return res.status(400).json({ error: "telefone e mensagem são obrigatórios" });
+      if (!celular || !mensagem) {
+        return res.status(400).json({ error: "celular e mensagem são obrigatórios" });
       }
 
       // Get user's first active WhatsApp session
@@ -1678,7 +1678,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send the message
       try {
-        await whatsappService.sendMessage(sessaoConectada.sessionId, telefone, mensagem);
+        await whatsappService.sendMessage(sessaoConectada.sessionId, celular, mensagem);
         
         // Update client status to "Enviado" if clientId is provided
         if (clientId) {
@@ -1700,7 +1700,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               titulo: "Mensagem WhatsApp enviada",
               texto: mensagem.substring(0, 200),
               meta: {
-                telefone,
+                celular,
                 sessionId: sessaoConectada.sessionId,
                 timestamp: new Date().toISOString(),
               } as any,
@@ -1840,25 +1840,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (client && client.CELULAR_PRINCIPAL) {
               const isAlive = whatsappService.isSessionAlive(session.sessionId);
               if (isAlive) {
-                // Formata o telefone para WhatsApp
-                let telefone = client.CELULAR_PRINCIPAL.replace(/\D/g, "");
-                if (!telefone.startsWith("55")) {
-                  telefone = "55" + telefone;
+                // Formata o celular para WhatsApp
+                let celular = client.CELULAR_PRINCIPAL.replace(/\D/g, "");
+                if (!celular.startsWith("55")) {
+                  celular = "55" + celular;
                 }
 
                 // Envia a mensagem
                 if (tipo === "texto") {
-                  await whatsappService.sendMessage(session.sessionId, telefone, conteudo);
-                  console.log(`✅ Mensagem enviada para WhatsApp: ${telefone}`);
+                  await whatsappService.sendMessage(session.sessionId, celular, conteudo);
+                  console.log(`✅ Mensagem enviada para WhatsApp: ${celular}`);
                 } else if (tipo === "imagem" && arquivo) {
-                  await whatsappService.sendImage(session.sessionId, telefone, arquivo, conteudo);
-                  console.log(`✅ Imagem enviada para WhatsApp: ${telefone}`);
+                  await whatsappService.sendImage(session.sessionId, celular, arquivo, conteudo);
+                  console.log(`✅ Imagem enviada para WhatsApp: ${celular}`);
                 } else if (tipo === "audio" && arquivo) {
-                  await whatsappService.sendAudio(session.sessionId, telefone, arquivo);
-                  console.log(`✅ Áudio enviado para WhatsApp: ${telefone}`);
+                  await whatsappService.sendAudio(session.sessionId, celular, arquivo);
+                  console.log(`✅ Áudio enviado para WhatsApp: ${celular}`);
                 } else if (tipo === "documento" && arquivo) {
-                  await whatsappService.sendDocument(session.sessionId, telefone, arquivo, nomeArquivo);
-                  console.log(`✅ Documento enviado para WhatsApp: ${telefone}`);
+                  await whatsappService.sendDocument(session.sessionId, celular, arquivo, nomeArquivo);
+                  console.log(`✅ Documento enviado para WhatsApp: ${celular}`);
                 }
                 
                 // Update client status to "Enviado"

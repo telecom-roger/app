@@ -253,11 +253,11 @@ async function processIncomingMessages(sessionId: string, m: any) {
             .from(clientsTable)
             .where(or(
               eq(clientsTable.CELULAR_PRINCIPAL, senderPhone),
-              eq(clientsTable.telefone, senderPhone),
+              eq(clientsTable.celular, senderPhone),
               eq(clientsTable.CELULAR, senderPhone),
               eq(clientsTable.TELEFONE_COMERCIAL, senderPhone),
               ilike(clientsTable.CELULAR_PRINCIPAL, `%${senderPhone}%`),
-              ilike(clientsTable.telefone, `%${senderPhone}%`),
+              ilike(clientsTable.celular, `%${senderPhone}%`),
               ilike(clientsTable.CELULAR, `%${senderPhone}%`),
               ilike(clientsTable.TELEFONE_COMERCIAL, `%${senderPhone}%`)
             ))
@@ -273,7 +273,7 @@ async function processIncomingMessages(sessionId: string, m: any) {
             // Auto-create new client - store WITHOUT 55 prefix (senderPhone already normalized)
             const novoCliente = await storage.createClient({
               nome: `Novo contato ${senderPhone}`,
-              telefone: senderPhone,
+              celular: senderPhone,
               CELULAR_PRINCIPAL: senderPhone,
               cpfCnpj: "",
               status: "Lead",
@@ -479,7 +479,7 @@ export function getActiveSession(sessionId: string): any {
   return activeSessions.get(sessionId) || null;
 }
 
-export async function sendMessage(sessionId: string, telefone: string, mensagem: string): Promise<boolean> {
+export async function sendMessage(sessionId: string, celular: string, mensagem: string): Promise<boolean> {
   try {
     const sock = activeSessions.get(sessionId);
     if (!sock) {
@@ -487,7 +487,7 @@ export async function sendMessage(sessionId: string, telefone: string, mensagem:
       return false;
     }
 
-    let jid = telefone.replace(/\D/g, "");
+    let jid = celular.replace(/\D/g, "");
     if (!jid.startsWith("55")) {
       jid = "55" + jid;
     }
@@ -500,12 +500,12 @@ export async function sendMessage(sessionId: string, telefone: string, mensagem:
     console.log(`✅ Mensagem enviada com sucesso para ${jid}`);
     return true;
   } catch (error) {
-    console.error(`❌ Erro ao enviar mensagem para ${telefone}:`, error);
+    console.error(`❌ Erro ao enviar mensagem para ${celular}:`, error);
     return false;
   }
 }
 
-export async function sendImage(sessionId: string, telefone: string, imageBase64: string, caption?: string): Promise<boolean> {
+export async function sendImage(sessionId: string, celular: string, imageBase64: string, caption?: string): Promise<boolean> {
   try {
     const sock = activeSessions.get(sessionId);
     if (!sock) {
@@ -513,7 +513,7 @@ export async function sendImage(sessionId: string, telefone: string, imageBase64
       return false;
     }
 
-    let jid = telefone.replace(/\D/g, "");
+    let jid = celular.replace(/\D/g, "");
     if (!jid.startsWith("55")) {
       jid = "55" + jid;
     }
@@ -530,7 +530,7 @@ export async function sendImage(sessionId: string, telefone: string, imageBase64
     console.log(`✅ Imagem enviada com sucesso para ${jid}`);
     return true;
   } catch (error) {
-    console.error(`❌ Erro ao enviar imagem para ${telefone}:`, error);
+    console.error(`❌ Erro ao enviar imagem para ${celular}:`, error);
     return false;
   }
 }
@@ -578,7 +578,7 @@ async function convertWebMToM4A(webmBase64: string): Promise<Buffer | null> {
   }
 }
 
-export async function sendAudio(sessionId: string, telefone: string, audioBase64: string): Promise<boolean> {
+export async function sendAudio(sessionId: string, celular: string, audioBase64: string): Promise<boolean> {
   try {
     const sock = activeSessions.get(sessionId);
     if (!sock) {
@@ -586,7 +586,7 @@ export async function sendAudio(sessionId: string, telefone: string, audioBase64
       return false;
     }
 
-    let jid = telefone.replace(/\D/g, "");
+    let jid = celular.replace(/\D/g, "");
     if (!jid.startsWith("55")) {
       jid = "55" + jid;
     }
@@ -612,12 +612,12 @@ export async function sendAudio(sessionId: string, telefone: string, audioBase64
     console.log(`✅ Áudio enviado com sucesso para ${jid}. Message ID:`, result.key?.id);
     return true;
   } catch (error) {
-    console.error(`❌ Erro ao enviar áudio para ${telefone}:`, error);
+    console.error(`❌ Erro ao enviar áudio para ${celular}:`, error);
     return false;
   }
 }
 
-export async function sendDocument(sessionId: string, telefone: string, docBase64: string, filename: string): Promise<boolean> {
+export async function sendDocument(sessionId: string, celular: string, docBase64: string, filename: string): Promise<boolean> {
   try {
     const sock = activeSessions.get(sessionId);
     if (!sock) {
@@ -625,7 +625,7 @@ export async function sendDocument(sessionId: string, telefone: string, docBase6
       return false;
     }
 
-    let jid = telefone.replace(/\D/g, "");
+    let jid = celular.replace(/\D/g, "");
     if (!jid.startsWith("55")) {
       jid = "55" + jid;
     }
@@ -645,7 +645,7 @@ export async function sendDocument(sessionId: string, telefone: string, docBase6
     console.log(`✅ Documento enviado com sucesso para ${jid} (${mimeType})`);
     return true;
   } catch (error) {
-    console.error(`❌ Erro ao enviar documento para ${telefone}:`, error);
+    console.error(`❌ Erro ao enviar documento para ${celular}:`, error);
     return false;
   }
 }

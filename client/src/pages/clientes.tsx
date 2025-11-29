@@ -731,7 +731,7 @@ export default function Clientes() {
                           {cliente.cpfCnpj || '-'}
                         </TableCell>
                         <TableCell className="text-sm text-slate-700 dark:text-slate-300">
-                          {formatPhoneNumber(cliente.telefone)}
+                          {formatPhoneNumber(cliente.celular)}
                         </TableCell>
                         <TableCell className="text-sm text-slate-700 dark:text-slate-300">
                           {cliente.email || '-'}

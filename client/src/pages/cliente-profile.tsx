@@ -307,10 +307,10 @@ export default function ClienteProfile() {
                       label="Email do Gestor"
                     />
                     <EditableField
-                      value={cliente?.telefone}
-                      field="telefone"
+                      value={cliente?.celular}
+                      field="celular"
                       clientId={id || ""}
-                      label="Telefone"
+                      label="Celular"
                     />
                     <EditableField
                       value={cliente?.contato}
