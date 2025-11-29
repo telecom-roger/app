@@ -636,7 +636,6 @@ async function executeAguardandoAceiteReminder(task: any) {
     sender: "user",  // ✅ Mostrar como mensagem enviada no chat
     tipo: "text",
     conteudo: mensagem,
-    origem: "automation",  // ✅ Marcar que foi enviada por automação
     createdAt: new Date(),
   });
 

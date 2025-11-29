@@ -388,7 +388,6 @@ export const messages = pgTable("messages", {
   mimeType: text("mime_type"),
   lido: boolean("lido").default(false),
   deletado: boolean("deletado").default(false), // Soft delete for "removed for all"
-  origem: varchar("origem", { length: 50 }).default("user"), // "user", "automation", "whatsapp"
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
   index("idx_messages_conversation").on(table.conversationId),
