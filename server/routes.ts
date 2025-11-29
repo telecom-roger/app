@@ -94,9 +94,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       const { search, status, tagName, tipo, carteira, page = "1", limit = "10000" } = req.query;
-      // Adicionar userId para filtrar apenas clientes do usuário
+      // Sistema de empresa: mostrar TODOS os clientes (não filtra por usuário)
       const result = await storage.getClients({
-        userId: user.id,
         search: search as string,
         status: status as string,
         tagName: tagName as string,
@@ -104,7 +103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         carteira: carteira as string,
         page: parseInt(page as string),
         limit: parseInt(limit as string),
-        isAdmin: user.role === 'admin',
+        isAdmin: true, // Sempre admin view - mostrar todos
       });
       res.json(result);
     } catch (error: any) {
