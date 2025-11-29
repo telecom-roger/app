@@ -911,10 +911,8 @@ export default function Chat() {
                   </p>
                 ) : (
                   filteredClients.map((client: Client) => {
-                    const tel1 = client.celular;
-                    const tel2 = (client as any)?.telefone2;
+                    const phone = client.celular;
                     const cnpj = (client as any)?.cnpj;
-                    const phones = [tel1, tel2].filter(Boolean).join(" / ");
                     
                     return (
                       <button
@@ -924,9 +922,9 @@ export default function Chat() {
                         data-testid={`button-search-client-${client.id}`}
                       >
                         <p className="text-sm font-medium truncate text-slate-900 dark:text-white">{client.nome}</p>
-                        {phones && (
+                        {phone && (
                           <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
-                            {phones}
+                            {phone}
                           </p>
                         )}
                         {cnpj && (
