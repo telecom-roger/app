@@ -148,6 +148,8 @@ Responda APENAS com JSON (sem markdown) - ETAPAS EM MINÚSCULA:
     if (!messageContent) throw new Error("Empty response from AI");
 
     const analysis = JSON.parse(messageContent) as MessageAnalysis;
+    // Normalizar etapa para minúscula (OpenAI pode retornar em MAIÚSCULA)
+    analysis.etapa = analysis.etapa.toLowerCase() as any;
     console.log(`🤖 IA (OPENAI): ${analysis.sentimento} (${analysis.confianca}%) → ${analysis.etapa}`);
     return analysis;
   } catch (error) {
