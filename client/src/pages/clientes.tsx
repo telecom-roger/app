@@ -455,14 +455,8 @@ export default function Clientes() {
   // Use tipos from DB, fallback to loaded clients
   const tiposUnicos = tiposDoDb.length > 0 ? tiposDoDb : Array.from(new Set((data?.clientes || []).map(c => c.tipoCliente).filter(Boolean) as string[])).sort();
 
-  // Sort clients (filtering is done on backend)
-  const clientesFiltrados = (data?.clientes || [])
-    .sort((a, b) => {
-      if (orderBy === 'oldest') {
-        return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
-      }
-      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
-    });
+  // Clients from backend (already sorted)
+  const clientesFiltrados = data?.clientes || [];
 
   const toggleClienteSelecionado = (clienteId: string) => {
     const novoSet = new Set(selectedClientIds);
