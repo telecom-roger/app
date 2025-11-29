@@ -252,8 +252,14 @@ async function processIncomingMessages(sessionId: string, m: any) {
             .select()
             .from(clientsTable)
             .where(or(
-              eq(clientsTable.celular, senderPhone),
-              ilike(clientsTable.celular, `%${senderPhone}%`)
+              eq(clientsTable.CELULAR_PRINCIPAL, senderPhone),
+              eq(clientsTable.telefone, senderPhone),
+              eq(clientsTable.CELULAR, senderPhone),
+              eq(clientsTable.TELEFONE_COMERCIAL, senderPhone),
+              ilike(clientsTable.CELULAR_PRINCIPAL, `%${senderPhone}%`),
+              ilike(clientsTable.telefone, `%${senderPhone}%`),
+              ilike(clientsTable.CELULAR, `%${senderPhone}%`),
+              ilike(clientsTable.TELEFONE_COMERCIAL, `%${senderPhone}%`)
             ))
             .limit(1);
           
@@ -267,7 +273,8 @@ async function processIncomingMessages(sessionId: string, m: any) {
             // Auto-create new client - store WITHOUT 55 prefix (senderPhone already normalized)
             const novoCliente = await storage.createClient({
               nome: `Novo contato ${senderPhone}`,
-              celular: senderPhone,
+              telefone: senderPhone,
+              CELULAR_PRINCIPAL: senderPhone,
               cpfCnpj: "",
               status: "Lead",
               carteira: "Dominio",
@@ -472,7 +479,7 @@ export function getActiveSession(sessionId: string): any {
   return activeSessions.get(sessionId) || null;
 }
 
-export async function sendMessage(sessionId: string, celular: string, mensagem: string): Promise<boolean> {
+export async function sendMessage(sessionId: string, telefone: string, mensagem: string): Promise<boolean> {
   try {
     const sock = activeSessions.get(sessionId);
     if (!sock) {
@@ -480,7 +487,7 @@ export async function sendMessage(sessionId: string, celular: string, mensagem: 
       return false;
     }
 
-    let jid = celular.replace(/\D/g, "");
+    let jid = telefone.replace(/\D/g, "");
     if (!jid.startsWith("55")) {
       jid = "55" + jid;
     }
@@ -493,12 +500,12 @@ export async function sendMessage(sessionId: string, celular: string, mensagem: 
     console.log(`✅ Mensagem enviada com sucesso para ${jid}`);
     return true;
   } catch (error) {
-    console.error(`❌ Erro ao enviar mensagem para ${celular}:`, error);
+    console.error(`❌ Erro ao enviar mensagem para ${telefone}:`, error);
     return false;
   }
 }
 
-export async function sendImage(sessionId: string, celular: string, imageBase64: string, caption?: string): Promise<boolean> {
+export async function sendImage(sessionId: string, telefone: string, imageBase64: string, caption?: string): Promise<boolean> {
   try {
     const sock = activeSessions.get(sessionId);
     if (!sock) {
@@ -506,7 +513,7 @@ export async function sendImage(sessionId: string, celular: string, imageBase64:
       return false;
     }
 
-    let jid = celular.replace(/\D/g, "");
+    let jid = telefone.replace(/\D/g, "");
     if (!jid.startsWith("55")) {
       jid = "55" + jid;
     }
@@ -523,7 +530,7 @@ export async function sendImage(sessionId: string, celular: string, imageBase64:
     console.log(`✅ Imagem enviada com sucesso para ${jid}`);
     return true;
   } catch (error) {
-    console.error(`❌ Erro ao enviar imagem para ${celular}:`, error);
+    console.error(`❌ Erro ao enviar imagem para ${telefone}:`, error);
     return false;
   }
 }
@@ -571,7 +578,7 @@ async function convertWebMToM4A(webmBase64: string): Promise<Buffer | null> {
   }
 }
 
-export async function sendAudio(sessionId: string, celular: string, audioBase64: string): Promise<boolean> {
+export async function sendAudio(sessionId: string, telefone: string, audioBase64: string): Promise<boolean> {
   try {
     const sock = activeSessions.get(sessionId);
     if (!sock) {
@@ -579,7 +586,7 @@ export async function sendAudio(sessionId: string, celular: string, audioBase64:
       return false;
     }
 
-    let jid = celular.replace(/\D/g, "");
+    let jid = telefone.replace(/\D/g, "");
     if (!jid.startsWith("55")) {
       jid = "55" + jid;
     }
@@ -605,12 +612,12 @@ export async function sendAudio(sessionId: string, celular: string, audioBase64:
     console.log(`✅ Áudio enviado com sucesso para ${jid}. Message ID:`, result.key?.id);
     return true;
   } catch (error) {
-    console.error(`❌ Erro ao enviar áudio para ${celular}:`, error);
+    console.error(`❌ Erro ao enviar áudio para ${telefone}:`, error);
     return false;
   }
 }
 
-export async function sendDocument(sessionId: string, celular: string, docBase64: string, filename: string): Promise<boolean> {
+export async function sendDocument(sessionId: string, telefone: string, docBase64: string, filename: string): Promise<boolean> {
   try {
     const sock = activeSessions.get(sessionId);
     if (!sock) {
@@ -618,7 +625,7 @@ export async function sendDocument(sessionId: string, celular: string, docBase64
       return false;
     }
 
-    let jid = celular.replace(/\D/g, "");
+    let jid = telefone.replace(/\D/g, "");
     if (!jid.startsWith("55")) {
       jid = "55" + jid;
     }
@@ -638,7 +645,7 @@ export async function sendDocument(sessionId: string, celular: string, docBase64
     console.log(`✅ Documento enviado com sucesso para ${jid} (${mimeType})`);
     return true;
   } catch (error) {
-    console.error(`❌ Erro ao enviar documento para ${celular}:`, error);
+    console.error(`❌ Erro ao enviar documento para ${telefone}:`, error);
     return false;
   }
 }
@@ -691,23 +698,25 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
         // Com duas chaves {{variavel}}
         conteudo = conteudo.replace(/{{razao_social}}/g, client.razaoSocial || '');
         conteudo = conteudo.replace(/{{empresa}}/g, client.razaoSocial || '');
-        conteudo = conteudo.replace(/{{celular}}/g, client.celular || '');
+        conteudo = conteudo.replace(/{{telefone}}/g, client.telefone || '');
         conteudo = conteudo.replace(/{{email}}/g, client.email || '');
+        conteudo = conteudo.replace(/{{CELULAR_PRINCIPAL}}/g, client.CELULAR_PRINCIPAL || '');
         conteudo = conteudo.replace(/{{NOME_CONTATO}}/g, client.NOME_CONTATO || '');
         
         // Com uma chave {variavel} - igual a campanhas WhatsApp
         conteudo = conteudo.replace(/{razao_social}/g, client.razaoSocial || '');
         conteudo = conteudo.replace(/{empresa}/g, client.razaoSocial || '');
-        conteudo = conteudo.replace(/{celular}/g, client.celular || '');
+        conteudo = conteudo.replace(/{telefone}/g, client.telefone || '');
         conteudo = conteudo.replace(/{email}/g, client.email || '');
+        conteudo = conteudo.replace(/{CELULAR_PRINCIPAL}/g, client.CELULAR_PRINCIPAL || '');
         conteudo = conteudo.replace(/{NOME_CONTATO}/g, client.NOME_CONTATO || '');
 
-        console.log(`📤 [${index + 1}/${recipientClients.length}] Enviando para ${client.razaoSocial} (${client.celular})...`);
+        console.log(`📤 [${index + 1}/${recipientClients.length}] Enviando para ${client.razaoSocial} (${client.telefone})...`);
         
         // Tenta enviar via WhatsApp se houver sessão ativa
         let mensagemEnviada = false;
         if (sessionId && isSessionAlive(sessionId)) {
-          mensagemEnviada = await sendMessage(sessionId, client.celular, conteudo);
+          mensagemEnviada = await sendMessage(sessionId, client.CELULAR_PRINCIPAL || client.telefone, conteudo);
         }
         
         // Update client status to "Enviado" if message was sent successfully

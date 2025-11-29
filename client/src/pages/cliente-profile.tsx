@@ -68,11 +68,6 @@ export default function ClienteProfile() {
     enabled: isAuthenticated && !!id,
   });
 
-  const { data: contacts, isLoading: contactsLoading } = useQuery<any[]>({
-    queryKey: ["/api/clients", id, "contacts"],
-    enabled: isAuthenticated && !!id,
-  });
-
   if (authLoading || !isAuthenticated) {
     return <ProfileSkeleton />;
   }
@@ -297,7 +292,7 @@ export default function ClienteProfile() {
               {/* Contact Information */}
               <div className="space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground">CONTATO</p>
-                {clienteLoading || contactsLoading ? (
+                {clienteLoading ? (
                   <>
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-full" />
@@ -309,41 +304,19 @@ export default function ClienteProfile() {
                       value={cliente?.email}
                       field="email"
                       clientId={id || ""}
-                      label="Email do Gestor"
+                      label="Email"
                     />
-                    {/* Contatos múltiplos */}
-                    {contacts && contacts.length > 0 ? (
-                      <div className="space-y-2">
-                        <p className="text-xs text-muted-foreground">Celulares ({contacts.length}):</p>
-                        {contacts.map((c: any, idx: number) => (
-                          <div key={c.id} className="flex items-center gap-2 px-2 py-1 bg-muted rounded text-sm">
-                            <Phone className="h-3 w-3" />
-                            <span>{c.valor}</span>
-                            {c.preferencial && <Badge variant="secondary" className="ml-auto text-xs">Preferencial</Badge>}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <>
-                        <EditableField
-                          value={cliente?.celular}
-                          field="celular"
-                          clientId={id || ""}
-                          label="Celular"
-                        />
-                        <EditableField
-                          value={cliente?.telefone_2}
-                          field="telefone_2"
-                          clientId={id || ""}
-                          label="Telefone 2"
-                        />
-                      </>
-                    )}
+                    <EditableField
+                      value={cliente?.CELULAR_PRINCIPAL}
+                      field="CELULAR_PRINCIPAL"
+                      clientId={id || ""}
+                      label="Telefone"
+                    />
                     <EditableField
                       value={cliente?.contato}
                       field="contato"
                       clientId={id || ""}
-                      label="Nome do Gestor"
+                      label="Pessoa de Contato"
                     />
                   </div>
                 )}
@@ -360,19 +333,19 @@ export default function ClienteProfile() {
                       value={cliente?.razaoSocial}
                       field="razaoSocial"
                       clientId={id || ""}
-                      label="Nome Fantasia"
+                      label="Razão Social"
                     />
                     <EditableField
-                      value={cliente?.PARCEIRO}
-                      field="PARCEIRO"
+                      value={cliente?.carteira}
+                      field="carteira"
                       clientId={id || ""}
-                      label="Parceiro"
+                      label="Carteira"
                     />
                     <EditableField
-                      value={cliente?.cpfCnpj}
-                      field="cpfCnpj"
+                      value={cliente?.planoAtual}
+                      field="planoAtual"
                       clientId={id || ""}
-                      label="CNPJ"
+                      label="Plano"
                     />
                   </div>
                 </div>
@@ -421,11 +394,28 @@ export default function ClienteProfile() {
                       clientId={id || ""}
                       label="CEP"
                     />
+                  </div>
+                </div>
+              )}
+
+              <Separator />
+
+              {/* Additional Data */}
+              {!clienteLoading && cliente && (
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground">DADOS ADICIONAIS</p>
+                  <div className="space-y-2">
                     <EditableField
-                      value={cliente?.bairro}
-                      field="bairro"
+                      value={cliente?.cpfCnpj}
+                      field="cpfCnpj"
                       clientId={id || ""}
-                      label="Bairro"
+                      label="CPF/CNPJ"
+                    />
+                    <EditableField
+                      value={cliente?.observacoes}
+                      field="observacoes"
+                      clientId={id || ""}
+                      label="Observações"
                     />
                   </div>
                 </div>

@@ -163,11 +163,10 @@ export async function getClients(params: {
   }
   
   if (search) {
-    // Priorizar razão social (empresa) - buscar lá primeiro
     conditions.push(
       or(
-        ilike(clients.razaoSocial, `%${search}%`),
         ilike(clients.nome, `%${search}%`),
+        ilike(clients.razaoSocial, `%${search}%`),
         ilike(clients.cpfCnpj, `%${search}%`)
       )
     );
@@ -432,8 +431,6 @@ export async function getImportJobs(userId?: string): Promise<ImportJob[]> {
 
 // ==================== STATISTICS ====================
 export async function getDashboardStats(userId?: string) {
-  // Para admin/contagem total: inclui TODOS os clientes
-  // Para usuário específico: mostra apenas seus clientes
   let clientWhereClause = userId ? eq(clients.createdBy, userId) : undefined;
   let opportunityWhereClause = userId ? eq(opportunities.responsavelId, userId) : undefined;
   let campaignWhereClause = userId ? eq(campaigns.createdBy, userId) : undefined;
@@ -442,8 +439,8 @@ export async function getDashboardStats(userId?: string) {
     .select({
       total: sql<number>`count(*)::int`,
       ativos: sql<number>`count(*) FILTER (WHERE status = 'ativo')::int`,
-      importados: sql<number>`count(*) FILTER (WHERE created_by IS NOT NULL OR campos_custom->>'origem' = 'SINGULAR')::int`,
-      antigos: sql<number>`count(*) FILTER (WHERE created_by IS NULL AND (campos_custom->>'origem' IS NULL OR campos_custom->>'origem' != 'SINGULAR'))::int`,
+      importados: sql<number>`count(*) FILTER (WHERE created_by IS NOT NULL)::int`,
+      antigos: sql<number>`count(*) FILTER (WHERE created_by IS NULL)::int`,
     })
     .from(clients)
     .where(clientWhereClause);
@@ -585,7 +582,7 @@ export async function getBroadcastStats(filtros?: { status?: string; carteira?: 
     : allClientes;
 
   const comTelefone = filteredClientes.filter(
-    (c) => c.celular
+    (c) => c.CELULAR_PRINCIPAL || c.telefone
   ).length;
 
   return {
@@ -659,7 +656,8 @@ export async function getConversations(userId: string): Promise<any[]> {
         id: clients.id,
         nome: clients.nome,
         razaoSocial: clients.razaoSocial,
-        celular: clients.celular,
+        CELULAR_PRINCIPAL: clients.CELULAR_PRINCIPAL,
+        telefone: clients.telefone,
         tags: clients.tags,
       }
     })
@@ -741,13 +739,19 @@ export async function findConversationByPhoneAndUser(telefone: string, userId: s
   
   console.log(`🔍 findConversationByPhoneAndUser: buscando por "${normalizado}"`);
   
-  // Find client by phone number - search SEM 55 format
+  // Find client by phone number - search SEM 55 format across ALL phone fields
   const [client] = await db
     .select()
     .from(clients)
     .where(or(
-      eq(clients.celular, normalizado),
-      ilike(clients.celular, `%${normalizado}%`)
+      eq(clients.CELULAR_PRINCIPAL, normalizado),
+      eq(clients.telefone, normalizado),
+      eq(clients.CELULAR, normalizado),
+      eq(clients.TELEFONE_COMERCIAL, normalizado),
+      ilike(clients.CELULAR_PRINCIPAL, `%${normalizado}%`),
+      ilike(clients.telefone, `%${normalizado}%`),
+      ilike(clients.CELULAR, `%${normalizado}%`),
+      ilike(clients.TELEFONE_COMERCIAL, `%${normalizado}%`)
     ))
     .limit(1);
   

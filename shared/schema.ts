@@ -55,8 +55,7 @@ export const clients = pgTable("clients", {
   planoAtual: text("plano_atual"),
   produtoAtual: text("produto_atual"),
   // Contact fields
-  celular: varchar("celular", { length: 20 }),
-  telefone_2: varchar("telefone_2", { length: 20 }),
+  telefone: varchar("telefone", { length: 20 }),
   email: varchar("email", { length: 255 }),
   contato: text("contato"), // Contact person name
   // Address fields
@@ -78,13 +77,16 @@ export const clients = pgTable("clients", {
   PEDIDO_FIXA: varchar("pedido_fixa", { length: 255 }),
   NOME_CONTATO: varchar("nome_contato", { length: 255 }),
   EMAIL_PRINCIPAL: varchar("email_principal", { length: 255 }),
+  CELULAR_PRINCIPAL: varchar("celular_principal", { length: 20 }),
   TIPO_GESTOR: varchar("tipo_gestor", { length: 100 }),
   FLG_DOMINIO_PUBLICO_SFA: boolean("flg_dominio_publico_sfa"),
+  TELEFONE_COMERCIAL: varchar("telefone_comercial", { length: 20 }),
+  CELULAR: varchar("celular", { length: 20 }),
+  TELEFONE_RESIDENCIAL: varchar("telefone_residencial", { length: 20 }),
   EMAIL_SIBEL: varchar("email_sibel", { length: 255 }),
   PROP_MOVEL_AVANCADA: varchar("prop_movel_avancada", { length: 255 }),
   SERASA: varchar("serasa", { length: 255 }),
   MENSAGEM_SERASA: text("mensagem_serasa"),
-  PARCEIRO: varchar("parceiro", { length: 255 }), // Partner/vendor name (Mirai, Dominio, 3M, Best, Flex, Singular, etc)
   tags: text("tags").array().default(sql`ARRAY[]::text[]`),
   camposCustom: jsonb("campos_custom").default(sql`'{}'::jsonb`), // flexible custom fields
   createdAt: timestamp("created_at").defaultNow(),
@@ -102,8 +104,7 @@ export const insertClientSchema = createInsertSchema(clients)
     uf: z.string().max(2).optional().nullable(),
     cep: z.string().regex(/^\d{5}-?\d{3}$|^$/, "CEP inválido").optional().nullable(),
     email: z.string().email("Email inválido").optional().nullable(),
-    celular: z.string().optional().nullable(),
-    telefone_2: z.string().optional().nullable(),
+    telefone: z.string().min(10, "Telefone inválido").optional().nullable(),
     tipo: z.string().optional().nullable(),
     // Telecom fields - make all optional
     APARELHO_LIBERADO: z.string().optional().nullable(),
@@ -112,13 +113,16 @@ export const insertClientSchema = createInsertSchema(clients)
     PEDIDO_FIXA: z.string().optional().nullable(),
     NOME_CONTATO: z.string().optional().nullable(),
     EMAIL_PRINCIPAL: z.string().optional().nullable(),
+    CELULAR_PRINCIPAL: z.string().optional().nullable(),
     TIPO_GESTOR: z.string().optional().nullable(),
     FLG_DOMINIO_PUBLICO_SFA: z.boolean().optional().nullable(),
+    TELEFONE_COMERCIAL: z.string().optional().nullable(),
+    CELULAR: z.string().optional().nullable(),
+    TELEFONE_RESIDENCIAL: z.string().optional().nullable(),
     EMAIL_SIBEL: z.string().optional().nullable(),
     PROP_MOVEL_AVANCADA: z.string().optional().nullable(),
     SERASA: z.string().optional().nullable(),
     MENSAGEM_SERASA: z.string().optional().nullable(),
-    PARCEIRO: z.string().optional().nullable(),
   });
 
 export type InsertClient = z.infer<typeof insertClientSchema>;

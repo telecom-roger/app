@@ -3,8 +3,7 @@ import { createServer, type Server } from "http";
 import { z } from "zod";
 import { eq, and, or, ilike, desc, sql, lte, inArray, isNull, gte, between } from "drizzle-orm";
 import cron from "node-cron";
-import * as fs from "fs";
-import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, insertClientSharingSchema, whatsappSessions, clients, contacts, interactions, conversations, messages, campaigns as campaignsTable, templates as templatesTable, tags, clientSharing, notifications, users, campaignSendings, campaignGroups, opportunities, automationTasks } from "@shared/schema";
+import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, insertClientSharingSchema, whatsappSessions, clients, interactions, conversations, messages, campaigns as campaignsTable, templates as templatesTable, tags, clientSharing, notifications, users, campaignSendings, campaignGroups, opportunities, automationTasks } from "@shared/schema";
 import * as storage from "./storage";
 import * as whatsappService from "./whatsappService";
 import { setupAuth, isAuthenticated } from "./localAuth";
@@ -94,7 +93,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       const { search, status, tagName, tipo, carteira, page = "1", limit = "10000" } = req.query;
-      // Sistema de empresa: filtrar apenas clientes do usuário
+      // Adicionar userId para filtrar apenas clientes do usuário
       const result = await storage.getClients({
         userId: user.id,
         search: search as string,
@@ -205,7 +204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: clients.id,
           nome: clients.nome,
           razaoSocial: clients.razaoSocial,
-          celular: clients.celular,
+          telefone: clients.CELULAR_PRINCIPAL,
           email: clients.EMAIL_PRINCIPAL,
           cpfCnpj: clients.cpfCnpj,
           status: clients.status,
@@ -324,17 +323,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(client);
     } catch (error: any) {
       console.error("Error fetching client:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  // Get client contacts (multiple phone numbers)
-  app.get("/api/clients/:id/contacts", isAuthenticated, async (req, res) => {
-    try {
-      const contacts = await storage.getContactsByClientId(req.params.id);
-      res.json(contacts);
-    } catch (error: any) {
-      console.error("Error fetching contacts:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -726,7 +714,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .select({
           id: clients.id,
           razaoSocial: clients.razaoSocial,
-          celular: clients.celular,
+          CELULAR_PRINCIPAL: clients.CELULAR_PRINCIPAL,
+          telefone: clients.CELULAR_PRINCIPAL,
           email: clients.EMAIL_PRINCIPAL,
           status: clients.status,
         })
@@ -1034,7 +1023,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             planoAtual: getRowValue(row, mapping.planoAtual),
             produtoAtual: getRowValue(row, mapping.produtoAtual),
             // Contact fields
-            celular: getRowValue(row, mapping.telefone),
+            telefone: getRowValue(row, mapping.telefone),
             email: getRowValue(row, mapping.email),
             contato: getRowValue(row, mapping.contato),
             // Address fields
@@ -1056,6 +1045,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             PEDIDO_FIXA: getRowValue(row, mapping.PEDIDO_FIXA),
             NOME_CONTATO: getRowValue(row, mapping.NOME_CONTATO),
             EMAIL_PRINCIPAL: getRowValue(row, mapping.EMAIL_PRINCIPAL),
+            CELULAR_PRINCIPAL: getRowValue(row, mapping.CELULAR_PRINCIPAL),
             TIPO_GESTOR: getRowValue(row, mapping.TIPO_GESTOR),
             FLG_DOMINIO_PUBLICO_SFA: getRowValue(row, mapping.FLG_DOMINIO_PUBLICO_SFA) === "1" || getRowValue(row, mapping.FLG_DOMINIO_PUBLICO_SFA) === "true",
             TELEFONE_COMERCIAL: getRowValue(row, mapping.TELEFONE_COMERCIAL),
@@ -1115,8 +1105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== STATS ROUTES ====================
   app.get("/api/stats/dashboard", isAuthenticated, async (req, res) => {
     try {
-      // Dashboard sempre mostra TOTAL de clientes (não filtra por usuário)
-      const stats = await storage.getDashboardStats();
+      const stats = await storage.getDashboardStats((req.user as any).id);
       res.json(stats);
     } catch (error: any) {
       console.error("Error fetching dashboard stats:", error);
@@ -1407,11 +1396,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Queue messages for sending (async, non-blocking)
       let enfileiradas = 0;
       for (const cliente of clientes) {
-        const celular = cliente.celular;
-        if (celular) {
+        const telefone = cliente.CELULAR_PRINCIPAL || cliente.telefone;
+        if (telefone) {
           // Queue message asynchronously (don't wait)
-          whatsappService.sendMessage(session.sessionId, celular, mensagem).catch(err => {
-            console.error(`Erro ao enviar para ${celular}:`, err);
+          whatsappService.sendMessage(session.sessionId, telefone, mensagem).catch(err => {
+            console.error(`Erro ao enviar para ${telefone}:`, err);
           });
           enfileiradas++;
         }
@@ -1485,10 +1474,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           try {
             const contato = contatos[i];
-            const celular = contato.celular || "";
+            const telefone = contato.celular || "";
             const clientId = contato.id || "";
             
-            if (!celular) continue;
+            if (!telefone) continue;
 
             // Replace variables in template
             let mensagem = template;
@@ -1505,7 +1494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 break;
               }
 
-              await whatsappService.sendMessage(sessaoConectada.sessionId, celular, mensagem);
+              await whatsappService.sendMessage(sessaoConectada.sessionId, telefone, mensagem);
               enviadas++;
               
               // Update client status to "enviado"
@@ -1528,7 +1517,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     titulo: "Mensagem WhatsApp enviada",
                     texto: mensagem.substring(0, 200),
                     meta: {
-                      celular,
+                      telefone,
                       sessionId: sessaoConectada.sessionId,
                       timestamp: new Date().toISOString(),
                     } as any,
@@ -1539,7 +1528,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
               }
             } catch (err) {
-              console.error(`Erro ao enviar para ${celular}:`, err);
+              console.error(`Erro ao enviar para ${telefone}:`, err);
               erros++;
             }
 
@@ -1665,10 +1654,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // New endpoint for single message sending from campaigns page
   app.post("/api/whatsapp/enviar-broadcast", isAuthenticated, async (req, res) => {
     try {
-      const { celular, mensagem, clientId } = req.body;
+      const { telefone, mensagem, clientId } = req.body;
       
-      if (!celular || !mensagem) {
-        return res.status(400).json({ error: "celular e mensagem são obrigatórios" });
+      if (!telefone || !mensagem) {
+        return res.status(400).json({ error: "telefone e mensagem são obrigatórios" });
       }
 
       // Get user's first active WhatsApp session
@@ -1688,7 +1677,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send the message
       try {
-        await whatsappService.sendMessage(sessaoConectada.sessionId, celular, mensagem);
+        await whatsappService.sendMessage(sessaoConectada.sessionId, telefone, mensagem);
         
         // Update client status to "Enviado" if clientId is provided
         if (clientId) {
@@ -1710,7 +1699,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               titulo: "Mensagem WhatsApp enviada",
               texto: mensagem.substring(0, 200),
               meta: {
-                celular,
+                telefone,
                 sessionId: sessaoConectada.sessionId,
                 timestamp: new Date().toISOString(),
               } as any,
@@ -1847,28 +1836,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
               .where(eq(clients.id, conversation.clientId))
               .limit(1);
 
-            if (client && client.celular) {
+            if (client && client.CELULAR_PRINCIPAL) {
               const isAlive = whatsappService.isSessionAlive(session.sessionId);
               if (isAlive) {
-                // Formata o celular para WhatsApp
-                let celular = client.celular.replace(/\D/g, "");
-                if (!celular.startsWith("55")) {
-                  celular = "55" + celular;
+                // Formata o telefone para WhatsApp
+                let telefone = client.CELULAR_PRINCIPAL.replace(/\D/g, "");
+                if (!telefone.startsWith("55")) {
+                  telefone = "55" + telefone;
                 }
 
                 // Envia a mensagem
                 if (tipo === "texto") {
-                  await whatsappService.sendMessage(session.sessionId, celular, conteudo);
-                  console.log(`✅ Mensagem enviada para WhatsApp: ${celular}`);
+                  await whatsappService.sendMessage(session.sessionId, telefone, conteudo);
+                  console.log(`✅ Mensagem enviada para WhatsApp: ${telefone}`);
                 } else if (tipo === "imagem" && arquivo) {
-                  await whatsappService.sendImage(session.sessionId, celular, arquivo, conteudo);
-                  console.log(`✅ Imagem enviada para WhatsApp: ${celular}`);
+                  await whatsappService.sendImage(session.sessionId, telefone, arquivo, conteudo);
+                  console.log(`✅ Imagem enviada para WhatsApp: ${telefone}`);
                 } else if (tipo === "audio" && arquivo) {
-                  await whatsappService.sendAudio(session.sessionId, celular, arquivo);
-                  console.log(`✅ Áudio enviado para WhatsApp: ${celular}`);
+                  await whatsappService.sendAudio(session.sessionId, telefone, arquivo);
+                  console.log(`✅ Áudio enviado para WhatsApp: ${telefone}`);
                 } else if (tipo === "documento" && arquivo) {
-                  await whatsappService.sendDocument(session.sessionId, celular, arquivo, nomeArquivo);
-                  console.log(`✅ Documento enviado para WhatsApp: ${celular}`);
+                  await whatsappService.sendDocument(session.sessionId, telefone, arquivo, nomeArquivo);
+                  console.log(`✅ Documento enviado para WhatsApp: ${telefone}`);
                 }
                 
                 // Update client status to "Enviado"
@@ -2008,16 +1997,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .select()
         .from(clients)
         .where(or(
-          ilike(clients.celular, `%${normalizado}%`)
+          ilike(clients.CELULAR_PRINCIPAL, `%${normalizado}%`),
+          ilike(clients.telefone, `%${normalizado}%`)
         ))
         .limit(1);
       
       // Se não encontrar, criar novo cliente automaticamente
       if (!client) {
-        console.log(`[CHAT] 🆕 Auto-criando cliente para celular: ${phone}`);
+        console.log(`[CHAT] 🆕 Auto-criando cliente para telefone: ${phone}`);
         const newClient = await storage.createClient({
           nome: `Novo contato ${phone}`,
-          celular: phone,
+          telefone: phone,
+          CELULAR_PRINCIPAL: phone,
           cpfCnpj: "",
           status: "Lead",
           carteira: "Dominio",
@@ -3007,329 +2998,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("❌ Test 4th day error:", error);
       res.status(500).json({ error: String(error), moved: false });
     }
-  });
-
-  // ==================== IMPORT UNIFICADA ====================
-  app.post("/api/import-unificada", async (req, res) => {
-    try {
-      const filePath = "attached_assets/PLANILHA_UNIFICADA.csv";
-      
-      if (!fs.existsSync(filePath)) {
-        return res.status(400).json({ error: "Planilha não encontrada", imported: 0 });
-      }
-
-      const fileContent = fs.readFileSync(filePath, "utf-8");
-      const lines = fileContent.split("\n").map(l => l.trim()).filter(l => l);
-      
-      if (lines.length < 2) {
-        return res.status(400).json({ error: "CSV vazio", imported: 0 });
-      }
-
-      // Get first admin user
-      let adminUser = await db.query.users.findFirst({
-        where: (u: any) => eq(u.role, "admin"),
-      });
-
-      // If no admin, create one
-      if (!adminUser) {
-        const [newAdmin] = await db.insert(users).values({
-          email: "admin@system.local",
-          passwordHash: "SYSTEM",
-          role: "admin",
-        }).returning();
-        adminUser = newAdmin;
-      }
-
-      // Parse header
-      const header = lines[0].split(",").map(h => h.trim());
-      const fieldMap: Record<string, number> = {};
-      
-      const expectedFields = [
-        "Razão Social", "Código do cliente", "CNPJ", "Nome fantasia", "Endereço", 
-        "Número", "CEP", "Bairro", "Cidade", "Estado", "Nome do Gestor", 
-        "CPF do Gestor", "E-mail do Gestor", "Telefone 1", "Telefone 2", 
-        "Situação cadastral RF", "Quantidade de linhas", "CNAE Atividade", "PARCEIRO"
-      ];
-
-      expectedFields.forEach(field => {
-        const idx = header.indexOf(field);
-        if (idx !== -1) fieldMap[field] = idx;
-      });
-
-      // Helper: parse CSV line respecting quotes
-      const parseCSVLine = (line: string): string[] => {
-        const result = [];
-        let current = "";
-        let inQuotes = false;
-
-        for (let i = 0; i < line.length; i++) {
-          const char = line[i];
-          if (char === '"') {
-            inQuotes = !inQuotes;
-          } else if (char === "," && !inQuotes) {
-            result.push(current.trim());
-            current = "";
-          } else {
-            current += char;
-          }
-        }
-        result.push(current.trim());
-        return result;
-      };
-
-      // Helper: Normalize CEP (pad to 8 digits with leading zeros)
-      const normalizeCEP = (cep: string): string => {
-        if (!cep) return "";
-        const cleaned = cep.replace(/\D/g, "");
-        return cleaned.padStart(8, "0");
-      };
-
-      // Helper: Normalize CNPJ (pad to 14 digits with leading zeros)
-      const normalizeCNPJ = (cnpj: string): string => {
-        if (!cnpj) return "";
-        const cleaned = cnpj.replace(/\D/g, "");
-        return cleaned.padStart(14, "0");
-      };
-
-      // Parse rows and insert
-      let imported = 0;
-      let errors = 0;
-      const errorDetails: string[] = [];
-
-      for (let i = 1; i < lines.length; i++) {
-        try {
-          const row = parseCSVLine(lines[i]);
-          
-          const razaoSocial = row[fieldMap["Razão Social"]]?.trim();
-          if (!razaoSocial) continue;
-          
-          const clientData: any = {
-            nome: razaoSocial,
-            razaoSocial: razaoSocial,
-            cpfCnpj: normalizeCNPJ(row[fieldMap["CNPJ"]] || ""),
-            contato: row[fieldMap["Nome do Gestor"]] || null,
-            email: row[fieldMap["E-mail do Gestor"]] || null,
-            telefone: row[fieldMap["Telefone 1"]] || null,
-            endereco: row[fieldMap["Endereço"]] || null,
-            numero: row[fieldMap["Número"]] || null,
-            cep: normalizeCEP(row[fieldMap["CEP"]] || ""),
-            cidade: row[fieldMap["Cidade"]] || null,
-            uf: (row[fieldMap["Estado"]] || "").substring(0, 2),
-            bairro: row[fieldMap["Bairro"]] || null,
-            status: "lead",
-            PARCEIRO: row[fieldMap["PARCEIRO"]] || null,
-            camposCustom: {
-              codigoCliente: row[fieldMap["Código do cliente"]] || "",
-              nomefantasia: row[fieldMap["Nome fantasia"]] || "",
-              cpfGestor: row[fieldMap["CPF do Gestor"]] || "",
-              quantidadeLinhas: row[fieldMap["Quantidade de linhas"]] || "",
-              cnaeAtividade: row[fieldMap["CNAE Atividade"]] || "",
-              telefone2: row[fieldMap["Telefone 2"]] || "",
-              situacaoCadastralRF: row[fieldMap["Situação cadastral RF"]] || "",
-            },
-            createdBy: adminUser!.id,
-          };
-
-          await db.insert(clients).values(clientData);
-          imported++;
-        } catch (err: any) {
-          errors++;
-          if (errors <= 5) {
-            errorDetails.push(`Linha ${i}: ${err.message}`);
-          }
-        }
-      }
-
-      res.json({
-        success: errors === 0,
-        message: `✅ Importados: ${imported} clientes | ${errors > 0 ? `⚠️ Erros: ${errors}` : "✅ Sem erros"}`,
-        imported,
-        errors,
-        errorDetails: errorDetails.slice(0, 5),
-      });
-    } catch (error: any) {
-      console.error("❌ Import error:", error);
-      res.status(500).json({ error: String(error), imported: 0 });
-    }
-  });
-
-  // ==================== IMPORT SINGULAR ====================
-  app.post("/api/import-singular", async (req, res) => {
-    try {
-      const { clientes } = req.body;
-      if (!clientes || !Array.isArray(clientes)) {
-        return res.status(400).json({ error: "Esperado array 'clientes'" });
-      }
-
-      let clientesAdicionados = 0;
-      let contatosAdicionados = 0;
-      let erros = 0;
-
-      for (const cliente of clientes) {
-        try {
-          // Verificar se já existe
-          const existing = await db.query.clients.findFirst({
-            where: (c: any) => eq(c.cpfCnpj, cliente.cpfCnpj),
-          });
-
-          let clientId: string;
-          if (existing) {
-            clientId = existing.id;
-          } else {
-            const [newClient] = await db
-              .insert(clients)
-              .values({
-                nome: cliente.nome,
-                razaoSocial: cliente.nome,
-                cpfCnpj: cliente.cpfCnpj,
-                uf: cliente.uf,
-                cidade: cliente.cidade,
-                cep: cliente.cep,
-                endereco: cliente.endereco,
-                status: "lead",
-                camposCustom: {
-                  quantidadeLinhas: cliente.quantidadeLinhas,
-                  origem: "SINGULAR",
-                },
-              })
-              .returning();
-            clientId = newClient.id;
-            clientesAdicionados++;
-          }
-
-          // Adicionar contatos
-          for (const contato of cliente.contatos) {
-            const existing = await db.query.contacts.findFirst({
-              where: (c: any) =>
-                eq(c.clientId, clientId) && eq(c.valor, contato.celular),
-            });
-
-            if (!existing) {
-              await db.insert(contacts).values({
-                clientId,
-                tipo: "telefone",
-                valor: contato.celular,
-                preferencial: contato.preferencial || false,
-                verified: false,
-              });
-              contatosAdicionados++;
-            }
-          }
-        } catch (err: any) {
-          erros++;
-          console.error("Erro ao processar cliente:", err);
-        }
-      }
-
-      res.json({
-        success: erros === 0,
-        clientesAdicionados,
-        contatosAdicionados,
-        erros,
-      });
-    } catch (error: any) {
-      console.error("❌ Import error:", error);
-      res.status(500).json({ error: String(error) });
-    }
-  });
-
-  // ==================== RE-IMPORT SINGULAR COMPLETE ====================
-  app.post("/api/test/reimport-singular-complete", async (req, res) => {
-    // Responder imediatamente
-    res.json({ status: "importing", message: "Importação iniciada em background..." });
-
-    // Executar em background - NÃO await
-    (async () => {
-      try {
-        console.log("🗑️ Limpando SINGULAR antigos...");
-        await db.execute(sql`DELETE FROM contacts WHERE client_id IN (SELECT id FROM clients WHERE parceiro = 'SINGULAR')`);
-        await db.execute(sql`DELETE FROM clients WHERE parceiro = 'SINGULAR'`);
-
-        const csvPath = './attached_assets/SINGULAR_1764393349105.csv';
-        const csvContent = fs.readFileSync(csvPath, 'utf-8');
-        const lines = csvContent.split('\n').slice(1).filter(l => l.trim());
-
-        const clientesByNpj: Record<string, any> = {};
-        for (const line of lines) {
-          const parts = line.split(',');
-          const cnpj = parts[0]?.trim();
-          const razaoSocial = parts[1]?.trim();
-          const celular = parts[2]?.trim();
-          const estado = parts[3]?.trim();
-          const quantidadeLinhas = parts[4]?.trim();
-          const cidade = parts[5]?.trim();
-          const cep = parts[6]?.trim();
-          const endereco = parts[7]?.trim();
-          
-          if (!cnpj || !celular) continue;
-
-          if (!clientesByNpj[cnpj]) {
-            clientesByNpj[cnpj] = {
-              razaoSocial: razaoSocial || '',
-              celulares: [],
-              estado: estado || '',
-              cidade: cidade || '',
-              cep: cep || '',
-              endereco: endereco || '',
-              quantidadeLinhas: parseInt(quantidadeLinhas) || 1
-            };
-          }
-          clientesByNpj[cnpj].celulares.push(celular);
-        }
-
-        console.log(`📊 Importando ${Object.keys(clientesByNpj).length} clientes...`);
-        let clientCount = 0;
-        let contactCount = 0;
-
-        // Processar em lotes via Drizzle
-        for (const [cnpj, data] of Object.entries(clientesByNpj)) {
-          try {
-            const clientId = crypto.randomUUID();
-            const customJson = { origem: "SINGULAR", quantidadeLinhas: data.quantidadeLinhas };
-
-            // Insert via Drizzle para escapar corretamente
-            await db.insert(clients).values({
-              id: clientId,
-              nome: data.razaoSocial,
-              razaoSocial: data.razaoSocial,
-              cpfCnpj: cnpj,
-              uf: data.estado,
-              cidade: data.cidade,
-              cep: data.cep,
-              endereco: data.endereco,
-              celular: data.celulares[0],
-              status: 'lead' as any,
-              createdBy: '187f6e5e-e5b9-4232-9dac-42296aa84414',
-              PARCEIRO: 'SINGULAR',
-              camposCustom: customJson as any,
-            });
-            clientCount++;
-
-            // Insert contacts
-            for (let i = 0; i < data.celulares.length; i++) {
-              await db.insert(contacts).values({
-                clientId,
-                tipo: 'telefone',
-                valor: data.celulares[i],
-                preferencial: i === 0,
-                verified: false,
-              });
-              contactCount++;
-            }
-
-            if (clientCount % 300 === 0) {
-              console.log(`  ✅ ${clientCount}/${Object.keys(clientesByNpj).length}...`);
-            }
-          } catch (err: any) {
-            console.error(`❌ Erro ${cnpj}:`, err.message?.slice(0, 80));
-          }
-        }
-
-        console.log(`✅ COMPLETO: ${clientCount} clientes, ${contactCount} contatos importados!`);
-      } catch (error: any) {
-        console.error("❌ Erro na importação:", error.message);
-      }
-    })();
   });
 
   const httpServer = createServer(app);

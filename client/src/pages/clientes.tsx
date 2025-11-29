@@ -256,11 +256,6 @@ export default function Clientes() {
   const [selectedClientIds, setSelectedClientIds] = useState<Set<string>>(new Set());
   const [bulkShareDialogOpen, setBulkShareDialogOpen] = useState(false);
 
-  // Force cache invalidation on mount to always get fresh data
-  useEffect(() => {
-    queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
-  }, []);
-
   // Check if any filter is active
   const hasActiveFilter = searchTerm || statusFilter !== "todos" || selectedTag || tipoFiltro !== "all" || carteiraFiltro !== "all";
   
@@ -677,11 +672,11 @@ export default function Clientes() {
                         data-testid="checkbox-select-all"
                       />
                     </TableHead>
-                    <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Razão Social</TableHead>
-                    <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">CNPJ</TableHead>
+                    <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Razão Social / Nome</TableHead>
+                    <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">CPF/CNPJ</TableHead>
                     <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Celular</TableHead>
                     <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Email</TableHead>
-                    <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Parceiro</TableHead>
+                    <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Carteira</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -736,13 +731,13 @@ export default function Clientes() {
                           {cliente.cpfCnpj || '-'}
                         </TableCell>
                         <TableCell className="text-sm text-slate-700 dark:text-slate-300">
-                          {formatPhoneNumber(cliente.celular)}
+                          {formatPhoneNumber(cliente.CELULAR_PRINCIPAL || cliente.telefone)}
                         </TableCell>
                         <TableCell className="text-sm text-slate-700 dark:text-slate-300">
-                          {cliente.email || '-'}
+                          {cliente.EMAIL_PRINCIPAL || cliente.email || '-'}
                         </TableCell>
                         <TableCell className="text-sm text-slate-700 dark:text-slate-300">
-                          {cliente.PARCEIRO || '-'}
+                          {cliente.carteira || '-'}
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>

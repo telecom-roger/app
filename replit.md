@@ -114,26 +114,3 @@ The application features a professional design system utilizing a deep dark blue
 ---
 
 **Status:** ✅ FASE 6 COMPLETA + ENDPOINT DE TESTE - Pronto para testar na página de testes!
-
----
-
-## 📌 FASE 7 - MÚLTIPLOS CELULARES POR CLIENTE (Nov 29)
-
-### ✅ Implementação Completa:
-- **Tabela contacts**: Criada para armazenar múltiplos contatos por cliente
-- **Campos de telefone**: `celular` (principal), `telefone_2`, + array via `contacts` table
-- **Importação SINGULAR**: Endpoint `/api/import-singular` pronto
-- **Agrupamento por CNPJ**: Automático na importação
-- **Preferencial**: Primeiro celular marcado como preferencial
-
-### 📊 Importação SINGULAR (15.627 registros):
-- ✅ 3.800 clientes únicos extraídos do CSV
-- ✅ 15.627 celulares agrupados por CNPJ
-- ✅ Importação rodando em background via endpoint
-- ✅ Cada cliente com múltiplos contatos (1 por celular)
-
-### 🔧 Próximas Fases:
-1. Campaigns: Opção "Preferencial" vs "Todos os números"
-2. Chat: Identificar por contato específico
-3. WhatsApp: Fallback para outros números se preferencial falhar
-
