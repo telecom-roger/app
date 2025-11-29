@@ -647,151 +647,191 @@ function NovaOportunidadeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Nova Oportunidade</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+        <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
+          <div className="p-3 bg-purple-500/10 rounded-xl flex-shrink-0">
+            <Plus className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+          </div>
+          <div>
+            <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white">
+              Nova Oportunidade
+            </DialogTitle>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+              Crie uma nova oportunidade no seu pipeline
+            </p>
+          </div>
+        </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
-            <FormField
-              control={form.control}
-              name="clientId"
-              render={({ field }) => {
-                const fieldSelectedClient = clientes.find((c: any) => c.id === field.value);
-                return (
-                  <FormItem>
-                    <FormLabel>Cliente</FormLabel>
-                    <FormControl>
-                      <div className="space-y-2">
-                        <Input
-                          placeholder="Buscar por CNPJ ou razão social..."
-                          value={searchCliente}
-                          onChange={(e) => setSearchCliente(e.target.value)}
-                          onFocus={() => setShowDropdown(true)}
-                          data-testid="input-search-cliente"
-                          className="bg-background"
-                        />
-                        {showDropdown && searchCliente.length > 0 && (
-                          <div className="border rounded-lg max-h-56 overflow-y-auto bg-background z-50 shadow-xl">
-                            {clientesFiltrados.length > 0 ? (
-                              <div className="space-y-2 p-2">
-                                {clientesFiltrados.map((client: any) => (
-                                  <div
-                                    key={client.id}
-                                    onClick={() => {
-                                      field.onChange(client.id);
-                                      setSearchCliente("");
-                                      setShowDropdown(false);
-                                    }}
-                                    className="p-3 border border-border rounded-lg hover-elevate cursor-pointer bg-card transition-all"
-                                    data-testid={`option-client-${client.id}`}
-                                  >
-                                    <div className="font-semibold text-primary">{client.nome}</div>
-                                    <div className="text-xs text-muted-foreground mt-1">{client.cnpj}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="p-6 text-sm text-muted-foreground text-center">
-                                Nenhum cliente encontrado
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        {fieldSelectedClient && (
-                          <Card className="p-3 border-primary/30">
-                            <div className="flex items-start gap-3">
-                              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                                <span className="text-xs font-bold text-primary">
-                                  {fieldSelectedClient.nome?.charAt(0).toUpperCase()}
-                                </span>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="font-semibold text-foreground truncate">{fieldSelectedClient.nome}</div>
-                                <div className="text-xs text-muted-foreground mt-1">{fieldSelectedClient.cnpj}</div>
-                              </div>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-6">
+            {/* SEÇÃO 1: CLIENTE */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="h-1 w-1 rounded-full bg-purple-600" />
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Informações do Cliente</p>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="clientId"
+                render={({ field }) => {
+                  const fieldSelectedClient = clientes.find((c: any) => c.id === field.value);
+                  return (
+                    <FormItem>
+                      <FormLabel className="text-base font-semibold">Cliente</FormLabel>
+                      <FormControl>
+                        <div className="space-y-3">
+                          <Input
+                            placeholder="Buscar por CNPJ ou razão social..."
+                            value={searchCliente}
+                            onChange={(e) => setSearchCliente(e.target.value)}
+                            onFocus={() => setShowDropdown(true)}
+                            data-testid="input-search-cliente"
+                            className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 h-10 text-base"
+                          />
+                          {showDropdown && searchCliente.length > 0 && (
+                            <div className="border border-slate-200 dark:border-slate-800 rounded-lg max-h-64 overflow-y-auto bg-white dark:bg-slate-900 z-50 shadow-lg">
+                              {clientesFiltrados.length > 0 ? (
+                                <div className="space-y-1 p-2">
+                                  {clientesFiltrados.map((client: any) => (
+                                    <div
+                                      key={client.id}
+                                      onClick={() => {
+                                        field.onChange(client.id);
+                                        setSearchCliente("");
+                                        setShowDropdown(false);
+                                      }}
+                                      className="p-3 border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+                                      data-testid={`option-client-${client.id}`}
+                                    >
+                                      <div className="font-semibold text-purple-600 dark:text-purple-400">{client.nome}</div>
+                                      <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">{client.cnpj}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="p-8 text-sm text-slate-600 dark:text-slate-400 text-center">
+                                  Nenhum cliente encontrado
+                                </div>
+                              )}
                             </div>
-                          </Card>
-                        )}
-                      </div>
+                          )}
+                          {fieldSelectedClient && (
+                            <Card className="p-4 border-purple-200 dark:border-purple-900/30 bg-purple-50 dark:bg-purple-950/20">
+                              <div className="flex items-start gap-3">
+                                <div className="h-10 w-10 rounded-lg bg-purple-100 dark:bg-purple-900 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-sm font-bold text-purple-600 dark:text-purple-400">
+                                    {fieldSelectedClient.nome?.charAt(0).toUpperCase()}
+                                  </span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-semibold text-slate-900 dark:text-white truncate">{fieldSelectedClient.nome}</div>
+                                  <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">{fieldSelectedClient.cnpj}</div>
+                                </div>
+                              </div>
+                            </Card>
+                          )}
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+            </div>
+
+            {/* SEÇÃO 2: DETALHES DA OPORTUNIDADE */}
+            <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="h-1 w-1 rounded-full bg-purple-600" />
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Detalhes</p>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="titulo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base font-semibold">Título da Oportunidade</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Ex: Proposta de plano móvel corporativo" 
+                        {...field} 
+                        className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 h-10 text-base"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
-                );
-              }}
-            />
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="titulo"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Título</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Proposta de plano móvel" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="etapa"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-semibold">Etapa/Coluna</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-etapa" className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 h-10">
+                            <SelectValue placeholder="Selecione a etapa" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {colunas.map((coluna: any) => (
+                            <SelectItem key={coluna.id} value={coluna.titulo.toLowerCase()}>
+                              {coluna.titulo}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <FormField
-              control={form.control}
-              name="etapa"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Etapa/Coluna</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger data-testid="select-etapa">
-                        <SelectValue placeholder="Selecione a etapa" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {colunas.map((coluna: any) => (
-                        <SelectItem key={coluna.id} value={coluna.titulo.toLowerCase()}>
-                          {coluna.titulo}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                <FormField
+                  control={form.control}
+                  name="valorEstimado"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-semibold">Valor Estimado</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Ex: R$ 5.000,00"
+                          type="text"
+                          value={field.value || ""}
+                          onChange={(e) => field.onChange(e.target.value)}
+                          data-testid="input-valor-estimado"
+                          className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 h-10 text-base"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
 
-            <FormField
-              control={form.control}
-              name="valorEstimado"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Valor Estimado</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Ex: R$ 5.000,00 ou 5000"
-                      type="text"
-                      value={field.value || ""}
-                      onChange={(e) => field.onChange(e.target.value)}
-                      data-testid="input-valor-estimado"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="flex gap-2 justify-end pt-6 border-t mt-6">
+            {/* FOOTER COM BOTÕES */}
+            <div className="flex gap-3 justify-end pt-6 border-t border-slate-200 dark:border-slate-800">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
                 disabled={createMutation.isPending}
+                className="px-6 h-10 text-base font-medium border-slate-200 dark:border-slate-800"
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={createMutation.isPending} className="bg-purple-600 hover:bg-purple-700">
-                {createMutation.isPending ? "Criando..." : "Criar"}
+              <Button 
+                type="submit" 
+                disabled={createMutation.isPending} 
+                className="px-8 h-10 text-base font-medium bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {createMutation.isPending ? "Criando..." : "Criar Oportunidade"}
               </Button>
             </div>
           </form>
