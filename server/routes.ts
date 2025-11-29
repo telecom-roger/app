@@ -328,6 +328,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get client contacts (multiple phone numbers)
+  app.get("/api/clients/:id/contacts", isAuthenticated, async (req, res) => {
+    try {
+      const contacts = await storage.getContactsByClientId(req.params.id);
+      res.json(contacts);
+    } catch (error: any) {
+      console.error("Error fetching contacts:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.post("/api/clients", isAuthenticated, async (req, res) => {
     try {
       const validatedData = insertClientSchema.parse({

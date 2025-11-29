@@ -68,6 +68,11 @@ export default function ClienteProfile() {
     enabled: isAuthenticated && !!id,
   });
 
+  const { data: contacts, isLoading: contactsLoading } = useQuery<any[]>({
+    queryKey: ["/api/clients", id, "contacts"],
+    enabled: isAuthenticated && !!id,
+  });
+
   if (authLoading || !isAuthenticated) {
     return <ProfileSkeleton />;
   }
@@ -292,7 +297,7 @@ export default function ClienteProfile() {
               {/* Contact Information */}
               <div className="space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground">CONTATO</p>
-                {clienteLoading ? (
+                {clienteLoading || contactsLoading ? (
                   <>
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-full" />
@@ -306,18 +311,34 @@ export default function ClienteProfile() {
                       clientId={id || ""}
                       label="Email do Gestor"
                     />
-                    <EditableField
-                      value={cliente?.celular}
-                      field="celular"
-                      clientId={id || ""}
-                      label="Celular"
-                    />
-                    <EditableField
-                      value={cliente?.telefone_2}
-                      field="telefone_2"
-                      clientId={id || ""}
-                      label="Telefone 2"
-                    />
+                    {/* Contatos múltiplos */}
+                    {contacts && contacts.length > 0 ? (
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground">Celulares ({contacts.length}):</p>
+                        {contacts.map((c: any, idx: number) => (
+                          <div key={c.id} className="flex items-center gap-2 px-2 py-1 bg-muted rounded text-sm">
+                            <Phone className="h-3 w-3" />
+                            <span>{c.valor}</span>
+                            {c.preferencial && <Badge variant="secondary" className="ml-auto text-xs">Preferencial</Badge>}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <>
+                        <EditableField
+                          value={cliente?.celular}
+                          field="celular"
+                          clientId={id || ""}
+                          label="Celular"
+                        />
+                        <EditableField
+                          value={cliente?.telefone_2}
+                          field="telefone_2"
+                          clientId={id || ""}
+                          label="Telefone 2"
+                        />
+                      </>
+                    )}
                     <EditableField
                       value={cliente?.contato}
                       field="contato"
