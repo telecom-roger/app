@@ -14,11 +14,13 @@ import { checkPropostaEnviadaTimeouts } from "./automationService";
 // Track campaigns in progress
 const campanhasEmProgresso = new Map<string, {
   id: string;
+  userId: string;
   total: number;
   enviadas: number;
   erros: number;
   status: "em_progresso" | "concluida" | "cancelada";
   criadoEm: Date;
+  parar: boolean;
 }>();
 
 // Admin middleware
@@ -55,7 +57,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Executa cada campanha com isolamento por usuário
         for (const campaign of dueCampaigns) {
           try {
-            const ownerId = campaign.createdBy;
+            const ownerId = campaign.createdBy || undefined;
+            if (!ownerId) {
+              console.warn(`⚠️ Campanha ${campaign.id} sem proprietário definido`);
+              continue;
+            }
             console.log(`🔒 Executando campanha ${campaign.id} do usuário ${ownerId}`);
             
             // Carrega APENAS clientes do dono da campanha
@@ -2388,7 +2394,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             responsavelId: user.id,
           });
           console.log(`✅ Oportunidade criada:`, opp.id);
-          queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
         } catch (err) {
           console.error(`❌ Erro ao criar oportunidade:`, err);
         }
@@ -2633,10 +2638,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       const result = await db
-        .update(clientsTable)
+        .update(clients)
         .set({ createdBy: user.id })
-        .where(isNull(clientsTable.createdBy))
-        .returning({ id: clientsTable.id });
+        .where(isNull(clients.createdBy))
+        .returning({ id: clients.id });
 
       res.json({ 
         success: true, 
