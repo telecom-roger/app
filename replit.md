@@ -113,4 +113,63 @@ The application features a professional design system utilizing a deep dark blue
 
 ---
 
-**Status:** ✅ FASE 6 COMPLETA + ENDPOINT DE TESTE - Pronto para testar na página de testes!
+## 🚀 FASE 7 - AUTOMAÇÃO DE STATUS DO CLIENTE (Nov 29, turno 9)
+
+### ✅ Implementação Completa:
+1. **Função de Recalculation** em `storage.ts`:
+   - `recalculateClientStatus(clientId)` - Calcula status baseado nas oportunidades
+   - `getOpportunitiesByClientId(clientId)` - Busca todas as opps do cliente
+
+2. **Integração nos 4 Endpoints** em `routes.ts`:
+   - `POST /api/opportunities` (criar) - Recalcula status ao criar opp
+   - `PATCH /api/opportunities/:id/move` (mover Kanban) - Recalcula ao mover de etapa
+   - `PATCH /api/opportunities/:id` (editar) - Recalcula se etapa mudar
+   - `DELETE /api/opportunities/:id` (deletar) - Recalcula ao remover opp
+
+3. **Regras de Status** (Totalmente Automático):
+   - **Sem oportunidades** → Lead quente
+   - **Etapa mais avançada**:
+     - FECHADO → Ativo
+     - AGUARDANDO ACEITE/CONTRATO ENVIADO/AGUARDANDO CONTRATO → Em fechamento
+     - PROPOSTA/PROPOSTA ENVIADA → Em negociação
+     - CONTATO → Engajado
+     - LEAD → Lead quente
+   - **Todas PERDIDAS** → Perdido
+   - **PERDIDO não eleva status** (ignorado na lógica)
+
+4. **Endpoint de Teste**:
+   - `POST /api/test/client-status-automation` - Testa recalculation manual
+   - Integrado na página `/test/automation` (Seção 6️⃣)
+
+5. **UI na Página de Teste**:
+   - Novo botão: "🔄 Recalcular Status"
+   - Mostra: Status antes/depois, lista de opps do cliente, mensagem de mudança
+   - Cores: Verde se mudou, Amarelo se inalterado
+
+### 🎯 Como Testar:
+**Opção 1 - Manual no Kanban:**
+1. Selecione um cliente com oportunidades
+2. Mude a etapa de uma opp (drag-and-drop)
+3. Abra o cliente em /clientes/ID
+4. Veja o STATUS no lado direito (deve ter mudado AUTOMATICAMENTE!)
+
+**Opção 2 - Via Página de Teste:**
+1. Acesse /test/automation
+2. Selecione um cliente
+3. Clique "🔄 Recalcular Status"
+4. Veja o resultado com todas as oportunidades do cliente
+
+### 📊 Lógica de Prioridade (Ordem do Kanban):
+- 0: FECHADO (qualquer um garante "Ativo")
+- 1: AGUARDANDO ACEITE
+- 2: CONTRATO ENVIADO
+- 3: AGUARDANDO CONTRATO
+- 4: PROPOSTA ENVIADA
+- 5: PROPOSTA
+- 6: CONTATO
+- 7: LEAD
+- 8: PERDIDO (ignorado, não eleva)
+
+---
+
+**Status:** ✅ FASE 7 COMPLETA - Automação de Status do Cliente totalmente implementada!

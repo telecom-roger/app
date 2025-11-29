@@ -38,7 +38,8 @@ export default function TestAutomation() {
         messageText: message,
       });
     },
-    onSuccess: (data) => {
+    onSuccess: async (response: any) => {
+      const data = await response.json();
       toast({ title: "✅ Teste simulado com sucesso!", description: data.message });
       refetchTestOpps();
       setMessage("Ótimo! Gostei da proposta");
@@ -100,6 +101,27 @@ export default function TestAutomation() {
         description: `Oportunidade: ${data.opportunity.etapaAntes} → ${data.opportunity.etapaAgora}` 
       });
       refetchTestOpps();
+    },
+    onError: (error: any) => {
+      toast({ title: "❌ Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Test client status automation
+  const [statusAutomationResult, setStatusAutomationResult] = useState<any>(null);
+  const statusAutomationMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/test/client-status-automation", {
+        clientId,
+      });
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      setStatusAutomationResult(data);
+      toast({ 
+        title: data.cliente.changed ? "✅ Status Atualizado!" : "⚠️ Status Inalterado", 
+        description: `${data.cliente.statusAntes} → ${data.cliente.statusDepois}` 
+      });
     },
     onError: (error: any) => {
       toast({ title: "❌ Erro", description: error.message, variant: "destructive" });
@@ -294,9 +316,48 @@ export default function TestAutomation() {
         </Button>
       </Card>
 
+      {/* CLIENT STATUS AUTOMATION TEST */}
+      <Card className="p-6 bg-slate-800 border-green-500/20">
+        <h2 className="text-xl font-bold text-white mb-4">6️⃣ Teste Automação de Status do Cliente</h2>
+        
+        <p className="text-slate-300 mb-4 text-xs">
+          Recalcula automaticamente o status do cliente baseado nas oportunidades dele. O status NUNCA é manual e sempre segue a etapa mais avançada!
+        </p>
+
+        <Button
+          onClick={() => statusAutomationMutation.mutate()}
+          disabled={statusAutomationMutation.isPending || !clientId}
+          className="w-full bg-green-600 hover:bg-green-700 mb-4"
+          data-testid="button-test-status-automation"
+        >
+          {statusAutomationMutation.isPending ? "Calculando..." : "🔄 Recalcular Status"}
+        </Button>
+
+        {statusAutomationResult && (
+          <div className={`p-3 rounded border ${statusAutomationResult.cliente.changed ? 'bg-green-500/10 border-green-500/30' : 'bg-yellow-500/10 border-yellow-500/30'}`}>
+            <p className={`font-bold ${statusAutomationResult.cliente.changed ? 'text-green-300' : 'text-yellow-300'}`}>
+              {statusAutomationResult.mensagem}
+            </p>
+            <p className="text-slate-300 text-xs mt-2">Cliente: <span className="text-slate-200">{statusAutomationResult.cliente.nome}</span></p>
+            <p className="text-slate-300 text-xs">Status: <span className="font-bold text-cyan-300">{statusAutomationResult.cliente.statusDepois}</span></p>
+            <div className="mt-3 space-y-1 max-h-32 overflow-y-auto">
+              <p className="text-slate-400 text-xs font-bold">Oportunidades:</p>
+              {statusAutomationResult.oportunidades.map((opp: any, idx: number) => (
+                <div key={idx} className="text-slate-400 text-xs ml-2">
+                  • {opp.titulo} - <span className="text-cyan-300">{opp.etapa}</span>
+                </div>
+              ))}
+              {statusAutomationResult.oportunidades.length === 0 && (
+                <p className="text-slate-500 text-xs ml-2">Sem oportunidades - Status: LEAD_QUENTE</p>
+              )}
+            </div>
+          </div>
+        )}
+      </Card>
+
       {/* Instructions */}
       <Card className="p-6 bg-slate-800 border-slate-700">
-        <h3 className="text-lg font-bold text-white mb-3">📖 Como Usar:</h3>
+        <h3 className="text-lg font-bold text-white mb-3">📖 Como Usar + Regras de Status:</h3>
         <div className="space-y-4 text-sm text-slate-300">
           <div>
             <p className="font-bold text-purple-300 mb-2">Teste 1 - Simular IA:</p>
@@ -318,6 +379,15 @@ export default function TestAutomation() {
             <li>"Não tenho interesse" → <span className="text-red-300">Perdido</span></li>
             <li>"Qual o preço?" → <span className="text-blue-300">Contato</span></li>
             <li>"Aqui é o fornecedor com NF" → <span className="text-yellow-300">Fornecedor</span></li>
+          </ul>
+          <p className="mt-3 text-xs text-slate-400 font-bold">📊 Regras de Status Automático:</p>
+          <ul className="list-disc list-inside text-xs text-slate-400 ml-2 space-y-1">
+            <li>❌ Sem oportunidades → <span className="text-purple-300">LEAD_QUENTE</span></li>
+            <li>🎯 CONTATO (mais avançada) → <span className="text-blue-300">ENGAJADO</span></li>
+            <li>💼 PROPOSTA/PROPOSTA ENVIADA → <span className="text-yellow-300">EM_NEGOCIACAO</span></li>
+            <li>📄 AGUARDANDO CONTRATO/CONTRATO ENVIADO/AGUARDANDO ACEITE → <span className="text-orange-300">EM_FECHAMENTO</span></li>
+            <li>✅ FECHADO (qualquer um) → <span className="text-green-300">ATIVO</span></li>
+            <li>❌ Todas PERDIDAS → <span className="text-red-300">PERDIDO</span></li>
           </ul>
         </div>
       </Card>
