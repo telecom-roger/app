@@ -652,10 +652,10 @@ async function executeAguardandoAceiteReminder(task: any) {
   
   console.log(`✅ Lembrete ${lembreteNum}/3 enviado para ${client.nome}`);
   
-  // Se foi o 3º lembrete, agendar movimento para AGUARDANDO ATENÇÃO
+  // Se foi o 3º lembrete, agendar movimento para AGUARDANDO ATENÇÃO IMEDIATAMENTE
   if (lembreteNum === 3) {
-    console.log(`⏭️ Agendando movimento para AGUARDANDO ATENÇÃO em 1 hora...`);
-    const proximaExecucao = new Date(Date.now() + 60 * 60 * 1000); // 1 hora depois
+    console.log(`⏭️ 3º lembrete executado! Agendando movimento IMEDIATO para AGUARDANDO ATENÇÃO...`);
+    const proximaExecucao = new Date(); // AGORA!
     
     await db.insert(automationTasks).values({
       userId: task.userId,
@@ -663,8 +663,8 @@ async function executeAguardandoAceiteReminder(task: any) {
       tipo: "kanban_move",
       proximaExecucao,
       dados: { 
-        opportunityId: opportunity.id, 
-        etapa: "AGUARDANDO ATENÇÃO",
+        oppId: opportunity.id,  // ✅ CORRIGIDO: era opportunityId
+        toStage: "AGUARDANDO ATENÇÃO",  // ✅ CORRIGIDO: era etapa
         motivo: "Terceiro lembrete enviado - movendo para análise gerencial",
         notificarResponsavel: true,
       },
