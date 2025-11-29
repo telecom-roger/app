@@ -10,6 +10,7 @@ import { setupAuth, isAuthenticated } from "./localAuth";
 import { db } from "./db";
 import { simulateClientResponse, getAllAutomationTasks, getAllFollowUps, getAllClientScores, createTestFollowUps, createTestKanbanMovement, processBatchResponses } from "./testAutomation";
 import { checkPropostaEnviadaTimeouts } from "./automationService";
+import { analyzeClientMessage } from "./aiService";
 
 // Track campaigns in progress
 const campanhasEmProgresso = new Map<string, {
@@ -2034,18 +2035,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // TEST ENDPOINT: Simulate receiving a message from client
+  // TEST ENDPOINT: Simulate receiving a message from client + AI Analysis
   app.post("/api/chat/test/receive-message/:conversationId", isAuthenticated, async (req, res) => {
     try {
       const { conversationId } = req.params;
       const { conteudo = "Olá! Tudo bem?" } = req.body;
+      const user = (req.user as any);
 
+      // 1. Criar mensagem
       const mensagem = await storage.createMessage({
         conversationId,
         sender: "client",
         tipo: "texto",
         conteudo,
       });
+
+      // 2. Analisar com IA e criar oportunidade
+      try {
+        const [conv] = await db.select().from(conversations).where(eq(conversations.id, conversationId)).limit(1);
+        if (conv && conv.clientId) {
+          const client = await storage.getClientById(conv.clientId);
+          if (client) {
+            const analysis = await analyzeClientMessage(conteudo, { nome: client.nome });
+            console.log(`🤖 IA (CHAT): ${analysis.sentimento} (${analysis.confianca}%) → ${analysis.etapa}`);
+
+            // 3. Criar/mover oportunidade se análise indicar ação
+            if (analysis.etapa !== "automatico") {
+              const etapasFinais = ["PERDIDO", "FECHADO"];
+              let existingOpp = await db.query.opportunities.findFirst({
+                where: (o: any) => 
+                  and(
+                    eq(o.clientId, conv.clientId),
+                    sql`${o.etapa} NOT IN (${sql.raw("'" + etapasFinais.join("','") + "'")})`
+                  ),
+                orderBy: (o: any) => desc(o.createdAt),
+              });
+
+              if (existingOpp && existingOpp.etapa !== analysis.etapa) {
+                // Validar movimento
+                const stages = ["LEAD", "CONTATO", "PROPOSTA", "PROPOSTA ENVIADA", "CONTRATO ENVIADO", "AGUARDANDO CONTRATO", "AGUARDANDO ACEITE", "FECHADO", "PERDIDO", "FORNECEDOR"];
+                const currentIndex = stages.indexOf(existingOpp.etapa);
+                const newIndex = stages.indexOf(analysis.etapa);
+                
+                if (currentIndex >= 0 && newIndex >= 0 && newIndex >= currentIndex) {
+                  // Movimento válido - mover
+                  await db.update(opportunities).set({ 
+                    etapa: analysis.etapa,
+                    titulo: `${client.nome} - ${analysis.motivo}`,
+                    updatedAt: new Date()
+                  }).where(eq(opportunities.id, existingOpp.id));
+                  
+                  console.log(`✅ OPP MOVIDA (CHAT): ${existingOpp.etapa} → ${analysis.etapa}`);
+                  await storage.recalculateClientStatus(conv.clientId);
+                }
+              } else if (!existingOpp) {
+                // Criar nova
+                const [newOpp] = await db.insert(opportunities).values({
+                  clientId: conv.clientId,
+                  titulo: `${client.nome} - ${analysis.motivo}`,
+                  etapa: analysis.etapa,
+                  valorEstimado: "5000",
+                  responsavelId: user.id || conv.userId,
+                  ordem: 0,
+                }).returning();
+                console.log(`✅ OPP CRIADA (CHAT): ${analysis.etapa}`);
+                await storage.recalculateClientStatus(conv.clientId);
+              }
+            }
+          }
+        }
+      } catch (aiError) {
+        console.warn("⚠️ Erro ao processar IA:", aiError);
+      }
 
       res.json(mensagem);
     } catch (error: any) {
