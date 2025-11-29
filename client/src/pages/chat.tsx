@@ -451,7 +451,15 @@ export default function Chat() {
   });
 
   const handleSelectClient = (client: Client) => {
-    const phone = client.celular;
+    const phone = (client as any).telefone || client.celular;
+    if (!phone) {
+      toast({
+        title: "Erro",
+        description: "Cliente sem telefone cadastrado",
+        variant: "destructive",
+      });
+      return;
+    }
     refetchClients(); // Força atualização de cache antes de criar conversa
     getConversationMutation.mutate(phone);
   };
