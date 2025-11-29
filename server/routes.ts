@@ -419,9 +419,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== OPPORTUNITY ROUTES ====================
   app.get("/api/opportunities", isAuthenticated, async (req, res) => {
     try {
-      const { etapa, responsavel } = req.query;
+      const user = req.user as any;
+      const { etapa } = req.query;
       const opportunities = await storage.getOpportunities({
-        responsavel: responsavel as string, // Filtro opcional por responsável
+        responsavel: user.id, // Filtrar por usuário autenticado
         etapa: etapa as string,
       });
       res.json(opportunities);
@@ -2767,6 +2768,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { clientId, messageText } = req.body;
       const userId = (req.user as any).id; // Usar userId do usuário autenticado
+      
+      console.log(`🧪 [TEST] POST /api/test/simulate-response - userId=${userId}, clientId=${clientId}`);
       
       if (!clientId || !messageText) {
         return res.status(400).json({ error: "clientId, messageText são obrigatórios" });

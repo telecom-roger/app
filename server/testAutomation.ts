@@ -344,6 +344,7 @@ export async function simulateClientResponse(clientId: string, userId: string, m
 
     // 4. CRIAR NOVA oportunidade na etapa correta (teste manual)
     if (analysis.etapa !== "automatico" && client) {
+      console.log(`🔍 DEBUG: Criando opportunity com userId=${userId}, etapa=${analysis.etapa}`);
       const newOpp = await db.insert(opportunities).values({
         clientId,
         titulo: `${client.nome} - ${analysis.motivo}`,
@@ -353,7 +354,7 @@ export async function simulateClientResponse(clientId: string, userId: string, m
         ordem: 0,
       }).returning().then(r => r[0]);
       
-      console.log(`✅ Oportunidade criada em "${analysis.etapa}": ${newOpp.id}`);
+      console.log(`✅ Oportunidade criada em "${analysis.etapa}": ${newOpp.id} (responsavelId: ${newOpp.responsavelId})`);
       
       return { 
         success: true, 
