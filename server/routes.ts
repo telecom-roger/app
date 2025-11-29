@@ -446,11 +446,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/opportunities", isAuthenticated, async (req, res) => {
     try {
       const validatedData = insertOpportunitySchema.parse(req.body);
-      const opportunity = await storage.createOpportunity(validatedData);
+      const user = req.user as any;
+
+      // Verificar permissão ao cliente antes de criar oportunidade
+      if (validatedData.clientId) {
+        const access = await storage.checkClientAccess(validatedData.clientId, user.id);
+        if (!access.canAccess) {
+          return res.status(403).json({ error: "Você não tem acesso a este cliente" });
+        }
+        // Se tiver permissão "visualizar", não pode criar oportunidade
+        if (access.permissao === "visualizar") {
+          return res.status(403).json({ error: "Você só pode visualizar este cliente, não pode criar oportunidades" });
+        }
+      }
+
+      // Garantir que responsavelId é o usuário autenticado
+      const opportunityData = {
+        ...validatedData,
+        responsavelId: user.id
+      };
+
+      const opportunity = await storage.createOpportunity(opportunityData);
 
       // Create audit log
       await storage.createAuditLog({
-        userId: (req.user as any).id,
+        userId: user.id,
         acao: "criar",
         entidade: "opportunity",
         entidadeId: opportunity.id,
