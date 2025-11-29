@@ -784,12 +784,16 @@ export default function Clientes() {
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="w-12">
                       <Checkbox 
-                        checked={selectedClientIds.size === data?.clientes?.length && data?.clientes?.length > 0}
+                        checked={!!data?.clientes && data.clientes.length > 0 && data.clientes.every(c => selectedClientIds.has(c.id))}
                         onCheckedChange={(checked) => {
                           if (checked && data?.clientes) {
-                            setSelectedClientIds(new Set(data.clientes.map(c => c.id)));
-                          } else {
-                            setSelectedClientIds(new Set());
+                            const novoSet = new Set(selectedClientIds);
+                            data.clientes.forEach(c => novoSet.add(c.id));
+                            setSelectedClientIds(novoSet);
+                          } else if (data?.clientes) {
+                            const novoSet = new Set(selectedClientIds);
+                            data.clientes.forEach(c => novoSet.delete(c.id));
+                            setSelectedClientIds(novoSet);
                           }
                         }}
                         data-testid="checkbox-select-all"
