@@ -3218,6 +3218,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== TEST ENDPOINT - CLIENT STATUS AUTOMATION ====================
+  app.post("/api/test/client-status-automation", async (req, res) => {
+    try {
+      const { clientId } = req.body;
+      
+      if (!clientId) {
+        return res.status(400).json({ error: "clientId is required" });
+      }
+
+      const client = await storage.getClientById(clientId);
+      if (!client) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+
+      const opportunities = await storage.getOpportunitiesByClientId(clientId);
+      const statusAntes = client.status;
+      const newStatus = await storage.recalculateClientStatus(clientId);
+      await storage.updateClient(clientId, { status: newStatus });
+      
+      const clientAtualizado = await storage.getClientById(clientId);
+      
+      res.json({
+        success: true,
+        cliente: {
+          id: client.id,
+          nome: client.nome,
+          statusAntes: statusAntes.toUpperCase(),
+          statusDepois: newStatus.toUpperCase(),
+          changed: statusAntes !== newStatus
+        },
+        oportunidades: opportunities.map(opp => ({
+          id: opp.id,
+          titulo: opp.titulo,
+          etapa: opp.etapa
+        })),
+        mensagem: statusAntes !== newStatus 
+          ? `✅ Status alterado de ${statusAntes.toUpperCase()} para ${newStatus.toUpperCase()}`
+          : `⚠️ Status já estava como ${newStatus.toUpperCase()}`
+      });
+    } catch (error: any) {
+      console.error("Test error:", error);
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
