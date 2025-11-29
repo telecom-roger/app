@@ -750,7 +750,7 @@ function NovaOportunidadeDialog({
                     </FormControl>
                     <SelectContent>
                       {colunas.map((coluna: any) => (
-                        <SelectItem key={coluna.id} value={coluna.id}>
+                        <SelectItem key={coluna.id} value={coluna.titulo.toLowerCase()}>
                           {coluna.titulo}
                         </SelectItem>
                       ))}
