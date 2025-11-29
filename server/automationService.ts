@@ -413,6 +413,20 @@ async function executeContratoEnviadoMessage(task: any) {
   
   if (!client) return;
   
+  // Buscar ou criar conversation do cliente
+  let conversation = await db.query.conversations.findFirst({
+    where: (conv: any) => eq(conv.clientId, opportunity.clientId),
+  });
+  
+  if (!conversation) {
+    const [newConv] = await db.insert(conversations).values({
+      clientId: opportunity.clientId,
+      userId: task.userId,
+      ultimaMensagemEm: new Date(),
+    }).returning();
+    conversation = newConv;
+  }
+  
   // 2 mensagens randomizadas
   const messages_templates: string[] = [
     `Oi!\nSeu contrato já chegou no seu e-mail.\nÉ só abrir o link, colocar a data de nascimento do gestor e seguir as etapas.\n\nVocê vai receber um e-mail com o TOKEN de confirmação.\nInforme o código e pronto — assinatura concluída.\n\nQualquer dúvida estou por aqui!`,
@@ -423,9 +437,9 @@ async function executeContratoEnviadoMessage(task: any) {
   const randomIndex = Math.floor(Math.random() * messages_templates.length);
   const mensagem = messages_templates[randomIndex];
   
-  // Registrar mensagem no banco
+  // Registrar mensagem no banco (usando conversation ID válida)
   await db.insert(messages).values({
-    conversationId: `contrato-enviado-${opportunity.id}`,
+    conversationId: conversation.id,
     sender: "bot",
     tipo: "text",
     conteudo: mensagem,
