@@ -328,7 +328,7 @@ export async function createFollowUpAfterResponse(clientId: string, userId: stri
   }
 }
 
-// ======================== CONTRACT REMINDER - Cobrança em horários comerciais 08:00, 11:50, 17:00 ========================
+// ======================== CONTRACT REMINDER - Cobrança em horários comerciais 08:00, 16:30 ========================
 async function executeContractReminder(task: any) {
   console.log(`📋 Contract reminder para ${task.clientId}`);
   
@@ -527,8 +527,8 @@ export async function checkPropostaEnviadaTimeouts() {
         const spTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
         const currentHour = spTime.getHours();
         
-        // Horários permitidos: 08:00, 11:50, 17:00
-        const isValidTime = (currentHour === 8 || currentHour === 11 || currentHour === 17);
+        // Horários permitidos: 08:00, 16:30
+        const isValidTime = (currentHour === 8 || currentHour === 16);
         
         if (isValidTime || daysSinceEnvio > 0) { // Em dias seguintes, enviar sempre
           // Verificar se já foi enviado task nesta hora/dia
