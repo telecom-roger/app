@@ -1104,7 +1104,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== STATS ROUTES ====================
   app.get("/api/stats/dashboard", isAuthenticated, async (req, res) => {
     try {
-      const stats = await storage.getDashboardStats((req.user as any).id);
+      // Dashboard sempre mostra TOTAL de clientes (não filtra por usuário)
+      const stats = await storage.getDashboardStats();
       res.json(stats);
     } catch (error: any) {
       console.error("Error fetching dashboard stats:", error);
