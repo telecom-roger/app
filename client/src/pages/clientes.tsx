@@ -318,7 +318,7 @@ export default function Clientes() {
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
   const [selectedClientIds, setSelectedClientIds] = useState<Set<string>>(new Set());
   const [bulkShareDialogOpen, setBulkShareDialogOpen] = useState(false);
-  const tableRef = useRef<HTMLDivElement>(null);
+  const paginationRef = useRef<HTMLDivElement>(null);
 
   // Check if any filter is active
   const hasActiveFilter = searchTerm || statusFilter !== "todos" || selectedTag || tipoFiltro !== "all" || carteiraFiltro !== "all";
@@ -440,9 +440,9 @@ export default function Clientes() {
     }
   }, [notifications]);
 
-  // Scroll to table when page changes
+  // Scroll to pagination buttons when page changes
   useEffect(() => {
-    tableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    paginationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [page]);
 
   const statusColors: Record<string, string> = {
@@ -777,7 +777,7 @@ export default function Clientes() {
           )}
 
           {/* Table */}
-          <Card ref={tableRef} className="border-0 shadow-sm bg-white dark:bg-slate-800/50 overflow-hidden">
+          <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50 overflow-hidden">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
@@ -919,7 +919,7 @@ export default function Clientes() {
 
             {/* Pagination */}
             {data && data.total > limit && (
-              <div className="flex items-center justify-between p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30">
+              <div ref={paginationRef} className="flex items-center justify-between p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30">
                 <div className="text-sm text-slate-700 dark:text-slate-300 font-medium">
                   Página {page} de {Math.ceil(data.total / limit)} • {data.total} clientes
                 </div>
