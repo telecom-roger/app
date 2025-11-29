@@ -3141,6 +3141,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== IMPORT SINGULAR ====================
+  app.post("/api/import-singular", async (req, res) => {
+    try {
+      const { clientes } = req.body;
+      if (!clientes || !Array.isArray(clientes)) {
+        return res.status(400).json({ error: "Esperado array 'clientes'" });
+      }
+
+      let clientesAdicionados = 0;
+      let contatosAdicionados = 0;
+      let erros = 0;
+
+      for (const cliente of clientes) {
+        try {
+          // Verificar se já existe
+          const existing = await db.query.clients.findFirst({
+            where: (c: any) => eq(c.cpfCnpj, cliente.cpfCnpj),
+          });
+
+          let clientId: string;
+          if (existing) {
+            clientId = existing.id;
+          } else {
+            const [newClient] = await db
+              .insert(clients)
+              .values({
+                nome: cliente.nome,
+                razaoSocial: cliente.nome,
+                cpfCnpj: cliente.cpfCnpj,
+                uf: cliente.uf,
+                cidade: cliente.cidade,
+                cep: cliente.cep,
+                endereco: cliente.endereco,
+                status: "lead",
+                camposCustom: {
+                  quantidadeLinhas: cliente.quantidadeLinhas,
+                  origem: "SINGULAR",
+                },
+              })
+              .returning();
+            clientId = newClient.id;
+            clientesAdicionados++;
+          }
+
+          // Adicionar contatos
+          for (const contato of cliente.contatos) {
+            const existing = await db.query.contacts.findFirst({
+              where: (c: any) =>
+                eq(c.clientId, clientId) && eq(c.valor, contato.celular),
+            });
+
+            if (!existing) {
+              await db.insert(contacts).values({
+                clientId,
+                tipo: "telefone",
+                valor: contato.celular,
+                preferencial: contato.preferencial || false,
+                verified: false,
+              });
+              contatosAdicionados++;
+            }
+          }
+        } catch (err: any) {
+          erros++;
+          console.error("Erro ao processar cliente:", err);
+        }
+      }
+
+      res.json({
+        success: erros === 0,
+        clientesAdicionados,
+        contatosAdicionados,
+        erros,
+      });
+    } catch (error: any) {
+      console.error("❌ Import error:", error);
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
