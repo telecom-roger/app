@@ -872,6 +872,7 @@ export default function Clientes() {
                     <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Celular</TableHead>
                     <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Email</TableHead>
                     <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Carteira</TableHead>
+                    <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Status</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -885,6 +886,7 @@ export default function Clientes() {
                         <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-40" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-8" /></TableCell>
                       </TableRow>
                     ))
@@ -935,6 +937,13 @@ export default function Clientes() {
                           {cliente.carteira || '-'}
                         </TableCell>
                         <TableCell>
+                          {cliente.status && (
+                            <Badge className={`${statusColors[cliente.status] || 'bg-slate-200 text-slate-800'}`}>
+                              {cliente.status.toUpperCase()}
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" data-testid="button-actions">
@@ -970,7 +979,7 @@ export default function Clientes() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-12">
+                      <TableCell colSpan={8} className="text-center py-12">
                         <div className="text-slate-500 dark:text-slate-400">
                           <Users className="h-12 w-12 mx-auto mb-3 opacity-40" />
                           <p className="font-medium">Nenhum cliente encontrado</p>

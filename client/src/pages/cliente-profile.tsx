@@ -1,9 +1,10 @@
-import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +12,13 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   ArrowLeft,
   Mail,
@@ -33,11 +41,32 @@ import { ClientNoteItem } from "@/components/ClientNoteItem";
 import { CreateOpportunityPopover } from "@/components/CreateOpportunityPopover";
 import type { Client, Interaction, ClientNote } from "@shared/schema";
 
+const STATUS_OPTIONS = [
+  "lead_quente",
+  "engajado",
+  "em_negociacao",
+  "em_fechamento",
+  "ativo",
+  "perdido",
+  "remarketing",
+];
+
+const STATUS_COLORS: Record<string, string> = {
+  lead_quente: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  engajado: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+  em_negociacao: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+  em_fechamento: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+  ativo: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
+  perdido: "bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200",
+  remarketing: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
+};
+
 export default function ClienteProfile() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const [editingStatus, setEditingStatus] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -66,6 +95,27 @@ export default function ClienteProfile() {
   const { data: clientNotes, isLoading: notesLoading } = useQuery<ClientNote[]>({
     queryKey: ["/api/client-notes", id],
     enabled: isAuthenticated && !!id,
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async (newStatus: string) => {
+      await apiRequest("PATCH", `/api/clients/${id}`, { status: newStatus });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients", id] });
+      toast({
+        title: "Status atualizado",
+        description: "Status do cliente foi atualizado com sucesso",
+      });
+      setEditingStatus(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Falha ao atualizar status",
+        variant: "destructive",
+      });
+    },
   });
 
   if (authLoading || !isAuthenticated) {
@@ -116,9 +166,30 @@ export default function ClienteProfile() {
                       {cliente?.nome}
                     </h3>
                     {cliente?.status && (
-                      <Badge variant="outline" className="text-xs mt-1" data-testid="badge-status">
-                        {cliente.status.toUpperCase()}
-                      </Badge>
+                      <div className="mt-1" data-testid="badge-status">
+                        {editingStatus ? (
+                          <Select value={cliente.status} onValueChange={(newStatus) => updateStatusMutation.mutate(newStatus)}>
+                            <SelectTrigger className="h-8 w-full" data-testid="select-status-edit">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {STATUS_OPTIONS.map((status) => (
+                                <SelectItem key={status} value={status}>
+                                  {status.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs cursor-pointer ${STATUS_COLORS[cliente.status] || 'bg-slate-200 text-slate-800'}`}
+                            onClick={() => setEditingStatus(true)}
+                          >
+                            {cliente.status.toUpperCase()}
+                          </Badge>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
