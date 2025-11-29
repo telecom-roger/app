@@ -8,7 +8,8 @@ export interface MessageAnalysis {
   sentimento: "positivo" | "negativo" | "neutro" | "fornecedor";
   confianca: number;
   motivo: string;
-  etapa: "automatico" | "lead" | "contato" | "proposta" | "fechado" | "perdido" | "fornecedor";
+  etapa: "contato" | "proposta" | "fornecedor" | "perdido"; // Apenas 4 etapas automáticas!
+  acao: "criar" | "mover" | "nenhuma"; // Indica se deve criar, mover ou ignorar
   sugestao: string;
 }
 
@@ -24,16 +25,10 @@ function normalizeMessage(text: string): string {
 function analyzeLocalTest(mensagem: string): MessageAnalysis {
   const msg = normalizeMessage(mensagem);
   
-  // 🛑 RECUSA TOTAL → PERDIDO (palavras-chave normalizadas - maiúsculas/acentos automáticos)
+  // 🛑 RECUSA TOTAL → PERDIDO
   const recusaTotal = [
-    "nao quero renovar",
-    "cancela tudo",
-    "nao tenho interesse",
-    "nao quero nenhum plano",
-    "nao quero",
-    "recuso",
-    "nao me interessa",
-    "nao tenho mais interesse"
+    "nao quero renovar", "cancela tudo", "nao tenho interesse",
+    "nao quero nenhum plano", "nao quero", "recuso", "nao me interessa", "nao tenho mais interesse"
   ];
   if (recusaTotal.some(palavra => msg.includes(palavra))) {
     return {
@@ -41,47 +36,42 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
       confianca: 95,
       motivo: "Recusa total detectada",
       etapa: "perdido",
+      acao: "criar",
       sugestao: "Arquivar oportunidade",
     };
   }
   
-  // ℹ️ RECUSA PARCIAL → NÃO MOVE (não gera ação - normalizadas)
+  // ℹ️ RECUSA PARCIAL → NÃO MOVE
   const recusaParcial = [
-    "cancelar algumas linhas",
-    "cancelar parcial",
-    "remover algumas",
-    "quero apenas algumas",
-    "nao quero algumas",
+    "cancelar algumas linhas", "cancelar parcial", "remover algumas",
+    "quero apenas algumas", "nao quero algumas", "vou pensar", "deixa comigo",
+    "depois te falo"
   ];
   if (recusaParcial.some(palavra => msg.includes(palavra))) {
     return {
       sentimento: "neutro",
       confianca: 70,
       motivo: "Recusa parcial - não afeta etapa",
-      etapa: "automatico",
-      sugestao: "Conversar com cliente sobre parcelas",
+      etapa: "contato",
+      acao: "nenhuma",
+      sugestao: "Conversar com cliente",
     };
   }
   
-  // 📲 FORNECEDOR/AUTOMÁTICA → FORNECEDOR (mensagens automáticas - normalizadas)
-  const fornecedor = [
-    "deixe seu contato",
-    "breve",
-    "aguarde",
-    "em breve",
-    "entro em contato"
-  ];
+  // 📲 FORNECEDOR
+  const fornecedor = ["deixe seu contato", "breve", "aguarde", "em breve", "entro em contato"];
   if (fornecedor.some(palavra => msg.includes(palavra))) {
     return {
       sentimento: "fornecedor",
       confianca: 90,
-      motivo: "Mensagem automática ou de fornecedor",
+      motivo: "Mensagem automática",
       etapa: "fornecedor",
-      sugestao: "Aguardando resposta posterior",
+      acao: "criar",
+      sugestao: "Aguardando resposta",
     };
   }
   
-  // ✅ APROVAÇÃO → PROPOSTA (palavras-chave de aprovação - normalizadas)
+  // ✅ APROVAÇÃO → PROPOSTA
   const aprovacao = [
     "ok", "sim", "manda", "pode enviar", "quero renovar", "topa", "pode", "vamos la",
     "gostei", "adorei", "legal", "otimo", "maravilha", "perfeito", "excelente",
@@ -92,31 +82,34 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
     return {
       sentimento: "positivo",
       confianca: 95,
-      motivo: "Aprovação ou autorização detectada",
+      motivo: "Aprovação detectada",
       etapa: "proposta",
-      sugestao: "Enviar proposta formal",
+      acao: "criar",
+      sugestao: "Enviar proposta",
     };
   }
   
-  // ❓ INFORMAÇÃO → CONTATO (perguntas sobre preço/valor - normalizadas)
+  // ❓ INFORMAÇÃO → CONTATO
   const precoKeywords = ["preco", "quanto", "valor", "custa"];
   if (precoKeywords.some(palavra => msg.includes(palavra))) {
     return {
       sentimento: "positivo",
       confianca: 85,
-      motivo: "Pergunta sobre preço/valor",
+      motivo: "Pergunta sobre preço",
       etapa: "contato",
-      sugestao: "Enviar tabela de preços",
+      acao: "criar",
+      sugestao: "Enviar tabela",
     };
   }
   
-  // 🤷 NEUTRO → CONTATO (por padrão, qualquer mensagem inicial do cliente vai para CONTATO)
+  // 🤷 NEUTRO → CONTATO (padrão para qualquer mensagem inicial)
   return {
     sentimento: "neutro",
     confianca: 50,
-    motivo: "Mensagem inicial - cliente em contato",
+    motivo: "Mensagem inicial",
     etapa: "contato",
-    sugestao: "Engajar com cliente",
+    acao: "criar",
+    sugestao: "Engajar",
   };
 }
 
@@ -140,24 +133,29 @@ export async function analyzeClientMessage(
 MENSAGEM: "${mensagem}"
 CLIENTE: ${clienteInfo?.nome || "Desconhecido"}
 
-REGRAS DE CLASSIFICAÇÃO - SIGA EXATAMENTE (IA trabalha APENAS em 4 etapas automáticas):
+REGRAS - RETORNE EXATAMENTE UMA DESTAS 4 ETAPAS + AÇÃO:
 
-▶️ ETAPAS AUTOMÁTICAS (4 apenas - retorne em MINÚSCULA):
-1. "contato" - Cliente pergunta preço, valor, quanto custa (quer informação)
-2. "proposta" - Cliente diz "ok", "sim", "manda", "pode enviar", "quero renovar" (aprovação)
-3. "fornecedor" - Mensagens automáticas: "deixe seu contato", "breve", "aguarde", "em breve"
-4. "perdido" - Recusa TOTAL: "não quero renovar", "cancela tudo", "não tenho interesse"
+▶️ ETAPAS AUTOMÁTICAS (4 apenas):
+1. "contato" - Cliente quer informação: preço, valor, quantidade, detalhes OU mensagens iniciais genéricas ("oi", "tudo bem?")
+2. "proposta" - Cliente aprova: "ok", "sim", "manda", "pode enviar", "quero renovar", "legal", "gostei"
+3. "fornecedor" - Mensagens automáticas: "deixe seu contato", "breve", "aguarde"
+4. "perdido" - Recusa TOTAL: "não quero renovar", "cancela tudo", "não tenho interesse", "recuso"
 
-⚠️ CASOS ESPECIAIS:
-- "Quero cancelar algumas linhas" (recusa PARCIAL) → retorne "automatico" (NÃO move)
-- "Vou pensar", "depois te falo" (indecisão) → retorne "automatico" (NÃO move)
-- Conversas normais ("oi", "tudo bem", "ok blz") → retorne "automatico" (NÃO move)
+▶️ AÇÃO (obrigatório):
+- "criar" = Primeira resposta do cliente OU movimento claro de etapa
+- "mover" = Cliente já respondeu antes, esta é nova informação para mover etapa
+- "nenhuma" = Recusa parcial, indecisão, conversa extensa (não age)
 
-❌ NUNCA RETORNE ESTAS (são 100% manuais):
+⚠️ CASOS ESPECIAIS - RETORNE "nenhuma":
+- "Quero cancelar algumas linhas" (parcial)
+- "Vou pensar", "depois te falo", "deixa comigo" (indecisão)
+- Conversas normais extensas sem intenção clara
+
+❌ NUNCA RETORNE ESTAS (100% manuais):
 - lead, proposta_enviada, contrato_enviado, aguardando_contrato, aguardando_aceite, fechado
 
-Responda APENAS com JSON (sem markdown) - ETAPAS EM MINÚSCULA:
-{"sentimento":"positivo","confianca":95,"motivo":"Cliente aprovou","etapa":"proposta","sugestao":"Enviar proposta"}`;
+Responda APENAS JSON - ETAPAS EM MINÚSCULA:
+{"sentimento":"positivo","confianca":95,"motivo":"Cliente aprovou","etapa":"proposta","acao":"criar","sugestao":"Enviar proposta"}`;
 
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",

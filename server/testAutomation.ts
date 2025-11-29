@@ -396,13 +396,25 @@ export async function simulateClientResponse(clientId: string, userId: string, m
       nome: client?.nome,
     });
 
-    console.log(`📊 IA retornou: ${analysis.sentimento} → ${analysis.etapa}`);
+    console.log(`📊 IA retornou: ${analysis.sentimento} → ${analysis.etapa} (acao: ${analysis.acao})`);
 
-    // Normalizar etapa da IA para MAIÚSCULA SEMPRE
+    // Normalizar etapa da IA para MAIÚSCULA
     const etapaNormalizada = analysis.etapa.toUpperCase();
     
+    // 🚫 SE AÇÃO É "NENHUMA" → NÃO FAZER NADA
+    if (analysis.acao === "nenhuma") {
+      console.log(`⏭️ Ação "nenhuma" - ignorando (recusa parcial, indecisão, etc)`);
+      return { 
+        success: true, 
+        clientId, 
+        message: `⏭️ Mensagem registrada mas sem ação\n📊 Sentimento: ${analysis.sentimento}\n💡 ${analysis.sugestao}`,
+        analysis,
+        action: "nenhuma",
+      };
+    }
+    
     // 4. MOVER OPP EXISTENTE OU CRIAR NOVA (com validação de retrocesso)
-    if (etapaNormalizada !== "AUTOMATICO" && client) {
+    if (client) {
       // 4a. Buscar se existe opp "aberta" (não PERDIDA, não FECHADA)
       const etapasFinais = ["PERDIDO", "FECHADO"];
       let existingOpp = await db.query.opportunities.findFirst({
@@ -418,8 +430,27 @@ export async function simulateClientResponse(clientId: string, userId: string, m
       let actionType: "criar" | "mover" | "bloqueado" = "criar";
       let statusAtualizado: string | null = null;
       
-      if (existingOpp && existingOpp.etapa !== etapaNormalizada) {
-        // 4b. VALIDAR se o movimento é permitido (não retrocede, não mexe em manuais)
+      // 4b. Respeitar o campo `acao` da IA
+      if (analysis.acao === "criar" && !existingOpp) {
+        // ✅ CRIAR nova opp (primeira resposta)
+        console.log(`✨ CRIANDO nova opportunity (primeira resposta) com etapa=${etapaNormalizada}`);
+        resultOpp = await db.insert(opportunities).values({
+          clientId,
+          titulo: `${client.nome} - ${analysis.motivo}`,
+          etapa: etapaNormalizada,
+          valorEstimado: "5000",
+          responsavelId: userId,
+          ordem: 0,
+        }).returning().then(r => r[0]);
+        console.log(`✅ Nova oportunidade criada: ${resultOpp.id}`);
+        actionType = "criar";
+      } else if (analysis.acao === "criar" && existingOpp) {
+        // ⏭️ CRIAR foi solicitado mas já existe opp → manter existente
+        resultOpp = existingOpp;
+        console.log(`ℹ️ Ação "criar" mas já existe opp em ${existingOpp.etapa} - mantendo`);
+        actionType = "criar";
+      } else if (analysis.acao === "mover" && existingOpp && existingOpp.etapa !== etapaNormalizada) {
+        // ✅ MOVER opp existente
         const validacao = isValidMovement(existingOpp.etapa, etapaNormalizada);
         
         if (!validacao.permitido) {
@@ -427,17 +458,13 @@ export async function simulateClientResponse(clientId: string, userId: string, m
           return { 
             success: false, 
             clientId, 
-            message: `🚫 Movimento bloqueado: ${validacao.motivo}\nEtapa atual: ${existingOpp.etapa}\nTentada: ${analysis.etapa}`,
+            message: `🚫 Movimento bloqueado: ${validacao.motivo}\nEtapa atual: ${existingOpp.etapa}`,
             analysis,
             action: "bloqueado",
-            motivo: validacao.motivo,
           };
         }
         
-        // ✅ Movimento válido - MOVER opp existente
-        console.log(`🔄 MOVENDO opp existente ${existingOpp.id} de ${existingOpp.etapa} → ${etapaNormalizada}`);
-        const etapaAntes = existingOpp.etapa;
-        
+        console.log(`🔄 MOVENDO opp de ${existingOpp.etapa} → ${etapaNormalizada}`);
         resultOpp = await db
           .update(opportunities)
           .set({ 
@@ -449,26 +476,22 @@ export async function simulateClientResponse(clientId: string, userId: string, m
           .returning()
           .then(r => r[0]);
         
-        console.log(`✅ Oportunidade MOVIDA: ${etapaAntes} → ${etapaNormalizada}`);
+        console.log(`✅ Oportunidade MOVIDA: ${existingOpp.etapa} → ${etapaNormalizada}`);
         actionType = "mover";
-      } else if (!existingOpp) {
-        // 4c. CRIAR nova opp se não houver aberta
-        console.log(`🔍 Criando nova opportunity com userId=${userId}, etapa=${etapaNormalizada}`);
-        resultOpp = await db.insert(opportunities).values({
-          clientId,
-          titulo: `${client.nome} - ${analysis.motivo}`,
-          etapa: etapaNormalizada,
-          valorEstimado: "5000",
-          responsavelId: userId,
-          ordem: 0,
-        }).returning().then(r => r[0]);
-        
-        console.log(`✅ Nova oportunidade criada: ${resultOpp.id}`);
-        actionType = "criar";
-      } else {
-        // Opp já está na etapa correta
+      } else if (existingOpp) {
+        // Opp já está nessa etapa
         resultOpp = existingOpp;
-        console.log(`ℹ️ Oportunidade já está em ${etapaNormalizada}, sem mudanças`);
+        console.log(`ℹ️ Oportunidade já está em ${etapaNormalizada}`);
+      } else {
+        // Nenhuma opp e nenhuma ação relevante
+        console.log(`⏭️ Nenhuma ação relevante`);
+        return { 
+          success: true, 
+          clientId, 
+          message: `⏭️ Mensagem registrada\n📊 Sentimento: ${analysis.sentimento}`,
+          analysis,
+          action: "nenhuma",
+        };
       }
       
       // 🔄 RECALCULATE CLIENT STATUS
