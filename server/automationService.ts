@@ -566,59 +566,25 @@ export async function checkPropostaEnviadaTimeouts() {
   }
 }
 
-// ======================== HELPER: Calcular próximo horário para AGUARDANDO ACEITE ========================
+// ======================== HELPER: Calcular próximo horário para AGUARDANDO ACEITE (TESTE RÁPIDO) ========================
 function getNextAguardandoAceiteTime(lastTaskData: any): Date {
   const now = new Date();
-  const nextDate = new Date(now);
   
-  // Adicionar dias baseado em qual lembrete é (dados.lembrete: 1, 2, 3)
+  // PARA TESTES: Tempos MUITO menores!
   const lembreteNum = lastTaskData?.lembrete || 1;
   
   if (lembreteNum === 1) {
-    // Primeiro lembrete: verificar quando foi enviado
-    const contractSentTime = new Date(lastTaskData?.contractSentAt || now);
-    const hour = contractSentTime.getHours();
-    
-    if (hour >= 8 && hour < 12) {
-      // Enviado de manhã: mesmo dia às 16:30
-      nextDate.setDate(now.getDate());
-      nextDate.setHours(16, 30, 0, 0);
-      if (nextDate <= now) {
-        nextDate.setDate(nextDate.getDate() + 1);
-        nextDate.setHours(8, 0, 0, 0);
-      }
-    } else {
-      // Enviado à tarde/noite: próximo dia útil às 08:00
-      nextDate.setDate(now.getDate() + 1);
-      nextDate.setHours(8, 0, 0, 0);
-      // Pular para próximo dia útil se for sábado
-      if (nextDate.getDay() === 6) {
-        nextDate.setDate(nextDate.getDate() + 2);
-      } else if (nextDate.getDay() === 0) {
-        nextDate.setDate(nextDate.getDate() + 1);
-      }
-    }
+    // 1º lembrete: 5 segundos depois
+    return new Date(Date.now() + 5 * 1000);
   } else if (lembreteNum === 2) {
-    // Segundo lembrete: 24h depois, às 08:00
-    nextDate.setDate(now.getDate() + 1);
-    nextDate.setHours(8, 0, 0, 0);
-    if (nextDate.getDay() === 6) {
-      nextDate.setDate(nextDate.getDate() + 2);
-    } else if (nextDate.getDay() === 0) {
-      nextDate.setDate(nextDate.getDate() + 1);
-    }
+    // 2º lembrete: 5 segundos depois do anterior (total: 10s desde início)
+    return new Date(Date.now() + 5 * 1000);
   } else if (lembreteNum === 3) {
-    // Terceiro lembrete: 48h depois, às 08:00
-    nextDate.setDate(now.getDate() + 2);
-    nextDate.setHours(8, 0, 0, 0);
-    if (nextDate.getDay() === 6) {
-      nextDate.setDate(nextDate.getDate() + 2);
-    } else if (nextDate.getDay() === 0) {
-      nextDate.setDate(nextDate.getDate() + 1);
-    }
+    // 3º lembrete: 5 segundos depois
+    return new Date(Date.now() + 5 * 1000);
   }
   
-  return nextDate;
+  return new Date(Date.now() + 5 * 1000);
 }
 
 // ======================== AGUARDANDO ACEITE - Lembretes de Assinatura de Contrato ========================
@@ -739,7 +705,7 @@ export async function checkAguardandoAceiteTimeouts() {
     console.log(`📋 Encontradas ${aguardando.length} em AGUARDANDO ACEITE`);
     
     for (const opp of aguardando) {
-      // Buscar último reminder deste contrato
+      // Buscar último reminder deste contrato (ordenar por ID DESC para pegar o mais recente criado)
       const lastTask = await db
         .select()
         .from(automationTasks)
@@ -749,13 +715,13 @@ export async function checkAguardandoAceiteTimeouts() {
             eq(automationTasks.clientId, opp.clientId)
           )
         )
-        .orderBy((t: any) => desc(t.proximaExecucao))
+        .orderBy((t: any) => desc(t.createdAt))
         .limit(1);
       
-      // Se não tem tarefa agendada, criar primeira
-      if (!lastTask || lastTask.length === 0 || lastTask[0].status === "executado") {
+      // Se não tem tarefa agendada NENHUMA
+      if (!lastTask || lastTask.length === 0) {
         console.log(`✅ Agendando 1º lembrete para oportunidade ${opp.id}`);
-        const nextTime = new Date(Date.now() + 5 * 1000); // 5 segundos para teste
+        const nextTime = new Date(Date.now() + 2 * 1000); // 2 seg para teste
         
         await db.insert(automationTasks).values({
           userId: opp.responsavelId,
@@ -768,10 +734,14 @@ export async function checkAguardandoAceiteTimeouts() {
             contractSentAt: opp.updatedAt || new Date(),
           },
         });
-      } else if (lastTask[0].status === "executado") {
-        // Se última foi executada, agendar próxima
+      } 
+      // Se a última tarefa foi EXECUTADA, criar próxima
+      else if (lastTask[0].status === "executado") {
         const lembreteAtual = lastTask[0].dados?.lembrete || 1;
+        console.log(`📌 Última task executada: lembrete ${lembreteAtual}/3`);
+        
         if (lembreteAtual < 3) {
+          // Criar próximo lembrete
           const nextLembrete = lembreteAtual + 1;
           const proximaExecucao = getNextAguardandoAceiteTime({ 
             lembrete: nextLembrete,
@@ -789,6 +759,24 @@ export async function checkAguardandoAceiteTimeouts() {
               opportunityId: opp.id, 
               lembrete: nextLembrete,
               contractSentAt: lastTask[0].dados?.contractSentAt,
+            },
+          });
+        } else if (lembreteAtual === 3) {
+          // 3º lembrete foi executado = agendar movimento para AGUARDANDO ATENÇÃO IMEDIATAMENTE
+          console.log(`⏭️ 3º lembrete executado! Agendando movimento IMEDIATO para AGUARDANDO ATENÇÃO...`);
+          
+          const proximaExecucao = new Date(); // AGORA para teste
+          
+          await db.insert(automationTasks).values({
+            userId: opp.responsavelId,
+            clientId: opp.clientId,
+            tipo: "kanban_move",
+            proximaExecucao,
+            dados: { 
+              opportunityId: opp.id, 
+              etapa: "AGUARDANDO ATENÇÃO",
+              motivo: "Terceiro lembrete enviado - movendo para análise gerencial",
+              notificarResponsavel: true,
             },
           });
         }
