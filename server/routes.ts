@@ -470,7 +470,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Garantir que responsavelId é o usuário autenticado
       const opportunityData = {
         ...validatedData,
-        responsavelId: user.id
+        responsavelId: user.id,
+        etapa: validatedData.etapa.toUpperCase() // Normalizar etapa para MAIÚSCULA
       };
 
       const opportunity = await storage.createOpportunity(opportunityData);
@@ -527,7 +528,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const opportunity = await storage.updateOpportunity(req.params.id, { etapa });
+      // Normalizar etapa para MAIÚSCULA
+      const etapaNormalizada = etapa.toUpperCase();
+      const opportunity = await storage.updateOpportunity(req.params.id, { etapa: etapaNormalizada });
 
       // Atualizar tag do cliente para manter sincronizado
       if (oldOpportunity.clientId) {
@@ -536,8 +539,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const oldTags = client.tags || [];
           // Remover tag antiga, adicionar tag nova
           let newTags = oldTags.filter((t: string) => t !== oldOpportunity.etapa);
-          if (!newTags.includes(etapa)) {
-            newTags = [etapa]; // Cliente tem apenas 1 tag/oportunidade
+          if (!newTags.includes(etapaNormalizada)) {
+            newTags = [etapaNormalizada]; // Cliente tem apenas 1 tag/oportunidade
           }
           await storage.updateClient(oldOpportunity.clientId, { tags: newTags });
         }
