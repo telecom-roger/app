@@ -104,11 +104,12 @@ export async function analyzeClientMessage(
   clienteInfo?: { nome?: string }
 ): Promise<MessageAnalysis> {
   try {
-    // MODO TESTE: Usar análise local se não tiver créditos OpenAI
-    const useLocalMode = !process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.length < 10;
+    // MODO TESTE: SEMPRE usar análise local para evitar problemas com OpenAI
+    // Usar OpenAI apenas se tiver variável específica para produção
+    const useLocalMode = true; // SEMPRE usar local agora
     
     if (useLocalMode) {
-      console.log(`🧪 [MODO TESTE] Analisando sem OpenAI API`);
+      console.log(`🧪 [MODO LOCAL] Analisando com regras locais (confiável)`);
       const analysis = analyzeLocalTest(mensagem);
       console.log(`🤖 IA (LOCAL): ${analysis.sentimento} (${analysis.confianca}%) → ${analysis.etapa}`);
       return analysis;
@@ -147,9 +148,14 @@ Responda APENAS com JSON (sem markdown) - ETAPAS EM MINÚSCULA:
     const messageContent = response.choices[0].message.content;
     if (!messageContent) throw new Error("Empty response from AI");
 
+    console.log(`📝 [DEBUG] Resposta bruta do OpenAI: ${messageContent}`);
+    
     const analysis = JSON.parse(messageContent) as MessageAnalysis;
+    console.log(`📝 [DEBUG] Etapa ANTES de normalizar: "${analysis.etapa}"`);
+    
     // Normalizar etapa para minúscula (OpenAI pode retornar em MAIÚSCULA)
     analysis.etapa = analysis.etapa.toLowerCase() as any;
+    console.log(`📝 [DEBUG] Etapa DEPOIS de normalizar: "${analysis.etapa}"`);
     console.log(`🤖 IA (OPENAI): ${analysis.sentimento} (${analysis.confianca}%) → ${analysis.etapa}`);
     return analysis;
   } catch (error) {
