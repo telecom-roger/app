@@ -594,7 +594,11 @@ export default function Clientes() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => setSelectedClientIds(new Set(clientesFiltrados.map((c) => c.id)))}
+                  onClick={() => {
+                    const novoSet = new Set(selectedClientIds);
+                    clientesFiltrados.forEach(c => novoSet.add(c.id));
+                    setSelectedClientIds(novoSet);
+                  }}
                   disabled={clientesFiltrados.length === 0}
                   data-testid="button-select-all-quick"
                   className="h-8 text-xs"
@@ -609,6 +613,7 @@ export default function Clientes() {
                     disabled={!allFilteredClients?.clientes || allFilteredClients?.clientes.length === 0}
                     data-testid="button-select-all-results"
                     className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700"
+                    title="Seleciona TODOS os resultados da busca (não paginados)"
                   >
                     ✓ Todos ({allFilteredClients?.total})
                   </Button>
