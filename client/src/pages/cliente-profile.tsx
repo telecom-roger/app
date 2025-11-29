@@ -304,11 +304,11 @@ export default function ClienteProfile() {
                       value={cliente?.email}
                       field="email"
                       clientId={id || ""}
-                      label="Email"
+                      label="Email do Gestor"
                     />
                     <EditableField
-                      value={cliente?.CELULAR_PRINCIPAL}
-                      field="CELULAR_PRINCIPAL"
+                      value={cliente?.telefone}
+                      field="telefone"
                       clientId={id || ""}
                       label="Telefone"
                     />
@@ -316,7 +316,7 @@ export default function ClienteProfile() {
                       value={cliente?.contato}
                       field="contato"
                       clientId={id || ""}
-                      label="Pessoa de Contato"
+                      label="Nome do Gestor"
                     />
                   </div>
                 )}
@@ -333,19 +333,19 @@ export default function ClienteProfile() {
                       value={cliente?.razaoSocial}
                       field="razaoSocial"
                       clientId={id || ""}
-                      label="Razão Social"
+                      label="Nome Fantasia"
                     />
                     <EditableField
-                      value={cliente?.carteira}
-                      field="carteira"
+                      value={cliente?.PARCEIRO}
+                      field="PARCEIRO"
                       clientId={id || ""}
-                      label="Carteira"
+                      label="Parceiro"
                     />
                     <EditableField
-                      value={cliente?.planoAtual}
-                      field="planoAtual"
+                      value={cliente?.cpfCnpj}
+                      field="cpfCnpj"
                       clientId={id || ""}
-                      label="Plano"
+                      label="CNPJ"
                     />
                   </div>
                 </div>
@@ -394,28 +394,11 @@ export default function ClienteProfile() {
                       clientId={id || ""}
                       label="CEP"
                     />
-                  </div>
-                </div>
-              )}
-
-              <Separator />
-
-              {/* Additional Data */}
-              {!clienteLoading && cliente && (
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold text-muted-foreground">DADOS ADICIONAIS</p>
-                  <div className="space-y-2">
                     <EditableField
-                      value={cliente?.cpfCnpj}
-                      field="cpfCnpj"
+                      value={cliente?.bairro}
+                      field="bairro"
                       clientId={id || ""}
-                      label="CPF/CNPJ"
-                    />
-                    <EditableField
-                      value={cliente?.observacoes}
-                      field="observacoes"
-                      clientId={id || ""}
-                      label="Observações"
+                      label="Bairro"
                     />
                   </div>
                 </div>

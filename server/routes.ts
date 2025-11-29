@@ -3069,6 +3069,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return result;
       };
 
+      // Helper: Normalize CEP (pad to 8 digits with leading zeros)
+      const normalizeCEP = (cep: string): string => {
+        if (!cep) return "";
+        const cleaned = cep.replace(/\D/g, "");
+        return cleaned.padStart(8, "0");
+      };
+
+      // Helper: Normalize CNPJ (pad to 14 digits with leading zeros)
+      const normalizeCNPJ = (cnpj: string): string => {
+        if (!cnpj) return "";
+        const cleaned = cnpj.replace(/\D/g, "");
+        return cleaned.padStart(14, "0");
+      };
+
       // Parse rows and insert
       let imported = 0;
       let errors = 0;
@@ -3084,13 +3098,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const clientData: any = {
             nome: razaoSocial,
             razaoSocial: razaoSocial,
-            cpfCnpj: row[fieldMap["CNPJ"]] || null,
+            cpfCnpj: normalizeCNPJ(row[fieldMap["CNPJ"]] || ""),
             contato: row[fieldMap["Nome do Gestor"]] || null,
             email: row[fieldMap["E-mail do Gestor"]] || null,
             telefone: row[fieldMap["Telefone 1"]] || null,
             endereco: row[fieldMap["Endereço"]] || null,
             numero: row[fieldMap["Número"]] || null,
-            cep: row[fieldMap["CEP"]] || null,
+            cep: normalizeCEP(row[fieldMap["CEP"]] || ""),
             cidade: row[fieldMap["Cidade"]] || null,
             uf: (row[fieldMap["Estado"]] || "").substring(0, 2),
             bairro: row[fieldMap["Bairro"]] || null,
@@ -3103,6 +3117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               quantidadeLinhas: row[fieldMap["Quantidade de linhas"]] || "",
               cnaeAtividade: row[fieldMap["CNAE Atividade"]] || "",
               telefone2: row[fieldMap["Telefone 2"]] || "",
+              situacaoCadastralRF: row[fieldMap["Situação cadastral RF"]] || "",
             },
             createdBy: adminUser!.id,
           };
