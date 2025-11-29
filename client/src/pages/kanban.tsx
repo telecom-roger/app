@@ -126,8 +126,14 @@ export default function Kanban() {
   });
 
   const { data: clientesData } = useQuery<{ clientes: any[]; total: number }>({
-    queryKey: ["/api/clients"],
+    queryKey: ["/api/clients", "all"],
     enabled: isAuthenticated,
+    queryFn: async () => {
+      // Load ALL clients without pagination for Kanban matching
+      const response = await fetch('/api/clients?limit=50000');
+      if (!response.ok) throw new Error('Failed to fetch clients');
+      return response.json();
+    },
   });
 
   const clientes = clientesData?.clientes || [];
