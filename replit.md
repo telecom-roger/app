@@ -178,7 +178,8 @@ The application features a professional design system utilizing a deep dark blue
 5. **Usuário deleta oportunidade** → Status atualizado ✅
 6. **Teste manual (botão)** → Mostra resultado imediato ✅
 
-### 🔄 OPÇÃO B - IA MOVE OPP EXISTENTE (Nov 29, turno 11)
+### 🔄 OPÇÃO B - IA MOVE OPP EXISTENTE + VALIDAÇÃO RIGOROSA (Nov 29)
+
 **Quando a IA processa múltiplas mensagens do mesmo cliente:**
 
 1. **1ª mensagem** ("oi tudo bem?") → Cria OPP em CONTATO
@@ -187,12 +188,35 @@ The application features a professional design system utilizing a deep dark blue
 
 **Lógica:**
 - IA busca se existe opp "aberta" (não PERDIDA, não FECHADO)
-- Se existe → **MOVE** para nova etapa
+- Se existe → **VALIDA MOVIMENTO** (nunca retrocede, respeita manuais)
+- Se movimento válido → MOVE para nova etapa
+- Se não válido → BLOQUEIA com mensagem clara
 - Se não existe → Cria normalmente
 - Status recalcula automaticamente em qualquer caso
 
-**Benefício:** Kanban sem "ruído" de múltiplas opps do mesmo cliente com diferentes etapas
+**🤖 IA trabalha em 4 etapas APENAS (não mexe nas outras):**
+1. **CONTATO** - Cliente quer informações (preço, valor, quanto custa)
+2. **PROPOSTA** - Cliente aprova (ok, sim, manda, pode enviar, quero renovar)
+3. **FORNECEDOR** - Mensagens automáticas (deixe seu contato, breve, aguarde)
+4. **PERDIDO** - Recusa TOTAL (não quero renovar, cancela tudo, não tenho interesse)
+
+**❌ Etapas 100% MANUAIS (IA NUNCA mexe):**
+- LEAD, PROPOSTA ENVIADA, CONTRATO ENVIADO, AGUARDANDO CONTRATO, AGUARDANDO ACEITE, FECHADO
+
+**🔒 NUNCA RETROCEDE (sempre avança ou fica igual):**
+- CONTATO → PROPOSTA ✅
+- PROPOSTA → FORNECEDOR ✅
+- Qualquer → PERDIDO ✅ (final)
+- PROPOSTA → CONTATO ❌ BLOQUEADO
+- FORNECEDOR → PROPOSTA ❌ BLOQUEADO
+
+**⚠️ Casos que NÃO movem (recusa parcial, indecisão):**
+- "Quero cancelar algumas linhas" → Fica na mesma etapa
+- "Vou pensar", "depois te falo" → Sem movimento
+- Conversas normais ("tudo bem", "ok blz") → Sem movimento
+
+**Benefício:** Kanban sem "ruído", validação rigorosa, histórico respeitado
 
 ---
 
-**Status:** ✅ FASE 7 COMPLETA + OPÇÃO B - IA Move Opps Existentes!
+**Status:** ✅ FASE 7 COMPLETA + OPÇÃO B + VALIDAÇÃO RIGOROSA!

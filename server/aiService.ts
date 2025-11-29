@@ -16,53 +16,86 @@ export interface MessageAnalysis {
 function analyzeLocalTest(mensagem: string): MessageAnalysis {
   const msg = mensagem.toLowerCase();
   
-  // Fornecedor/Mensagem Automática - contexto de empresa/fornecedor respondendo OU mensagem automática
-  if (msg.includes("fornecedor") || msg.includes("empresa") || msg.includes("nfe") || msg.includes("protocolo") || msg.includes("cnpj") || msg.includes("automático") || msg.includes("automática") || msg.includes("automaticas") || msg.includes("entro em contato") || msg.includes("deixe seu contato") || msg.includes("em contato em breve") || msg.includes("assim que") || msg.includes("breve entraremos") || msg.includes("breve")) {
+  // 🛑 RECUSA TOTAL → PERDIDO (palavras-chave exatas)
+  const recusaTotal = [
+    "não quero renovar",
+    "cancela tudo",
+    "não tenho interesse",
+    "não quero nenhum plano",
+    "não quero",
+    "recuso",
+    "não me interessa"
+  ];
+  if (recusaTotal.some(palavra => msg.includes(palavra))) {
+    return {
+      sentimento: "negativo",
+      confianca: 95,
+      motivo: "Recusa total detectada",
+      etapa: "perdido",
+      sugestao: "Arquivar oportunidade",
+    };
+  }
+  
+  // ℹ️ RECUSA PARCIAL → NÃO MOVE (não gera ação)
+  const recusaParcial = [
+    "cancelar algumas linhas",
+    "cancelar parcial",
+    "remover algumas",
+    "quero apenas algumas",
+    "não quero algumas",
+  ];
+  if (recusaParcial.some(palavra => msg.includes(palavra))) {
+    return {
+      sentimento: "neutro",
+      confianca: 70,
+      motivo: "Recusa parcial - não afeta etapa",
+      etapa: "automatico",
+      sugestao: "Conversar com cliente sobre parcelas",
+    };
+  }
+  
+  // 📲 FORNECEDOR/AUTOMÁTICA → FORNECEDOR (mensagens automáticas)
+  if (msg.includes("deixe seu contato") || msg.includes("breve") || msg.includes("aguarde") || 
+      msg.includes("em breve") || msg.includes("entro em contato")) {
     return {
       sentimento: "fornecedor",
       confianca: 90,
-      motivo: "Mensagem automática ou resposta de fornecedor detectada",
-      etapa: "FORNECEDOR",
-      sugestao: "Aguardando confirmação ou contato posterior",
+      motivo: "Mensagem automática ou de fornecedor",
+      etapa: "fornecedor",
+      sugestao: "Aguardando resposta posterior",
     };
   }
   
-  if (msg.includes("ótimo") || msg.includes("gostei") || msg.includes("ok") || msg.includes("sim") || msg.includes("topa")) {
+  // ✅ APROVAÇÃO → PROPOSTA (palavras-chave de aprovação)
+  const aprovacao = ["ok", "sim", "manda", "pode enviar", "quero renovar", "topa", "pode", "vamos lá"];
+  if (aprovacao.some(palavra => msg.includes(palavra))) {
     return {
       sentimento: "positivo",
       confianca: 95,
-      motivo: "Resposta positiva detectada",
-      etapa: "PROPOSTA",
-      sugestao: "Enviar contrato para assinatura",
+      motivo: "Aprovação ou autorização detectada",
+      etapa: "proposta",
+      sugestao: "Enviar proposta formal",
     };
   }
   
-  if (msg.includes("não") || msg.includes("nãoquero") || msg.includes("recuso") || msg.includes("cancelar") || msg.includes("obrigado")) {
-    return {
-      sentimento: "negativo",
-      confianca: 90,
-      motivo: "Resposta negativa detectada",
-      etapa: "PERDIDO",
-      sugestao: "Arquivar ou tentar resgate posterior",
-    };
-  }
-  
+  // ❓ INFORMAÇÃO → CONTATO (perguntas sobre preço/valor)
   if (msg.includes("preço") || msg.includes("quanto") || msg.includes("valor") || msg.includes("custa")) {
     return {
       sentimento: "positivo",
       confianca: 85,
-      motivo: "Pergunta sobre preço",
-      etapa: "CONTATO",
+      motivo: "Pergunta sobre preço/valor",
+      etapa: "contato",
       sugestao: "Enviar tabela de preços",
     };
   }
   
+  // 🤷 NEUTRO → NÃO MOVE
   return {
     sentimento: "neutro",
     confianca: 50,
-    motivo: "Mensagem neutra",
+    motivo: "Mensagem neutra - sem gatilho de ação",
     etapa: "automatico",
-    sugestao: "Revisar manualmente",
+    sugestao: "Continuar conversando",
   };
 }
 
@@ -86,17 +119,24 @@ export async function analyzeClientMessage(
 MENSAGEM: "${mensagem}"
 CLIENTE: ${clienteInfo?.nome || "Desconhecido"}
 
-REGRAS DE CLASSIFICAÇÃO - SIGA EXATAMENTE (IA só trabalha em 5 etapas):
-1. "OK", "SIM", "TOPA", "MANDA", qualquer aprovação → etapa "PROPOSTA", sentimento "positivo"
-2. "NÃO", "RECUSO", "CANCELAR", rejeição → etapa "PERDIDO", sentimento "negativo"
-3. "QUANTO", "PREÇO", "VALOR", "CUSTA" → etapa "CONTATO", sentimento "positivo"
-4. AUTOMÁTICA, "BREVE", "DEIXE SEU CONTATO", "ENTRO EM CONTATO", mensagens automáticas → etapa "FORNECEDOR", sentimento "fornecedor"
-5. Empresa/fornecedor/NF/protocolo/CNPJ → etapa "FORNECEDOR", sentimento "fornecedor"
-6. "FECHADO", "CONTRATADO", "APROVADO" (após Aguardando Aceite) → etapa "FECHADO", sentimento "positivo"
-7. Qualquer outra mensagem → retorne "CONTATO" como etapa padrão
+REGRAS DE CLASSIFICAÇÃO - SIGA EXATAMENTE (IA trabalha APENAS em 4 etapas automáticas):
+
+▶️ ETAPAS AUTOMÁTICAS (4 apenas):
+1. CONTATO - Cliente pergunta preço, valor, quanto custa (quer informação)
+2. PROPOSTA - Cliente diz "ok", "sim", "manda", "pode enviar", "quero renovar" (aprovação)
+3. FORNECEDOR - Mensagens automáticas: "deixe seu contato", "breve", "aguarde", "em breve"
+4. PERDIDO - Recusa TOTAL: "não quero renovar", "cancela tudo", "não tenho interesse"
+
+⚠️ CASOS ESPECIAIS:
+- "Quero cancelar algumas linhas" (recusa PARCIAL) → retorne "automatico" (NÃO move)
+- "Vou pensar", "depois te falo" (indecisão) → retorne "automatico" (NÃO move)
+- Conversas normais ("oi", "tudo bem", "ok blz") → retorne "automatico" (NÃO move)
+
+❌ NUNCA RETORNE ESTAS (são 100% manuais):
+- LEAD, PROPOSTA ENVIADA, CONTRATO ENVIADO, AGUARDANDO CONTRATO, AGUARDANDO ACEITE, FECHADO
 
 Responda APENAS com JSON (sem markdown):
-{"sentimento":"positivo","confianca":90,"motivo":"Respondeu OK","etapa":"PROPOSTA","sugestao":"Enviar contrato"}`;
+{"sentimento":"positivo","confianca":95,"motivo":"Cliente aprovou","etapa":"PROPOSTA","sugestao":"Enviar proposta"}`;
 
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",

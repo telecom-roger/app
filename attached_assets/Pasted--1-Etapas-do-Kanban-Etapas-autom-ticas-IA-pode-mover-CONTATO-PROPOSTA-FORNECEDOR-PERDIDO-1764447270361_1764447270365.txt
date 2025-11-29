@@ -1,0 +1,151 @@
+🧩 1. Etapas do Kanban
+📌 Etapas automáticas (IA pode mover)
+
+CONTATO
+
+PROPOSTA
+
+FORNECEDOR
+
+PERDIDO
+
+📌 Etapas manuais (IA NÃO mexe de jeito nenhum)
+
+LEAD
+
+PROPOSTA ENVIADA
+
+CONTRATO ENVIADO
+
+AGUARDANDO CONTRATO
+
+AGUARDANDO ACEITE
+
+FECHADO
+
+Estas etapas são exclusivas do usuário. A IA nunca avança, nunca retorna, nunca altera.
+
+🧠 2. Regra mais importante
+🔒 A IA NUNCA PODE RETROCEDER ETAPAS.
+
+Ela só pode avançar dentro das etapas automáticas.
+
+Retroceder = proibido em 100% dos casos.
+
+Exemplos proibidos:
+
+PROPOSTA → CONTATO
+
+FORNECEDOR → PROPOSTA
+
+PROPOSTA ENVIADA → PROPOSTA
+
+FECHADO → qualquer outra etapa
+
+🚦 3. Gatilhos que a IA usa para mudar etapa
+
+A IA pode mover etapas apenas quando detectar mensagens relevantes do cliente.
+Conversas normais (“tudo bem”, “ok”, “blz”, “pera aí”, “vou ver”) não mudam nada.
+
+▶️ CONTATO → PROPOSTA (avanço permitido)
+
+Palavras que indicam aprovação ou autorização, como:
+
+“ok”
+
+“sim”
+
+“manda”
+
+“pode enviar”
+
+“quero renovar”
+
+Quando isso acontecer, IA move para PROPOSTA.
+
+▶️ PROPOSTA → FORNECEDOR (avanço permitido)
+
+Detectar mensagens automáticas ou de fornecedor, como:
+
+“deixe seu contato”
+
+“aguarde”
+
+“breve retornamos”
+
+IA move para FORNECEDOR.
+
+▶️ CONTATO/PROPOSTA/FORNECEDOR → PERDIDO
+
+Somente quando houver recusa TOTAL:
+
+“não quero renovar”
+
+“cancela tudo”
+
+“não tenho interesse”
+
+“não quero nenhum plano”
+
+❗ Importante:
+Se o cliente disser “quero cancelar algumas linhas”, isso NÃO é perdido.
+IA não move.
+
+⚙️ 4. Casos especiais
+✔️ “Quero renovar apenas algumas linhas”
+
+→ IA não move para perdido
+→ permanece na etapa atual (normalmente PROPOSTA)
+
+✔️ “Vou pensar”, “depois te falo”, “espera aí”
+
+→ IA não move nada.
+
+✔️ “Ok” durante conversa longa
+
+→ Se já avançou antes, não avança de novo.
+→ Não retrocede.
+
+🛑 5. Etapas que são 100% manuais
+
+A IA NUNCA pode mover para, dentro ou a partir de:
+
+LEAD
+
+PROPOSTA ENVIADA
+
+CONTRATO ENVIADO
+
+AGUARDANDO CONTRATO
+
+AGUARDANDO ACEITE
+
+FECHADO
+
+O usuário é o único que controla estas etapas.
+
+🔄 6. Comportamento com múltiplas oportunidades
+
+A IA deve procurar se existe uma oportunidade aberta para o cliente.
+
+Se existir → move a existente (se permitido).
+
+Se não existir → cria uma nova oportunidade.
+
+IA segue sempre a regra: apenas avance, nunca volte.
+
+📌 7. Resumo final (versão ultra curta)
+
+IA só trabalha em 4 etapas: CONTATO, PROPOSTA, FORNECEDOR, PERDIDO.
+
+IA nunca mexe nas etapas manuais.
+
+IA nunca retrocede.
+
+IA só avança quando identificar mensagens realmente relevantes.
+
+Recusa parcial ≠ PERDIDO.
+
+FECHADO é sempre manual.
+
+Conversas normais não geram movimento.

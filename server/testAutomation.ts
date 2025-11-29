@@ -4,6 +4,57 @@ import { eq, and, lt, asc, desc, sql } from "drizzle-orm";
 import { automationTasks, followUps, clientScores, opportunities, messages, conversations } from "@shared/schema";
 import { analyzeClientMessage } from "./aiService";
 
+// ======================== VALIDAÇÃO DE MOVIMENTO ========================
+// Ordem de prioridade: CONTATO(0) < PROPOSTA(1) < FORNECEDOR(2) < PERDIDO(3)
+const ETAPAS_AUTOMATICAS_ORDER: Record<string, number> = {
+  "CONTATO": 0,
+  "PROPOSTA": 1,
+  "FORNECEDOR": 2,
+  "PERDIDO": 3,
+};
+
+// Etapas que NÃO podem ser tocadas pela IA (100% manuais)
+const ETAPAS_MANUAIS = ["LEAD", "PROPOSTA ENVIADA", "CONTRATO ENVIADO", "AGUARDANDO CONTRATO", "AGUARDANDO ACEITE", "FECHADO"];
+
+/**
+ * Valida se um movimento de etapa é permitido
+ * - NUNCA retrocede
+ * - NUNCA mexe em etapas manuais
+ * - Só avança ou fica na mesma
+ */
+function isValidMovement(etapaAtual: string, etapaNova: string): { permitido: boolean; motivo: string } {
+  // Verifica se etapa nova é manual (NUNCA mexe)
+  if (ETAPAS_MANUAIS.includes(etapaNova)) {
+    return { permitido: false, motivo: `${etapaNova} é 100% manual` };
+  }
+  
+  // Verifica se etapa atual é manual (nunca sai)
+  if (ETAPAS_MANUAIS.includes(etapaAtual)) {
+    return { permitido: false, motivo: `${etapaAtual} é 100% manual - IA não mexe` };
+  }
+  
+  // Se são iguais, permite (sem movimento)
+  if (etapaAtual === etapaNova) {
+    return { permitido: true, motivo: "Mesma etapa - sem mudança" };
+  }
+  
+  // Verifica se está avançando (não retrocedendo)
+  const ordem_atual = ETAPAS_AUTOMATICAS_ORDER[etapaAtual];
+  const ordem_nova = ETAPAS_AUTOMATICAS_ORDER[etapaNova];
+  
+  if (ordem_atual === undefined || ordem_nova === undefined) {
+    return { permitido: false, motivo: "Etapa desconhecida" };
+  }
+  
+  if (ordem_nova < ordem_atual && etapaNova !== "PERDIDO") {
+    // Está retrocedendo e não é PERDIDO (que é final)
+    return { permitido: false, motivo: `Não pode retroceder: ${etapaAtual} → ${etapaNova}` };
+  }
+  
+  // Pode retroceder para PERDIDO apenas se for rejeição total
+  return { permitido: true, motivo: "Movimento válido" };
+}
+
 // ======================== TESTE RÁPIDO: Intervalos pequenos para teste ========================
 export async function createTestFollowUps(clientId: string, userId: string, conversationId: string) {
   try {
@@ -323,7 +374,7 @@ export async function simulateClientResponse(clientId: string, userId: string, m
         .values({
           clientId,
           userId,
-          ultimaMensagem: new Date(),
+          ultimaMensagemEm: new Date(),
         })
         .returning();
       conv = newConv;
@@ -347,7 +398,7 @@ export async function simulateClientResponse(clientId: string, userId: string, m
 
     console.log(`📊 IA retornou: ${analysis.sentimento} → ${analysis.etapa}`);
 
-    // 4. MOVER OPP EXISTENTE OU CRIAR NOVA (Opção B - Move existente ao invés de criar)
+    // 4. MOVER OPP EXISTENTE OU CRIAR NOVA (com validação de retrocesso)
     if (analysis.etapa !== "automatico" && client) {
       // 4a. Buscar se existe opp "aberta" (não PERDIDA, não FECHADA)
       const etapasFinais = ["PERDIDO", "FECHADO"];
@@ -361,10 +412,26 @@ export async function simulateClientResponse(clientId: string, userId: string, m
       });
       
       let resultOpp: any;
-      let actionType: "criar" | "mover" = "criar";
+      let actionType: "criar" | "mover" | "bloqueado" = "criar";
+      let statusAtualizado: string | null = null;
       
       if (existingOpp && existingOpp.etapa !== analysis.etapa) {
-        // 4b. MOVER opp existente para nova etapa
+        // 4b. VALIDAR se o movimento é permitido (não retrocede, não mexe em manuais)
+        const validacao = isValidMovement(existingOpp.etapa, analysis.etapa);
+        
+        if (!validacao.permitido) {
+          console.log(`🚫 MOVIMENTO BLOQUEADO: ${validacao.motivo}`);
+          return { 
+            success: false, 
+            clientId, 
+            message: `🚫 Movimento bloqueado: ${validacao.motivo}\nEtapa atual: ${existingOpp.etapa}\nTentada: ${analysis.etapa}`,
+            analysis,
+            action: "bloqueado",
+            motivo: validacao.motivo,
+          };
+        }
+        
+        // ✅ Movimento válido - MOVER opp existente
         console.log(`🔄 MOVENDO opp existente ${existingOpp.id} de ${existingOpp.etapa} → ${analysis.etapa}`);
         const etapaAntes = existingOpp.etapa;
         
@@ -383,7 +450,7 @@ export async function simulateClientResponse(clientId: string, userId: string, m
         actionType = "mover";
       } else if (!existingOpp) {
         // 4c. CRIAR nova opp se não houver aberta
-        console.log(`🔍 DEBUG: Criando nova opportunity com userId=${userId}, etapa=${analysis.etapa}`);
+        console.log(`🔍 Criando nova opportunity com userId=${userId}, etapa=${analysis.etapa}`);
         resultOpp = await db.insert(opportunities).values({
           clientId,
           titulo: `${client.nome} - ${analysis.motivo}`,
@@ -402,9 +469,9 @@ export async function simulateClientResponse(clientId: string, userId: string, m
       }
       
       // 🔄 RECALCULATE CLIENT STATUS
-      const newStatus = await storage.recalculateClientStatus(clientId);
-      await storage.updateClient(clientId, { status: newStatus });
-      console.log(`🔄 Status do cliente atualizado: ${newStatus.toUpperCase()}`);
+      statusAtualizado = await storage.recalculateClientStatus(clientId);
+      await storage.updateClient(clientId, { status: statusAtualizado });
+      console.log(`🔄 Status do cliente atualizado: ${statusAtualizado.toUpperCase()}`);
       
       const actionMessage = actionType === "mover" 
         ? `✅ Oportunidade MOVIDA para "${analysis.etapa}"`
@@ -413,10 +480,10 @@ export async function simulateClientResponse(clientId: string, userId: string, m
       return { 
         success: true, 
         clientId, 
-        message: `${actionMessage}\n📊 Sentimento: ${analysis.sentimento}\n💡 ${analysis.sugestao}\n🔄 Status: ${newStatus.toUpperCase()}`,
+        message: `${actionMessage}\n📊 Sentimento: ${analysis.sentimento}\n💡 ${analysis.sugestao}\n🔄 Status: ${statusAtualizado.toUpperCase()}`,
         analysis,
         opportunityId: resultOpp.id,
-        statusAtualizado: newStatus,
+        statusAtualizado,
         action: actionType,
       };
     }
