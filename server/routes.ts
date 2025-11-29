@@ -1969,7 +1969,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Step 1: Get conversation
       logs.push({ step: 1, action: "Fetching conversation", time: new Date().toISOString() });
-      const conv = await storage.getConversationById(conversationId);
+      const [conv] = await db.select().from(conversations).where(eq(conversations.id, conversationId)).limit(1);
       if (!conv) {
         logs.push({ step: 1, status: "ERROR", message: "Conversation not found" });
         return res.status(404).json({ error: "Conversation not found", logs });
@@ -2010,12 +2010,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Step 4: Fetch all messages to verify
       logs.push({ step: 4, action: "Fetching all messages", time: new Date().toISOString() });
-      const messages = await storage.getMessagesByConversationId(conversationId);
+      const allMessages = await db.select().from(messages).where(eq(messages.conversationId, conversationId));
       logs.push({ 
         step: 4, 
         status: "OK", 
-        totalMessages: messages.length,
-        lastMessages: messages.slice(-2).map(m => ({
+        totalMessages: allMessages.length,
+        lastMessages: allMessages.slice(-2).map(m => ({
           id: m.id,
           sender: m.sender,
           tipo: m.tipo,

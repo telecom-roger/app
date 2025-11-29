@@ -37,6 +37,7 @@ import CampanhasHistorico from "@/pages/campanhas-historico";
 import QuickRepliesConfig from "@/pages/quick-replies-config";
 import TagsConfig from "@/pages/tags-config";
 import TestAutomation from "@/pages/test-automation";
+import TestChat from "@/pages/test-chat";
 import NotFound from "@/pages/not-found";
 
 function Router({ isAuthenticated }: { isAuthenticated: boolean }) {
@@ -69,6 +70,7 @@ function Router({ isAuthenticated }: { isAuthenticated: boolean }) {
       <Route path="/admin/usuarios" component={AdminUsuarios} />
       <Route path="/admin/templates" component={AdminTemplates} />
       <Route path="/test/automation" component={TestAutomation} />
+      <Route path="/test/chat" component={TestChat} />
       <Route component={NotFound} />
     </Switch>
   );
