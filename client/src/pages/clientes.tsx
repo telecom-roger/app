@@ -440,9 +440,10 @@ export default function Clientes() {
     }
   }, [notifications]);
 
-  // Scroll to pagination buttons when page changes
+  // Scroll to top of table when page changes
   useEffect(() => {
-    paginationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const tableElement = document.querySelector('[data-testid="table-container"]');
+    tableElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [page]);
 
   const statusColors: Record<string, string> = {
@@ -777,7 +778,7 @@ export default function Clientes() {
           )}
 
           {/* Table */}
-          <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50 overflow-hidden">
+          <Card data-testid="table-container" className="border-0 shadow-sm bg-white dark:bg-slate-800/50 overflow-hidden">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
