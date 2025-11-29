@@ -332,6 +332,12 @@ export default function Clientes() {
     refetchInterval: 5000,
   });
 
+  // Fetch notifications to listen for client sharing
+  const { data: notifications = [] } = useQuery<any[]>({
+    queryKey: ["/api/notifications"],
+    refetchInterval: 3000,
+  });
+
   // Fetch all tipos
   const { data: tiposDoDb = [] } = useQuery<string[]>({
     queryKey: ["/api/clients/tipos"],
@@ -395,6 +401,14 @@ export default function Clientes() {
       }, 500);
     }
   }, [isAuthenticated, authLoading, toast]);
+
+  // Invalidate clients cache when a new client_shared notification arrives
+  useEffect(() => {
+    const clientSharedNotifications = notifications.filter(n => n.tipo === "client_shared" && !n.lida);
+    if (clientSharedNotifications.length > 0) {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+    }
+  }, [notifications]);
 
   const statusColors: Record<string, string> = {
     lead: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
