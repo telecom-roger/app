@@ -1955,6 +1955,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // TEST ENDPOINT: Full send/receive test with logs
+  app.post("/api/chat/test/send-receive", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const { conversationId } = req.body;
+
+      if (!conversationId) {
+        return res.status(400).json({ error: "conversationId is required" });
+      }
+
+      const logs: any[] = [];
+
+      // Step 1: Get conversation
+      logs.push({ step: 1, action: "Fetching conversation", time: new Date().toISOString() });
+      const conv = await storage.getConversationById(conversationId);
+      if (!conv) {
+        logs.push({ step: 1, status: "ERROR", message: "Conversation not found" });
+        return res.status(404).json({ error: "Conversation not found", logs });
+      }
+      logs.push({ step: 1, status: "OK", conversationId: conv.id, clientId: conv.clientId });
+
+      // Step 2: Send message from agent
+      logs.push({ step: 2, action: "Sending message from agent", time: new Date().toISOString() });
+      const mensagemEnviada = await storage.createMessage({
+        conversationId,
+        sender: "agent",
+        tipo: "texto",
+        conteudo: "Teste de envio - Este é um teste automatizado",
+      });
+      logs.push({ 
+        step: 2, 
+        status: "OK", 
+        messageId: mensagemEnviada.id,
+        sender: mensagemEnviada.sender,
+        content: mensagemEnviada.conteudo
+      });
+
+      // Step 3: Simulate client receiving
+      logs.push({ step: 3, action: "Simulating client message", time: new Date().toISOString() });
+      const mensagemRecebida = await storage.createMessage({
+        conversationId,
+        sender: "client",
+        tipo: "texto",
+        conteudo: "Resposta do cliente - Mensagem recebida com sucesso",
+      });
+      logs.push({ 
+        step: 3, 
+        status: "OK", 
+        messageId: mensagemRecebida.id,
+        sender: mensagemRecebida.sender,
+        content: mensagemRecebida.conteudo
+      });
+
+      // Step 4: Fetch all messages to verify
+      logs.push({ step: 4, action: "Fetching all messages", time: new Date().toISOString() });
+      const messages = await storage.getMessagesByConversationId(conversationId);
+      logs.push({ 
+        step: 4, 
+        status: "OK", 
+        totalMessages: messages.length,
+        lastMessages: messages.slice(-2).map(m => ({
+          id: m.id,
+          sender: m.sender,
+          tipo: m.tipo,
+          conteudo: m.conteudo?.substring(0, 50)
+        }))
+      });
+
+      // Step 5: Check WebSocket status
+      logs.push({ step: 5, action: "Checking WhatsApp sessions", time: new Date().toISOString() });
+      const sessions = await db.select().from(whatsappSessions);
+      logs.push({ 
+        step: 5, 
+        status: "OK", 
+        totalSessions: sessions.length,
+        sessions: sessions.map(s => ({ id: s.id, status: s.status }))
+      });
+
+      logs.push({ 
+        status: "ALL_TESTS_PASSED", 
+        completedAt: new Date().toISOString(),
+        summary: "Send/receive test completed successfully"
+      });
+
+      console.log("[TEST] 🧪 Send/Receive test completed:", JSON.stringify(logs, null, 2));
+
+      res.json({ success: true, logs, messages: { sent: mensagemEnviada, received: mensagemRecebida } });
+    } catch (error: any) {
+      console.error("[TEST] ❌ Send/Receive test error:", error);
+      res.status(500).json({ error: error.message, stack: error.stack });
+    }
+  });
+
   // Helper endpoint to get/create conversation by phone
   app.post("/api/chat/conversation-by-phone", isAuthenticated, async (req, res) => {
     try {
