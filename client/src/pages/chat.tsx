@@ -344,7 +344,7 @@ export default function Chat() {
           cel.includes(term)
         );
       })
-    : [];
+    : clients;
 
   // Sort conversations by last message date (most recent first)
   const sortedConversations = [...conversations]
