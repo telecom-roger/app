@@ -978,8 +978,8 @@ export default function Chat() {
                           </Avatar>
                           <div className="flex items-center gap-1 min-w-0 flex-1">
                             <p className="text-sm font-medium truncate text-slate-900 dark:text-white">
-                              {clientName.length > 20
-                                ? clientName.substring(0, 20) + "..."
+                              {clientName.length > 30
+                                ? clientName.substring(0, 30) + "..."
                                 : clientName}
                             </p>
                             {conv.client?.tags?.[0] && (() => {
@@ -1017,8 +1017,8 @@ export default function Chat() {
                           </p>
                           {conv.ultimaMensagem && (
                             <p className="text-xs text-slate-600 dark:text-slate-400 truncate mt-1">
-                              {conv.ultimaMensagem.length > 35
-                                ? conv.ultimaMensagem.substring(0, 35) + "..."
+                              {conv.ultimaMensagem.length > 50
+                                ? conv.ultimaMensagem.substring(0, 50) + "..."
                                 : conv.ultimaMensagem}
                             </p>
                           )}
@@ -1093,8 +1093,8 @@ export default function Chat() {
                       );
                     })()}
                     <p className="font-medium text-slate-900 dark:text-white truncate">
-                      {(selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato").length > 20
-                        ? (selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato").substring(0, 20) + "..."
+                      {(selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato").length > 30
+                        ? (selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato").substring(0, 30) + "..."
                         : selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato"}
                     </p>
                   </div>
