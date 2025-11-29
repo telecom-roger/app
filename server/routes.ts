@@ -433,7 +433,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user as any;
       const { etapa } = req.query;
       const opportunities = await storage.getOpportunities({
-        responsavel: user.id, // Filtrar por usuário autenticado
+        userId: user.id, // Filtrar por usuário + clientes compartilhados
         etapa: etapa as string,
       });
       res.json(opportunities);
