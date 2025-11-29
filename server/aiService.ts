@@ -121,11 +121,11 @@ CLIENTE: ${clienteInfo?.nome || "Desconhecido"}
 
 REGRAS DE CLASSIFICAÇÃO - SIGA EXATAMENTE (IA trabalha APENAS em 4 etapas automáticas):
 
-▶️ ETAPAS AUTOMÁTICAS (4 apenas):
-1. CONTATO - Cliente pergunta preço, valor, quanto custa (quer informação)
-2. PROPOSTA - Cliente diz "ok", "sim", "manda", "pode enviar", "quero renovar" (aprovação)
-3. FORNECEDOR - Mensagens automáticas: "deixe seu contato", "breve", "aguarde", "em breve"
-4. PERDIDO - Recusa TOTAL: "não quero renovar", "cancela tudo", "não tenho interesse"
+▶️ ETAPAS AUTOMÁTICAS (4 apenas - retorne em MINÚSCULA):
+1. "contato" - Cliente pergunta preço, valor, quanto custa (quer informação)
+2. "proposta" - Cliente diz "ok", "sim", "manda", "pode enviar", "quero renovar" (aprovação)
+3. "fornecedor" - Mensagens automáticas: "deixe seu contato", "breve", "aguarde", "em breve"
+4. "perdido" - Recusa TOTAL: "não quero renovar", "cancela tudo", "não tenho interesse"
 
 ⚠️ CASOS ESPECIAIS:
 - "Quero cancelar algumas linhas" (recusa PARCIAL) → retorne "automatico" (NÃO move)
@@ -133,10 +133,10 @@ REGRAS DE CLASSIFICAÇÃO - SIGA EXATAMENTE (IA trabalha APENAS em 4 etapas auto
 - Conversas normais ("oi", "tudo bem", "ok blz") → retorne "automatico" (NÃO move)
 
 ❌ NUNCA RETORNE ESTAS (são 100% manuais):
-- LEAD, PROPOSTA ENVIADA, CONTRATO ENVIADO, AGUARDANDO CONTRATO, AGUARDANDO ACEITE, FECHADO
+- lead, proposta_enviada, contrato_enviado, aguardando_contrato, aguardando_aceite, fechado
 
-Responda APENAS com JSON (sem markdown):
-{"sentimento":"positivo","confianca":95,"motivo":"Cliente aprovou","etapa":"PROPOSTA","sugestao":"Enviar proposta"}`;
+Responda APENAS com JSON (sem markdown) - ETAPAS EM MINÚSCULA:
+{"sentimento":"positivo","confianca":95,"motivo":"Cliente aprovou","etapa":"proposta","sugestao":"Enviar proposta"}`;
 
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
