@@ -117,7 +117,7 @@ export default function ClienteProfile() {
                     </h3>
                     {cliente?.status && (
                       <Badge variant="outline" className="text-xs mt-1" data-testid="badge-status">
-                        {cliente.status}
+                        {cliente.status.toUpperCase()}
                       </Badge>
                     )}
                   </div>

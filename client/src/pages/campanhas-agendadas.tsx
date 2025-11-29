@@ -862,7 +862,7 @@ export default function CampanhasAgendadas() {
                             <div className="text-sm text-slate-600 dark:text-slate-400 mt-1 space-y-1">
                               <div>📞 {client.celular}</div>
                               {client.email && <div>✉️ {client.email}</div>}
-                              {client.status && <div>Status: <span className="font-medium capitalize text-slate-700 dark:text-slate-300">{client.status}</span></div>}
+                              {client.status && <div>Status: <span className="font-medium text-slate-700 dark:text-slate-300">{client.status.toUpperCase()}</span></div>}
                               {client.cidade && <div>📍 {client.cidade}</div>}
                               {client.tipo && <div>Tipo: <span className="font-medium text-slate-700 dark:text-slate-300">{client.tipo}</span></div>}
                               {client.carteira && <div>Carteira: <span className="font-medium text-slate-700 dark:text-slate-300">{client.carteira}</span></div>}
