@@ -396,22 +396,10 @@ export async function simulateClientResponse(clientId: string, userId: string, m
       nome: client?.nome,
     });
 
-    console.log(`📊 IA retornou: ${analysis.sentimento} → ${analysis.etapa} (deveAgir: ${analysis.deveAgir})`);
+    console.log(`📊 IA retornou: ${analysis.sentimento} → ${analysis.etapa} (deveAgir: ${analysis.deveAgir}, ehRecusaParcial: ${analysis.ehRecusaParcial})`);
 
     // Normalizar etapa da IA para MAIÚSCULA
     const etapaNormalizada = analysis.etapa.toUpperCase();
-    
-    // 🚫 SE DEVE AGIR = FALSE → NÃO FAZER NADA
-    if (!analysis.deveAgir) {
-      console.log(`⏭️ Sem ação - recusa parcial, indecisão, ou conversa neutra`);
-      return { 
-        success: true, 
-        clientId, 
-        message: `⏭️ Mensagem registrada\n📊 Sentimento: ${analysis.sentimento}\n💡 ${analysis.sugestao}`,
-        analysis,
-        action: "nenhuma",
-      };
-    }
     
     // 4. CRIAR ou MOVER OPORTUNIDADE
     if (client) {
@@ -427,11 +415,12 @@ export async function simulateClientResponse(clientId: string, userId: string, m
       });
       
       let resultOpp: any;
-      let actionType: "criar" | "mover" | "bloqueado" = "criar";
+      let actionType: "criar" | "mover" | "nenhuma" | "bloqueado" = "criar";
       let statusAtualizado: string | null = null;
+      let alerta = "";
       
+      // 🎯 SE NÃO EXISTE OPP → SEMPRE CRIAR (até mesmo recusa parcial)
       if (!existingOpp) {
-        // ✅ CRIAR nova opp (primeira interação do cliente)
         console.log(`✨ CRIANDO nova opportunity em ${etapaNormalizada}`);
         resultOpp = await db.insert(opportunities).values({
           clientId,
@@ -443,8 +432,15 @@ export async function simulateClientResponse(clientId: string, userId: string, m
         }).returning().then(r => r[0]);
         console.log(`✅ Oportunidade criada: ${resultOpp.id}`);
         actionType = "criar";
-      } else if (existingOpp.etapa !== etapaNormalizada) {
-        // ✅ MOVER opp existente para nova etapa
+        
+        // Se é recusa parcial → alerta atendente
+        if (analysis.ehRecusaParcial) {
+          alerta = `\n⚠️ ALERTA: ${analysis.sugestao}`;
+          console.log(`⚠️ Recusa parcial no primeiro contato - alertando atendente`);
+        }
+      } 
+      // 🎯 SE EXISTE OPP E deveAgir = true → MOVER PARA PRÓXIMA ETAPA
+      else if (analysis.deveAgir && existingOpp.etapa !== etapaNormalizada) {
         const validacao = isValidMovement(existingOpp.etapa, etapaNormalizada);
         
         if (!validacao.permitido) {
@@ -472,17 +468,24 @@ export async function simulateClientResponse(clientId: string, userId: string, m
         
         console.log(`✅ Oportunidade MOVIDA: ${existingOpp.etapa} → ${etapaNormalizada}`);
         actionType = "mover";
-      } else {
-        // Opp já está em CONTATO e cliente enviou mensagem genérica → não fazer nada
+      } 
+      // 🎯 SE EXISTE OPP E deveAgir = false → MANTER ETAPA ATUAL (recusa parcial respostas seguintes)
+      else if (!analysis.deveAgir) {
         resultOpp = existingOpp;
-        console.log(`ℹ️ Oportunidade já em ${etapaNormalizada} - sem ação`);
-        return { 
-          success: true, 
-          clientId, 
-          message: `ℹ️ Oportunidade já em ${etapaNormalizada}\n📊 Sentimento: ${analysis.sentimento}`,
-          analysis,
-          action: "nenhuma",
-        };
+        console.log(`ℹ️ Mantendo oportunidade em ${existingOpp.etapa}`);
+        actionType = "nenhuma";
+        
+        // Alerta se é recusa parcial
+        if (analysis.ehRecusaParcial) {
+          alerta = `\n⚠️ ALERTA: ${analysis.sugestao}`;
+          console.log(`⚠️ Recusa parcial detectada - alertando atendente`);
+        }
+      } 
+      // 🎯 OPP JÁ NA MESMA ETAPA → SEM AÇÃO
+      else {
+        resultOpp = existingOpp;
+        console.log(`ℹ️ Oportunidade já em ${etapaNormalizada}`);
+        actionType = "nenhuma";
       }
       
       // 🔄 RECALCULATE CLIENT STATUS
@@ -490,14 +493,15 @@ export async function simulateClientResponse(clientId: string, userId: string, m
       await storage.updateClient(clientId, { status: statusAtualizado });
       console.log(`🔄 Status do cliente atualizado: ${statusAtualizado.toUpperCase()}`);
       
-      const actionMessage = actionType === "mover" 
-        ? `✅ Oportunidade MOVIDA para "${etapaNormalizada}"`
-        : `✅ Nova oportunidade criada em "${etapaNormalizada}"`;
+      const actionMessage = 
+        actionType === "mover" ? `✅ Oportunidade MOVIDA para "${etapaNormalizada}"` :
+        actionType === "criar" ? `✅ Nova oportunidade criada em "${etapaNormalizada}"` :
+        `ℹ️ Oportunidade mantida em "${resultOpp.etapa}"`;
       
       return { 
         success: true, 
         clientId, 
-        message: `${actionMessage}\n📊 Sentimento: ${analysis.sentimento}\n💡 ${analysis.sugestao}\n🔄 Status: ${statusAtualizado.toUpperCase()}`,
+        message: `${actionMessage}\n📊 Sentimento: ${analysis.sentimento}\n💡 ${analysis.sugestao}${alerta}\n🔄 Status: ${statusAtualizado?.toUpperCase() || ""}`,
         analysis,
         opportunityId: resultOpp.id,
         statusAtualizado,
