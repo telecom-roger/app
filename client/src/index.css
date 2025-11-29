@@ -173,6 +173,25 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
+
+  /* Mobile-first responsive utilities */
+  @media (max-width: 640px) {
+    .page-container {
+      @apply px-3 py-4;
+    }
+  }
+
+  @media (min-width: 641px) and (max-width: 1023px) {
+    .page-container {
+      @apply px-4 py-6;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .page-container {
+      @apply px-6 py-8;
+    }
+  }
 }
 
 /**

@@ -98,6 +98,7 @@ export default function Kanban() {
   const [showNovaOportunidade, setShowNovaOportunidade] = useState(false);
   const [editingOportunidade, setEditingOportunidade] = useState<Opportunity | null>(null);
   const [draggedCard, setDraggedCard] = useState<{ id: string; fromEtapa: string } | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -225,19 +226,19 @@ export default function Kanban() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Header Section */}
-      <div className="px-6 py-8 md:py-12">
+      <div className="px-3 md:px-6 py-4 md:py-8 lg:py-12">
         <div className="max-w-full mx-auto">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-3 bg-purple-500/10 rounded-xl">
-                  <TrendingUp className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+          <div className="flex items-start justify-between gap-2 md:gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 md:gap-3 mb-2">
+                <div className="p-2 md:p-3 bg-purple-500/10 rounded-xl flex-shrink-0">
+                  <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-purple-600 dark:text-purple-400" />
                 </div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent">
+                <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent truncate">
                   Oportunidades
                 </h1>
               </div>
-              <p className="text-slate-600 dark:text-slate-400 mt-2">
+              <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mt-1 md:mt-2 line-clamp-2">
                 Gerencie seu funil de vendas com drag and drop
               </p>
             </div>
@@ -247,6 +248,7 @@ export default function Kanban() {
               onClick={() => navigate("/kanban-settings")}
               data-testid="button-kanban-settings"
               title="Configurar Kanban"
+              className="flex-shrink-0"
             >
               <Settings className="h-5 w-5" />
             </Button>
@@ -255,11 +257,11 @@ export default function Kanban() {
       </div>
 
       {/* Main Content */}
-      <div className="px-6 pb-12">
+      <div className="px-3 md:px-6 pb-8 md:pb-12">
         <div className="max-w-full mx-auto space-y-6">
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="p-6 border-0 shadow-sm bg-white dark:bg-slate-800/50">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4">
+            <Card className="p-3 md:p-6 border-0 shadow-sm bg-white dark:bg-slate-800/50">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total de Oportunidades</p>
@@ -298,9 +300,9 @@ export default function Kanban() {
 
           {/* Controls */}
           <div className="flex flex-col gap-3">
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
+            <div className="flex flex-col lg:flex-row gap-2 lg:gap-3 items-start lg:items-center flex-wrap">
               <Select value={filtroResponsavel} onValueChange={setFiltroResponsavel}>
-                <SelectTrigger className="w-full sm:w-48 border-slate-200 dark:border-slate-700" data-testid="select-responsavel">
+                <SelectTrigger className="w-full lg:w-48 text-xs lg:text-sm border-slate-200 dark:border-slate-700" data-testid="select-responsavel">
                   <SelectValue placeholder="Responsável" />
                 </SelectTrigger>
                 <SelectContent>
@@ -314,7 +316,7 @@ export default function Kanban() {
                 value={filtroDataInicio}
                 onChange={(e) => setFiltroDataInicio(e.target.value)}
                 placeholder="Data início"
-                className="w-full sm:w-40 border-slate-200 dark:border-slate-700"
+                className="w-full lg:w-40 text-xs lg:text-sm border-slate-200 dark:border-slate-700"
                 data-testid="input-filtro-data-inicio"
               />
               
@@ -323,14 +325,14 @@ export default function Kanban() {
                 value={filtroDataFim}
                 onChange={(e) => setFiltroDataFim(e.target.value)}
                 placeholder="Data fim"
-                className="w-full sm:w-40 border-slate-200 dark:border-slate-700"
+                className="w-full lg:w-40 text-xs lg:text-sm border-slate-200 dark:border-slate-700"
                 data-testid="input-filtro-data-fim"
               />
 
               <Button 
                 data-testid="button-nova-oportunidade" 
                 onClick={() => setShowNovaOportunidade(true)}
-                className="bg-purple-600 hover:bg-purple-700 text-white w-full sm:w-auto"
+                className="bg-purple-600 hover:bg-purple-700 text-white w-full lg:w-auto text-sm"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Nova Oportunidade

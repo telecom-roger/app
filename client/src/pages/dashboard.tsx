@@ -191,10 +191,10 @@ export default function Dashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="px-6 pb-12">
-        <div className="max-w-7xl mx-auto space-y-6">
+      <div className="px-3 md:px-6 pb-8 md:pb-12">
+        <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
           {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
             <StatCard
               title="Total de Clientes"
               value={stats?.totalClientes}
