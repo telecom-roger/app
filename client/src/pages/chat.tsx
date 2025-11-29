@@ -337,11 +337,13 @@ export default function Chat() {
         const nome = client.nome?.toLowerCase() || "";
         const cnpj = client.cnpj?.toLowerCase() || "";
         const cel = (client.celular || "").toLowerCase();
+        const tel2 = ((client as any).telefone2 || "").toLowerCase();
         
         return (
           nome.includes(term) ||
           cnpj.includes(term) ||
-          cel.includes(term)
+          cel.includes(term) ||
+          tel2.includes(term)
         );
       })
     : clients;
