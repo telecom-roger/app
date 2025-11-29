@@ -434,6 +434,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== MANUAL FOLLOW-UP ====================
+  app.post("/api/clients/:id/manual-follow-up", isAuthenticated, async (req, res) => {
+    try {
+      const client = await storage.getClientById(req.params.id);
+      if (!client) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+
+      const user = req.user as any;
+      const access = await storage.checkClientAccess(req.params.id, user.id);
+      if (!access.canAccess) {
+        return res.status(403).json({ error: "Você não tem acesso a este cliente" });
+      }
+
+      // Altera status do cliente para "em_fechamento"
+      const updatedClient = await storage.updateClient(req.params.id, { status: "em_fechamento" });
+
+      // Registra na timeline
+      await storage.createInteraction({
+        clientId: req.params.id,
+        tipo: "follow_up_manual",
+        origem: "user",
+        titulo: "Follow-up Manual Criado",
+        texto: `${user.firstName || user.email} criou um follow-up manual e alterou o status para "Em Fechamento"`,
+        meta: { user: user.email },
+        createdBy: user.id,
+      });
+
+      // Create audit log
+      await storage.createAuditLog({
+        userId: user.id,
+        acao: "criar",
+        entidade: "client_follow_up",
+        entidadeId: req.params.id,
+        dadosNovos: { tipo: "manual_follow_up", status: "em_fechamento" } as any,
+        ipAddress: req.ip,
+        userAgent: req.get("user-agent"),
+      });
+
+      res.status(201).json(updatedClient);
+    } catch (error: any) {
+      console.error("Error creating manual follow-up:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // ==================== OPPORTUNITY ROUTES ====================
   app.get("/api/opportunities", isAuthenticated, async (req, res) => {
     try {

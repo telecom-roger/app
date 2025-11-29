@@ -34,6 +34,7 @@ import {
   Settings,
   Share2,
   MoreVertical,
+  CheckCircle,
 } from "lucide-react";
 import { EditableField } from "@/components/EditableField";
 import { AddClientNote } from "@/components/AddClientNote";
@@ -86,6 +87,26 @@ export default function ClienteProfile() {
     enabled: isAuthenticated && !!id,
   });
 
+  const manualFollowUpMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", `/api/clients/${id}/manual-follow-up`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients", id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/timeline", id] });
+      toast({
+        title: "Sucesso",
+        description: "Follow-up manual criado e status alterado para 'Em Fechamento'",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível criar o follow-up manual",
+        variant: "destructive",
+      });
+    },
+  });
 
   if (authLoading || !isAuthenticated) {
     return <ProfileSkeleton />;
@@ -178,6 +199,16 @@ export default function ClienteProfile() {
                 >
                   <FileText className="h-4 w-4 mr-2" />
                   Adicionar Nota
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start text-sm bg-orange-50 dark:bg-orange-950 hover:bg-orange-100 dark:hover:bg-orange-900"
+                  onClick={() => manualFollowUpMutation.mutate()}
+                  disabled={manualFollowUpMutation.isPending}
+                  data-testid="button-manual-follow-up"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2 text-orange-600 dark:text-orange-400" />
+                  <span className="text-orange-700 dark:text-orange-300">Follow-up Manual</span>
                 </Button>
               </div>
 
