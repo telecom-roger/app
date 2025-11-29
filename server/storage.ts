@@ -249,18 +249,10 @@ export async function getOpportunities(params: {
 }): Promise<Opportunity[]> {
   let conditions = [];
   
-  // Se userId está definido, filtra por:
-  // 1. Oportunidades do usuário (responsavelId = userId)
-  // 2. OU oportunidades de clientes pertencentes ao usuário
-  // 3. OU oportunidades de clientes compartilhados com o usuário
+  // Se userId está definido, filtra APENAS oportunidades do usuário (responsavelId)
+  // Cada vendedor vê APENAS suas próprias oportunidades, mesmo que cliente seja compartilhado
   if (params.userId) {
-    conditions.push(
-      or(
-        eq(opportunities.responsavelId, params.userId),
-        sql`${opportunities.clientId} IN (SELECT ${clients.id} FROM ${clients} WHERE ${clients.createdBy} = ${params.userId})`,
-        sql`${opportunities.clientId} IN (SELECT ${clientSharing.clientId} FROM ${clientSharing} WHERE ${clientSharing.sharedWithUserId} = ${params.userId})`
-      )
-    );
+    conditions.push(eq(opportunities.responsavelId, params.userId));
   } else if (params.responsavel && params.responsavel !== "todos") {
     conditions.push(eq(opportunities.responsavelId, params.responsavel));
   }
