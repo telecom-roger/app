@@ -396,26 +396,26 @@ export async function simulateClientResponse(clientId: string, userId: string, m
       nome: client?.nome,
     });
 
-    console.log(`📊 IA retornou: ${analysis.sentimento} → ${analysis.etapa} (acao: ${analysis.acao})`);
+    console.log(`📊 IA retornou: ${analysis.sentimento} → ${analysis.etapa} (deveAgir: ${analysis.deveAgir})`);
 
     // Normalizar etapa da IA para MAIÚSCULA
     const etapaNormalizada = analysis.etapa.toUpperCase();
     
-    // 🚫 SE AÇÃO É "NENHUMA" → NÃO FAZER NADA
-    if (analysis.acao === "nenhuma") {
-      console.log(`⏭️ Ação "nenhuma" - ignorando (recusa parcial, indecisão, etc)`);
+    // 🚫 SE DEVE AGIR = FALSE → NÃO FAZER NADA
+    if (!analysis.deveAgir) {
+      console.log(`⏭️ Sem ação - recusa parcial, indecisão, ou conversa neutra`);
       return { 
         success: true, 
         clientId, 
-        message: `⏭️ Mensagem registrada mas sem ação\n📊 Sentimento: ${analysis.sentimento}\n💡 ${analysis.sugestao}`,
+        message: `⏭️ Mensagem registrada\n📊 Sentimento: ${analysis.sentimento}\n💡 ${analysis.sugestao}`,
         analysis,
         action: "nenhuma",
       };
     }
     
-    // 4. MOVER OPP EXISTENTE OU CRIAR NOVA (com validação de retrocesso)
+    // 4. CRIAR ou MOVER OPORTUNIDADE
     if (client) {
-      // 4a. Buscar se existe opp "aberta" (não PERDIDA, não FECHADA)
+      // Buscar opp aberta (não PERDIDA, não FECHADA)
       const etapasFinais = ["PERDIDO", "FECHADO"];
       let existingOpp = await db.query.opportunities.findFirst({
         where: (o: any) => 
@@ -430,10 +430,9 @@ export async function simulateClientResponse(clientId: string, userId: string, m
       let actionType: "criar" | "mover" | "bloqueado" = "criar";
       let statusAtualizado: string | null = null;
       
-      // 4b. Respeitar o campo `acao` da IA
-      if (analysis.acao === "criar" && !existingOpp) {
-        // ✅ CRIAR nova opp (primeira resposta)
-        console.log(`✨ CRIANDO nova opportunity (primeira resposta) com etapa=${etapaNormalizada}`);
+      if (!existingOpp) {
+        // ✅ CRIAR nova opp (primeira interação do cliente)
+        console.log(`✨ CRIANDO nova opportunity em ${etapaNormalizada}`);
         resultOpp = await db.insert(opportunities).values({
           clientId,
           titulo: `${client.nome} - ${analysis.motivo}`,
@@ -442,15 +441,10 @@ export async function simulateClientResponse(clientId: string, userId: string, m
           responsavelId: userId,
           ordem: 0,
         }).returning().then(r => r[0]);
-        console.log(`✅ Nova oportunidade criada: ${resultOpp.id}`);
+        console.log(`✅ Oportunidade criada: ${resultOpp.id}`);
         actionType = "criar";
-      } else if (analysis.acao === "criar" && existingOpp) {
-        // ⏭️ CRIAR foi solicitado mas já existe opp → manter existente
-        resultOpp = existingOpp;
-        console.log(`ℹ️ Ação "criar" mas já existe opp em ${existingOpp.etapa} - mantendo`);
-        actionType = "criar";
-      } else if (analysis.acao === "mover" && existingOpp && existingOpp.etapa !== etapaNormalizada) {
-        // ✅ MOVER opp existente
+      } else if (existingOpp.etapa !== etapaNormalizada) {
+        // ✅ MOVER opp existente para nova etapa
         const validacao = isValidMovement(existingOpp.etapa, etapaNormalizada);
         
         if (!validacao.permitido) {
@@ -458,7 +452,7 @@ export async function simulateClientResponse(clientId: string, userId: string, m
           return { 
             success: false, 
             clientId, 
-            message: `🚫 Movimento bloqueado: ${validacao.motivo}\nEtapa atual: ${existingOpp.etapa}`,
+            message: `🚫 Movimento bloqueado: ${validacao.motivo}`,
             analysis,
             action: "bloqueado",
           };
@@ -478,17 +472,14 @@ export async function simulateClientResponse(clientId: string, userId: string, m
         
         console.log(`✅ Oportunidade MOVIDA: ${existingOpp.etapa} → ${etapaNormalizada}`);
         actionType = "mover";
-      } else if (existingOpp) {
-        // Opp já está nessa etapa
-        resultOpp = existingOpp;
-        console.log(`ℹ️ Oportunidade já está em ${etapaNormalizada}`);
       } else {
-        // Nenhuma opp e nenhuma ação relevante
-        console.log(`⏭️ Nenhuma ação relevante`);
+        // Opp já está em CONTATO e cliente enviou mensagem genérica → não fazer nada
+        resultOpp = existingOpp;
+        console.log(`ℹ️ Oportunidade já em ${etapaNormalizada} - sem ação`);
         return { 
           success: true, 
           clientId, 
-          message: `⏭️ Mensagem registrada\n📊 Sentimento: ${analysis.sentimento}`,
+          message: `ℹ️ Oportunidade já em ${etapaNormalizada}\n📊 Sentimento: ${analysis.sentimento}`,
           analysis,
           action: "nenhuma",
         };
