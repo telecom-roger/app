@@ -2418,6 +2418,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             responsavelId: user.id,
           });
           console.log(`✅ Oportunidade criada:`, opp.id);
+          
+          // 🔄 RECALCULATE CLIENT STATUS
+          const newStatus = await storage.recalculateClientStatus(clientId);
+          await storage.updateClient(clientId, { status: newStatus });
+          console.log(`🔄 Status do cliente atualizado: ${newStatus.toUpperCase()}`);
         } catch (err) {
           console.error(`❌ Erro ao criar oportunidade:`, err);
         }

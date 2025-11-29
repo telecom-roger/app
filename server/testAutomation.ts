@@ -64,7 +64,7 @@ export async function createTestKanbanMovement(clientId: string, userId: string)
     const opp1 = await db.insert(opportunities).values({
       clientId,
       titulo: `${clientName} - Lead`,
-      etapa: "Lead",
+      etapa: "LEAD",
       valorEstimado: "1000",
       responsavelId: userId,
       ordem: 0,
@@ -73,7 +73,7 @@ export async function createTestKanbanMovement(clientId: string, userId: string)
     const opp2 = await db.insert(opportunities).values({
       clientId,
       titulo: `${clientName} - Contato`,
-      etapa: "Contato",
+      etapa: "CONTATO",
       valorEstimado: "2000",
       responsavelId: userId,
       ordem: 1,
@@ -82,11 +82,16 @@ export async function createTestKanbanMovement(clientId: string, userId: string)
     const opp3 = await db.insert(opportunities).values({
       clientId,
       titulo: `${clientName} - Proposta`,
-      etapa: "Proposta",
+      etapa: "PROPOSTA",
       valorEstimado: "3000",
       responsavelId: userId,
       ordem: 2,
     }).returning().then(r => r[0]);
+    
+    // 🔄 RECALCULATE CLIENT STATUS
+    const newStatus = await storage.recalculateClientStatus(clientId);
+    await storage.updateClient(clientId, { status: newStatus });
+    console.log(`🔄 Status do cliente atualizado para: ${newStatus.toUpperCase()}`);
 
     // Agenda movimentos automáticos em sequência
     // Opp1: Lead → Contato (executa em 5s)
