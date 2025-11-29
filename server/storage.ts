@@ -1101,3 +1101,81 @@ export async function updateKanbanStage(id: string, data: Partial<InsertKanbanSt
 export async function deleteKanbanStage(id: string): Promise<void> {
   await db.delete(kanbanStages).where(eq(kanbanStages.id, id));
 }
+
+// ==================== CLIENT STATUS AUTOMATION ====================
+/**
+ * Calcula o status do cliente baseado nas oportunidades dele
+ * Ordem de prioridade (mais avançada → menos): FECHADO, AGUARDANDO ACEITE, CONTRATO ENVIADO, AGUARDANDO CONTRATO, PROPOSTA ENVIADA, PROPOSTA, CONTATO, LEAD
+ * PERDIDO não eleva o status
+ */
+export async function recalculateClientStatus(clientId: string): Promise<string> {
+  // Buscar todas as oportunidades do cliente
+  const clientOpportunities = await db
+    .select()
+    .from(opportunities)
+    .where(eq(opportunities.clientId, clientId));
+
+  // Se não tem oportunidades → Lead quente
+  if (clientOpportunities.length === 0) {
+    return "lead_quente";
+  }
+
+  // Filtrar oportunidades ativas (não PERDIDAS)
+  const activeOpps = clientOpportunities.filter((opp) => opp.etapa !== "PERDIDO");
+
+  // Se existe pelo menos 1 FECHADO → Ativo
+  if (activeOpps.some((opp) => opp.etapa === "FECHADO")) {
+    return "ativo";
+  }
+
+  // Se todas são PERDIDAS → Perdido
+  if (activeOpps.length === 0) {
+    return "perdido";
+  }
+
+  // Ordem de prioridade (menor número = mais avançado)
+  const stagePriority: Record<string, number> = {
+    FECHADO: 0,
+    "AGUARDANDO ACEITE": 1,
+    "CONTRATO ENVIADO": 2,
+    "AGUARDANDO CONTRATO": 3,
+    "PROPOSTA ENVIADA": 4,
+    PROPOSTA: 5,
+    CONTATO: 6,
+    LEAD: 7,
+  };
+
+  // Encontrar a oportunidade com menor prioridade (mais avançada)
+  let mostAdvancedOpp = activeOpps[0];
+  let minPriority = stagePriority[mostAdvancedOpp.etapa] ?? 999;
+
+  for (const opp of activeOpps) {
+    const priority = stagePriority[opp.etapa] ?? 999;
+    if (priority < minPriority) {
+      minPriority = priority;
+      mostAdvancedOpp = opp;
+    }
+  }
+
+  // Mapear etapa → status cliente
+  const stageToStatus: Record<string, string> = {
+    LEAD: "lead_quente",
+    CONTATO: "engajado",
+    PROPOSTA: "em_negociacao",
+    "PROPOSTA ENVIADA": "em_negociacao",
+    "AGUARDANDO CONTRATO": "em_fechamento",
+    "CONTRATO ENVIADO": "em_fechamento",
+    "AGUARDANDO ACEITE": "em_fechamento",
+    FECHADO: "ativo",
+    PERDIDO: "perdido",
+  };
+
+  return stageToStatus[mostAdvancedOpp.etapa] || "ativo";
+}
+
+export async function getOpportunitiesByClientId(clientId: string): Promise<Opportunity[]> {
+  return await db
+    .select()
+    .from(opportunities)
+    .where(eq(opportunities.clientId, clientId));
+}

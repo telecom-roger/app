@@ -485,6 +485,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userAgent: req.get("user-agent"),
       });
 
+      // 🔄 RECALCULATE CLIENT STATUS
+      if (opportunity.clientId) {
+        const newStatus = await storage.recalculateClientStatus(opportunity.clientId);
+        await storage.updateClient(opportunity.clientId, { status: newStatus });
+      }
+
       res.status(201).json(opportunity);
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -534,6 +540,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           await storage.updateClient(oldOpportunity.clientId, { tags: newTags });
         }
+      }
+
+      // 🔄 RECALCULATE CLIENT STATUS
+      if (oldOpportunity.clientId) {
+        const newStatus = await storage.recalculateClientStatus(oldOpportunity.clientId);
+        await storage.updateClient(oldOpportunity.clientId, { status: newStatus });
       }
 
       // Create audit log
@@ -595,6 +607,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertOpportunitySchema.partial().parse(req.body);
       const opportunity = await storage.updateOpportunity(req.params.id, validatedData);
 
+      // 🔄 RECALCULATE CLIENT STATUS if etapa changed
+      if (oldOpportunity.clientId && (validatedData.etapa || validatedData.status)) {
+        const newStatus = await storage.recalculateClientStatus(oldOpportunity.clientId);
+        await storage.updateClient(oldOpportunity.clientId, { status: newStatus });
+      }
+
       // Create audit log
       await storage.createAuditLog({
         userId: (req.user as any).id,
@@ -625,6 +643,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       await storage.deleteOpportunity(req.params.id);
+
+      // 🔄 RECALCULATE CLIENT STATUS after delete
+      if (opportunity.clientId) {
+        const newStatus = await storage.recalculateClientStatus(opportunity.clientId);
+        await storage.updateClient(opportunity.clientId, { status: newStatus });
+      }
 
       // Create audit log
       await storage.createAuditLog({
