@@ -479,6 +479,11 @@ export default function Clientes() {
   // Clients from backend (already sorted) - use Set to eliminate duplicates
   const clientesFiltrados = data?.clientes || [];
   const clientesFiltradosUnicos = Array.from(new Map((clientesFiltrados || []).map(c => [c.id, c])).values());
+  
+  // Debug log
+  if (clientesFiltradosUnicos.length !== clientesFiltrados.length) {
+    console.log(`PAGE ${page}: Original: ${clientesFiltrados.length}, Unique: ${clientesFiltradosUnicos.length}`);
+  }
 
   const toggleClienteSelecionado = (clienteId: string) => {
     const novoSet = new Set(selectedClientIds);
