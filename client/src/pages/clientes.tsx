@@ -233,11 +233,13 @@ function ShareClientDialog({ clientId, clientName }: { clientId: string; clientN
 
 interface BulkShareDialogProps {
   selectedClientIds: string[];
+  totalAccumulatedSelected: number;
   onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
   open: boolean;
 }
 
-function BulkShareDialog({ selectedClientIds, onOpenChange, open }: BulkShareDialogProps) {
+function BulkShareDialog({ selectedClientIds, totalAccumulatedSelected, onOpenChange, onSuccess, open }: BulkShareDialogProps) {
   const { toast } = useToast();
   const [selectedUserId, setSelectedUserId] = useState("");
   
@@ -246,6 +248,8 @@ function BulkShareDialog({ selectedClientIds, onOpenChange, open }: BulkShareDia
     enabled: open,
   });
 
+  const totalClients = totalAccumulatedSelected + selectedClientIds.length;
+  
   const bulkShareMutation = useMutation({
     mutationFn: async (userId: string) => {
       await apiRequest("POST", "/api/clients/share-bulk", { clientIds: selectedClientIds, sharedWithUserId: userId });
@@ -253,11 +257,12 @@ function BulkShareDialog({ selectedClientIds, onOpenChange, open }: BulkShareDia
     onSuccess: () => {
       toast({
         title: "Sucesso",
-        description: `${selectedClientIds.length} cliente(s) compartilhado(s) com sucesso`,
+        description: `${totalClients} cliente(s) compartilhado(s) com sucesso`,
       });
       onOpenChange(false);
       setSelectedUserId("");
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      onSuccess();
     },
     onError: (error: any) => {
       toast({
@@ -272,8 +277,11 @@ function BulkShareDialog({ selectedClientIds, onOpenChange, open }: BulkShareDia
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Compartilhar {selectedClientIds.length} cliente(s)</DialogTitle>
-          <DialogDescription>Selecione um usuário para compartilhar</DialogDescription>
+          <DialogTitle>Compartilhar {totalAccumulatedSelected + selectedClientIds.length} cliente(s)</DialogTitle>
+          <DialogDescription>
+            {totalAccumulatedSelected > 0 && <span>Total: {totalAccumulatedSelected + selectedClientIds.length} (Página: {selectedClientIds.length}, Anterior: {totalAccumulatedSelected})</span>}
+            {totalAccumulatedSelected === 0 && <span>Selecione um usuário para compartilhar</span>}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <Select value={selectedUserId} onValueChange={setSelectedUserId}>
@@ -317,6 +325,7 @@ export default function Clientes() {
   const [page, setPage] = useState(1);
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
   const [selectedClientIds, setSelectedClientIds] = useState<Set<string>>(new Set());
+  const [allSelectedClientIds, setAllSelectedClientIds] = useState<Set<string>>(new Set());
   const [bulkShareDialogOpen, setBulkShareDialogOpen] = useState(false);
   const paginationRef = useRef<HTMLDivElement>(null);
 
@@ -419,6 +428,13 @@ export default function Clientes() {
     },
   });
 
+  // Bulk share with accumulated total
+  const onBulkShareSuccess = () => {
+    setSelectedClientIds(new Set());
+    setAllSelectedClientIds(new Set());
+    setBulkShareDialogOpen(false);
+  };
+
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       toast({
@@ -440,8 +456,10 @@ export default function Clientes() {
     }
   }, [notifications]);
 
-  // Scroll to top of table when page changes
+  // When page changes: accumulate IDs from previous page, then clear current page selection
   useEffect(() => {
+    setAllSelectedClientIds(prev => new Set([...Array.from(prev), ...Array.from(selectedClientIds)]));
+    setSelectedClientIds(new Set());
     const tableElement = document.querySelector('[data-testid="table-container"]');
     tableElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [page]);
@@ -746,28 +764,26 @@ export default function Clientes() {
           </Card>
 
           {/* Bulk Actions Bar */}
-          {selectedClientIds.size > 0 && (
+          {(selectedClientIds.size > 0 || allSelectedClientIds.size > 0) && (
             <Card className="border-0 shadow-sm bg-blue-50 dark:bg-blue-950/20 p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Check className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  <div className="flex flex-col gap-1">
-                    <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                      Total: {selectedClientIds.size} cliente(s) selecionado(s)
-                    </span>
-                    <span className="text-xs text-slate-600 dark:text-slate-400">
-                      Você pode selecionar clientes de múltiplas páginas
-                    </span>
-                  </div>
+                  <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                    Total: {allSelectedClientIds.size + selectedClientIds.size} cliente(s) selecionado(s)
+                  </span>
                 </div>
                 <div className="flex gap-2">
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => setSelectedClientIds(new Set())}
+                    onClick={() => {
+                      setSelectedClientIds(new Set());
+                      setAllSelectedClientIds(new Set());
+                    }}
                     data-testid="button-clear-selection"
                   >
-                    Limpar
+                    Limpar Tudo
                   </Button>
                   <Button 
                     size="sm"
@@ -983,8 +999,10 @@ export default function Clientes() {
       </AlertDialog>
 
     <BulkShareDialog 
-      selectedClientIds={Array.from(selectedClientIds)} 
-      onOpenChange={setBulkShareDialogOpen} 
+      selectedClientIds={Array.from(new Set([...Array.from(allSelectedClientIds), ...Array.from(selectedClientIds)]))} 
+      totalAccumulatedSelected={allSelectedClientIds.size}
+      onOpenChange={setBulkShareDialogOpen}
+      onSuccess={onBulkShareSuccess}
       open={bulkShareDialogOpen}
     />
     </div>
