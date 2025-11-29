@@ -256,6 +256,11 @@ export default function Clientes() {
   const [selectedClientIds, setSelectedClientIds] = useState<Set<string>>(new Set());
   const [bulkShareDialogOpen, setBulkShareDialogOpen] = useState(false);
 
+  // Force cache invalidation on mount to always get fresh data
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+  }, []);
+
   // Check if any filter is active
   const hasActiveFilter = searchTerm || statusFilter !== "todos" || selectedTag || tipoFiltro !== "all" || carteiraFiltro !== "all";
   
