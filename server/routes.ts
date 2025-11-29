@@ -2941,7 +2941,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== TESTE DE AUTOMAÇÃO ====================
   app.get("/api/test/clients-list", async (req, res) => {
     try {
-      const clientsList = await db.query.clients.findMany({ limit: 10 });
+      const clientsList = await db.query.clients.findMany({ limit: 50 });
       const users = await db.query.users.findMany({ limit: 5 });
       res.json({ clients: clientsList, users: users });
     } catch (error) {
