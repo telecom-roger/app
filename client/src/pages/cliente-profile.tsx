@@ -352,8 +352,8 @@ export default function ClienteProfile() {
               {!clienteLoading && cliente && (
                 <div className="space-y-3">
                   <p className="text-xs font-semibold text-muted-foreground">STATUS</p>
-                  <Badge className="w-full justify-center" variant="outline">
-                    {cliente?.status}
+                  <Badge className={`w-full justify-center ${STATUS_COLORS[cliente.status] || 'bg-slate-200 text-slate-800'}`}>
+                    {cliente?.status.toUpperCase()}
                   </Badge>
                 </div>
               )}
