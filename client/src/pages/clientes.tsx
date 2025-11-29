@@ -390,7 +390,6 @@ export default function Clientes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [tipoFiltro, setTipoFiltro] = useState<string>("all");
   const [carteiraFiltro, setCarteiraFiltro] = useState<string>("all");
   const [orderBy, setOrderBy] = useState<string>("recent");
   const [quantidadeSelecar, setQuantidadeSelecar] = useState<number>(10);
@@ -403,7 +402,7 @@ export default function Clientes() {
   const paginationRef = useRef<HTMLDivElement>(null);
 
   // Check if any filter is active
-  const hasActiveFilter = searchTerm || statusFilter !== "todos" || selectedTag || tipoFiltro !== "all" || carteiraFiltro !== "all";
+  const hasActiveFilter = searchTerm || statusFilter !== "todos" || selectedTag || carteiraFiltro !== "all";
   
   // Always use pagination with 50 per page (optimized for performance)
   // User can click "próximo" to load more results
@@ -422,12 +421,6 @@ export default function Clientes() {
     refetchInterval: 3000,
   });
 
-  // Fetch all tipos
-  const { data: tiposDoDb = [] } = useQuery<string[]>({
-    queryKey: ["/api/clients/tipos"],
-    enabled: isAuthenticated,
-  });
-
   // Fetch all carteiras
   const { data: carteirasDoDb = [] } = useQuery<string[]>({
     queryKey: ["/api/clients/carteiras"],
@@ -442,7 +435,6 @@ export default function Clientes() {
         ...(searchTerm && { search: searchTerm }),
         ...(statusFilter !== "todos" && { status: statusFilter }),
         ...(selectedTag && { tagName: selectedTag }),
-        ...(tipoFiltro !== "all" && { tipo: tipoFiltro }),
         ...(carteiraFiltro !== "all" && { carteira: carteiraFiltro }),
         page: effectivePage,
         limit,
@@ -459,7 +451,6 @@ export default function Clientes() {
         ...(searchTerm && { search: searchTerm }),
         ...(statusFilter !== "todos" && { status: statusFilter }),
         ...(selectedTag && { tagName: selectedTag }),
-        ...(tipoFiltro !== "all" && { tipo: tipoFiltro }),
         ...(carteiraFiltro !== "all" && { carteira: carteiraFiltro }),
       }
     ],
@@ -471,7 +462,6 @@ export default function Clientes() {
         ...(searchTerm && { search: searchTerm }),
         ...(statusFilter !== "todos" && { status: statusFilter }),
         ...(selectedTag && { tagName: selectedTag }),
-        ...(tipoFiltro !== "all" && { tipo: tipoFiltro }),
         ...(carteiraFiltro !== "all" && { carteira: carteiraFiltro }),
       });
       const res = await fetch(`/api/clients?${params}`);
@@ -551,7 +541,6 @@ export default function Clientes() {
   const leads = data?.clientes?.filter(c => c.status === 'lead').length || 0;
 
   // Use tipos from DB, fallback to loaded clients
-  const tiposUnicos = tiposDoDb.length > 0 ? tiposDoDb : Array.from(new Set((data?.clientes || []).map(c => c.tipoCliente).filter(Boolean) as string[])).sort();
 
   // Clients from backend (already sorted)
   const clientesFiltrados = data?.clientes || [];
@@ -721,23 +710,6 @@ export default function Clientes() {
                 >
                   ✕ Desselecionar Todos
                 </Button>
-
-                <div className="h-6 w-px bg-border" />
-
-                {/* Tipo Filter */}
-                <Select value={tipoFiltro} onValueChange={(value) => setTipoFiltro(value)}>
-                  <SelectTrigger className="w-40 h-8 text-xs" data-testid="select-tipo-filtro">
-                    <SelectValue placeholder="Filtrar por tipo..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os tipos</SelectItem>
-                    {tiposUnicos.map((tipo) => (
-                      <SelectItem key={tipo} value={tipo}>
-                        {tipo}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
 
                 <div className="h-6 w-px bg-border" />
 
