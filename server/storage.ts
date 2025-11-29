@@ -188,21 +188,21 @@ export async function getClients(params: {
 
   const [clientes, totalResult] = await Promise.all([
     db
-      .select()
+      .selectDistinct()
       .from(clients)
       .where(whereClause)
       .orderBy(desc(clients.createdAt))
       .limit(limit)
       .offset(offset),
     db
-      .select({ count: sql<number>`count(*)::int` })
+      .selectDistinct({ id: clients.id })
       .from(clients)
       .where(whereClause),
   ]);
 
   return {
     clientes,
-    total: totalResult[0]?.count || 0,
+    total: totalResult.length,
   };
 }
 

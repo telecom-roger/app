@@ -2550,23 +2550,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Selecione pelo menos um cliente" });
       }
 
-      // Verify ownership of all clients
-      const clientsToUnshare = await db
+      // Verify ownership of clients that are OWNED by user (only owners can remove sharings)
+      const ownedClients = await db
         .select()
         .from(clients)
-        .where(inArray(clients.id, clientIds));
+        .where(and(
+          inArray(clients.id, clientIds),
+          eq(clients.createdBy, user.id)
+        ));
 
-      const allOwned = clientsToUnshare.every(c => c.createdBy === user.id);
-      if (!allOwned) {
-        return res.status(403).json({ error: "Você só pode remover compartilhamento dos seus clientes" });
+      // Filter to only remove sharings for owned clients
+      const ownedClientIds = ownedClients.map(c => c.id);
+      
+      if (ownedClientIds.length === 0) {
+        return res.status(403).json({ error: "Você só pode remover compartilhamento dos seus próprios clientes" });
       }
 
-      // Delete all sharings
-      for (const clientId of clientIds) {
+      // Delete all sharings for owned clients only
+      for (const clientId of ownedClientIds) {
         await storage.unshareClientWithUser(clientId, sharedWithUserId);
       }
 
-      res.json({ success: true, count: clientIds.length });
+      res.json({ success: true, count: ownedClientIds.length });
     } catch (error: any) {
       console.error("Error unsharing clients:", error);
       res.status(500).json({ error: error.message || "Internal server error" });
