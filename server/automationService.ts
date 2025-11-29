@@ -1,7 +1,7 @@
 import * as storage from "./storage";
 import { db } from "./db";
 import { eq, and, lt, isNull, gte, desc, sql } from "drizzle-orm";
-import { automationTasks, followUps, clientScores, opportunities, clients as clientsTable, messages, interactions } from "@shared/schema";
+import { automationTasks, followUps, clientScores, opportunities, clients as clientsTable, messages, interactions, conversations } from "@shared/schema";
 import { analyzeClientMessage } from "./aiService";
 
 // ======================== CRON JOB: Executar tarefas pendentes ========================
