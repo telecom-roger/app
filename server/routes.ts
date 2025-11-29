@@ -205,7 +205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: clients.id,
           nome: clients.nome,
           razaoSocial: clients.razaoSocial,
-          telefone: clients.CELULAR_PRINCIPAL,
+          celular: clients.celular,
           email: clients.EMAIL_PRINCIPAL,
           cpfCnpj: clients.cpfCnpj,
           status: clients.status,
@@ -715,8 +715,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .select({
           id: clients.id,
           razaoSocial: clients.razaoSocial,
-          CELULAR_PRINCIPAL: clients.CELULAR_PRINCIPAL,
-          telefone: clients.CELULAR_PRINCIPAL,
+          celular: clients.celular,
           email: clients.EMAIL_PRINCIPAL,
           status: clients.status,
         })
@@ -1024,7 +1023,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             planoAtual: getRowValue(row, mapping.planoAtual),
             produtoAtual: getRowValue(row, mapping.produtoAtual),
             // Contact fields
-            telefone: getRowValue(row, mapping.telefone),
+            celular: getRowValue(row, mapping.telefone),
             email: getRowValue(row, mapping.email),
             contato: getRowValue(row, mapping.contato),
             // Address fields
@@ -1046,7 +1045,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             PEDIDO_FIXA: getRowValue(row, mapping.PEDIDO_FIXA),
             NOME_CONTATO: getRowValue(row, mapping.NOME_CONTATO),
             EMAIL_PRINCIPAL: getRowValue(row, mapping.EMAIL_PRINCIPAL),
-            CELULAR_PRINCIPAL: getRowValue(row, mapping.CELULAR_PRINCIPAL),
             TIPO_GESTOR: getRowValue(row, mapping.TIPO_GESTOR),
             FLG_DOMINIO_PUBLICO_SFA: getRowValue(row, mapping.FLG_DOMINIO_PUBLICO_SFA) === "1" || getRowValue(row, mapping.FLG_DOMINIO_PUBLICO_SFA) === "true",
             TELEFONE_COMERCIAL: getRowValue(row, mapping.TELEFONE_COMERCIAL),
@@ -1397,7 +1395,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Queue messages for sending (async, non-blocking)
       let enfileiradas = 0;
       for (const cliente of clientes) {
-        const celular = cliente.CELULAR_PRINCIPAL || cliente.celular;
+        const celular = cliente.celular;
         if (celular) {
           // Queue message asynchronously (don't wait)
           whatsappService.sendMessage(session.sessionId, celular, mensagem).catch(err => {
@@ -1837,11 +1835,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               .where(eq(clients.id, conversation.clientId))
               .limit(1);
 
-            if (client && client.CELULAR_PRINCIPAL) {
+            if (client && client.celular) {
               const isAlive = whatsappService.isSessionAlive(session.sessionId);
               if (isAlive) {
                 // Formata o celular para WhatsApp
-                let celular = client.CELULAR_PRINCIPAL.replace(/\D/g, "");
+                let celular = client.celular.replace(/\D/g, "");
                 if (!celular.startsWith("55")) {
                   celular = "55" + celular;
                 }
@@ -1998,18 +1996,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .select()
         .from(clients)
         .where(or(
-          ilike(clients.CELULAR_PRINCIPAL, `%${normalizado}%`),
-          ilike(clients.telefone, `%${normalizado}%`)
+          ilike(clients.celular, `%${normalizado}%`)
         ))
         .limit(1);
       
       // Se não encontrar, criar novo cliente automaticamente
       if (!client) {
-        console.log(`[CHAT] 🆕 Auto-criando cliente para telefone: ${phone}`);
+        console.log(`[CHAT] 🆕 Auto-criando cliente para celular: ${phone}`);
         const newClient = await storage.createClient({
           nome: `Novo contato ${phone}`,
-          telefone: phone,
-          CELULAR_PRINCIPAL: phone,
+          celular: phone,
           cpfCnpj: "",
           status: "Lead",
           carteira: "Dominio",

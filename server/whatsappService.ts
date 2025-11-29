@@ -252,14 +252,8 @@ async function processIncomingMessages(sessionId: string, m: any) {
             .select()
             .from(clientsTable)
             .where(or(
-              eq(clientsTable.CELULAR_PRINCIPAL, senderPhone),
               eq(clientsTable.celular, senderPhone),
-              eq(clientsTable.CELULAR, senderPhone),
-              eq(clientsTable.TELEFONE_COMERCIAL, senderPhone),
-              ilike(clientsTable.CELULAR_PRINCIPAL, `%${senderPhone}%`),
-              ilike(clientsTable.celular, `%${senderPhone}%`),
-              ilike(clientsTable.CELULAR, `%${senderPhone}%`),
-              ilike(clientsTable.TELEFONE_COMERCIAL, `%${senderPhone}%`)
+              ilike(clientsTable.celular, `%${senderPhone}%`)
             ))
             .limit(1);
           
@@ -274,7 +268,6 @@ async function processIncomingMessages(sessionId: string, m: any) {
             const novoCliente = await storage.createClient({
               nome: `Novo contato ${senderPhone}`,
               celular: senderPhone,
-              CELULAR_PRINCIPAL: senderPhone,
               cpfCnpj: "",
               status: "Lead",
               carteira: "Dominio",
@@ -698,25 +691,23 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
         // Com duas chaves {{variavel}}
         conteudo = conteudo.replace(/{{razao_social}}/g, client.razaoSocial || '');
         conteudo = conteudo.replace(/{{empresa}}/g, client.razaoSocial || '');
-        conteudo = conteudo.replace(/{{telefone}}/g, client.telefone || '');
+        conteudo = conteudo.replace(/{{celular}}/g, client.celular || '');
         conteudo = conteudo.replace(/{{email}}/g, client.email || '');
-        conteudo = conteudo.replace(/{{CELULAR_PRINCIPAL}}/g, client.CELULAR_PRINCIPAL || '');
         conteudo = conteudo.replace(/{{NOME_CONTATO}}/g, client.NOME_CONTATO || '');
         
         // Com uma chave {variavel} - igual a campanhas WhatsApp
         conteudo = conteudo.replace(/{razao_social}/g, client.razaoSocial || '');
         conteudo = conteudo.replace(/{empresa}/g, client.razaoSocial || '');
-        conteudo = conteudo.replace(/{telefone}/g, client.telefone || '');
+        conteudo = conteudo.replace(/{celular}/g, client.celular || '');
         conteudo = conteudo.replace(/{email}/g, client.email || '');
-        conteudo = conteudo.replace(/{CELULAR_PRINCIPAL}/g, client.CELULAR_PRINCIPAL || '');
         conteudo = conteudo.replace(/{NOME_CONTATO}/g, client.NOME_CONTATO || '');
 
-        console.log(`📤 [${index + 1}/${recipientClients.length}] Enviando para ${client.razaoSocial} (${client.telefone})...`);
+        console.log(`📤 [${index + 1}/${recipientClients.length}] Enviando para ${client.razaoSocial} (${client.celular})...`);
         
         // Tenta enviar via WhatsApp se houver sessão ativa
         let mensagemEnviada = false;
         if (sessionId && isSessionAlive(sessionId)) {
-          mensagemEnviada = await sendMessage(sessionId, client.CELULAR_PRINCIPAL || client.telefone, conteudo);
+          mensagemEnviada = await sendMessage(sessionId, client.celular, conteudo);
         }
         
         // Update client status to "Enviado" if message was sent successfully

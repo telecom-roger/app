@@ -582,7 +582,7 @@ export async function getBroadcastStats(filtros?: { status?: string; carteira?: 
     : allClientes;
 
   const comTelefone = filteredClientes.filter(
-    (c) => c.CELULAR_PRINCIPAL || c.telefone
+    (c) => c.celular
   ).length;
 
   return {
@@ -656,8 +656,7 @@ export async function getConversations(userId: string): Promise<any[]> {
         id: clients.id,
         nome: clients.nome,
         razaoSocial: clients.razaoSocial,
-        CELULAR_PRINCIPAL: clients.CELULAR_PRINCIPAL,
-        telefone: clients.telefone,
+        celular: clients.celular,
         tags: clients.tags,
       }
     })
@@ -739,19 +738,13 @@ export async function findConversationByPhoneAndUser(telefone: string, userId: s
   
   console.log(`🔍 findConversationByPhoneAndUser: buscando por "${normalizado}"`);
   
-  // Find client by phone number - search SEM 55 format across ALL phone fields
+  // Find client by phone number - search SEM 55 format
   const [client] = await db
     .select()
     .from(clients)
     .where(or(
-      eq(clients.CELULAR_PRINCIPAL, normalizado),
-      eq(clients.telefone, normalizado),
-      eq(clients.CELULAR, normalizado),
-      eq(clients.TELEFONE_COMERCIAL, normalizado),
-      ilike(clients.CELULAR_PRINCIPAL, `%${normalizado}%`),
-      ilike(clients.telefone, `%${normalizado}%`),
-      ilike(clients.CELULAR, `%${normalizado}%`),
-      ilike(clients.TELEFONE_COMERCIAL, `%${normalizado}%`)
+      eq(clients.celular, normalizado),
+      ilike(clients.celular, `%${normalizado}%`)
     ))
     .limit(1);
   
