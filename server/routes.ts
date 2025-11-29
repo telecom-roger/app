@@ -3233,6 +3233,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== RE-IMPORT SINGULAR FIX (TESTE) ====================
+  app.post("/api/test/reimport-singular", async (req, res) => {
+    try {
+      const csvPath = './attached_assets/SINGULAR_1764393349105.csv';
+      const csvContent = fs.readFileSync(csvPath, 'utf-8');
+      const lines = csvContent.split('\n').slice(1).filter(l => l.trim());
+
+      // Parse by CNPJ - group all numbers
+      const clientesByNpj: Record<string, { razaoSocial: string; celulares: string[]; estado: string; cidade: string; cep: string; endereco: string; quantidadeLinhas: number }> = {};
+
+      for (const line of lines) {
+        try {
+          const parts = line.split(',');
+          const cnpj = parts[0]?.trim();
+          const razaoSocial = parts[1]?.trim();
+          const celular = parts[2]?.trim();
+          const estado = parts[3]?.trim();
+          const quantidadeLinhas = parts[4]?.trim();
+          const cidade = parts[5]?.trim();
+          const cep = parts[6]?.trim();
+          const endereco = parts[7]?.trim();
+          
+          if (!cnpj || !celular) continue;
+
+          if (!clientesByNpj[cnpj]) {
+            clientesByNpj[cnpj] = {
+              razaoSocial: razaoSocial || '',
+              celulares: [],
+              estado: estado || '',
+              cidade: cidade || '',
+              cep: cep || '',
+              endereco: endereco || '',
+              quantidadeLinhas: parseInt(quantidadeLinhas) || 1
+            };
+          }
+          clientesByNpj[cnpj].celulares.push(celular);
+        } catch (e) {
+          console.warn('Erro ao parsear linha:', e);
+        }
+      }
+
+      let clientesAdicionados = 0;
+      let contatosAdicionados = 0;
+
+      // Insert via raw SQL for speed
+      for (const [cnpj, data] of Object.entries(clientesByNpj)) {
+        try {
+          const clientId = `${cnpj}-${Math.random().toString(36).substr(2, 9)}`;
+          const firstCelular = data.celulares[0];
+          const quantidadeLinhas = data.quantidadeLinhas;
+          const customFields = JSON.stringify({ origem: "SINGULAR", quantidadeLinhas });
+
+          const insertClientQuery = `
+            INSERT INTO clients (id, nome, razao_social, cpf_cnpj, uf, cidade, cep, endereco, celular, status, created_by, parceiro, campos_custom)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'lead', $10, 'SINGULAR', $11::jsonb)
+          `;
+          
+          await db.execute(sql.raw(insertClientQuery));
+          clientesAdicionados++;
+
+          for (let i = 0; i < data.celulares.length; i++) {
+            const insertContactQuery = `
+              INSERT INTO contacts (id, client_id, tipo, valor, preferencial, verified)
+              VALUES (gen_random_uuid(), $1, 'telefone', $2, $3, false)
+            `;
+            await db.execute(sql.raw(insertContactQuery));
+            contatosAdicionados++;
+          }
+        } catch (err: any) {
+          console.error(`Erro ao processar ${cnpj}:`, err.message);
+        }
+      }
+
+      console.log(`✅ Reimportação: ${clientesAdicionados} clientes, ${contatosAdicionados} contatos`);
+      res.json({
+        success: true,
+        clientesAdicionados,
+        contatosAdicionados,
+        totalUnicos: Object.keys(clientesByNpj).length,
+      });
+    } catch (error: any) {
+      console.error("❌ Reimport error:", error);
+      res.status(500).json({ error: String(error.message || error) });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
