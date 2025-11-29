@@ -398,8 +398,11 @@ export async function simulateClientResponse(clientId: string, userId: string, m
 
     console.log(`📊 IA retornou: ${analysis.sentimento} → ${analysis.etapa}`);
 
+    // Normalizar etapa da IA para MAIÚSCULA SEMPRE
+    const etapaNormalizada = analysis.etapa.toUpperCase();
+    
     // 4. MOVER OPP EXISTENTE OU CRIAR NOVA (com validação de retrocesso)
-    if (analysis.etapa !== "automatico" && client) {
+    if (etapaNormalizada !== "AUTOMATICO" && client) {
       // 4a. Buscar se existe opp "aberta" (não PERDIDA, não FECHADA)
       const etapasFinais = ["PERDIDO", "FECHADO"];
       let existingOpp = await db.query.opportunities.findFirst({
@@ -415,10 +418,8 @@ export async function simulateClientResponse(clientId: string, userId: string, m
       let actionType: "criar" | "mover" | "bloqueado" = "criar";
       let statusAtualizado: string | null = null;
       
-      if (existingOpp && existingOpp.etapa !== analysis.etapa.toUpperCase()) {
+      if (existingOpp && existingOpp.etapa !== etapaNormalizada) {
         // 4b. VALIDAR se o movimento é permitido (não retrocede, não mexe em manuais)
-        // Normalizar etapa da IA para MAIÚSCULA para validação
-        const etapaNormalizada = analysis.etapa.toUpperCase();
         const validacao = isValidMovement(existingOpp.etapa, etapaNormalizada);
         
         if (!validacao.permitido) {
@@ -452,7 +453,6 @@ export async function simulateClientResponse(clientId: string, userId: string, m
         actionType = "mover";
       } else if (!existingOpp) {
         // 4c. CRIAR nova opp se não houver aberta
-        const etapaNormalizada = analysis.etapa.toUpperCase();
         console.log(`🔍 Criando nova opportunity com userId=${userId}, etapa=${etapaNormalizada}`);
         resultOpp = await db.insert(opportunities).values({
           clientId,
@@ -468,7 +468,7 @@ export async function simulateClientResponse(clientId: string, userId: string, m
       } else {
         // Opp já está na etapa correta
         resultOpp = existingOpp;
-        console.log(`ℹ️ Oportunidade já está em ${analysis.etapa.toUpperCase()}, sem mudanças`);
+        console.log(`ℹ️ Oportunidade já está em ${etapaNormalizada}, sem mudanças`);
       }
       
       // 🔄 RECALCULATE CLIENT STATUS
@@ -476,7 +476,6 @@ export async function simulateClientResponse(clientId: string, userId: string, m
       await storage.updateClient(clientId, { status: statusAtualizado });
       console.log(`🔄 Status do cliente atualizado: ${statusAtualizado.toUpperCase()}`);
       
-      const etapaNormalizada = analysis.etapa.toUpperCase();
       const actionMessage = actionType === "mover" 
         ? `✅ Oportunidade MOVIDA para "${etapaNormalizada}"`
         : `✅ Nova oportunidade criada em "${etapaNormalizada}"`;
