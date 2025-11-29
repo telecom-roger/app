@@ -170,6 +170,14 @@ The application features a professional design system utilizing a deep dark blue
 - 7: LEAD
 - 8: PERDIDO (ignorado, não eleva)
 
+### 🔧 Cobertura Total de Gatilhos (Todos Recalculam Status):
+1. **IA cria oportunidade** → Status atualizado ✅
+2. **Usuário cria via Form** → Status atualizado ✅
+3. **Usuário move no Kanban** → Status atualizado ✅
+4. **Usuário edita oportunidade** → Status atualizado ✅
+5. **Usuário deleta oportunidade** → Status atualizado ✅
+6. **Teste manual (botão)** → Mostra resultado imediato ✅
+
 ---
 
-**Status:** ✅ FASE 7 COMPLETA - Automação de Status do Cliente totalmente implementada!
+**Status:** ✅ FASE 7 COMPLETA - Automação de Status do Cliente 100% implementada e testada!
