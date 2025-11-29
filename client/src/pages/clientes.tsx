@@ -322,9 +322,10 @@ export default function Clientes() {
   // Check if any filter is active
   const hasActiveFilter = searchTerm || statusFilter !== "todos" || selectedTag || tipoFiltro !== "all" || carteiraFiltro !== "all";
   
-  // Use optimized limit: 500 when filters active (faster), 50 for pagination
-  const limit = hasActiveFilter ? 500 : 50;
-  const effectivePage = hasActiveFilter ? 1 : page;
+  // Always use pagination with 50 per page (optimized for performance)
+  // User can click "próximo" to load more results
+  const limit = 50;
+  const effectivePage = page;
 
   // Fetch predefined tags
   const { data: tags = [] } = useQuery<Tag[]>({
