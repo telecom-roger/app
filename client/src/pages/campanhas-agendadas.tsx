@@ -212,8 +212,7 @@ export default function CampanhasAgendadas() {
   const clientesFiltrados = clients
     .filter((c) => {
       const searchMatch = c.nome.toLowerCase().includes(searchClientes.toLowerCase()) ||
-        c.razaoSocial?.toLowerCase().includes(searchClientes.toLowerCase()) ||
-        c.telefone.includes(searchClientes);
+        (c.celular || "").includes(searchClientes);
       const statusMatch = filtroStatus === "todos" || c.status?.toLowerCase() === filtroStatus.toLowerCase();
       const tagMatch = selectedTag === null || (c.tags && c.tags.some((t: any) => t.nome === selectedTag));
       const tipoMatch = selectedTiposFilter.size === 0 || (c.tipo && selectedTiposFilter.has(c.tipo));
@@ -858,9 +857,9 @@ export default function CampanhasAgendadas() {
                             className="mt-1"
                           />
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-slate-900 dark:text-white text-base">{client.razaoSocial || client.nome}</div>
+                            <div className="font-semibold text-slate-900 dark:text-white text-base">{client.nome}</div>
                             <div className="text-sm text-slate-600 dark:text-slate-400 mt-1 space-y-1">
-                              <div>📞 {client.telefone}</div>
+                              <div>📞 {client.celular}</div>
                               {client.email && <div>✉️ {client.email}</div>}
                               {client.status && <div>Status: <span className="font-medium capitalize text-slate-700 dark:text-slate-300">{client.status}</span></div>}
                               {client.cidade && <div>📍 {client.cidade}</div>}

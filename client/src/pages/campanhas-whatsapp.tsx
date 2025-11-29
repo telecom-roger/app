@@ -86,11 +86,13 @@ type SendingStatus = {
 type ClientForImport = {
   id: string;
   nome: string;
-  razaoSocial?: string;
-  telefone: string;
+  celular: string;
   email?: string;
   status?: string;
   tags?: Array<{ id: string; nome: string; cor: string }>;
+  tipo?: string;
+  carteira?: string;
+  cidade?: string;
   ultimaCampanha?: {
     data: string;
     minutosPara: number;
@@ -256,8 +258,7 @@ export default function CampanhasWhatsApp() {
   // Filter clients by search, status, tag, tipo, carteira, cidade, sendStatus
   const clientesFiltrados = clientesDisponiveis.filter((c) => {
     const searchMatch = c.nome.toLowerCase().includes(searchClientes.toLowerCase()) ||
-      c.razaoSocial?.toLowerCase().includes(searchClientes.toLowerCase()) ||
-      c.telefone.includes(searchClientes);
+      (c.celular || "").includes(searchClientes);
     const statusMatch = filtroStatus === "todos" || c.status?.toLowerCase() === filtroStatus.toLowerCase();
     const tagMatch = selectedTag === null || (c.tags && c.tags.some(t => t.nome === selectedTag));
     const tipoMatch = selectedTiposFilter.size === 0 || (c.tipo && selectedTiposFilter.has(c.tipo));
@@ -352,8 +353,8 @@ export default function CampanhasWhatsApp() {
         const cliente = clientesDisponiveis.find((c) => c.id === clientId);
         return {
           id: cliente?.id || "",
-          celular: cliente?.telefone || "",
-          razao_social: cliente?.razaoSocial || "N/A",
+          celular: cliente?.celular || "",
+          nome: cliente?.nome || "N/A",
         };
       })
       .filter((c) => c.celular);
@@ -368,7 +369,7 @@ export default function CampanhasWhatsApp() {
     }
 
     setContatos(contatosFromDB);
-    setVariaveisDisponiveis(["celular", "razao_social", "id"]);
+    setVariaveisDisponiveis(["celular", "nome", "id"]);
     setClientesSelecionados(new Set());
     setMostrarSeletorBD(false);
     setSearchClientes("");
@@ -1556,9 +1557,9 @@ export default function CampanhasWhatsApp() {
                             className="mt-1"
                           />
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-slate-900 dark:text-white text-base">{client.razaoSocial || client.nome}</div>
+                            <div className="font-semibold text-slate-900 dark:text-white text-base">{client.nome}</div>
                             <div className="text-sm text-slate-600 dark:text-slate-400 mt-1 space-y-1">
-                              <div>📞 {client.telefone}</div>
+                              <div>📞 {client.celular}</div>
                               {client.email && <div>✉️ {client.email}</div>}
                               {client.status && <div>Status: <span className="font-medium capitalize text-slate-700 dark:text-slate-300">{client.status}</span></div>}
                               {client.cidade && <div>📍 {client.cidade}</div>}

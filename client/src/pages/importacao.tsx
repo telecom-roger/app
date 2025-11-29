@@ -39,8 +39,7 @@ interface FileData {
 
 interface ColumnMapping {
   nome: number;
-  razaoSocial: number;
-  cpfCnpj: number;
+  cnpj: number;
   status: number;
   carteira: number;
   tipo: number;
@@ -48,7 +47,7 @@ interface ColumnMapping {
   score: number;
   planoAtual: number;
   produtoAtual: number;
-  telefone: number;
+  celular: number;
   email: number;
   contato: number;
   endereco: number;
@@ -66,23 +65,17 @@ interface ColumnMapping {
   M_FIXA: number;
   PEDIDO_FIXA: number;
   NOME_CONTATO: number;
-  EMAIL_PRINCIPAL: number;
-  CELULAR_PRINCIPAL: number;
   TIPO_GESTOR: number;
   FLG_DOMINIO_PUBLICO_SFA: number;
-  TELEFONE_COMERCIAL: number;
-  CELULAR: number;
+  telefone2: number;
   TELEFONE_RESIDENCIAL: number;
   EMAIL_SIBEL: number;
   PROP_MOVEL_AVANCADA: number;
-  SERASA: number;
-  MENSAGEM_SERASA: number;
 }
 
 const createDefaultMapping = (): ColumnMapping => ({
   nome: -1,
-  razaoSocial: -1,
-  cpfCnpj: -1,
+  cnpj: -1,
   status: -1,
   carteira: -1,
   tipo: -1,
@@ -90,7 +83,7 @@ const createDefaultMapping = (): ColumnMapping => ({
   score: -1,
   planoAtual: -1,
   produtoAtual: -1,
-  telefone: -1,
+  celular: -1,
   email: -1,
   contato: -1,
   endereco: -1,
@@ -108,17 +101,12 @@ const createDefaultMapping = (): ColumnMapping => ({
   M_FIXA: -1,
   PEDIDO_FIXA: -1,
   NOME_CONTATO: -1,
-  EMAIL_PRINCIPAL: -1,
-  CELULAR_PRINCIPAL: -1,
   TIPO_GESTOR: -1,
   FLG_DOMINIO_PUBLICO_SFA: -1,
-  TELEFONE_COMERCIAL: -1,
-  CELULAR: -1,
+  telefone2: -1,
   TELEFONE_RESIDENCIAL: -1,
   EMAIL_SIBEL: -1,
   PROP_MOVEL_AVANCADA: -1,
-  SERASA: -1,
-  MENSAGEM_SERASA: -1,
 });
 
 const autoDetectMapping = (headers: string[]): ColumnMapping => {
@@ -128,13 +116,12 @@ const autoDetectMapping = (headers: string[]): ColumnMapping => {
   
   lowerHeaders.forEach((header, idx) => {
     if (header.includes('nome') && !header.includes('contato')) mapping.nome = idx;
-    else if (header.includes('razão') || header.includes('razao')) mapping.razaoSocial = idx;
-    else if (header.includes('cnpj') || header.includes('cpf')) mapping.cpfCnpj = idx;
+    else if (header.includes('cnpj') || header.includes('cpf')) mapping.cnpj = idx;
     else if (header.includes('status')) mapping.status = idx;
     else if (header.includes('carteira')) mapping.carteira = idx;
     else if (header.includes('tipo') && !header.includes('gestor')) mapping.tipo = idx;
     else if (header.includes('categoria')) mapping.categoria = idx;
-    else if (header.includes('telefone') && !header.includes('comercial') && !header.includes('residencial')) mapping.telefone = idx;
+    else if (header.includes('celular') || header.includes('whatsapp')) mapping.celular = idx;
     else if (header.includes('email') && !header.includes('sibel')) mapping.email = idx;
     else if (header.includes('endereço') || header.includes('endereco')) mapping.endereco = idx;
     else if (header.includes('cidade')) mapping.cidade = idx;
@@ -387,10 +374,11 @@ export default function Importacao() {
               <div className="grid grid-cols-4 gap-2 pr-4">
                 {[
                   { key: "nome", label: "Nome *" },
-                  { key: "cpfCnpj", label: "CNPJ" },
-                  { key: "razaoSocial", label: "Razão Social" },
+                  { key: "cnpj", label: "CNPJ" },
                   { key: "carteira", label: "Carteira" },
                   { key: "tipo", label: "Tipo" },
+                  { key: "celular", label: "Celular/WhatsApp *" },
+                  { key: "email", label: "Email" },
                   { key: "PEDIDO_MOVEL", label: "PEDIDO MOVEL" },
                   { key: "M_FIXA", label: "M FIXA" },
                   { key: "PEDIDO_FIXA", label: "PEDIDO FIXA" },
@@ -399,17 +387,12 @@ export default function Importacao() {
                   { key: "cep", label: "CEP" },
                   { key: "numero", label: "Número" },
                   { key: "NOME_CONTATO", label: "Nome Contato" },
-                  { key: "EMAIL_PRINCIPAL", label: "Email Principal" },
-                  { key: "CELULAR_PRINCIPAL", label: "Celular Principal" },
                   { key: "TIPO_GESTOR", label: "Tipo Gestor" },
                   { key: "FLG_DOMINIO_PUBLICO_SFA", label: "FLG_DOMINIO_SFA" },
-                  { key: "TELEFONE_COMERCIAL", label: "Telefone Comercial" },
-                  { key: "CELULAR", label: "Celular" },
+                  { key: "telefone2", label: "Telefone Secundário" },
                   { key: "TELEFONE_RESIDENCIAL", label: "Telefone Residencial" },
                   { key: "EMAIL_SIBEL", label: "Email Sibel" },
                   { key: "PROP_MOVEL_AVANCADA", label: "Prop. Movel/Avançada" },
-                  { key: "SERASA", label: "Serasa" },
-                  { key: "MENSAGEM_SERASA", label: "Mensagem Serasa" },
                 ].map((field) => (
                   <div key={field.key}>
                     <label className="text-sm font-medium">{field.label}</label>
@@ -514,7 +497,7 @@ export default function Importacao() {
                           {row[mapping.nome] || "-"}
                         </td>
                         <td className="px-4 py-2 font-mono text-xs text-slate-600 dark:text-slate-400">
-                          {row[mapping.cpfCnpj] || "-"}
+                          {row[mapping.cnpj] || "-"}
                         </td>
                         <td className="px-4 py-2">
                           <Badge className="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs border-0">{row[mapping.status] || "lead"}</Badge>

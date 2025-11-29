@@ -68,9 +68,7 @@ interface Conversation {
   client?: {
     id: string;
     nome: string;
-    razaoSocial?: string;
-    CELULAR_PRINCIPAL?: string;
-    telefone: string;
+    celular: string;
     tags?: string[];
   };
 }
@@ -78,10 +76,8 @@ interface Conversation {
 interface Client {
   id: string;
   nome: string;
-  razaoSocial?: string;
-  cpfCnpj?: string;
-  telefone: string;
-  CELULAR_PRINCIPAL?: string;
+  cnpj?: string;
+  celular: string;
   tags?: string[];
 }
 
@@ -169,8 +165,8 @@ export default function Chat() {
       fetch(`/api/clients/${clientId}`)
         .then(res => res.json())
         .then((client) => {
-          // Set search term to client's razaoSocial for automatic filtering
-          setSearchTerm(client.razaoSocial || client.nome || "");
+          // Set search term to client's nome for automatic filtering
+          setSearchTerm(client.nome || "");
           setShowSearchResults(true);
         })
         .catch((error) => {
@@ -339,13 +335,11 @@ export default function Chat() {
     ? clients.filter((client: Client) => {
         const term = searchTerm.toLowerCase();
         const nome = client.nome?.toLowerCase() || "";
-        const razao = client.razaoSocial?.toLowerCase() || "";
-        const cnpj = client.cpfCnpj?.toLowerCase() || "";
-        const cel = (client.CELULAR_PRINCIPAL || client.telefone)?.toLowerCase() || "";
+        const cnpj = client.cnpj?.toLowerCase() || "";
+        const cel = (client.celular || "").toLowerCase();
         
         return (
           nome.includes(term) ||
-          razao.includes(term) ||
           cnpj.includes(term) ||
           cel.includes(term)
         );
@@ -457,7 +451,7 @@ export default function Chat() {
   });
 
   const handleSelectClient = (client: Client) => {
-    const phone = client.CELULAR_PRINCIPAL || client.telefone;
+    const phone = client.celular;
     refetchClients(); // Força atualização de cache antes de criar conversa
     getConversationMutation.mutate(phone);
   };
@@ -677,7 +671,7 @@ export default function Chat() {
         // Criar nova oportunidade na etiqueta selecionada (mesmo sem valor)
         await apiRequest("POST", "/api/opportunities", {
           clientId: currentClientId,
-          titulo: `${detailedClient.razaoSocial || detailedClient.nome}`,
+          titulo: `${detailedClient.nome}`,
           etapa: tagName,
           valorEstimado: businessValue || "",
           responsavelId: detailedClient.createdBy,
@@ -786,7 +780,7 @@ export default function Chat() {
       
       const response = await apiRequest("POST", "/api/opportunities", {
         clientId: currentClientId,
-        titulo: detailedClient.razaoSocial || detailedClient.nome || "Sem título",
+        titulo: detailedClient.nome || "Sem título",
         etapa: selectedStage,
         valorEstimado: businessValue || "",
         responsavelId: currentUser.id,
@@ -914,13 +908,8 @@ export default function Chat() {
                       data-testid={`button-search-client-${client.id}`}
                     >
                       <p className="text-sm font-medium truncate text-slate-900 dark:text-white">{client.nome}</p>
-                      {client.razaoSocial && (
-                        <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
-                          {client.razaoSocial}
-                        </p>
-                      )}
                       <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
-                        {client.CELULAR_PRINCIPAL || client.telefone}
+                        {client.celular}
                       </p>
                     </button>
                   ))
@@ -947,7 +936,7 @@ export default function Chat() {
                         .join("")
                         .toUpperCase();
                     };
-                    const clientName = conv.client?.razaoSocial || conv.client?.nome || "Contato desconhecido";
+                    const clientName = conv.client?.nome || "Contato desconhecido";
                     const initials = getInitials(clientName);
 
                     const handleContextMenu = (e: React.MouseEvent) => {
@@ -1013,7 +1002,7 @@ export default function Chat() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0 ml-10">
                           <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
-                            {conv.client?.CELULAR_PRINCIPAL || conv.client?.telefone || "Sem telefone"}
+                            {conv.client?.celular || "Sem telefone"}
                           </p>
                           {conv.ultimaMensagem && (
                             <p className="text-xs text-slate-600 dark:text-slate-400 truncate mt-1">
@@ -1093,13 +1082,13 @@ export default function Chat() {
                       );
                     })()}
                     <p className="font-medium text-slate-900 dark:text-white truncate">
-                      {(selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato").length > 30
-                        ? (selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato").substring(0, 30) + "..."
-                        : selectedConversation.client?.razaoSocial || selectedConversation.client?.nome || "Contato"}
+                      {(selectedConversation.client?.nome || "Contato").length > 30
+                        ? (selectedConversation.client?.nome || "Contato").substring(0, 30) + "..."
+                        : selectedConversation.client?.nome || "Contato"}
                     </p>
                   </div>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
-                    {selectedConversation.client?.CELULAR_PRINCIPAL || selectedConversation.client?.telefone}
+                    {selectedConversation.client?.celular}
                   </p>
                 </div>
               </div>
@@ -1259,7 +1248,7 @@ export default function Chat() {
                 <div className="flex items-start gap-4">
                   <Avatar className="h-16 w-16 flex-shrink-0 border-2 border-purple-600/20 dark:border-purple-400/20">
                     <AvatarFallback className="bg-purple-600/10 dark:bg-purple-400/10 text-purple-700 dark:text-purple-300 font-bold text-xl">
-                      {(detailedClient.nome || detailedClient.razaoSocial || "C")
+                      {(detailedClient.nome || "C")
                         .split(" ")
                         .slice(0, 2)
                         .map((w: string) => w[0])
@@ -1279,7 +1268,6 @@ export default function Chat() {
                       className="flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400 hover:underline hover-elevate mt-1 transition-colors"
                       data-testid="button-edit-client"
                     >
-                      {detailedClient.razaoSocial && <span className="font-semibold">{detailedClient.razaoSocial}</span>}
                       <ExternalLink className="h-3.5 w-3.5" />
                     </button>
                   </div>
@@ -1288,10 +1276,10 @@ export default function Chat() {
 
               {/* Dados do Cliente - Grid 3 colunas */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {detailedClient.CELULAR_PRINCIPAL && (
+                {detailedClient.celular && (
                   <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">TELEFONE</p>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">{detailedClient.CELULAR_PRINCIPAL}</p>
+                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">CELULAR</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">{detailedClient.celular}</p>
                   </div>
                 )}
                 {detailedClient.email && (
@@ -1306,10 +1294,10 @@ export default function Chat() {
                     <p className="text-sm font-medium text-slate-900 dark:text-white">{detailedClient.carteira}</p>
                   </div>
                 )}
-                {detailedClient.cpfCnpj && (
+                {detailedClient.cnpj && (
                   <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">CPF/CNPJ</p>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white font-mono">{detailedClient.cpfCnpj}</p>
+                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">CNPJ</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white font-mono">{detailedClient.cnpj}</p>
                   </div>
                 )}
                 {detailedClient.status && (

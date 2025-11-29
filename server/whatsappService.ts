@@ -252,14 +252,10 @@ async function processIncomingMessages(sessionId: string, m: any) {
             .select()
             .from(clientsTable)
             .where(or(
-              eq(clientsTable.CELULAR_PRINCIPAL, senderPhone),
-              eq(clientsTable.telefone, senderPhone),
-              eq(clientsTable.CELULAR, senderPhone),
-              eq(clientsTable.TELEFONE_COMERCIAL, senderPhone),
-              ilike(clientsTable.CELULAR_PRINCIPAL, `%${senderPhone}%`),
-              ilike(clientsTable.telefone, `%${senderPhone}%`),
-              ilike(clientsTable.CELULAR, `%${senderPhone}%`),
-              ilike(clientsTable.TELEFONE_COMERCIAL, `%${senderPhone}%`)
+              eq(clientsTable.celular, senderPhone),
+              eq(clientsTable.telefone2, senderPhone),
+              ilike(clientsTable.celular, `%${senderPhone}%`),
+              ilike(clientsTable.telefone2, `%${senderPhone}%`)
             ))
             .limit(1);
           
@@ -273,12 +269,9 @@ async function processIncomingMessages(sessionId: string, m: any) {
             // Auto-create new client - store WITHOUT 55 prefix (senderPhone already normalized)
             const novoCliente = await storage.createClient({
               nome: `Novo contato ${senderPhone}`,
-              telefone: senderPhone,
-              CELULAR_PRINCIPAL: senderPhone,
-              cpfCnpj: "",
+              celular: senderPhone,
               status: "Lead",
               carteira: "Dominio",
-              score: 0,
               createdBy: userId, // Atrelar ao usuário que recebeu a mensagem
             });
             
@@ -308,7 +301,6 @@ async function processIncomingMessages(sessionId: string, m: any) {
             console.log(`\n🤖 Iniciando análise com IA...`);
             const analysis = await analyzeClientMessage(conteudo, {
               nome: conversation.client?.nome,
-              razaoSocial: conversation.client?.razaoSocial,
             });
 
             // Procurar por oportunidade existente
@@ -328,7 +320,7 @@ async function processIncomingMessages(sessionId: string, m: any) {
               // Criar nova oportunidade se não existir
               const novaOpp = await storage.createOpportunity({
                 clientId: conversation.clientId,
-                titulo: `${conversation.client?.razaoSocial || conversation.client?.nome} - Resposta IA`,
+                titulo: `${conversation.client?.nome} - Resposta IA`,
                 etapa: analysis.etapa,
                 responsavelId: userId,
               });
@@ -696,27 +688,31 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
         let conteudo = template.conteudo;
         
         // Com duas chaves {{variavel}}
-        conteudo = conteudo.replace(/{{razao_social}}/g, client.razaoSocial || '');
-        conteudo = conteudo.replace(/{{empresa}}/g, client.razaoSocial || '');
-        conteudo = conteudo.replace(/{{telefone}}/g, client.telefone || '');
+        conteudo = conteudo.replace(/{{razao_social}}/g, client.nome || '');
+        conteudo = conteudo.replace(/{{empresa}}/g, client.nome || '');
+        conteudo = conteudo.replace(/{{nome}}/g, client.nome || '');
+        conteudo = conteudo.replace(/{{telefone}}/g, client.celular || '');
+        conteudo = conteudo.replace(/{{celular}}/g, client.celular || '');
         conteudo = conteudo.replace(/{{email}}/g, client.email || '');
-        conteudo = conteudo.replace(/{{CELULAR_PRINCIPAL}}/g, client.CELULAR_PRINCIPAL || '');
-        conteudo = conteudo.replace(/{{NOME_CONTATO}}/g, client.NOME_CONTATO || '');
+        conteudo = conteudo.replace(/{{CELULAR_PRINCIPAL}}/g, client.celular || '');
+        conteudo = conteudo.replace(/{{NOME_CONTATO}}/g, client.nomeGestor || '');
         
         // Com uma chave {variavel} - igual a campanhas WhatsApp
-        conteudo = conteudo.replace(/{razao_social}/g, client.razaoSocial || '');
-        conteudo = conteudo.replace(/{empresa}/g, client.razaoSocial || '');
-        conteudo = conteudo.replace(/{telefone}/g, client.telefone || '');
+        conteudo = conteudo.replace(/{razao_social}/g, client.nome || '');
+        conteudo = conteudo.replace(/{empresa}/g, client.nome || '');
+        conteudo = conteudo.replace(/{nome}/g, client.nome || '');
+        conteudo = conteudo.replace(/{telefone}/g, client.celular || '');
+        conteudo = conteudo.replace(/{celular}/g, client.celular || '');
         conteudo = conteudo.replace(/{email}/g, client.email || '');
-        conteudo = conteudo.replace(/{CELULAR_PRINCIPAL}/g, client.CELULAR_PRINCIPAL || '');
-        conteudo = conteudo.replace(/{NOME_CONTATO}/g, client.NOME_CONTATO || '');
+        conteudo = conteudo.replace(/{CELULAR_PRINCIPAL}/g, client.celular || '');
+        conteudo = conteudo.replace(/{NOME_CONTATO}/g, client.nomeGestor || '');
 
-        console.log(`📤 [${index + 1}/${recipientClients.length}] Enviando para ${client.razaoSocial} (${client.telefone})...`);
+        console.log(`📤 [${index + 1}/${recipientClients.length}] Enviando para ${client.nome} (${client.celular})...`);
         
         // Tenta enviar via WhatsApp se houver sessão ativa
         let mensagemEnviada = false;
         if (sessionId && isSessionAlive(sessionId)) {
-          mensagemEnviada = await sendMessage(sessionId, client.CELULAR_PRINCIPAL || client.telefone, conteudo);
+          mensagemEnviada = await sendMessage(sessionId, client.celular || client.telefone2, conteudo);
         }
         
         // Update client status to "Enviado" if message was sent successfully
@@ -741,7 +737,7 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
         });
 
         enviados++;
-        console.log(`✅ Enviado para ${client.razaoSocial}`);
+        console.log(`✅ Enviado para ${client.nome}`);
 
         // Delay entre mensagens: 21s + 10-60s aleatório (total 31-81s)
         if (index < recipientClients.length - 1) {
@@ -752,7 +748,7 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
           await new Promise((resolve) => setTimeout(resolve, totalDelay));
         }
       } catch (error) {
-        console.error(`❌ Erro ao enviar para ${client.razaoSocial}:`, error);
+        console.error(`❌ Erro ao enviar para ${client.nome}:`, error);
         erros++;
 
         // Mesmo com erro, aplica o delay

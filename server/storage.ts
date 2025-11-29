@@ -166,8 +166,8 @@ export async function getClients(params: {
     conditions.push(
       or(
         ilike(clients.nome, `%${search}%`),
-        ilike(clients.razaoSocial, `%${search}%`),
-        ilike(clients.cpfCnpj, `%${search}%`)
+        ilike(clients.cnpj, `%${search}%`),
+        ilike(clients.celular, `%${search}%`)
       )
     );
   }
@@ -178,7 +178,7 @@ export async function getClients(params: {
     conditions.push(sql`${clients.tags}::text[] @> ARRAY[${tagName}]`);
   }
   if (tipo) {
-    conditions.push(eq(clients.tipo, tipo));
+    conditions.push(eq(clients.tipoCliente, tipo));
   }
   if (carteira) {
     conditions.push(eq(clients.carteira, carteira));
@@ -582,7 +582,7 @@ export async function getBroadcastStats(filtros?: { status?: string; carteira?: 
     : allClientes;
 
   const comTelefone = filteredClientes.filter(
-    (c) => c.CELULAR_PRINCIPAL || c.telefone
+    (c) => c.celular || c.telefone2
   ).length;
 
   return {
@@ -655,9 +655,8 @@ export async function getConversations(userId: string): Promise<any[]> {
       client: {
         id: clients.id,
         nome: clients.nome,
-        razaoSocial: clients.razaoSocial,
-        CELULAR_PRINCIPAL: clients.CELULAR_PRINCIPAL,
-        telefone: clients.telefone,
+        celular: clients.celular,
+        telefone2: clients.telefone2,
         tags: clients.tags,
       }
     })
@@ -692,6 +691,7 @@ export async function getMessages(conversationId: string, limit: number = 50): P
       tamanho: messages.tamanho,
       mimeType: messages.mimeType,
       lido: messages.lido,
+      deletado: messages.deletado,
       createdAt: messages.createdAt,
     })
     .from(messages)
@@ -739,19 +739,15 @@ export async function findConversationByPhoneAndUser(telefone: string, userId: s
   
   console.log(`🔍 findConversationByPhoneAndUser: buscando por "${normalizado}"`);
   
-  // Find client by phone number - search SEM 55 format across ALL phone fields
+  // Find client by phone number - search SEM 55 format across phone fields
   const [client] = await db
     .select()
     .from(clients)
     .where(or(
-      eq(clients.CELULAR_PRINCIPAL, normalizado),
-      eq(clients.telefone, normalizado),
-      eq(clients.CELULAR, normalizado),
-      eq(clients.TELEFONE_COMERCIAL, normalizado),
-      ilike(clients.CELULAR_PRINCIPAL, `%${normalizado}%`),
-      ilike(clients.telefone, `%${normalizado}%`),
-      ilike(clients.CELULAR, `%${normalizado}%`),
-      ilike(clients.TELEFONE_COMERCIAL, `%${normalizado}%`)
+      eq(clients.celular, normalizado),
+      eq(clients.telefone2, normalizado),
+      ilike(clients.celular, `%${normalizado}%`),
+      ilike(clients.telefone2, `%${normalizado}%`)
     ))
     .limit(1);
   

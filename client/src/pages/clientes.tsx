@@ -347,7 +347,7 @@ export default function Clientes() {
   const leads = data?.clientes?.filter(c => c.status === 'lead').length || 0;
 
   // Use tipos from DB, fallback to loaded clients
-  const tiposUnicos = tiposDoDb.length > 0 ? tiposDoDb : [...new Set((data?.clientes || []).map(c => c.tipo).filter(Boolean))].sort();
+  const tiposUnicos = tiposDoDb.length > 0 ? tiposDoDb : Array.from(new Set((data?.clientes || []).map(c => c.tipoCliente).filter(Boolean) as string[])).sort();
 
   // Sort clients (filtering is done on backend)
   const clientesFiltrados = (data?.clientes || [])
@@ -672,8 +672,8 @@ export default function Clientes() {
                         data-testid="checkbox-select-all"
                       />
                     </TableHead>
-                    <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Razão Social / Nome</TableHead>
-                    <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">CPF/CNPJ</TableHead>
+                    <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Nome / Parceiro</TableHead>
+                    <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">CNPJ</TableHead>
                     <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Celular</TableHead>
                     <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Email</TableHead>
                     <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Carteira</TableHead>
@@ -719,22 +719,22 @@ export default function Clientes() {
                           <Link href={`/clientes/${cliente.id}`}>
                             <div>
                               <div className="font-medium text-slate-900 dark:text-white">{cliente.nome}</div>
-                              {cliente.razaoSocial && (
-                                <div className="text-sm text-slate-600 dark:text-slate-400">
-                                  {cliente.razaoSocial}
-                                </div>
+                              {cliente.parceiro && (
+                                <Badge variant="outline" className="mt-1 text-xs">
+                                  {cliente.parceiro}
+                                </Badge>
                               )}
                             </div>
                           </Link>
                         </TableCell>
                         <TableCell className="font-mono text-sm text-slate-700 dark:text-slate-300">
-                          {cliente.cpfCnpj || '-'}
+                          {cliente.cnpj || '-'}
                         </TableCell>
                         <TableCell className="text-sm text-slate-700 dark:text-slate-300">
-                          {formatPhoneNumber(cliente.CELULAR_PRINCIPAL || cliente.telefone)}
+                          {formatPhoneNumber(cliente.celular || undefined)}
                         </TableCell>
                         <TableCell className="text-sm text-slate-700 dark:text-slate-300">
-                          {cliente.EMAIL_PRINCIPAL || cliente.email || '-'}
+                          {cliente.email || '-'}
                         </TableCell>
                         <TableCell className="text-sm text-slate-700 dark:text-slate-300">
                           {cliente.carteira || '-'}

@@ -82,7 +82,7 @@ export default function ClienteProfile() {
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h2 className="font-semibold text-lg">{cliente?.razaoSocial || "Cliente"}</h2>
+          <h2 className="font-semibold text-lg">{cliente?.nome || "Cliente"}</h2>
         </div>
         <div className="flex items-center gap-2">
           <Button size="icon" variant="ghost" data-testid="button-options">
@@ -108,12 +108,12 @@ export default function ClienteProfile() {
                 <div className="space-y-3">
                   <Avatar className="h-12 w-12">
                     <AvatarFallback className="bg-primary text-primary-foreground">
-                      {cliente?.razaoSocial?.[0]?.toUpperCase() || "?"}
+                      {cliente?.nome?.[0]?.toUpperCase() || "?"}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <h3 className="font-semibold text-sm" data-testid="text-cliente-nome">
-                      {cliente?.razaoSocial}
+                      {cliente?.nome}
                     </h3>
                     {cliente?.status && (
                       <Badge variant="outline" className="text-xs mt-1" data-testid="badge-status">
@@ -307,8 +307,8 @@ export default function ClienteProfile() {
                       label="Email"
                     />
                     <EditableField
-                      value={cliente?.CELULAR_PRINCIPAL}
-                      field="CELULAR_PRINCIPAL"
+                      value={cliente?.celular}
+                      field="celular"
                       clientId={id || ""}
                       label="Telefone"
                     />
@@ -329,12 +329,6 @@ export default function ClienteProfile() {
                 <div className="space-y-3">
                   <p className="text-xs font-semibold text-muted-foreground">NEGÓCIO</p>
                   <div className="space-y-2">
-                    <EditableField
-                      value={cliente?.razaoSocial}
-                      field="razaoSocial"
-                      clientId={id || ""}
-                      label="Razão Social"
-                    />
                     <EditableField
                       value={cliente?.carteira}
                       field="carteira"
@@ -406,8 +400,8 @@ export default function ClienteProfile() {
                   <p className="text-xs font-semibold text-muted-foreground">DADOS ADICIONAIS</p>
                   <div className="space-y-2">
                     <EditableField
-                      value={cliente?.cpfCnpj}
-                      field="cpfCnpj"
+                      value={cliente?.cnpj}
+                      field="cnpj"
                       clientId={id || ""}
                       label="CPF/CNPJ"
                     />

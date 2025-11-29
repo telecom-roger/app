@@ -43,7 +43,7 @@ export function CreateOpportunityPopover({ client }: CreateOpportunityPopoverPro
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/opportunities", {
         clientId: client.id,
-        titulo: titulo || client.razaoSocial || client.nome,
+        titulo: titulo || client.nome,
         etapa,
         valorEstimado: valor || "",
         responsavelId: client.createdBy,
@@ -63,7 +63,7 @@ export function CreateOpportunityPopover({ client }: CreateOpportunityPopoverPro
           meta: {
             opportunityId: opp.id,
             etapa,
-            titulo: titulo || client.razaoSocial || client.nome,
+            titulo: titulo || client.nome,
             valor: valor || "",
           },
           createdBy: user?.id,
@@ -128,14 +128,14 @@ export function CreateOpportunityPopover({ client }: CreateOpportunityPopoverPro
         <div className="space-y-3">
           <h4 className="font-semibold text-sm">Nova Oportunidade</h4>
           
-          {/* Razão Social - Auto-filled */}
+          {/* Nome - Auto-filled */}
           <div>
-            <label className="text-xs font-medium mb-1 block">Razão Social</label>
+            <label className="text-xs font-medium mb-1 block">Nome do Cliente</label>
             <Input
-              value={client.razaoSocial || client.nome}
+              value={client.nome}
               disabled
               className="text-xs h-8 bg-muted"
-              data-testid="input-razao-social"
+              data-testid="input-nome-cliente"
             />
           </div>
 

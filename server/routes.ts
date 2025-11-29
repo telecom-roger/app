@@ -122,7 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       const tiposResult = await db
-        .selectDistinct({ tipo: clients.tipo })
+        .selectDistinct({ tipo: clients.tipoCliente })
         .from(clients)
         .where(whereCondition);
       
@@ -203,15 +203,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .select({
           id: clients.id,
           nome: clients.nome,
-          razaoSocial: clients.razaoSocial,
-          telefone: clients.CELULAR_PRINCIPAL,
-          email: clients.EMAIL_PRINCIPAL,
-          cpfCnpj: clients.cpfCnpj,
+          telefone: clients.celular,
+          email: clients.email,
+          cnpj: clients.cnpj,
           status: clients.status,
           tagNames: clients.tags,
           createdAt: clients.createdAt,
           carteira: clients.carteira,
-          tipo: clients.tipo,
+          tipo: clients.tipoCliente,
           cidade: clients.cidade,
         })
         .from(clients)
@@ -260,10 +259,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return {
           id: client.id,
           nome: client.nome,
-          razaoSocial: client.razaoSocial,
           telefone: client.telefone,
           email: client.email,
-          cpfCnpj: client.cpfCnpj,
+          cnpj: client.cnpj,
           status: client.status,
           carteira: client.carteira,
           tipo: client.tipo,
@@ -713,10 +711,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allClients = await db
         .select({
           id: clients.id,
-          razaoSocial: clients.razaoSocial,
-          CELULAR_PRINCIPAL: clients.CELULAR_PRINCIPAL,
-          telefone: clients.CELULAR_PRINCIPAL,
-          email: clients.EMAIL_PRINCIPAL,
+          nome: clients.nome,
+          telefone: clients.celular,
+          email: clients.email,
           status: clients.status,
         })
         .from(clients)
@@ -1013,48 +1010,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const row = data[i];
           const clientData = {
             nome: getRowValue(row, mapping.nome) || `Cliente ${i + 1}`,
-            razaoSocial: getRowValue(row, mapping.razaoSocial),
-            cpfCnpj: getRowValue(row, mapping.cpfCnpj),
+            cnpj: getRowValue(row, mapping.cnpj) || getRowValue(row, mapping.cpfCnpj),
             status: getRowValue(row, mapping.status) || "lead",
             carteira: getRowValue(row, mapping.carteira),
-            tipo: getRowValue(row, mapping.tipo),
-            categoria: getRowValue(row, mapping.categoria),
-            score: mapping.score >= 0 ? parseInt(getRowValue(row, mapping.score) || "0") || 0 : 0,
-            planoAtual: getRowValue(row, mapping.planoAtual),
-            produtoAtual: getRowValue(row, mapping.produtoAtual),
-            // Contact fields
-            telefone: getRowValue(row, mapping.telefone),
-            email: getRowValue(row, mapping.email),
-            contato: getRowValue(row, mapping.contato),
-            // Address fields
+            tipoCliente: getRowValue(row, mapping.tipo) || getRowValue(row, mapping.tipoCliente),
+            parceiro: getRowValue(row, mapping.parceiro),
+            celular: getRowValue(row, mapping.celular) || getRowValue(row, mapping.CELULAR_PRINCIPAL) || getRowValue(row, mapping.CELULAR) || getRowValue(row, mapping.telefone),
+            telefone2: getRowValue(row, mapping.telefone2) || getRowValue(row, mapping.TELEFONE_COMERCIAL),
+            email: getRowValue(row, mapping.email) || getRowValue(row, mapping.EMAIL_PRINCIPAL),
+            nomeGestor: getRowValue(row, mapping.nomeGestor) || getRowValue(row, mapping.NOME_CONTATO),
+            emailGestor: getRowValue(row, mapping.emailGestor),
+            cpfGestor: getRowValue(row, mapping.cpfGestor),
             endereco: getRowValue(row, mapping.endereco),
             numero: getRowValue(row, mapping.numero),
-            complemento: getRowValue(row, mapping.complemento),
+            bairro: getRowValue(row, mapping.bairro),
             cep: getRowValue(row, mapping.cep),
             cidade: getRowValue(row, mapping.cidade),
             uf: getRowValue(row, mapping.uf),
-            // Contract fields
-            dataContrato: mapping.dataContrato >= 0 ? new Date(getRowValue(row, mapping.dataContrato) || "") : null,
-            valorContrato: mapping.valorContrato >= 0 ? parseInt(getRowValue(row, mapping.valorContrato) || "0") || 0 : null,
-            dataUltimoContato: mapping.dataUltimoContato >= 0 ? new Date(getRowValue(row, mapping.dataUltimoContato) || "") : null,
+            dataUltimoPedido: getRowValue(row, mapping.dataUltimoPedido),
             observacoes: getRowValue(row, mapping.observacoes),
-            // Telecom fields (UPPERCASE)
-            APARELHO_LIBERADO: getRowValue(row, mapping.APARELHO_LIBERADO),
-            PEDIDO_MOVEL: getRowValue(row, mapping.PEDIDO_MOVEL),
-            M_FIXA: getRowValue(row, mapping.M_FIXA),
-            PEDIDO_FIXA: getRowValue(row, mapping.PEDIDO_FIXA),
-            NOME_CONTATO: getRowValue(row, mapping.NOME_CONTATO),
-            EMAIL_PRINCIPAL: getRowValue(row, mapping.EMAIL_PRINCIPAL),
-            CELULAR_PRINCIPAL: getRowValue(row, mapping.CELULAR_PRINCIPAL),
-            TIPO_GESTOR: getRowValue(row, mapping.TIPO_GESTOR),
-            FLG_DOMINIO_PUBLICO_SFA: getRowValue(row, mapping.FLG_DOMINIO_PUBLICO_SFA) === "1" || getRowValue(row, mapping.FLG_DOMINIO_PUBLICO_SFA) === "true",
-            TELEFONE_COMERCIAL: getRowValue(row, mapping.TELEFONE_COMERCIAL),
-            CELULAR: getRowValue(row, mapping.CELULAR),
-            TELEFONE_RESIDENCIAL: getRowValue(row, mapping.TELEFONE_RESIDENCIAL),
-            EMAIL_SIBEL: getRowValue(row, mapping.EMAIL_SIBEL),
-            PROP_MOVEL_AVANCADA: getRowValue(row, mapping.PROP_MOVEL_AVANCADA),
-            SERASA: getRowValue(row, mapping.SERASA),
-            MENSAGEM_SERASA: getRowValue(row, mapping.MENSAGEM_SERASA),
             createdBy: user.id,
           };
 
@@ -1396,7 +1370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Queue messages for sending (async, non-blocking)
       let enfileiradas = 0;
       for (const cliente of clientes) {
-        const telefone = cliente.CELULAR_PRINCIPAL || cliente.telefone;
+        const telefone = cliente.celular || cliente.telefone2;
         if (telefone) {
           // Queue message asynchronously (don't wait)
           whatsappService.sendMessage(session.sessionId, telefone, mensagem).catch(err => {
@@ -1836,11 +1810,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               .where(eq(clients.id, conversation.clientId))
               .limit(1);
 
-            if (client && client.CELULAR_PRINCIPAL) {
+            if (client && client.celular) {
               const isAlive = whatsappService.isSessionAlive(session.sessionId);
               if (isAlive) {
                 // Formata o telefone para WhatsApp
-                let telefone = client.CELULAR_PRINCIPAL.replace(/\D/g, "");
+                let telefone = client.celular.replace(/\D/g, "");
                 if (!telefone.startsWith("55")) {
                   telefone = "55" + telefone;
                 }
@@ -1997,8 +1971,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .select()
         .from(clients)
         .where(or(
-          ilike(clients.CELULAR_PRINCIPAL, `%${normalizado}%`),
-          ilike(clients.telefone, `%${normalizado}%`)
+          ilike(clients.celular, `%${normalizado}%`),
+          ilike(clients.telefone2, `%${normalizado}%`)
         ))
         .limit(1);
       
@@ -2007,12 +1981,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[CHAT] 🆕 Auto-criando cliente para telefone: ${phone}`);
         const newClient = await storage.createClient({
           nome: `Novo contato ${phone}`,
-          telefone: phone,
-          CELULAR_PRINCIPAL: phone,
-          cpfCnpj: "",
+          celular: phone,
           status: "Lead",
           carteira: "Dominio",
-          score: 0,
           createdBy: userId,
         });
         client = newClient;
@@ -2246,7 +2217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`📌 Criando oportunidade com valor: ${valorEstimado / 100}`);
           const opp = await storage.createOpportunity({
             clientId,
-            titulo: `Oportunidade - ${client.razaoSocial || client.nome}`,
+            titulo: `Oportunidade - ${client.nome}`,
             valorEstimado,
             etapa: tagName,
             responsavelId: user.id,

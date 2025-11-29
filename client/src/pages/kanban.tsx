@@ -514,13 +514,13 @@ function OpportunityCard({
       <CardContent className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            {cliente?.razaoSocial && (
+            {cliente?.nome && (
               <p 
                 onClick={() => navigate(`/clientes/${cliente.id}`)}
                 className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase truncate hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors"
-                data-testid={`text-cliente-razao-${cliente.id}`}
+                data-testid={`text-cliente-nome-${cliente.id}`}
               >
-                {cliente.razaoSocial}
+                {cliente.nome}
               </p>
             )}
             <h4 className="font-medium leading-snug break-words text-slate-900 dark:text-white">{oportunidade.titulo}</h4>
@@ -594,8 +594,8 @@ function NovaOportunidadeDialog({
   const clientesFiltrados = searchCliente.trim() === "" 
     ? clientes 
     : clientes.filter((client: any) => {
-        return (client.razaoSocial?.toLowerCase().includes(searchCliente.toLowerCase())) ||
-               (client.cpfCnpj?.includes(searchCliente));
+        return (client.nome?.toLowerCase().includes(searchCliente.toLowerCase())) ||
+               (client.cnpj?.includes(searchCliente));
       });
   
   const form = useForm({
@@ -681,8 +681,8 @@ function NovaOportunidadeDialog({
                                     className="p-3 border border-border rounded-lg hover-elevate cursor-pointer bg-card transition-all"
                                     data-testid={`option-client-${client.id}`}
                                   >
-                                    <div className="font-semibold text-primary">{client.razaoSocial}</div>
-                                    <div className="text-xs text-muted-foreground mt-1">{client.cpfCnpj}</div>
+                                    <div className="font-semibold text-primary">{client.nome}</div>
+                                    <div className="text-xs text-muted-foreground mt-1">{client.cnpj}</div>
                                   </div>
                                 ))}
                               </div>
@@ -698,12 +698,12 @@ function NovaOportunidadeDialog({
                             <div className="flex items-start gap-3">
                               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                                 <span className="text-xs font-bold text-primary">
-                                  {fieldSelectedClient.razaoSocial?.charAt(0).toUpperCase()}
+                                  {fieldSelectedClient.nome?.charAt(0).toUpperCase()}
                                 </span>
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="font-semibold text-foreground truncate">{fieldSelectedClient.razaoSocial}</div>
-                                <div className="text-xs text-muted-foreground mt-1">{fieldSelectedClient.cpfCnpj}</div>
+                                <div className="font-semibold text-foreground truncate">{fieldSelectedClient.nome}</div>
+                                <div className="text-xs text-muted-foreground mt-1">{fieldSelectedClient.cnpj}</div>
                               </div>
                             </div>
                           </Card>
@@ -821,8 +821,8 @@ function EditarOportunidadeDialog({
   const clientesFiltrados = searchCliente.trim() === ""
     ? clientes
     : clientes.filter((client: any) => {
-        return (client.razaoSocial?.toLowerCase().includes(searchCliente.toLowerCase())) ||
-               (client.cpfCnpj?.includes(searchCliente));
+        return (client.nome?.toLowerCase().includes(searchCliente.toLowerCase())) ||
+               (client.cnpj?.includes(searchCliente));
       });
 
   const selectedClient = clientes.find((c: any) => c.id === oportunidade?.clientId);
@@ -934,8 +934,8 @@ function EditarOportunidadeDialog({
                                     className="p-3 border border-border rounded-lg hover-elevate cursor-pointer bg-card transition-all"
                                     data-testid={`option-client-edit-${client.id}`}
                                   >
-                                    <div className="font-semibold text-primary">{client.razaoSocial}</div>
-                                    <div className="text-xs text-muted-foreground mt-1">{client.cpfCnpj}</div>
+                                    <div className="font-semibold text-primary">{client.nome}</div>
+                                    <div className="text-xs text-muted-foreground mt-1">{client.cnpj}</div>
                                   </div>
                                 ))}
                               </div>
@@ -951,12 +951,12 @@ function EditarOportunidadeDialog({
                             <div className="flex items-start gap-3">
                               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                                 <span className="text-xs font-bold text-primary">
-                                  {fieldSelectedClient.razaoSocial?.charAt(0).toUpperCase()}
+                                  {fieldSelectedClient.nome?.charAt(0).toUpperCase()}
                                 </span>
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="font-semibold text-foreground truncate">{fieldSelectedClient.razaoSocial}</div>
-                                <div className="text-xs text-muted-foreground mt-1">{fieldSelectedClient.cpfCnpj}</div>
+                                <div className="font-semibold text-foreground truncate">{fieldSelectedClient.nome}</div>
+                                <div className="text-xs text-muted-foreground mt-1">{fieldSelectedClient.cnpj}</div>
                               </div>
                             </div>
                           </Card>

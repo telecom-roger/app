@@ -58,7 +58,7 @@ export async function createTestKanbanMovement(clientId: string, userId: string)
 
     const now = new Date();
     const timestamp = now.getTime();
-    const clientName = client.nome || client.razaoSocial || "Cliente Desconhecido";
+    const clientName = client.nome || "Cliente Desconhecido";
     
     // Cria 3 oportunidades de teste NOVAS com etapas diferentes
     const opp1 = await db.insert(opportunities).values({
@@ -338,7 +338,6 @@ export async function simulateClientResponse(clientId: string, userId: string, m
     });
     const analysis = await analyzeClientMessage(messageText, {
       nome: client?.nome,
-      razaoSocial: client?.nomeFantasia,
     });
 
     console.log(`📊 IA retornou: ${analysis.sentimento} → ${analysis.etapa}`);
@@ -347,7 +346,7 @@ export async function simulateClientResponse(clientId: string, userId: string, m
     if (analysis.etapa !== "automatico" && client) {
       const newOpp = await db.insert(opportunities).values({
         clientId,
-        titulo: `${client.nome || client.razaoSocial} - ${analysis.motivo}`,
+        titulo: `${client.nome} - ${analysis.motivo}`,
         etapa: analysis.etapa,
         valorEstimado: "5000",
         responsavelId: userId,

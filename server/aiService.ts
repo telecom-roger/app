@@ -68,7 +68,7 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
 
 export async function analyzeClientMessage(
   mensagem: string,
-  clienteInfo?: { nome?: string; razaoSocial?: string }
+  clienteInfo?: { nome?: string }
 ): Promise<MessageAnalysis> {
   try {
     // MODO TESTE: Usar análise local se não tiver créditos OpenAI
@@ -84,7 +84,7 @@ export async function analyzeClientMessage(
     const prompt = `Analise RAPIDAMENTE essa resposta de cliente e retorne JSON PURO (sem markdown):
 
 MENSAGEM: "${mensagem}"
-CLIENTE: ${clienteInfo?.razaoSocial || clienteInfo?.nome || "Desconhecido"}
+CLIENTE: ${clienteInfo?.nome || "Desconhecido"}
 
 REGRAS DE CLASSIFICAÇÃO - SIGA EXATAMENTE (IA só trabalha em 5 etapas):
 1. "OK", "SIM", "TOPA", "MANDA", qualquer aprovação → etapa "PROPOSTA", sentimento "positivo"

@@ -46,49 +46,26 @@ export type User = typeof users.$inferSelect;
 export const clients = pgTable("clients", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   nome: text("nome").notNull(),
-  razaoSocial: text("razao_social"),
-  cpfCnpj: varchar("cpf_cnpj", { length: 50 }),
-  status: varchar("status", { length: 50 }).notNull().default("lead"), // lead, ativo, inativo, proposta, fechado, perdido
-  carteira: varchar("carteira", { length: 100 }), // Vivo, Claro, Tim, etc
-  tipo: varchar("tipo", { length: 100 }), // Client type
-  categoria: varchar("categoria", { length: 100 }),
-  planoAtual: text("plano_atual"),
-  produtoAtual: text("produto_atual"),
-  // Contact fields
-  telefone: varchar("telefone", { length: 20 }),
+  cnpj: varchar("cnpj", { length: 14 }),
+  status: varchar("status", { length: 50 }).notNull().default("lead"),
+  parceiro: varchar("parceiro", { length: 50 }), // MIRAI, 3M
+  tipoCliente: varchar("tipo_cliente", { length: 100 }),
+  carteira: varchar("carteira", { length: 100 }),
+  celular: varchar("celular", { length: 20 }),
+  telefone2: varchar("telefone_2", { length: 20 }),
   email: varchar("email", { length: 255 }),
-  contato: text("contato"), // Contact person name
-  // Address fields
+  nomeGestor: varchar("nome_gestor", { length: 255 }),
+  emailGestor: varchar("email_gestor", { length: 255 }),
+  cpfGestor: varchar("cpf_gestor", { length: 11 }),
   endereco: text("endereco"),
   numero: varchar("numero", { length: 20 }),
-  complemento: text("complemento"),
-  cep: varchar("cep", { length: 10 }),
+  bairro: varchar("bairro", { length: 100 }),
+  cep: varchar("cep", { length: 8 }),
   cidade: varchar("cidade", { length: 100 }),
-  uf: varchar("uf", { length: 2 }), // State abbreviation (SP, RJ, etc)
-  // Contract fields
-  dataContrato: timestamp("data_contrato"),
-  valorContrato: integer("valor_contrato"), // in cents
-  dataUltimoContato: timestamp("data_ultimo_contato"),
+  uf: varchar("uf", { length: 2 }),
+  dataUltimoPedido: varchar("data_ultimo_pedido", { length: 20 }),
   observacoes: text("observacoes"),
-  // New telecom fields (UPPERCASE names in schema)
-  APARELHO_LIBERADO: varchar("aparelho_liberado", { length: 255 }),
-  PEDIDO_MOVEL: varchar("pedido_movel", { length: 255 }),
-  M_FIXA: varchar("m_fixa", { length: 255 }),
-  PEDIDO_FIXA: varchar("pedido_fixa", { length: 255 }),
-  NOME_CONTATO: varchar("nome_contato", { length: 255 }),
-  EMAIL_PRINCIPAL: varchar("email_principal", { length: 255 }),
-  CELULAR_PRINCIPAL: varchar("celular_principal", { length: 20 }),
-  TIPO_GESTOR: varchar("tipo_gestor", { length: 100 }),
-  FLG_DOMINIO_PUBLICO_SFA: boolean("flg_dominio_publico_sfa"),
-  TELEFONE_COMERCIAL: varchar("telefone_comercial", { length: 20 }),
-  CELULAR: varchar("celular", { length: 20 }),
-  TELEFONE_RESIDENCIAL: varchar("telefone_residencial", { length: 20 }),
-  EMAIL_SIBEL: varchar("email_sibel", { length: 255 }),
-  PROP_MOVEL_AVANCADA: varchar("prop_movel_avancada", { length: 255 }),
-  SERASA: varchar("serasa", { length: 255 }),
-  MENSAGEM_SERASA: text("mensagem_serasa"),
   tags: text("tags").array().default(sql`ARRAY[]::text[]`),
-  camposCustom: jsonb("campos_custom").default(sql`'{}'::jsonb`), // flexible custom fields
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   createdBy: varchar("created_by").references(() => users.id),
@@ -101,28 +78,19 @@ export const insertClientSchema = createInsertSchema(clients)
     updatedAt: true,
   })
   .extend({
+    nome: z.string().min(1, "Nome obrigatório"),
+    cnpj: z.string().max(14).optional().nullable(),
     uf: z.string().max(2).optional().nullable(),
-    cep: z.string().regex(/^\d{5}-?\d{3}$|^$/, "CEP inválido").optional().nullable(),
-    email: z.string().email("Email inválido").optional().nullable(),
-    telefone: z.string().min(10, "Telefone inválido").optional().nullable(),
-    tipo: z.string().optional().nullable(),
-    // Telecom fields - make all optional
-    APARELHO_LIBERADO: z.string().optional().nullable(),
-    PEDIDO_MOVEL: z.string().optional().nullable(),
-    M_FIXA: z.string().optional().nullable(),
-    PEDIDO_FIXA: z.string().optional().nullable(),
-    NOME_CONTATO: z.string().optional().nullable(),
-    EMAIL_PRINCIPAL: z.string().optional().nullable(),
-    CELULAR_PRINCIPAL: z.string().optional().nullable(),
-    TIPO_GESTOR: z.string().optional().nullable(),
-    FLG_DOMINIO_PUBLICO_SFA: z.boolean().optional().nullable(),
-    TELEFONE_COMERCIAL: z.string().optional().nullable(),
-    CELULAR: z.string().optional().nullable(),
-    TELEFONE_RESIDENCIAL: z.string().optional().nullable(),
-    EMAIL_SIBEL: z.string().optional().nullable(),
-    PROP_MOVEL_AVANCADA: z.string().optional().nullable(),
-    SERASA: z.string().optional().nullable(),
-    MENSAGEM_SERASA: z.string().optional().nullable(),
+    cep: z.string().max(8).optional().nullable(),
+    email: z.string().email("Email inválido").optional().nullable().or(z.literal('')),
+    emailGestor: z.string().email("Email inválido").optional().nullable().or(z.literal('')),
+    celular: z.string().optional().nullable(),
+    telefone2: z.string().optional().nullable(),
+    parceiro: z.string().optional().nullable(),
+    tipoCliente: z.string().optional().nullable(),
+    nomeGestor: z.string().optional().nullable(),
+    cpfGestor: z.string().max(11).optional().nullable(),
+    dataUltimoPedido: z.string().optional().nullable(),
   });
 
 export type InsertClient = z.infer<typeof insertClientSchema>;
