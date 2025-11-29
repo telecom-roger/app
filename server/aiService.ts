@@ -67,7 +67,12 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
   }
   
   // ✅ APROVAÇÃO → PROPOSTA (palavras-chave de aprovação)
-  const aprovacao = ["ok", "sim", "manda", "pode enviar", "quero renovar", "topa", "pode", "vamos lá"];
+  const aprovacao = [
+    "ok", "sim", "manda", "pode enviar", "quero renovar", "topa", "pode", "vamos lá",
+    "gostei", "adorei", "legal", "ótimo", "maravilha", "perfeito", "excelente",
+    "bora", "vamo", "blz", "show", "massa", "incrível", "top", "amei",
+    "fechado", "confira", "envia", "envia aí", "pede aí", "me envia"
+  ];
   if (aprovacao.some(palavra => msg.includes(palavra))) {
     return {
       sentimento: "positivo",
