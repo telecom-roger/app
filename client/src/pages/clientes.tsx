@@ -351,7 +351,7 @@ export default function Clientes() {
     enabled: isAuthenticated,
   });
 
-  // Fetch clients with stats
+  // Fetch clients with stats (paginated for viewing)
   const { data, isLoading } = useQuery<{ clientes: Client[]; total: number }>({
     queryKey: [
       "/api/clients",
@@ -366,6 +366,34 @@ export default function Clientes() {
       }
     ],
     enabled: isAuthenticated,
+  });
+
+  // Fetch ALL clients matching filters (for bulk selection)
+  const { data: allFilteredClients = { clientes: [], total: 0 } } = useQuery<{ clientes: Client[]; total: number }>({
+    queryKey: [
+      "/api/clients/all-filtered",
+      { 
+        ...(searchTerm && { search: searchTerm }),
+        ...(statusFilter !== "todos" && { status: statusFilter }),
+        ...(selectedTag && { tagName: selectedTag }),
+        ...(tipoFiltro !== "all" && { tipo: tipoFiltro }),
+        ...(carteiraFiltro !== "all" && { carteira: carteiraFiltro }),
+      }
+    ],
+    enabled: Boolean(isAuthenticated && hasActiveFilter),
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        limit: "10000",
+        page: "1",
+        ...(searchTerm && { search: searchTerm }),
+        ...(statusFilter !== "todos" && { status: statusFilter }),
+        ...(selectedTag && { tagName: selectedTag }),
+        ...(tipoFiltro !== "all" && { tipo: tipoFiltro }),
+        ...(carteiraFiltro !== "all" && { carteira: carteiraFiltro }),
+      });
+      const res = await fetch(`/api/clients?${params}`);
+      return res.json();
+    },
   });
 
   // Delete mutation
@@ -571,8 +599,20 @@ export default function Clientes() {
                   data-testid="button-select-all-quick"
                   className="h-8 text-xs"
                 >
-                  ✓ Selecionar Todos
+                  ✓ Página ({clientesFiltrados.length})
                 </Button>
+                {hasActiveFilter && allFilteredClients?.total > limit && (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={() => setSelectedClientIds(new Set((allFilteredClients?.clientes || []).map((c: Client) => c.id)))}
+                    disabled={!allFilteredClients?.clientes || allFilteredClients?.clientes.length === 0}
+                    data-testid="button-select-all-results"
+                    className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    ✓ Todos ({allFilteredClients?.total})
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="outline"
