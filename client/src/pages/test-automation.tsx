@@ -163,6 +163,27 @@ export default function TestAutomation() {
         <p className="text-slate-300">Simule respostas de clientes e veja a IA criar oportunidades automaticamente</p>
       </div>
 
+      {/* SELEÇÃO RÁPIDA - Cliente e Vendedor */}
+      {!loadingTestData && (testData.clients.length > 0 || testData.users.length > 0) && (
+        <Card className="p-4 bg-purple-900/30 border-purple-500/50">
+          <div className="flex flex-wrap gap-4 items-center">
+            <div>
+              <p className="text-xs text-slate-400 mb-1">👤 Cliente Selecionado:</p>
+              <p className="text-lg font-bold text-purple-300">
+                {testData.clients.find((c: any) => c.id === clientId)?.nome || "Carregando..."}
+              </p>
+            </div>
+            <div className="hidden sm:block w-px h-12 bg-slate-600"></div>
+            <div>
+              <p className="text-xs text-slate-400 mb-1">👨‍💼 Vendedor Selecionado:</p>
+              <p className="text-lg font-bold text-blue-300">
+                {testData.users.find((u: any) => u.id === userId)?.email.split("@")[0] || "Carregando..."}
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Input Section */}
       <Card className="p-6 bg-slate-800 border-purple-500/20">
         <h2 className="text-xl font-bold text-white mb-4">1️⃣ Simular Resposta do Cliente</h2>
@@ -229,14 +250,14 @@ export default function TestAutomation() {
       {/* Test Opportunities Section */}
       <Card className="p-6 bg-slate-800 border-cyan-500/20">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-white">2️⃣ Oportunidades Criadas</h2>
+          <h2 className="text-xl font-bold text-white">2️⃣ Oportunidades Criadas (⏱️ Auto-refresh 3s)</h2>
           <Button
             onClick={() => refetchTestOpps()}
             variant="outline"
             size="sm"
             data-testid="button-refresh-test-opps"
           >
-            🔄 Atualizar
+            🔄 Atualizar Agora
           </Button>
         </div>
 
