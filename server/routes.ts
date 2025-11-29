@@ -3314,19 +3314,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .set({ etapa: "AGUARDANDO ACEITE", updatedAt: new Date() })
         .where(eq(opportunities.id, opp.id));
 
-      // 4. Registrar na timeline
-      const mensagem = `Seu contrato já está pronto para assinatura digital.\nPor favor, clique no link que você recebeu e finalize o aceite.\nSe tiver alguma dúvida, estou à disposição!`;
-      
-      await db.insert(interactions).values({
-        clientId,
-        tipo: "aguardando_aceite_reminder",
-        origem: "automation",
-        titulo: "Lembrete de Assinatura (1/3)",
-        texto: mensagem,
-        meta: { opportunityId: opp.id, lembreteNum: 1 },
-        createdBy: userId,
-      });
-
       res.json({
         success: true,
         message: "✅ Oportunidade movida para AGUARDANDO ACEITE - Lembretes agendados!",
