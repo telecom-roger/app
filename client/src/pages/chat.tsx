@@ -1181,9 +1181,14 @@ export default function Chat() {
                         msg.sender === "user"
                           ? "justify-end"
                           : "justify-start"
-                      }`}
+                      } flex-col`}
                       data-testid={`message-${msg.id}`}
                     >
+                      {msg.origem === "automation" && (
+                        <p className={`text-xs mb-1 ${msg.sender === "user" ? "text-right text-primary/70" : "text-left text-muted-foreground"}`} data-testid={`label-automation-${msg.id}`}>
+                          Enviado via Automação
+                        </p>
+                      )}
                       <div
                         className={`max-w-xs px-3 py-2 rounded-lg shadow-sm ${
                           msg.sender === "user"
