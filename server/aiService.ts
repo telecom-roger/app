@@ -12,20 +12,28 @@ export interface MessageAnalysis {
   sugestao: string;
 }
 
+// Normalizar mensagem: minúsculas + remove acentos
+function normalizeMessage(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, ""); // Remove acentos
+}
+
 // Modo de teste local (sem OpenAI API)
 function analyzeLocalTest(mensagem: string): MessageAnalysis {
-  const msg = mensagem.toLowerCase();
+  const msg = normalizeMessage(mensagem);
   
-  // 🛑 RECUSA TOTAL → PERDIDO (palavras-chave exatas - com e sem acentos)
+  // 🛑 RECUSA TOTAL → PERDIDO (palavras-chave normalizadas - maiúsculas/acentos automáticos)
   const recusaTotal = [
-    "não quero renovar", "nao quero renovar",
+    "nao quero renovar",
     "cancela tudo",
-    "não tenho interesse", "nao tenho interesse",
-    "não quero nenhum plano", "nao quero nenhum plano",
-    "não quero", "nao quero",
+    "nao tenho interesse",
+    "nao quero nenhum plano",
+    "nao quero",
     "recuso",
-    "não me interessa", "nao me interessa",
-    "não tenho mais interesse", "nao tenho mais interesse"
+    "nao me interessa",
+    "nao tenho mais interesse"
   ];
   if (recusaTotal.some(palavra => msg.includes(palavra))) {
     return {
@@ -37,13 +45,13 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
     };
   }
   
-  // ℹ️ RECUSA PARCIAL → NÃO MOVE (não gera ação - com e sem acentos)
+  // ℹ️ RECUSA PARCIAL → NÃO MOVE (não gera ação - normalizadas)
   const recusaParcial = [
     "cancelar algumas linhas",
     "cancelar parcial",
     "remover algumas",
     "quero apenas algumas",
-    "não quero algumas", "nao quero algumas",
+    "nao quero algumas",
   ];
   if (recusaParcial.some(palavra => msg.includes(palavra))) {
     return {
@@ -55,9 +63,15 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
     };
   }
   
-  // 📲 FORNECEDOR/AUTOMÁTICA → FORNECEDOR (mensagens automáticas)
-  if (msg.includes("deixe seu contato") || msg.includes("breve") || msg.includes("aguarde") || 
-      msg.includes("em breve") || msg.includes("entro em contato")) {
+  // 📲 FORNECEDOR/AUTOMÁTICA → FORNECEDOR (mensagens automáticas - normalizadas)
+  const fornecedor = [
+    "deixe seu contato",
+    "breve",
+    "aguarde",
+    "em breve",
+    "entro em contato"
+  ];
+  if (fornecedor.some(palavra => msg.includes(palavra))) {
     return {
       sentimento: "fornecedor",
       confianca: 90,
@@ -67,12 +81,12 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
     };
   }
   
-  // ✅ APROVAÇÃO → PROPOSTA (palavras-chave de aprovação)
+  // ✅ APROVAÇÃO → PROPOSTA (palavras-chave de aprovação - normalizadas)
   const aprovacao = [
-    "ok", "sim", "manda", "pode enviar", "quero renovar", "topa", "pode", "vamos lá",
-    "gostei", "adorei", "legal", "ótimo", "maravilha", "perfeito", "excelente",
-    "bora", "vamo", "blz", "show", "massa", "incrível", "top", "amei",
-    "fechado", "confira", "envia", "envia aí", "pede aí", "me envia"
+    "ok", "sim", "manda", "pode enviar", "quero renovar", "topa", "pode", "vamos la",
+    "gostei", "adorei", "legal", "otimo", "maravilha", "perfeito", "excelente",
+    "bora", "vamo", "blz", "show", "massa", "incrivel", "top", "amei",
+    "fechado", "confira", "envia", "envia ai", "pede ai", "me envia"
   ];
   if (aprovacao.some(palavra => msg.includes(palavra))) {
     return {
@@ -84,8 +98,9 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
     };
   }
   
-  // ❓ INFORMAÇÃO → CONTATO (perguntas sobre preço/valor)
-  if (msg.includes("preço") || msg.includes("quanto") || msg.includes("valor") || msg.includes("custa")) {
+  // ❓ INFORMAÇÃO → CONTATO (perguntas sobre preço/valor - normalizadas)
+  const precoKeywords = ["preco", "quanto", "valor", "custa"];
+  if (precoKeywords.some(palavra => msg.includes(palavra))) {
     return {
       sentimento: "positivo",
       confianca: 85,
