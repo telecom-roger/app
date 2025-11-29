@@ -476,9 +476,9 @@ export default function Clientes() {
   // Use tipos from DB, fallback to loaded clients
   const tiposUnicos = tiposDoDb.length > 0 ? tiposDoDb : Array.from(new Set((data?.clientes || []).map(c => c.tipoCliente).filter(Boolean) as string[])).sort();
 
-  // Clients from backend (already sorted) - use Set to eliminate duplicates and ensure exact limit
+  // Clients from backend (already sorted)
   const clientesFiltrados = data?.clientes || [];
-  const clientesFiltradosUnicos = Array.from(new Map((clientesFiltrados || []).map(c => [c.id, c])).values()).slice(0, limit);
+  const clientesFiltradosUnicos = clientesFiltrados;
 
   const toggleClienteSelecionado = (clienteId: string) => {
     const novoSet = new Set(selectedClientIds);

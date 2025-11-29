@@ -111,10 +111,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         limit: parseInt(limit as string),
         isAdmin: user.role === 'admin',
       });
-      // Ensure we respect the limit
-      if (result.clientes.length > parseInt(limit as string)) {
-        result.clientes = result.clientes.slice(0, parseInt(limit as string));
-      }
       res.json(result);
     } catch (error: any) {
       console.error("Error fetching clients:", error);
