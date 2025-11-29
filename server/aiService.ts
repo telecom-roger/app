@@ -125,9 +125,8 @@ export async function analyzeClientMessage(
   clienteInfo?: { nome?: string }
 ): Promise<MessageAnalysis> {
   try {
-    // MODO TESTE: SEMPRE usar análise local para evitar problemas com OpenAI
-    // Usar OpenAI apenas se tiver variável específica para produção
-    const useLocalMode = true; // SEMPRE usar local agora
+    // Usar OpenAI para análise de sentimento (a IA entende melhor variações, acentos, erros)
+    const useLocalMode = false; // ✅ ATIVAR OPENAI - IA entende tudo!
     
     if (useLocalMode) {
       console.log(`🧪 [MODO LOCAL] Analisando com regras locais (confiável)`);
