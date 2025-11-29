@@ -2421,7 +2421,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/clients/:clientId/share", isAuthenticated, async (req, res) => {
     try {
       const { clientId } = req.params;
-      const { sharedWithUserId, permissao = "visualizar" } = req.body;
+      const { sharedWithUserId, permissao = "editar" } = req.body;
       const user = req.user as any;
 
       // Verify client ownership

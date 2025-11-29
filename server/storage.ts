@@ -996,7 +996,7 @@ export async function shareClientsWithUser(clientIds: string[], sharedWithUserId
     clientId,
     ownerId,
     sharedWithUserId,
-    permissao: "visualizar",
+    permissao: "editar",
   }));
   
   return await db.insert(clientSharing).values(sharings).returning();
