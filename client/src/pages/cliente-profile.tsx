@@ -41,16 +41,6 @@ import { ClientNoteItem } from "@/components/ClientNoteItem";
 import { CreateOpportunityPopover } from "@/components/CreateOpportunityPopover";
 import type { Client, Interaction, ClientNote } from "@shared/schema";
 
-const STATUS_OPTIONS = [
-  "lead_quente",
-  "engajado",
-  "em_negociacao",
-  "em_fechamento",
-  "ativo",
-  "perdido",
-  "remarketing",
-];
-
 const STATUS_COLORS: Record<string, string> = {
   lead_quente: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   engajado: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
@@ -66,7 +56,6 @@ export default function ClienteProfile() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const [editingStatus, setEditingStatus] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -97,26 +86,6 @@ export default function ClienteProfile() {
     enabled: isAuthenticated && !!id,
   });
 
-  const updateStatusMutation = useMutation({
-    mutationFn: async (newStatus: string) => {
-      await apiRequest("PATCH", `/api/clients/${id}`, { status: newStatus });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/clients", id] });
-      toast({
-        title: "Status atualizado",
-        description: "Status do cliente foi atualizado com sucesso",
-      });
-      setEditingStatus(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro",
-        description: error.message || "Falha ao atualizar status",
-        variant: "destructive",
-      });
-    },
-  });
 
   if (authLoading || !isAuthenticated) {
     return <ProfileSkeleton />;
@@ -167,28 +136,12 @@ export default function ClienteProfile() {
                     </h3>
                     {cliente?.status && (
                       <div className="mt-1" data-testid="badge-status">
-                        {editingStatus ? (
-                          <Select value={cliente.status} onValueChange={(newStatus) => updateStatusMutation.mutate(newStatus)}>
-                            <SelectTrigger className="h-8 w-full" data-testid="select-status-edit">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {STATUS_OPTIONS.map((status) => (
-                                <SelectItem key={status} value={status}>
-                                  {status.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Badge 
-                            variant="outline" 
-                            className={`text-xs cursor-pointer ${STATUS_COLORS[cliente.status] || 'bg-slate-200 text-slate-800'}`}
-                            onClick={() => setEditingStatus(true)}
-                          >
-                            {cliente.status.toUpperCase()}
-                          </Badge>
-                        )}
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${STATUS_COLORS[cliente.status] || 'bg-slate-200 text-slate-800'}`}
+                        >
+                          {cliente.status.toUpperCase()}
+                        </Badge>
                       </div>
                     )}
                   </div>

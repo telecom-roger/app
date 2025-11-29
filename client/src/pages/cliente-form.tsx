@@ -195,32 +195,6 @@ export default function ClienteForm() {
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name="status"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Status</FormLabel>
-                          <Select value={field.value} onValueChange={field.onChange}>
-                            <FormControl>
-                              <SelectTrigger data-testid="select-status">
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="lead_quente">Lead quente</SelectItem>
-                              <SelectItem value="engajado">Engajado</SelectItem>
-                              <SelectItem value="em_negociacao">Em negociação</SelectItem>
-                              <SelectItem value="em_fechamento">Em fechamento</SelectItem>
-                              <SelectItem value="ativo">Ativo</SelectItem>
-                              <SelectItem value="perdido">Perdido</SelectItem>
-                              <SelectItem value="remarketing">Remarketing</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
