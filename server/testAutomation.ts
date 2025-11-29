@@ -356,12 +356,18 @@ export async function simulateClientResponse(clientId: string, userId: string, m
       
       console.log(`✅ Oportunidade criada em "${analysis.etapa}": ${newOpp.id} (responsavelId: ${newOpp.responsavelId})`);
       
+      // 🔄 RECALCULATE CLIENT STATUS - IA cria opp então status muda!
+      const newStatus = await storage.recalculateClientStatus(clientId);
+      await storage.updateClient(clientId, { status: newStatus });
+      console.log(`🔄 Status do cliente atualizado: ${newStatus.toUpperCase()}`);
+      
       return { 
         success: true, 
         clientId, 
-        message: `✅ Oportunidade criada em "${analysis.etapa}"\n📊 Sentimento: ${analysis.sentimento}\n💡 ${analysis.sugestao}`,
+        message: `✅ Oportunidade criada em "${analysis.etapa}"\n📊 Sentimento: ${analysis.sentimento}\n💡 ${analysis.sugestao}\n🔄 Status: ${newStatus.toUpperCase()}`,
         analysis,
         opportunityId: newOpp.id,
+        statusAtualizado: newStatus,
       };
     }
 
