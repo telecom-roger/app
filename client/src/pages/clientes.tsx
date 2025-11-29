@@ -480,8 +480,9 @@ export default function Clientes() {
   // Use tipos from DB, fallback to loaded clients
   const tiposUnicos = tiposDoDb.length > 0 ? tiposDoDb : Array.from(new Set((data?.clientes || []).map(c => c.tipoCliente).filter(Boolean) as string[])).sort();
 
-  // Clients from backend (already sorted)
+  // Clients from backend (already sorted) - use Set to eliminate duplicates
   const clientesFiltrados = data?.clientes || [];
+  const clientesFiltradosUnicos = Array.from(new Map((clientesFiltrados || []).map(c => [c.id, c])).values());
 
   const toggleClienteSelecionado = (clienteId: string) => {
     const novoSet = new Set(selectedClientIds);
@@ -615,14 +616,14 @@ export default function Clientes() {
                   variant="outline"
                   onClick={() => {
                     const novoSet = new Set(selectedClientIds);
-                    clientesFiltrados.forEach(c => novoSet.add(c.id));
+                    clientesFiltradosUnicos.forEach(c => novoSet.add(c.id));
                     setSelectedClientIds(novoSet);
                   }}
-                  disabled={clientesFiltrados.length === 0}
+                  disabled={clientesFiltradosUnicos.length === 0}
                   data-testid="button-select-all-quick"
                   className="h-8 text-xs"
                 >
-                  ✓ Página ({clientesFiltrados.length})
+                  ✓ Página ({clientesFiltradosUnicos.length})
                 </Button>
                 {hasActiveFilter && allFilteredClients?.total > limit && (
                   <Button
@@ -703,7 +704,7 @@ export default function Clientes() {
                   <Input
                     type="number"
                     min={1}
-                    max={clientesFiltrados.length}
+                    max={clientesFiltradosUnicos.length}
                     value={quantidadeSelecar}
                     onChange={(e) => setQuantidadeSelecar(Math.max(1, parseInt(e.target.value) || 1))}
                     className="w-16 h-8 text-xs"
@@ -713,12 +714,12 @@ export default function Clientes() {
                     size="sm"
                     variant="outline"
                     onClick={() => {
-                      const shuffled = [...clientesFiltrados].sort(() => Math.random() - 0.5);
-                      const quantidadeReal = Math.min(quantidadeSelecar, clientesFiltrados.length);
+                      const shuffled = [...clientesFiltradosUnicos].sort(() => Math.random() - 0.5);
+                      const quantidadeReal = Math.min(quantidadeSelecar, clientesFiltradosUnicos.length);
                       const selecionados = shuffled.slice(0, quantidadeReal).map((c) => c.id);
                       setSelectedClientIds(new Set(selecionados));
                     }}
-                    disabled={clientesFiltrados.length === 0}
+                    disabled={clientesFiltradosUnicos.length === 0}
                     data-testid="button-random-select"
                     className="h-8 text-xs"
                   >
