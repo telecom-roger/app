@@ -96,13 +96,13 @@ export default function ClienteProfile() {
       queryClient.invalidateQueries({ queryKey: ["/api/timeline", id] });
       toast({
         title: "Sucesso",
-        description: "Follow-up manual criado e status alterado para 'Em Fechamento'",
+        description: "Cliente marcado como 'Aguardando Atenção'",
       });
     },
     onError: () => {
       toast({
         title: "Erro",
-        description: "Não foi possível criar o follow-up manual",
+        description: "Não foi possível marcar como 'Aguardando Atenção'",
         variant: "destructive",
       });
     },
@@ -205,10 +205,10 @@ export default function ClienteProfile() {
                   className="w-full justify-start text-sm bg-orange-50 dark:bg-orange-950 hover:bg-orange-100 dark:hover:bg-orange-900"
                   onClick={() => manualFollowUpMutation.mutate()}
                   disabled={manualFollowUpMutation.isPending}
-                  data-testid="button-manual-follow-up"
+                  data-testid="button-aguardando-atencao"
                 >
                   <CheckCircle className="h-4 w-4 mr-2 text-orange-600 dark:text-orange-400" />
-                  <span className="text-orange-700 dark:text-orange-300">Follow-up Manual</span>
+                  <span className="text-orange-700 dark:text-orange-300">Aguardando Atenção</span>
                 </Button>
               </div>
 

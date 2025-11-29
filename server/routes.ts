@@ -454,10 +454,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Registra na timeline
       await storage.createInteraction({
         clientId: req.params.id,
-        tipo: "follow_up_manual",
+        tipo: "aguardando_atencao",
         origem: "user",
-        titulo: "Follow-up Manual Criado",
-        texto: `${user.firstName || user.email} criou um follow-up manual e alterou o status para "Em Fechamento"`,
+        titulo: "Aguardando Atenção",
+        texto: `${user.firstName || user.email} marcou este cliente como "Aguardando Atenção"`,
         meta: { user: user.email },
         createdBy: user.id,
       });
@@ -466,9 +466,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.createAuditLog({
         userId: user.id,
         acao: "criar",
-        entidade: "client_follow_up",
+        entidade: "aguardando_atencao",
         entidadeId: req.params.id,
-        dadosNovos: { tipo: "manual_follow_up", status: "em_fechamento" } as any,
+        dadosNovos: { tipo: "aguardando_atencao", status: "em_fechamento" } as any,
         ipAddress: req.ip,
         userAgent: req.get("user-agent"),
       });
