@@ -528,14 +528,12 @@ export default function Clientes() {
   }, [page]);
 
   const statusColors: Record<string, string> = {
-    ativo: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
-    contato_realizado: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+    lead_quente: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    engajado: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
     em_negociacao: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
-    proposta_enviada: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-    em_aprovacao: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-    fechado_ganho: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-    fechado_perdido: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-    inativo: "bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200",
+    em_fechamento: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+    ativo: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
+    perdido: "bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200",
     remarketing: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
   };
 
@@ -648,14 +646,12 @@ export default function Clientes() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos os status</SelectItem>
-                    <SelectItem value="ativo">Ativo</SelectItem>
-                    <SelectItem value="contato_realizado">Contato realizado</SelectItem>
+                    <SelectItem value="lead_quente">Lead quente</SelectItem>
+                    <SelectItem value="engajado">Engajado</SelectItem>
                     <SelectItem value="em_negociacao">Em negociação</SelectItem>
-                    <SelectItem value="proposta_enviada">Proposta enviada</SelectItem>
-                    <SelectItem value="em_aprovacao">Em aprovação</SelectItem>
-                    <SelectItem value="fechado_ganho">Fechado (Ganho)</SelectItem>
-                    <SelectItem value="fechado_perdido">Fechado (Perdido)</SelectItem>
-                    <SelectItem value="inativo">Inativo</SelectItem>
+                    <SelectItem value="em_fechamento">Em fechamento</SelectItem>
+                    <SelectItem value="ativo">Ativo</SelectItem>
+                    <SelectItem value="perdido">Perdido</SelectItem>
                     <SelectItem value="remarketing">Remarketing</SelectItem>
                   </SelectContent>
                 </Select>

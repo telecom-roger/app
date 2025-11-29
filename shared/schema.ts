@@ -47,7 +47,7 @@ export const clients = pgTable("clients", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   nome: text("nome").notNull(),
   cnpj: varchar("cnpj", { length: 14 }),
-  status: varchar("status", { length: 50 }).notNull().default("lead"),
+  status: varchar("status", { length: 50 }).notNull().default("ativo"),
   parceiro: varchar("parceiro", { length: 50 }), // MIRAI, 3M
   tipoCliente: varchar("tipo_cliente", { length: 100 }),
   carteira: varchar("carteira", { length: 100 }),
