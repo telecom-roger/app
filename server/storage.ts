@@ -251,31 +251,22 @@ export async function getOpportunities(params: {
   
   // Se userId está definido, filtra por responsavelId do usuário
   if (params.userId) {
-    console.log(`🔍 getOpportunities: Filtrando por userId=${params.userId}`);
     conditions.push(eq(opportunities.responsavelId, params.userId));
   } else if (params.responsavel && params.responsavel !== "todos") {
-    console.log(`🔍 getOpportunities: Filtrando por responsavel=${params.responsavel}`);
     conditions.push(eq(opportunities.responsavelId, params.responsavel));
-  } else {
-    console.log(`🔍 getOpportunities: SEM FILTRO DE RESPONSÁVEL (userId=${params.userId}, responsavel=${params.responsavel})`);
   }
   
   if (params.etapa) {
-    console.log(`🔍 getOpportunities: Adicionando filtro etapa=${params.etapa}`);
     conditions.push(eq(opportunities.etapa, params.etapa));
   }
 
-  console.log(`🔍 getOpportunities: conditions.length=${conditions.length}`);
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const result = await db
+  return await db
     .select()
     .from(opportunities)
     .where(whereClause)
     .orderBy(opportunities.ordem, opportunities.createdAt);
-  
-  console.log(`🔍 getOpportunities: Encontradas ${result.length} opportunities`);
-  return result;
 }
 
 export async function getOpportunityById(id: string): Promise<Opportunity | undefined> {
