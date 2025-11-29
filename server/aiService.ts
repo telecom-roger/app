@@ -25,10 +25,29 @@ function normalizeMessage(text: string): string {
 function analyzeLocalTest(mensagem: string): MessageAnalysis {
   const msg = normalizeMessage(mensagem);
   
-  // 🛑 RECUSA TOTAL → PERDIDO
+  // 🛑 RECUSA PARCIAL DEVE VIR PRIMEIRO (mais específico)
+  const recusaParcial = [
+    "cancelar algumas linhas", "cancelar parcial", "remover algumas",
+    "quero apenas algumas", "nao quero algumas", "quero so", "somente o",
+    "vou pensar", "deixa comigo", "depois te falo", "ta bom", "ok blz",
+    "e tal", "nao agora"
+  ];
+  if (recusaParcial.some(palavra => msg.includes(palavra))) {
+    return {
+      sentimento: "neutro",
+      confianca: 70,
+      motivo: "Recusa parcial - não altera etapa",
+      etapa: "contato",
+      deveAgir: false,
+      sugestao: "Aguardar decisão do cliente",
+    };
+  }
+  
+  // 🛑 RECUSA TOTAL → PERDIDO (após verificar parcial)
   const recusaTotal = [
-    "nao quero renovar", "cancela tudo", "nao tenho interesse",
-    "nao quero nenhum plano", "nao quero", "recuso", "nao me interessa", "nao tenho mais interesse"
+    "nao quero renovar nada", "cancela tudo", "nao tenho interesse",
+    "nao quero nenhum", "recuso", "nao me interessa", "empresa nao existe",
+    "nao vai dar", "muito caro", "vou para concorrente", "trocar de fornecedor"
   ];
   if (recusaTotal.some(palavra => msg.includes(palavra))) {
     return {
@@ -38,23 +57,6 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
       etapa: "perdido",
       deveAgir: true,
       sugestao: "Arquivar oportunidade",
-    };
-  }
-  
-  // ℹ️ RECUSA PARCIAL → NÃO AGE
-  const recusaParcial = [
-    "cancelar algumas linhas", "cancelar parcial", "remover algumas",
-    "quero apenas algumas", "nao quero algumas", "vou pensar", "deixa comigo",
-    "depois te falo", "tá bom", "ok blz"
-  ];
-  if (recusaParcial.some(palavra => msg.includes(palavra))) {
-    return {
-      sentimento: "neutro",
-      confianca: 70,
-      motivo: "Recusa parcial - não afeta",
-      etapa: "contato",
-      deveAgir: false,
-      sugestao: "Conversar com cliente",
     };
   }
   
@@ -127,32 +129,40 @@ export async function analyzeClientMessage(
       return analysis;
     }
 
-    const prompt = `Analise RAPIDAMENTE essa resposta de cliente e retorne JSON PURO (sem markdown):
+    const prompt = `Analise RAPIDAMENTE essa resposta de cliente. Retorne JSON PURO (sem markdown):
 
 MENSAGEM: "${mensagem}"
 CLIENTE: ${clienteInfo?.nome || "Desconhecido"}
 
-REGRAS - RETORNE 4 ETAPAS AUTOMÁTICAS + DEVE AGIR (SIM/NÃO):
+🎯 DISTINÇÃO CRÍTICA:
+- RECUSA TOTAL: Cliente rejeita TUDO ("não quero renovar", "cancela tudo", "recuso", "não tenho interesse")
+- RECUSA PARCIAL: Cliente quer modificar parte ("cancelar algumas linhas", "quero só 1 linha", "remover alguns serviços")
+- INDECISÃO: ("vou pensar", "deixa comigo", "depois te falo")
 
-▶️ ETAPAS (escolha 1):
-1. "contato" - Cliente pergunta preço/valor/informação OU mensagem inicial genérica ("oi", "tudo bem?")
-2. "proposta" - Cliente aprova: "ok", "sim", "manda", "legal", "gostei", "adorei"
+▶️ 4 ETAPAS (escolha 1):
+1. "contato" - Pergunta preço/valor OU mensagem inicial genérica ("oi", "tudo bem?")
+2. "proposta" - APROVAÇÃO CLARA: "ok", "sim", "manda", "gostei", "legal", "adorei", "vamo fechar"
 3. "fornecedor" - Mensagens automáticas: "deixe contato", "breve", "aguarde"
-4. "perdido" - Recusa TOTAL: "não quero renovar", "cancela tudo", "recuso", "não tenho interesse"
+4. "perdido" - APENAS RECUSA TOTAL (rejeição completa)
 
 ▶️ DEVE AGIR (true/false):
-- true = Há intenção clara (aprovação, recusa total, pergunta sobre preço)
-- false = Recusa parcial, indecisão ("vou pensar"), conversa neutra extensa
+- true = Intenção CLARA: aprovação, recusa total, pergunta sobre preço
+- false = Recusa PARCIAL, indecisão, ou conversa sem intenção
 
-⚠️ RETORNE FALSE ("não agir") PARA:
-- "Quero cancelar algumas linhas" (recusa parcial)
-- "Vou pensar", "depois te falo" (indecisão)
-- Conversas normais sem intenção ("ok blz", "tá bom")
+⚠️ EXEMPLOS DE FALSE (não agir):
+✗ "Quero cancelar algumas linhas" → false (recusa parcial)
+✗ "Não quero renovar os serviços X e Y, mas e o Z?" → false (parcial)
+✗ "Vou pensar" → false (indecisão)
+✗ "Deixa comigo" → false (indecisão)
+✗ "Ok blz" → false (neutra)
 
-❌ NUNCA RETORNE (100% manuais):
-- lead, proposta_enviada, contrato_enviado, aguardando_contrato, aguardando_aceite, fechado
+⚠️ EXEMPLOS DE TRUE (agir):
+✓ "Não quero renovar NADA" → perdido, true (total)
+✓ "Cancela tudo" → perdido, true (total)
+✓ "Ok, manda" → proposta, true (aprovação)
+✓ "Qual é o preço?" → contato, true (pergunta)
 
-JSON PURO - ETAPAS EM MINÚSCULA:
+JSON - ETAPAS EM MINÚSCULA:
 {"sentimento":"positivo","confianca":95,"motivo":"Cliente aprovou","etapa":"proposta","deveAgir":true,"sugestao":"Enviar proposta"}`;
 
     const response = await client.chat.completions.create({
