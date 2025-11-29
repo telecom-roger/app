@@ -118,7 +118,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user as any;
       const whereCondition = user.role === 'admin' ? undefined : or(
         eq(clients.createdBy, user.id),
-        sql`${clients.createdBy} IS NULL`
+        sql`${clients.id} IN (SELECT ${clientSharing.clientId} FROM ${clientSharing} WHERE ${clientSharing.sharedWithUserId} = ${user.id})`
       );
       
       const tiposResult = await db
@@ -144,7 +144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user as any;
       const whereCondition = user.role === 'admin' ? undefined : or(
         eq(clients.createdBy, user.id),
-        sql`${clients.createdBy} IS NULL`
+        sql`${clients.id} IN (SELECT ${clientSharing.clientId} FROM ${clientSharing} WHERE ${clientSharing.sharedWithUserId} = ${user.id})`
       );
       
       const carteirasResult = await db
@@ -170,7 +170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user as any;
       const whereCondition = user.role === 'admin' ? undefined : or(
         eq(clients.createdBy, user.id),
-        sql`${clients.createdBy} IS NULL`
+        sql`${clients.id} IN (SELECT ${clientSharing.clientId} FROM ${clientSharing} WHERE ${clientSharing.sharedWithUserId} = ${user.id})`
       );
       
       const cidadesResult = await db
@@ -196,7 +196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user as any;
       const whereCondition = user.role === 'admin' ? undefined : or(
         eq(clients.createdBy, user.id),
-        sql`${clients.createdBy} IS NULL`
+        sql`${clients.id} IN (SELECT ${clientSharing.clientId} FROM ${clientSharing} WHERE ${clientSharing.sharedWithUserId} = ${user.id})`
       );
       
       const allClients = await db
