@@ -4,9 +4,22 @@ import { eq, and, lt, isNull, gte, desc, sql } from "drizzle-orm";
 import { automationTasks, followUps, clientScores, opportunities, clients as clientsTable, messages, interactions, conversations } from "@shared/schema";
 import { analyzeClientMessage } from "./aiService";
 
+// ======================== HELPER: Verificar se é dia de semana ========================
+function isWeekday(): boolean {
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0 = domingo, 1-5 = seg-sex, 6 = sábado
+  return dayOfWeek >= 1 && dayOfWeek <= 5;
+}
+
 // ======================== CRON JOB: Executar tarefas pendentes ========================
 export async function processAutomationTasks() {
   try {
+    // ⏸️ Não executa em fins de semana
+    if (!isWeekday()) {
+      console.log(`⏸️ [AUTOMATION] Pausado no fim de semana (${new Date().toLocaleDateString("pt-BR", { weekday: "long" })})`);
+      return;
+    }
+    
     console.log(`\n🤖 [AUTOMATION] Processando tarefas agendadas...`);
     
     const now = new Date();
@@ -463,6 +476,12 @@ async function executeContratoEnviadoMessage(task: any) {
 // ======================== VERIFICAR PROPOSTAS ENVIADAS - Lógica de 2h timeout + 3 dias + horários comerciais ========================
 export async function checkPropostaEnviadaTimeouts() {
   try {
+    // ⏸️ Não executa em fins de semana
+    if (!isWeekday()) {
+      console.log(`⏸️ [CONTRACT CHECK] Pausado no fim de semana (${new Date().toLocaleDateString("pt-BR", { weekday: "long" })})`);
+      return;
+    }
+    
     console.log(`\n⏰ [CONTRACT CHECK] Verificando propostas enviadas com timeout de 2h...`);
     
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
