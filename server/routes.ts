@@ -3233,14 +3233,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== RE-IMPORT SINGULAR FIX (TESTE) ====================
-  app.post("/api/test/reimport-singular", async (req, res) => {
+  // ==================== RE-IMPORT SINGULAR COMPLETE ====================
+  app.post("/api/test/reimport-singular-complete", async (req, res) => {
     try {
+      console.log("🗑️ Limpando SINGULAR antigos...");
+      await db.execute(sql`DELETE FROM contacts WHERE client_id IN (SELECT id FROM clients WHERE parceiro = 'SINGULAR')`);
+      await db.execute(sql`DELETE FROM clients WHERE parceiro = 'SINGULAR'`);
+
       const csvPath = './attached_assets/SINGULAR_1764393349105.csv';
       const csvContent = fs.readFileSync(csvPath, 'utf-8');
       const lines = csvContent.split('\n').slice(1).filter(l => l.trim());
 
-      // Parse by CNPJ - group all numbers
+      // Parse by CNPJ
       const clientesByNpj: Record<string, { razaoSocial: string; celulares: string[]; estado: string; cidade: string; cep: string; endereco: string; quantidadeLinhas: number }> = {};
 
       for (const line of lines) {
@@ -3270,51 +3274,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           clientesByNpj[cnpj].celulares.push(celular);
         } catch (e) {
-          console.warn('Erro ao parsear linha:', e);
+          // skip
         }
       }
 
-      let clientesAdicionados = 0;
-      let contatosAdicionados = 0;
+      console.log(`📊 Importando ${Object.keys(clientesByNpj).length} clientes...`);
+      let clientCount = 0;
+      let contactCount = 0;
 
-      // Insert via raw SQL for speed
+      // Batch insert in groups
       for (const [cnpj, data] of Object.entries(clientesByNpj)) {
         try {
-          const clientId = `${cnpj}-${Math.random().toString(36).substr(2, 9)}`;
-          const firstCelular = data.celulares[0];
-          const quantidadeLinhas = data.quantidadeLinhas;
-          const customFields = JSON.stringify({ origem: "SINGULAR", quantidadeLinhas });
+          const clientId = `${cnpj.substring(0, 8)}-${Math.random().toString(36).substr(2, 9)}`;
+          const nome = data.razaoSocial.replace(/'/g, "''");
+          const customJson = JSON.stringify({ origem: "SINGULAR", quantidadeLinhas: data.quantidadeLinhas }).replace(/'/g, "''");
 
-          const insertClientQuery = `
+          // Insert client
+          await db.execute(sql.raw(`
             INSERT INTO clients (id, nome, razao_social, cpf_cnpj, uf, cidade, cep, endereco, celular, status, created_by, parceiro, campos_custom)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'lead', $10, 'SINGULAR', $11::jsonb)
-          `;
-          
-          await db.execute(sql.raw(insertClientQuery));
-          clientesAdicionados++;
+            VALUES ('${clientId}', '${nome}', '${nome}', '${cnpj}', '${data.estado}', '${data.cidade}', '${data.cep}', '${data.endereco}', '${data.celulares[0]}', 'lead', '187f6e5e-e5b9-4232-9dac-42296aa84414', 'SINGULAR', '${customJson}'::jsonb)
+          `));
+          clientCount++;
 
+          // Insert contacts
           for (let i = 0; i < data.celulares.length; i++) {
-            const insertContactQuery = `
+            await db.execute(sql.raw(`
               INSERT INTO contacts (id, client_id, tipo, valor, preferencial, verified)
-              VALUES (gen_random_uuid(), $1, 'telefone', $2, $3, false)
-            `;
-            await db.execute(sql.raw(insertContactQuery));
-            contatosAdicionados++;
+              VALUES (gen_random_uuid(), '${clientId}', 'telefone', '${data.celulares[i]}', ${i === 0 ? 'true' : 'false'}, false)
+            `));
+            contactCount++;
+          }
+
+          if (clientCount % 500 === 0) {
+            console.log(`  ✅ ${clientCount} clientes importados...`);
           }
         } catch (err: any) {
-          console.error(`Erro ao processar ${cnpj}:`, err.message);
+          console.error(`❌ Erro ao processar ${cnpj}:`, err.message);
         }
       }
 
-      console.log(`✅ Reimportação: ${clientesAdicionados} clientes, ${contatosAdicionados} contatos`);
+      console.log(`✅ COMPLETO: ${clientCount} clientes, ${contactCount} contatos`);
       res.json({
         success: true,
-        clientesAdicionados,
-        contatosAdicionados,
+        clientesAdicionados: clientCount,
+        contatosAdicionados: contactCount,
         totalUnicos: Object.keys(clientesByNpj).length,
       });
     } catch (error: any) {
-      console.error("❌ Reimport error:", error);
+      console.error("❌ Error:", error);
       res.status(500).json({ error: String(error.message || error) });
     }
   });
