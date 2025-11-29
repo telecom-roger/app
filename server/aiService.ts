@@ -89,13 +89,13 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
     };
   }
   
-  // 🤷 NEUTRO → NÃO MOVE
+  // 🤷 NEUTRO → CONTATO (por padrão, qualquer mensagem inicial do cliente vai para CONTATO)
   return {
     sentimento: "neutro",
     confianca: 50,
-    motivo: "Mensagem neutra - sem gatilho de ação",
-    etapa: "automatico",
-    sugestao: "Continuar conversando",
+    motivo: "Mensagem inicial - cliente em contato",
+    etapa: "contato",
+    sugestao: "Engajar com cliente",
   };
 }
 
