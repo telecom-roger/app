@@ -4,7 +4,7 @@ import { z } from "zod";
 import { eq, and, or, ilike, desc, sql, lte, inArray, isNull, gte, between } from "drizzle-orm";
 import cron from "node-cron";
 import * as fs from "fs";
-import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, insertClientSharingSchema, whatsappSessions, clients, interactions, conversations, messages, campaigns as campaignsTable, templates as templatesTable, tags, clientSharing, notifications, users, campaignSendings, campaignGroups, opportunities, automationTasks } from "@shared/schema";
+import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, insertClientSharingSchema, whatsappSessions, clients, contacts, interactions, conversations, messages, campaigns as campaignsTable, templates as templatesTable, tags, clientSharing, notifications, users, campaignSendings, campaignGroups, opportunities, automationTasks } from "@shared/schema";
 import * as storage from "./storage";
 import * as whatsappService from "./whatsappService";
 import { setupAuth, isAuthenticated } from "./localAuth";
@@ -3235,20 +3235,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== RE-IMPORT SINGULAR COMPLETE ====================
   app.post("/api/test/reimport-singular-complete", async (req, res) => {
-    try {
-      console.log("🗑️ Limpando SINGULAR antigos...");
-      await db.execute(sql`DELETE FROM contacts WHERE client_id IN (SELECT id FROM clients WHERE parceiro = 'SINGULAR')`);
-      await db.execute(sql`DELETE FROM clients WHERE parceiro = 'SINGULAR'`);
+    // Responder imediatamente
+    res.json({ status: "importing", message: "Importação iniciada em background..." });
 
-      const csvPath = './attached_assets/SINGULAR_1764393349105.csv';
-      const csvContent = fs.readFileSync(csvPath, 'utf-8');
-      const lines = csvContent.split('\n').slice(1).filter(l => l.trim());
+    // Executar em background - NÃO await
+    (async () => {
+      try {
+        console.log("🗑️ Limpando SINGULAR antigos...");
+        await db.execute(sql`DELETE FROM contacts WHERE client_id IN (SELECT id FROM clients WHERE parceiro = 'SINGULAR')`);
+        await db.execute(sql`DELETE FROM clients WHERE parceiro = 'SINGULAR'`);
 
-      // Parse by CNPJ
-      const clientesByNpj: Record<string, { razaoSocial: string; celulares: string[]; estado: string; cidade: string; cep: string; endereco: string; quantidadeLinhas: number }> = {};
+        const csvPath = './attached_assets/SINGULAR_1764393349105.csv';
+        const csvContent = fs.readFileSync(csvPath, 'utf-8');
+        const lines = csvContent.split('\n').slice(1).filter(l => l.trim());
 
-      for (const line of lines) {
-        try {
+        const clientesByNpj: Record<string, any> = {};
+        for (const line of lines) {
           const parts = line.split(',');
           const cnpj = parts[0]?.trim();
           const razaoSocial = parts[1]?.trim();
@@ -3273,57 +3275,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
             };
           }
           clientesByNpj[cnpj].celulares.push(celular);
-        } catch (e) {
-          // skip
         }
-      }
 
-      console.log(`📊 Importando ${Object.keys(clientesByNpj).length} clientes...`);
-      let clientCount = 0;
-      let contactCount = 0;
+        console.log(`📊 Importando ${Object.keys(clientesByNpj).length} clientes...`);
+        let clientCount = 0;
+        let contactCount = 0;
 
-      // Batch insert in groups
-      for (const [cnpj, data] of Object.entries(clientesByNpj)) {
-        try {
-          const clientId = `${cnpj.substring(0, 8)}-${Math.random().toString(36).substr(2, 9)}`;
-          const nome = data.razaoSocial.replace(/'/g, "''");
-          const customJson = JSON.stringify({ origem: "SINGULAR", quantidadeLinhas: data.quantidadeLinhas }).replace(/'/g, "''");
+        // Processar em lotes via Drizzle
+        for (const [cnpj, data] of Object.entries(clientesByNpj)) {
+          try {
+            const clientId = crypto.randomUUID();
+            const customJson = { origem: "SINGULAR", quantidadeLinhas: data.quantidadeLinhas };
 
-          // Insert client
-          await db.execute(sql.raw(`
-            INSERT INTO clients (id, nome, razao_social, cpf_cnpj, uf, cidade, cep, endereco, celular, status, created_by, parceiro, campos_custom)
-            VALUES ('${clientId}', '${nome}', '${nome}', '${cnpj}', '${data.estado}', '${data.cidade}', '${data.cep}', '${data.endereco}', '${data.celulares[0]}', 'lead', '187f6e5e-e5b9-4232-9dac-42296aa84414', 'SINGULAR', '${customJson}'::jsonb)
-          `));
-          clientCount++;
+            // Insert via Drizzle para escapar corretamente
+            await db.insert(clients).values({
+              id: clientId,
+              nome: data.razaoSocial,
+              razaoSocial: data.razaoSocial,
+              cpfCnpj: cnpj,
+              uf: data.estado,
+              cidade: data.cidade,
+              cep: data.cep,
+              endereco: data.endereco,
+              celular: data.celulares[0],
+              status: 'lead' as any,
+              createdBy: '187f6e5e-e5b9-4232-9dac-42296aa84414',
+              PARCEIRO: 'SINGULAR',
+              camposCustom: customJson as any,
+            });
+            clientCount++;
 
-          // Insert contacts
-          for (let i = 0; i < data.celulares.length; i++) {
-            await db.execute(sql.raw(`
-              INSERT INTO contacts (id, client_id, tipo, valor, preferencial, verified)
-              VALUES (gen_random_uuid(), '${clientId}', 'telefone', '${data.celulares[i]}', ${i === 0 ? 'true' : 'false'}, false)
-            `));
-            contactCount++;
+            // Insert contacts
+            for (let i = 0; i < data.celulares.length; i++) {
+              await db.insert(contacts).values({
+                clientId,
+                tipo: 'telefone',
+                valor: data.celulares[i],
+                preferencial: i === 0,
+                verified: false,
+              });
+              contactCount++;
+            }
+
+            if (clientCount % 300 === 0) {
+              console.log(`  ✅ ${clientCount}/${Object.keys(clientesByNpj).length}...`);
+            }
+          } catch (err: any) {
+            console.error(`❌ Erro ${cnpj}:`, err.message?.slice(0, 80));
           }
-
-          if (clientCount % 500 === 0) {
-            console.log(`  ✅ ${clientCount} clientes importados...`);
-          }
-        } catch (err: any) {
-          console.error(`❌ Erro ao processar ${cnpj}:`, err.message);
         }
-      }
 
-      console.log(`✅ COMPLETO: ${clientCount} clientes, ${contactCount} contatos`);
-      res.json({
-        success: true,
-        clientesAdicionados: clientCount,
-        contatosAdicionados: contactCount,
-        totalUnicos: Object.keys(clientesByNpj).length,
-      });
-    } catch (error: any) {
-      console.error("❌ Error:", error);
-      res.status(500).json({ error: String(error.message || error) });
-    }
+        console.log(`✅ COMPLETO: ${clientCount} clientes, ${contactCount} contatos importados!`);
+      } catch (error: any) {
+        console.error("❌ Erro na importação:", error.message);
+      }
+    })();
   });
 
   const httpServer = createServer(app);
