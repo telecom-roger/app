@@ -1,6 +1,6 @@
 import * as storage from "./storage";
 import { db } from "./db";
-import { eq, and, lt, asc } from "drizzle-orm";
+import { eq, and, lt, asc, desc, sql } from "drizzle-orm";
 import { automationTasks, followUps, clientScores, opportunities, messages, conversations } from "@shared/schema";
 import { analyzeClientMessage } from "./aiService";
 
@@ -347,32 +347,77 @@ export async function simulateClientResponse(clientId: string, userId: string, m
 
     console.log(`📊 IA retornou: ${analysis.sentimento} → ${analysis.etapa}`);
 
-    // 4. CRIAR NOVA oportunidade na etapa correta (teste manual)
+    // 4. MOVER OPP EXISTENTE OU CRIAR NOVA (Opção B - Move existente ao invés de criar)
     if (analysis.etapa !== "automatico" && client) {
-      console.log(`🔍 DEBUG: Criando opportunity com userId=${userId}, etapa=${analysis.etapa}`);
-      const newOpp = await db.insert(opportunities).values({
-        clientId,
-        titulo: `${client.nome} - ${analysis.motivo}`,
-        etapa: analysis.etapa,
-        valorEstimado: "5000",
-        responsavelId: userId,
-        ordem: 0,
-      }).returning().then(r => r[0]);
+      // 4a. Buscar se existe opp "aberta" (não PERDIDA, não FECHADA)
+      const etapasFinais = ["PERDIDO", "FECHADO"];
+      let existingOpp = await db.query.opportunities.findFirst({
+        where: (o: any) => 
+          and(
+            eq(o.clientId, clientId),
+            sql`${o.etapa} NOT IN (${sql.raw("'" + etapasFinais.join("','") + "'")})`
+          ),
+        orderBy: (o: any) => desc(o.createdAt),
+      });
       
-      console.log(`✅ Oportunidade criada em "${analysis.etapa}": ${newOpp.id} (responsavelId: ${newOpp.responsavelId})`);
+      let resultOpp: any;
+      let actionType: "criar" | "mover" = "criar";
       
-      // 🔄 RECALCULATE CLIENT STATUS - IA cria opp então status muda!
+      if (existingOpp && existingOpp.etapa !== analysis.etapa) {
+        // 4b. MOVER opp existente para nova etapa
+        console.log(`🔄 MOVENDO opp existente ${existingOpp.id} de ${existingOpp.etapa} → ${analysis.etapa}`);
+        const etapaAntes = existingOpp.etapa;
+        
+        resultOpp = await db
+          .update(opportunities)
+          .set({ 
+            etapa: analysis.etapa,
+            titulo: `${client.nome} - ${analysis.motivo}`,
+            updatedAt: new Date()
+          })
+          .where(eq(opportunities.id, existingOpp.id))
+          .returning()
+          .then(r => r[0]);
+        
+        console.log(`✅ Oportunidade MOVIDA: ${etapaAntes} → ${analysis.etapa}`);
+        actionType = "mover";
+      } else if (!existingOpp) {
+        // 4c. CRIAR nova opp se não houver aberta
+        console.log(`🔍 DEBUG: Criando nova opportunity com userId=${userId}, etapa=${analysis.etapa}`);
+        resultOpp = await db.insert(opportunities).values({
+          clientId,
+          titulo: `${client.nome} - ${analysis.motivo}`,
+          etapa: analysis.etapa,
+          valorEstimado: "5000",
+          responsavelId: userId,
+          ordem: 0,
+        }).returning().then(r => r[0]);
+        
+        console.log(`✅ Nova oportunidade criada: ${resultOpp.id}`);
+        actionType = "criar";
+      } else {
+        // Opp já está na etapa correta
+        resultOpp = existingOpp;
+        console.log(`ℹ️ Oportunidade já está em ${analysis.etapa}, sem mudanças`);
+      }
+      
+      // 🔄 RECALCULATE CLIENT STATUS
       const newStatus = await storage.recalculateClientStatus(clientId);
       await storage.updateClient(clientId, { status: newStatus });
       console.log(`🔄 Status do cliente atualizado: ${newStatus.toUpperCase()}`);
       
+      const actionMessage = actionType === "mover" 
+        ? `✅ Oportunidade MOVIDA para "${analysis.etapa}"`
+        : `✅ Nova oportunidade criada em "${analysis.etapa}"`;
+      
       return { 
         success: true, 
         clientId, 
-        message: `✅ Oportunidade criada em "${analysis.etapa}"\n📊 Sentimento: ${analysis.sentimento}\n💡 ${analysis.sugestao}\n🔄 Status: ${newStatus.toUpperCase()}`,
+        message: `${actionMessage}\n📊 Sentimento: ${analysis.sentimento}\n💡 ${analysis.sugestao}\n🔄 Status: ${newStatus.toUpperCase()}`,
         analysis,
-        opportunityId: newOpp.id,
+        opportunityId: resultOpp.id,
         statusAtualizado: newStatus,
+        action: actionType,
       };
     }
 

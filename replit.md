@@ -178,6 +178,21 @@ The application features a professional design system utilizing a deep dark blue
 5. **Usuário deleta oportunidade** → Status atualizado ✅
 6. **Teste manual (botão)** → Mostra resultado imediato ✅
 
+### 🔄 OPÇÃO B - IA MOVE OPP EXISTENTE (Nov 29, turno 11)
+**Quando a IA processa múltiplas mensagens do mesmo cliente:**
+
+1. **1ª mensagem** ("oi tudo bem?") → Cria OPP em CONTATO
+2. **2ª mensagem** ("ok me envia proposta") → **MOVE** OPP de CONTATO → PROPOSTA (não cria nova!)
+3. **Kanban fica limpo** - Uma única opp que evolui
+
+**Lógica:**
+- IA busca se existe opp "aberta" (não PERDIDA, não FECHADO)
+- Se existe → **MOVE** para nova etapa
+- Se não existe → Cria normalmente
+- Status recalcula automaticamente em qualquer caso
+
+**Benefício:** Kanban sem "ruído" de múltiplas opps do mesmo cliente com diferentes etapas
+
 ---
 
-**Status:** ✅ FASE 7 COMPLETA - Automação de Status do Cliente 100% implementada e testada!
+**Status:** ✅ FASE 7 COMPLETA + OPÇÃO B - IA Move Opps Existentes!
