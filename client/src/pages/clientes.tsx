@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -318,6 +318,7 @@ export default function Clientes() {
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
   const [selectedClientIds, setSelectedClientIds] = useState<Set<string>>(new Set());
   const [bulkShareDialogOpen, setBulkShareDialogOpen] = useState(false);
+  const tableRef = useRef<HTMLDivElement>(null);
 
   // Check if any filter is active
   const hasActiveFilter = searchTerm || statusFilter !== "todos" || selectedTag || tipoFiltro !== "all" || carteiraFiltro !== "all";
@@ -439,13 +440,9 @@ export default function Clientes() {
     }
   }, [notifications]);
 
-  // Scroll to top when page changes
+  // Scroll to table when page changes
   useEffect(() => {
-    setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-    }, 0);
+    tableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [page]);
 
   const statusColors: Record<string, string> = {
@@ -780,7 +777,7 @@ export default function Clientes() {
           )}
 
           {/* Table */}
-          <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50 overflow-hidden">
+          <Card ref={tableRef} className="border-0 shadow-sm bg-white dark:bg-slate-800/50 overflow-hidden">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
