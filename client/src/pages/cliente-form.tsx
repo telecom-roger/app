@@ -44,6 +44,7 @@ export default function ClienteForm() {
       cpfCnpj: "",
       status: "lead",
       celular: "",
+      telefone_2: "",
       email: "",
       contato: "",
       endereco: "",
@@ -72,6 +73,7 @@ export default function ClienteForm() {
         cpfCnpj: cliente.cpfCnpj || "",
         status: cliente.status || "lead",
         celular: cliente.celular || "",
+        telefone_2: cliente.telefone_2 || "",
         email: cliente.email || "",
         contato: cliente.contato || "",
         endereco: cliente.endereco || "",
@@ -295,6 +297,19 @@ export default function ClienteForm() {
                       <FormLabel>Celular</FormLabel>
                       <FormControl>
                         <Input placeholder="(11) 99999-9999" {...field} data-testid="input-celular" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="telefone_2"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Telefone 2</FormLabel>
+                      <FormControl>
+                        <Input placeholder="(11) 99999-9999" {...field} data-testid="input-telefone-2" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

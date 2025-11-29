@@ -313,6 +313,12 @@ export default function ClienteProfile() {
                       label="Celular"
                     />
                     <EditableField
+                      value={cliente?.telefone_2}
+                      field="telefone_2"
+                      clientId={id || ""}
+                      label="Telefone 2"
+                    />
+                    <EditableField
                       value={cliente?.contato}
                       field="contato"
                       clientId={id || ""}
