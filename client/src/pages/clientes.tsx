@@ -308,6 +308,82 @@ function BulkShareDialog({ selectedClientIds, onOpenChange, onSuccess, open }: B
   );
 }
 
+interface BulkUnshareDialogProps {
+  selectedClientIds: string[];
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+  open: boolean;
+}
+
+function BulkUnshareDialog({ selectedClientIds, onOpenChange, onSuccess, open }: BulkUnshareDialogProps) {
+  const { toast } = useToast();
+  const [selectedUserId, setSelectedUserId] = useState("");
+  
+  const { data: users = [] } = useQuery<User[]>({
+    queryKey: ["/api/users-list"],
+    enabled: open,
+  });
+
+  const bulkUnshareMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      await apiRequest("DELETE", "/api/clients/unshare-bulk", { clientIds: selectedClientIds, sharedWithUserId: userId });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Sucesso",
+        description: `${selectedClientIds.length} compartilhamento(s) removido(s)`,
+      });
+      onOpenChange(false);
+      setSelectedUserId("");
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      onSuccess();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Falha ao remover compartilhamento",
+        variant: "destructive",
+      });
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Remover compartilhamento de {selectedClientIds.length} cliente(s)</DialogTitle>
+          <DialogDescription>Selecione de qual usuário deseja remover</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+            <SelectTrigger data-testid="select-bulk-unshare-user">
+              <SelectValue placeholder="Escolha um usuário..." />
+            </SelectTrigger>
+            <SelectContent>
+              {users.map(user => (
+                <SelectItem key={user.id} value={user.id}>
+                  {user.email}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex gap-3 justify-end">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <Button 
+              onClick={() => selectedUserId && bulkUnshareMutation.mutate(selectedUserId)}
+              disabled={!selectedUserId || bulkUnshareMutation.isPending}
+              data-testid="button-confirm-bulk-unshare"
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {bulkUnshareMutation.isPending ? "Removendo..." : "Remover"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Clientes() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -323,6 +399,7 @@ export default function Clientes() {
   const [selectedClientIds, setSelectedClientIds] = useState<Set<string>>(new Set());
   const [allSelectedClientIds, setAllSelectedClientIds] = useState<Set<string>>(new Set());
   const [bulkShareDialogOpen, setBulkShareDialogOpen] = useState(false);
+  const [bulkUnshareDialogOpen, setBulkUnshareDialogOpen] = useState(false);
   const paginationRef = useRef<HTMLDivElement>(null);
 
   // Check if any filter is active
@@ -790,6 +867,16 @@ export default function Clientes() {
                     <Share2 className="h-4 w-4 mr-2" />
                     Compartilhar
                   </Button>
+                  <Button 
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setBulkUnshareDialogOpen(true)}
+                    data-testid="button-bulk-unshare"
+                    className="text-red-600 dark:text-red-400"
+                  >
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Remover
+                  </Button>
                 </div>
               </div>
             </Card>
@@ -1000,6 +1087,12 @@ export default function Clientes() {
       onOpenChange={setBulkShareDialogOpen}
       onSuccess={onBulkShareSuccess}
       open={bulkShareDialogOpen}
+    />
+    <BulkUnshareDialog 
+      selectedClientIds={Array.from(new Set([...Array.from(allSelectedClientIds), ...Array.from(selectedClientIds)]))} 
+      onOpenChange={setBulkUnshareDialogOpen}
+      onSuccess={onBulkShareSuccess}
+      open={bulkUnshareDialogOpen}
     />
     </div>
   );

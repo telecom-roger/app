@@ -2493,6 +2493,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { clientIds, sharedWithUserId } = req.body;
       const user = req.user as any;
 
+      console.log(`📤 SHARE-BULK: Recebidos ${clientIds?.length} IDs para compartilhar`);
+
       if (!clientIds || !Array.isArray(clientIds) || clientIds.length === 0) {
         return res.status(400).json({ error: "Selecione pelo menos um cliente" });
       }
@@ -2503,12 +2505,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from(clients)
         .where(inArray(clients.id, clientIds));
 
+      console.log(`📤 SHARE-BULK: Encontrados ${clientsToShare.length} clientes no DB`);
+
       const allOwned = clientsToShare.every(c => c.createdBy === user.id);
       if (!allOwned) {
         return res.status(403).json({ error: "Você só pode compartilhar seus próprios clientes" });
       }
 
       const sharings = await storage.shareClientsWithUser(clientIds, sharedWithUserId, user.id);
+      console.log(`📤 SHARE-BULK: ${sharings.length} compartilhamentos criados`);
 
       // Create notifications for recipient
       const [recipient] = await db.select().from(users).where(eq(users.id, sharedWithUserId)).limit(1);
@@ -2531,6 +2536,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, count: sharings.length });
     } catch (error: any) {
       console.error("Error sharing clients:", error);
+      res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
+  // Unshare multiple clients with a user
+  app.delete("/api/clients/unshare-bulk", isAuthenticated, async (req, res) => {
+    try {
+      const { clientIds, sharedWithUserId } = req.body;
+      const user = req.user as any;
+
+      if (!clientIds || !Array.isArray(clientIds) || clientIds.length === 0) {
+        return res.status(400).json({ error: "Selecione pelo menos um cliente" });
+      }
+
+      // Verify ownership of all clients
+      const clientsToUnshare = await db
+        .select()
+        .from(clients)
+        .where(inArray(clients.id, clientIds));
+
+      const allOwned = clientsToUnshare.every(c => c.createdBy === user.id);
+      if (!allOwned) {
+        return res.status(403).json({ error: "Você só pode remover compartilhamento dos seus clientes" });
+      }
+
+      // Delete all sharings
+      for (const clientId of clientIds) {
+        await storage.unshareClientWithUser(clientId, sharedWithUserId);
+      }
+
+      res.json({ success: true, count: clientIds.length });
+    } catch (error: any) {
+      console.error("Error unsharing clients:", error);
       res.status(500).json({ error: error.message || "Internal server error" });
     }
   });
