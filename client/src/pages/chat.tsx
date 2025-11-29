@@ -337,7 +337,7 @@ export default function Chat() {
         const nome = client.nome?.toLowerCase() || "";
         const cnpj = client.cnpj?.toLowerCase() || "";
         const cel = (client.celular || "").toLowerCase();
-        const tel2 = ((client as any).telefone2 || "").toLowerCase();
+        const tel2 = ((client as any).telefone_2 || "").toLowerCase();
         
         return (
           nome.includes(term) ||
@@ -919,7 +919,7 @@ export default function Chat() {
                     >
                       <p className="text-sm font-medium truncate text-slate-900 dark:text-white">{client.nome}</p>
                       <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
-                        {client.celular}
+                        {client.celular || (client as any)?.cnpj || "Sem contato"}
                       </p>
                     </button>
                   ))
@@ -1012,7 +1012,7 @@ export default function Chat() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0 ml-10">
                           <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
-                            {conv.client?.celular || "Sem telefone"}
+                            {conv.client?.celular || (conv.client as any)?.cnpj || "Sem contato"}
                           </p>
                           {conv.ultimaMensagem && (
                             <p className="text-xs text-slate-600 dark:text-slate-400 truncate mt-1">
@@ -1098,7 +1098,7 @@ export default function Chat() {
                     </p>
                   </div>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
-                    {selectedConversation.client?.celular}
+                    {selectedConversation.client?.celular || (selectedConversation.client as any)?.cnpj || "Sem contato"}
                   </p>
                 </div>
               </div>
