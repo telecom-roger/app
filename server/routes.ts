@@ -419,10 +419,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== OPPORTUNITY ROUTES ====================
   app.get("/api/opportunities", isAuthenticated, async (req, res) => {
     try {
-      const user = req.user as any;
-      const { etapa } = req.query;
+      const { etapa, responsavel } = req.query;
       const opportunities = await storage.getOpportunities({
-        userId: user.id, // Filtrar por usuário autenticado
+        responsavel: responsavel as string, // Filtro opcional por responsável
         etapa: etapa as string,
       });
       res.json(opportunities);
