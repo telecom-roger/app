@@ -910,19 +910,33 @@ export default function Chat() {
                     Nenhum cliente encontrado
                   </p>
                 ) : (
-                  filteredClients.map((client: Client) => (
-                    <button
-                      key={client.id}
-                      onClick={() => handleSelectClient(client)}
-                      className="w-full text-left p-3 rounded-lg transition-colors hover:bg-slate-100 dark:hover:bg-slate-700 mb-2"
-                      data-testid={`button-search-client-${client.id}`}
-                    >
-                      <p className="text-sm font-medium truncate text-slate-900 dark:text-white">{client.nome}</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
-                        {client.celular || (client as any)?.cnpj || "Sem contato"}
-                      </p>
-                    </button>
-                  ))
+                  filteredClients.map((client: Client) => {
+                    const tel1 = client.celular;
+                    const tel2 = (client as any)?.telefone_2;
+                    const cnpj = (client as any)?.cnpj;
+                    const phones = [tel1, tel2].filter(Boolean).join(" / ");
+                    
+                    return (
+                      <button
+                        key={client.id}
+                        onClick={() => handleSelectClient(client)}
+                        className="w-full text-left p-3 rounded-lg transition-colors hover:bg-slate-100 dark:hover:bg-slate-700 mb-2"
+                        data-testid={`button-search-client-${client.id}`}
+                      >
+                        <p className="text-sm font-medium truncate text-slate-900 dark:text-white">{client.nome}</p>
+                        {phones && (
+                          <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
+                            {phones}
+                          </p>
+                        )}
+                        {cnpj && (
+                          <p className="text-xs text-slate-500 dark:text-slate-500 truncate">
+                            {cnpj}
+                          </p>
+                        )}
+                      </button>
+                    );
+                  })
                 )}
               </>
             ) : (
