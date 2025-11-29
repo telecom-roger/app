@@ -630,21 +630,27 @@ async function executeAguardandoAceiteReminder(task: any) {
     conversation = newConv;
   }
   
-  // Registrar mensagem no banco
+  // Registrar mensagem no banco (salvando como "user" para aparecer no chat como mensagem enviada)
   await db.insert(messages).values({
     conversationId: conversation.id,
-    sender: "bot",
+    sender: "user",  // ✅ Mostrar como mensagem enviada no chat
     tipo: "text",
     conteudo: mensagem,
     createdAt: new Date(),
   });
 
   // 📋 REGISTRAR NA TIMELINE DO CLIENTE
+  const titulos = {
+    1: "1º Lembrete de Assinatura",
+    2: "2º Lembrete de Assinatura",
+    3: "3º Lembrete de Assinatura (Última Chance)",
+  };
+  
   await db.insert(interactions).values({
     clientId: opportunity.clientId,
     tipo: "aguardando_aceite_reminder",
     origem: "automation",
-    titulo: `Lembrete de Assinatura (${lembreteNum}/3)`,
+    titulo: titulos[lembreteNum as 1 | 2 | 3] || "Lembrete de Assinatura",
     texto: mensagem,
     meta: { opportunityId: opportunity.id, lembreteNum },
     createdBy: task.userId,
