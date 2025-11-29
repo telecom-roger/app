@@ -687,7 +687,7 @@ function NovaOportunidadeDialog({
                             onChange={(e) => setSearchCliente(e.target.value)}
                             onFocus={() => setShowDropdown(true)}
                             data-testid="input-search-cliente"
-                            className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 h-10 text-base"
+                            className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 h-9 text-sm text-black dark:text-white"
                           />
                           {showDropdown && searchCliente.length > 0 && (
                             <div className="border border-slate-200 dark:border-slate-800 rounded-lg max-h-64 overflow-y-auto bg-white dark:bg-slate-900 z-50 shadow-lg">
