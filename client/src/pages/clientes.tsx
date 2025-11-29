@@ -528,17 +528,19 @@ export default function Clientes() {
   }, [page]);
 
   const statusColors: Record<string, string> = {
-    lead: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
     ativo: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
-    proposta: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
-    fechado: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-    perdido: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    contato_realizado: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+    em_negociacao: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+    proposta_enviada: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+    em_aprovacao: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+    fechado_ganho: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+    fechado_perdido: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
     inativo: "bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200",
+    remarketing: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
   };
 
   const totalClientes = data?.total || 0;
   const clientesAtivos = data?.clientes?.filter(c => c.status === 'ativo').length || 0;
-  const leads = data?.clientes?.filter(c => c.status === 'lead').length || 0;
 
   // Use tipos from DB, fallback to loaded clients
 
@@ -624,17 +626,6 @@ export default function Clientes() {
               </div>
             </Card>
 
-            <Card className="p-6 border-0 shadow-sm bg-white dark:bg-slate-800/50">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Leads</p>
-                  <p className="text-3xl font-bold text-amber-600 dark:text-amber-400 mt-2">{leads}</p>
-                </div>
-                <div className="p-3 bg-amber-500/10 rounded-lg">
-                  <Zap className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-                </div>
-              </div>
-            </Card>
           </div>
 
           {/* Filters */}
@@ -657,12 +648,15 @@ export default function Clientes() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos os status</SelectItem>
-                    <SelectItem value="lead">Lead</SelectItem>
                     <SelectItem value="ativo">Ativo</SelectItem>
-                    <SelectItem value="proposta">Proposta</SelectItem>
-                    <SelectItem value="fechado">Fechado</SelectItem>
-                    <SelectItem value="perdido">Perdido</SelectItem>
+                    <SelectItem value="contato_realizado">Contato realizado</SelectItem>
+                    <SelectItem value="em_negociacao">Em negociação</SelectItem>
+                    <SelectItem value="proposta_enviada">Proposta enviada</SelectItem>
+                    <SelectItem value="em_aprovacao">Em aprovação</SelectItem>
+                    <SelectItem value="fechado_ganho">Fechado (Ganho)</SelectItem>
+                    <SelectItem value="fechado_perdido">Fechado (Perdido)</SelectItem>
                     <SelectItem value="inativo">Inativo</SelectItem>
+                    <SelectItem value="remarketing">Remarketing</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button variant="outline" data-testid="button-filtros-avancados" className="text-slate-700 dark:text-slate-200">

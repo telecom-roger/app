@@ -208,12 +208,15 @@ export default function ClienteForm() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="lead">Lead</SelectItem>
                               <SelectItem value="ativo">Ativo</SelectItem>
-                              <SelectItem value="proposta">Proposta</SelectItem>
-                              <SelectItem value="fechado">Fechado</SelectItem>
-                              <SelectItem value="perdido">Perdido</SelectItem>
+                              <SelectItem value="contato_realizado">Contato realizado</SelectItem>
+                              <SelectItem value="em_negociacao">Em negociação</SelectItem>
+                              <SelectItem value="proposta_enviada">Proposta enviada</SelectItem>
+                              <SelectItem value="em_aprovacao">Em aprovação</SelectItem>
+                              <SelectItem value="fechado_ganho">Fechado (Ganho)</SelectItem>
+                              <SelectItem value="fechado_perdido">Fechado (Perdido)</SelectItem>
                               <SelectItem value="inativo">Inativo</SelectItem>
+                              <SelectItem value="remarketing">Remarketing</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
