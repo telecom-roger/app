@@ -440,9 +440,8 @@ export default function Clientes() {
     }
   }, [notifications]);
 
-  // Scroll to top of table when page changes and CLEAR selection for this page
+  // Scroll to top of table when page changes
   useEffect(() => {
-    setSelectedClientIds(new Set());
     const tableElement = document.querySelector('[data-testid="table-container"]');
     tableElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [page]);
@@ -752,9 +751,14 @@ export default function Clientes() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Check className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                    {selectedClientIds.size} cliente(s) selecionado(s)
-                  </span>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                      Total: {selectedClientIds.size} cliente(s) selecionado(s)
+                    </span>
+                    <span className="text-xs text-slate-600 dark:text-slate-400">
+                      Você pode selecionar clientes de múltiplas páginas
+                    </span>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <Button 
