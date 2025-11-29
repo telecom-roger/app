@@ -610,6 +610,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userAgent: req.get("user-agent"),
       });
 
+      // 🚀 TRIGGER: Se moveu para AGUARDANDO ACEITE, dispara automação de lembretes
+      if (opportunity && etapaNormalizada === "AGUARDANDO ACEITE" && oldOpportunity.etapa !== "AGUARDANDO ACEITE") {
+        console.log(`🚀 Disparando automação de Aguardando Aceite para ${opportunity.id}`);
+        try {
+          await db.insert(automationTasks).values({
+            userId: (req.user as any).id,
+            clientId: opportunity.clientId,
+            tipo: "aguardando_aceite_reminder",
+            proximaExecucao: new Date(),
+            dados: { 
+              opportunityId: opportunity.id, 
+              lembrete: 1,
+              contractSentAt: new Date(),
+            },
+          });
+        } catch (error) {
+          console.error(`❌ Erro ao disparar automação de Aguardando Aceite:`, error);
+        }
+      }
+
       // 🚀 TRIGGER: Se moveu para CONTRATO ENVIADO, dispara automação
       if (opportunity && etapa === "CONTRATO ENVIADO" && oldOpportunity.etapa !== "CONTRATO ENVIADO") {
         console.log(`🚀 Disparando automação de Contrato Enviado para ${opportunity.id}`);
@@ -3246,6 +3266,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("❌ Test contrato enviado error:", error);
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
+  // ==================== TEST AGUARDANDO ACEITE - Lembretes de Assinatura ====================
+  app.post("/api/test/aguardando-aceite", async (req, res) => {
+    try {
+      const { clientId, userId } = req.body;
+      
+      if (!clientId || !userId) {
+        return res.status(400).json({ error: "clientId e userId são obrigatórios" });
+      }
+
+      // 1. Fetch client
+      const client = await db.query.clients.findFirst({
+        where: (c: any) => eq(c.id, clientId),
+      });
+
+      if (!client) {
+        return res.status(404).json({ error: "Cliente não encontrado" });
+      }
+
+      // 2. Buscar ÚLTIMA opportunity ou criar uma teste
+      let opp = await db.query.opportunities.findFirst({
+        where: (o: any) => eq(o.clientId, clientId),
+        orderBy: (o: any) => desc(o.createdAt),
+      });
+
+      // Se não houver, criar uma para teste
+      if (!opp) {
+        const [newOpp] = await db
+          .insert(opportunities)
+          .values({
+            clientId,
+            titulo: `TESTE: Aguardando Aceite`,
+            etapa: "PROPOSTA ENVIADA",
+            responsavelId: userId,
+          })
+          .returning();
+        opp = newOpp;
+      }
+
+      // 3. Mover para AGUARDANDO ACEITE (dispara automação de lembretes)
+      await db
+        .update(opportunities)
+        .set({ etapa: "AGUARDANDO ACEITE", updatedAt: new Date() })
+        .where(eq(opportunities.id, opp.id));
+
+      // 4. Registrar na timeline
+      const mensagem = `Seu contrato já está pronto para assinatura digital.\nPor favor, clique no link que você recebeu e finalize o aceite.\nSe tiver alguma dúvida, estou à disposição!`;
+      
+      await db.insert(interactions).values({
+        clientId,
+        tipo: "aguardando_aceite_reminder",
+        origem: "automation",
+        titulo: "Lembrete de Assinatura (1/3)",
+        texto: mensagem,
+        meta: { opportunityId: opp.id, lembreteNum: 1 },
+        createdBy: userId,
+      });
+
+      res.json({
+        success: true,
+        message: "✅ Oportunidade movida para AGUARDANDO ACEITE - Lembretes agendados!",
+        cliente: client.nome,
+        oportunidade_etapa: "AGUARDANDO ACEITE",
+        observacao: "Veja o Kanban - sistema agendará lembretes em 08:00 nos próximos dias",
+      });
+    } catch (error) {
+      console.error("❌ Test aguardando aceite error:", error);
       res.status(500).json({ error: String(error) });
     }
   });

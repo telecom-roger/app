@@ -76,6 +76,9 @@ async function executeAutomationTask(task: any) {
     case "contrato_enviado_message":
       await executeContratoEnviadoMessage(task);
       break;
+    case "aguardando_aceite_reminder":
+      await executeAguardandoAceiteReminder(task);
+      break;
   }
 
   // Marcar como executado
@@ -563,6 +566,146 @@ export async function checkPropostaEnviadaTimeouts() {
   }
 }
 
+// ======================== HELPER: Calcular próximo horário para AGUARDANDO ACEITE ========================
+function getNextAguardandoAceiteTime(lastTaskData: any): Date {
+  const now = new Date();
+  const nextDate = new Date(now);
+  
+  // Adicionar dias baseado em qual lembrete é (dados.lembrete: 1, 2, 3)
+  const lembreteNum = lastTaskData?.lembrete || 1;
+  
+  if (lembreteNum === 1) {
+    // Primeiro lembrete: verificar quando foi enviado
+    const contractSentTime = new Date(lastTaskData?.contractSentAt || now);
+    const hour = contractSentTime.getHours();
+    
+    if (hour >= 8 && hour < 12) {
+      // Enviado de manhã: mesmo dia às 16:30
+      nextDate.setDate(now.getDate());
+      nextDate.setHours(16, 30, 0, 0);
+      if (nextDate <= now) {
+        nextDate.setDate(nextDate.getDate() + 1);
+        nextDate.setHours(8, 0, 0, 0);
+      }
+    } else {
+      // Enviado à tarde/noite: próximo dia útil às 08:00
+      nextDate.setDate(now.getDate() + 1);
+      nextDate.setHours(8, 0, 0, 0);
+      // Pular para próximo dia útil se for sábado
+      if (nextDate.getDay() === 6) {
+        nextDate.setDate(nextDate.getDate() + 2);
+      } else if (nextDate.getDay() === 0) {
+        nextDate.setDate(nextDate.getDate() + 1);
+      }
+    }
+  } else if (lembreteNum === 2) {
+    // Segundo lembrete: 24h depois, às 08:00
+    nextDate.setDate(now.getDate() + 1);
+    nextDate.setHours(8, 0, 0, 0);
+    if (nextDate.getDay() === 6) {
+      nextDate.setDate(nextDate.getDate() + 2);
+    } else if (nextDate.getDay() === 0) {
+      nextDate.setDate(nextDate.getDate() + 1);
+    }
+  } else if (lembreteNum === 3) {
+    // Terceiro lembrete: 48h depois, às 08:00
+    nextDate.setDate(now.getDate() + 2);
+    nextDate.setHours(8, 0, 0, 0);
+    if (nextDate.getDay() === 6) {
+      nextDate.setDate(nextDate.getDate() + 2);
+    } else if (nextDate.getDay() === 0) {
+      nextDate.setDate(nextDate.getDate() + 1);
+    }
+  }
+  
+  return nextDate;
+}
+
+// ======================== AGUARDANDO ACEITE - Lembretes de Assinatura de Contrato ========================
+async function executeAguardandoAceiteReminder(task: any) {
+  console.log(`📝 Aguardando Aceite reminder para ${task.clientId}`);
+  
+  const opportunity = await db.query.opportunities.findFirst({
+    where: (o: any) => eq(o.id, task.dados?.opportunityId || ""),
+  });
+  
+  if (!opportunity) return;
+  
+  const client = await db.query.clients.findFirst({
+    where: (c: any) => eq(c.id, opportunity.clientId),
+  });
+  
+  if (!client) return;
+  
+  const lembreteNum = task.dados?.lembrete || 1;
+  
+  console.log(`💬 Enviando lembrete ${lembreteNum}/3 de Aguardando Aceite para ${client.nome}`);
+  
+  // Mensagens pelos 3 dias
+  const messages_templates: Record<number, string> = {
+    1: `Olá, tudo bem?\nSeu contrato já está pronto para assinatura digital.\nPor favor, clique no link que você recebeu e finalize o aceite.\nSe tiver alguma dúvida, estou à disposição!`,
+    2: `Oi, tudo bem?\nSó passando para lembrar que seu contrato ainda está aguardando assinatura.\nAssine o quanto antes para garantir os benefícios.\nQualquer dúvida, me avise!`,
+    3: `Oi, tudo bem?\nEste é o último lembrete para assinatura do contrato.\nPara não gerar atrasos, finalize o aceite o quanto antes clicando no link enviado no email.\nSe precisar de ajuda, estou à disposição!`,
+  };
+  
+  const mensagem = messages_templates[lembreteNum] || messages_templates[1];
+  
+  // Buscar ou criar conversation do cliente
+  let conversation = await db.query.conversations.findFirst({
+    where: (conv: any) => eq(conv.clientId, opportunity.clientId),
+  });
+  
+  if (!conversation) {
+    const [newConv] = await db.insert(conversations).values({
+      clientId: opportunity.clientId,
+      userId: task.userId,
+      ultimaMensagemEm: new Date(),
+    }).returning();
+    conversation = newConv;
+  }
+  
+  // Registrar mensagem no banco
+  await db.insert(messages).values({
+    conversationId: conversation.id,
+    sender: "bot",
+    tipo: "text",
+    conteudo: mensagem,
+    createdAt: new Date(),
+  });
+
+  // 📋 REGISTRAR NA TIMELINE DO CLIENTE
+  await db.insert(interactions).values({
+    clientId: opportunity.clientId,
+    tipo: "aguardando_aceite_reminder",
+    origem: "automation",
+    titulo: `Lembrete de Assinatura (${lembreteNum}/3)`,
+    texto: mensagem,
+    meta: { opportunityId: opportunity.id, lembreteNum },
+    createdBy: task.userId,
+  });
+  
+  console.log(`✅ Lembrete ${lembreteNum}/3 enviado para ${client.nome}`);
+  
+  // Se foi o 3º lembrete, agendar movimento para AGUARDANDO ATENÇÃO
+  if (lembreteNum === 3) {
+    console.log(`⏭️ Agendando movimento para AGUARDANDO ATENÇÃO em 1 hora...`);
+    const proximaExecucao = new Date(Date.now() + 60 * 60 * 1000); // 1 hora depois
+    
+    await db.insert(automationTasks).values({
+      userId: task.userId,
+      clientId: opportunity.clientId,
+      tipo: "kanban_move",
+      proximaExecucao,
+      dados: { 
+        opportunityId: opportunity.id, 
+        etapa: "AGUARDANDO ATENÇÃO",
+        motivo: "Terceiro lembrete enviado - movendo para análise gerencial",
+        notificarResponsavel: true,
+      },
+    });
+  }
+}
+
 // ======================== SCHEDULER DE CRON (executar a cada 30 segundos) ========================
 export function startAutomationCron() {
   console.log(`\n⏰ [AUTOMATION CRON] Iniciando scheduler...`);
@@ -571,11 +714,87 @@ export function startAutomationCron() {
   const interval = setInterval(() => {
     processAutomationTasks().catch(console.error);
     checkPropostaEnviadaTimeouts().catch(console.error);
+    checkAguardandoAceiteTimeouts().catch(console.error);
   }, 30 * 1000);
 
   // Executar também na inicialização
   processAutomationTasks().catch(console.error);
   checkPropostaEnviadaTimeouts().catch(console.error);
+  checkAguardandoAceiteTimeouts().catch(console.error);
 
   return () => clearInterval(interval);
+}
+
+// ======================== VERIFICAR AGUARDANDO ACEITE - Lógica de Lembretes ========================
+export async function checkAguardandoAceiteTimeouts() {
+  try {
+    console.log(`\n📝 [ACEITE CHECK] Verificando contratos em Aguardando Aceite...`);
+    
+    // Buscar oportunidades em AGUARDANDO ACEITE
+    const aguardando = await db
+      .select()
+      .from(opportunities)
+      .where(eq(opportunities.etapa, "AGUARDANDO ACEITE"));
+    
+    console.log(`📋 Encontradas ${aguardando.length} em AGUARDANDO ACEITE`);
+    
+    for (const opp of aguardando) {
+      // Buscar último reminder deste contrato
+      const lastTask = await db
+        .select()
+        .from(automationTasks)
+        .where(
+          and(
+            eq(automationTasks.tipo, "aguardando_aceite_reminder"),
+            eq(automationTasks.clientId, opp.clientId)
+          )
+        )
+        .orderBy((t: any) => desc(t.proximaExecucao))
+        .limit(1);
+      
+      // Se não tem tarefa agendada, criar primeira
+      if (!lastTask || lastTask.length === 0 || lastTask[0].status === "executado") {
+        console.log(`✅ Agendando 1º lembrete para oportunidade ${opp.id}`);
+        const nextTime = new Date(Date.now() + 5 * 1000); // 5 segundos para teste
+        
+        await db.insert(automationTasks).values({
+          userId: opp.responsavelId,
+          clientId: opp.clientId,
+          tipo: "aguardando_aceite_reminder",
+          proximaExecucao: nextTime,
+          dados: { 
+            opportunityId: opp.id, 
+            lembrete: 1,
+            contractSentAt: opp.updatedAt || new Date(),
+          },
+        });
+      } else if (lastTask[0].status === "executado") {
+        // Se última foi executada, agendar próxima
+        const lembreteAtual = lastTask[0].dados?.lembrete || 1;
+        if (lembreteAtual < 3) {
+          const nextLembrete = lembreteAtual + 1;
+          const proximaExecucao = getNextAguardandoAceiteTime({ 
+            lembrete: nextLembrete,
+            contractSentAt: lastTask[0].dados?.contractSentAt,
+          });
+          
+          console.log(`✅ Agendando ${nextLembrete}º lembrete para ${opp.id} às ${proximaExecucao.toLocaleString("pt-BR")}`);
+          
+          await db.insert(automationTasks).values({
+            userId: opp.responsavelId,
+            clientId: opp.clientId,
+            tipo: "aguardando_aceite_reminder",
+            proximaExecucao,
+            dados: { 
+              opportunityId: opp.id, 
+              lembrete: nextLembrete,
+              contractSentAt: lastTask[0].dados?.contractSentAt,
+            },
+          });
+        }
+      }
+    }
+  } catch (error) {
+    console.error(`❌ Erro ao verificar Aguardando Aceite:`, error);
+  }
 }

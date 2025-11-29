@@ -86,6 +86,24 @@ export default function TestAutomation() {
     },
   });
 
+  // Test aguardando aceite
+  const aguardandoAceiteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/test/aguardando-aceite", {
+        clientId,
+        userId,
+      });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({ title: "✅ Aguardando Aceite!", description: `${data.observacao}` });
+      refetchTestOpps();
+    },
+    onError: (error: any) => {
+      toast({ title: "❌ Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
   // Test 4th day auto-move to PERDIDO
   const fourthDayMutation = useMutation({
     mutationFn: async () => {
@@ -298,9 +316,30 @@ export default function TestAutomation() {
         </Button>
       </Card>
 
+      {/* AGUARDANDO ACEITE TEST */}
+      <Card className="p-6 bg-slate-800 border-purple-500/20">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-white">5️⃣ Teste Aguardando Aceite</h2>
+          <span className="text-xs text-purple-400 bg-purple-500/10 px-2 py-1 rounded">NOVO!</span>
+        </div>
+
+        <p className="text-slate-300 mb-4 text-xs">
+          Move oportunidade para AGUARDANDO ACEITE e agenda 3 lembretes automáticos (1 por dia, sempre às 08:00)
+        </p>
+
+        <Button
+          onClick={() => aguardandoAceiteMutation.mutate()}
+          disabled={aguardandoAceiteMutation.isPending || !clientId || !userId}
+          className="w-full bg-purple-600 hover:bg-purple-700 mb-4"
+          data-testid="button-test-aguardando-aceite"
+        >
+          {aguardandoAceiteMutation.isPending ? "Agendando..." : "📝 Testar Aguardando Aceite"}
+        </Button>
+      </Card>
+
       {/* 4º DIA - AUTO-MOVE PERDIDO */}
       <Card className="p-6 bg-slate-800 border-red-500/20">
-        <h2 className="text-xl font-bold text-white mb-4">5️⃣ Teste 4º Dia (Auto-Move PERDIDO)</h2>
+        <h2 className="text-xl font-bold text-white mb-4">6️⃣ Teste 4º Dia (Auto-Move PERDIDO)</h2>
         
         <p className="text-slate-300 mb-4 text-xs">
           Simula que passaram 4 dias sem resposta e o sistema automaticamente move para PERDIDO com timeline
@@ -318,7 +357,7 @@ export default function TestAutomation() {
 
       {/* CLIENT STATUS AUTOMATION TEST */}
       <Card className="p-6 bg-slate-800 border-green-500/20">
-        <h2 className="text-xl font-bold text-white mb-4">6️⃣ Teste Automação de Status do Cliente</h2>
+        <h2 className="text-xl font-bold text-white mb-4">7️⃣ Teste Automação de Status do Cliente</h2>
         
         <p className="text-slate-300 mb-4 text-xs">
           Recalcula automaticamente o status do cliente baseado nas oportunidades dele. O status NUNCA é manual e sempre segue a etapa mais avançada!
