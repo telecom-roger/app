@@ -439,6 +439,11 @@ export default function Clientes() {
     }
   }, [notifications]);
 
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [page]);
+
   const statusColors: Record<string, string> = {
     lead: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
     ativo: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
