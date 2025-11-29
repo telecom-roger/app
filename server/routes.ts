@@ -2764,12 +2764,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/test/simulate-response", async (req, res) => {
+  app.post("/api/test/simulate-response", isAuthenticated, async (req, res) => {
     try {
-      const { clientId, userId, messageText } = req.body;
+      const { clientId, messageText } = req.body;
+      const userId = (req.user as any).id; // Usar userId do usuário autenticado
       
-      if (!clientId || !userId || !messageText) {
-        return res.status(400).json({ error: "clientId, userId, messageText são obrigatórios" });
+      if (!clientId || !messageText) {
+        return res.status(400).json({ error: "clientId, messageText são obrigatórios" });
       }
 
       const result = await simulateClientResponse(clientId, userId, messageText);
@@ -2779,12 +2780,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/test/process-batch", async (req, res) => {
+  app.post("/api/test/process-batch", isAuthenticated, async (req, res) => {
     try {
-      const { userId, responses } = req.body;
+      const { responses } = req.body;
+      const userId = (req.user as any).id; // Usar userId do usuário autenticado
       
-      if (!userId || !Array.isArray(responses) || responses.length === 0) {
-        return res.status(400).json({ error: "userId e responses (array) são obrigatórios" });
+      if (!Array.isArray(responses) || responses.length === 0) {
+        return res.status(400).json({ error: "responses (array) é obrigatório" });
       }
 
       const result = await processBatchResponses(userId, responses);
