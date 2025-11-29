@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { z } from "zod";
 import { eq, and, or, ilike, desc, sql, lte, inArray, isNull, gte, between } from "drizzle-orm";
 import cron from "node-cron";
+import * as fs from "fs";
 import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, insertClientSharingSchema, whatsappSessions, clients, interactions, conversations, messages, campaigns as campaignsTable, templates as templatesTable, tags, clientSharing, notifications, users, campaignSendings, campaignGroups, opportunities, automationTasks } from "@shared/schema";
 import * as storage from "./storage";
 import * as whatsappService from "./whatsappService";
@@ -2997,6 +2998,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("❌ Test 4th day error:", error);
       res.status(500).json({ error: String(error), moved: false });
+    }
+  });
+
+  // ==================== IMPORT UNIFICADA ====================
+  app.post("/api/import-unificada", async (req, res) => {
+    try {
+      const filePath = "attached_assets/PLANILHA_UNIFICADA.csv";
+      
+      if (!fs.existsSync(filePath)) {
+        return res.status(400).json({ error: "Planilha não encontrada", imported: 0 });
+      }
+
+      const fileContent = fs.readFileSync(filePath, "utf-8");
+      const lines = fileContent.split("\n").map(l => l.trim()).filter(l => l);
+      
+      if (lines.length < 2) {
+        return res.status(400).json({ error: "CSV vazio", imported: 0 });
+      }
+
+      // Get first admin user
+      let adminUser = await db.query.users.findFirst({
+        where: (u: any) => eq(u.role, "admin"),
+      });
+
+      // If no admin, create one
+      if (!adminUser) {
+        const [newAdmin] = await db.insert(users).values({
+          email: "admin@system.local",
+          passwordHash: "SYSTEM",
+          role: "admin",
+        }).returning();
+        adminUser = newAdmin;
+      }
+
+      // Parse header
+      const header = lines[0].split(",").map(h => h.trim());
+      const fieldMap: Record<string, number> = {};
+      
+      const expectedFields = [
+        "Razão Social", "Código do cliente", "CNPJ", "Nome fantasia", "Endereço", 
+        "Número", "CEP", "Bairro", "Cidade", "Estado", "Nome do Gestor", 
+        "CPF do Gestor", "E-mail do Gestor", "Telefone 1", "Telefone 2", 
+        "Situação cadastral RF", "Quantidade de linhas", "CNAE Atividade", "PARCEIRO"
+      ];
+
+      expectedFields.forEach(field => {
+        const idx = header.indexOf(field);
+        if (idx !== -1) fieldMap[field] = idx;
+      });
+
+      // Helper: parse CSV line respecting quotes
+      const parseCSVLine = (line: string): string[] => {
+        const result = [];
+        let current = "";
+        let inQuotes = false;
+
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === "," && !inQuotes) {
+            result.push(current.trim());
+            current = "";
+          } else {
+            current += char;
+          }
+        }
+        result.push(current.trim());
+        return result;
+      };
+
+      // Parse rows and insert
+      let imported = 0;
+      let errors = 0;
+      const errorDetails: string[] = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        try {
+          const row = parseCSVLine(lines[i]);
+          
+          const razaoSocial = row[fieldMap["Razão Social"]]?.trim();
+          if (!razaoSocial) continue;
+          
+          const clientData: any = {
+            nome: razaoSocial,
+            razaoSocial: razaoSocial,
+            cpfCnpj: row[fieldMap["CNPJ"]] || null,
+            contato: row[fieldMap["Nome do Gestor"]] || null,
+            email: row[fieldMap["E-mail do Gestor"]] || null,
+            telefone: row[fieldMap["Telefone 1"]] || null,
+            endereco: row[fieldMap["Endereço"]] || null,
+            numero: row[fieldMap["Número"]] || null,
+            cep: row[fieldMap["CEP"]] || null,
+            cidade: row[fieldMap["Cidade"]] || null,
+            uf: (row[fieldMap["Estado"]] || "").substring(0, 2),
+            bairro: row[fieldMap["Bairro"]] || null,
+            status: "lead",
+            PARCEIRO: row[fieldMap["PARCEIRO"]] || null,
+            camposCustom: {
+              codigoCliente: row[fieldMap["Código do cliente"]] || "",
+              nomefantasia: row[fieldMap["Nome fantasia"]] || "",
+              cpfGestor: row[fieldMap["CPF do Gestor"]] || "",
+              quantidadeLinhas: row[fieldMap["Quantidade de linhas"]] || "",
+              cnaeAtividade: row[fieldMap["CNAE Atividade"]] || "",
+              telefone2: row[fieldMap["Telefone 2"]] || "",
+            },
+            createdBy: adminUser!.id,
+          };
+
+          await db.insert(clients).values(clientData);
+          imported++;
+        } catch (err: any) {
+          errors++;
+          if (errors <= 5) {
+            errorDetails.push(`Linha ${i}: ${err.message}`);
+          }
+        }
+      }
+
+      res.json({
+        success: errors === 0,
+        message: `✅ Importados: ${imported} clientes | ${errors > 0 ? `⚠️ Erros: ${errors}` : "✅ Sem erros"}`,
+        imported,
+        errors,
+        errorDetails: errorDetails.slice(0, 5),
+      });
+    } catch (error: any) {
+      console.error("❌ Import error:", error);
+      res.status(500).json({ error: String(error), imported: 0 });
     }
   });
 
