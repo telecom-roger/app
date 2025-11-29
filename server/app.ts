@@ -1,4 +1,4 @@
-import { createServer, type Server } from "node:http";
+import { type Server } from "node:http";
 
 import express, {
   type Express,
@@ -75,12 +75,7 @@ app.use((req, res, next) => {
 export default async function runApp(
   setup: (app: Express, server: Server) => Promise<void>,
 ) {
-  const server = createServer(app);
-  
-  // Register routes without blocking - start in background
-  registerRoutes(app).catch(err => {
-    log(`❌ Error registering routes: ${err.message}`, 'error');
-  });
+  const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -90,10 +85,9 @@ export default async function runApp(
     throw err;
   });
 
-  // Setup static files without blocking
-  setup(app, server).catch(err => {
-    log(`❌ Error in setup: ${err.message}`, 'error');
-  });
+  // importantly run the final setup after setting up all the other routes so
+  // the catch-all route doesn't interfere with the other routes
+  await setup(app, server);
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.

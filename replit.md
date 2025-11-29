@@ -10,15 +10,6 @@ This project is a comprehensive platform designed to manage over 500,000 telecom
 - **Code Changes**: Do not make changes to the `shared/schema.ts` file without explicit instruction.
 - **Explanations**: Provide detailed explanations for complex features or architectural choices.
 
-### Communication Protocol
-**How to Communicate:**
-- **Dúvidas/Perguntas** (Questions/Doubts): Only respond with explanation, no code
-  - Example: "Como funciona a autenticação?" → Answer with explanation only
-- **Solicitações de Implementação** (Implementation Requests): Write code and take action
-  - Example: "Adiciona um novo campo de email" → Implement immediately with code
-- **Relatórios/Status**: Short, direct answers without code
-- **Feedback**: Keep it concise and actionable
-
 ## System Architecture
 
 ### UI/UX
