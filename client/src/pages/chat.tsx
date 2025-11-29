@@ -337,7 +337,7 @@ export default function Chat() {
         const nome = client.nome?.toLowerCase() || "";
         const cnpj = client.cnpj?.toLowerCase() || "";
         const cel = (client.celular || "").toLowerCase();
-        const tel2 = ((client as any).telefone_2 || "").toLowerCase();
+        const tel2 = ((client as any).telefone2 || "").toLowerCase();
         
         return (
           nome.includes(term) ||
@@ -912,7 +912,7 @@ export default function Chat() {
                 ) : (
                   filteredClients.map((client: Client) => {
                     const tel1 = client.celular;
-                    const tel2 = (client as any)?.telefone_2;
+                    const tel2 = (client as any)?.telefone2;
                     const cnpj = (client as any)?.cnpj;
                     const phones = [tel1, tel2].filter(Boolean).join(" / ");
                     
