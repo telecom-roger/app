@@ -163,10 +163,11 @@ export async function getClients(params: {
   }
   
   if (search) {
+    // Priorizar razão social (empresa) - buscar lá primeiro
     conditions.push(
       or(
-        ilike(clients.nome, `%${search}%`),
         ilike(clients.razaoSocial, `%${search}%`),
+        ilike(clients.nome, `%${search}%`),
         ilike(clients.cpfCnpj, `%${search}%`)
       )
     );
@@ -431,6 +432,8 @@ export async function getImportJobs(userId?: string): Promise<ImportJob[]> {
 
 // ==================== STATISTICS ====================
 export async function getDashboardStats(userId?: string) {
+  // Para admin/contagem total: inclui TODOS os clientes
+  // Para usuário específico: mostra apenas seus clientes
   let clientWhereClause = userId ? eq(clients.createdBy, userId) : undefined;
   let opportunityWhereClause = userId ? eq(opportunities.responsavelId, userId) : undefined;
   let campaignWhereClause = userId ? eq(campaigns.createdBy, userId) : undefined;
@@ -439,8 +442,8 @@ export async function getDashboardStats(userId?: string) {
     .select({
       total: sql<number>`count(*)::int`,
       ativos: sql<number>`count(*) FILTER (WHERE status = 'ativo')::int`,
-      importados: sql<number>`count(*) FILTER (WHERE created_by IS NOT NULL)::int`,
-      antigos: sql<number>`count(*) FILTER (WHERE created_by IS NULL)::int`,
+      importados: sql<number>`count(*) FILTER (WHERE created_by IS NOT NULL OR campos_custom->>'origem' = 'SINGULAR')::int`,
+      antigos: sql<number>`count(*) FILTER (WHERE created_by IS NULL AND (campos_custom->>'origem' IS NULL OR campos_custom->>'origem' != 'SINGULAR'))::int`,
     })
     .from(clients)
     .where(clientWhereClause);
