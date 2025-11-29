@@ -2541,28 +2541,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Unshare multiple clients with a user
-  app.delete("/api/clients/unshare-bulk", isAuthenticated, async (req, res) => {
+  app.post("/api/clients/unshare-bulk", isAuthenticated, async (req, res) => {
     try {
       const { clientIds, sharedWithUserId } = req.body;
       const user = req.user as any;
+
+      console.log(`📤 UNSHARE-BULK: Recebidos ${clientIds?.length} IDs do usuário ${user.id}`);
 
       if (!clientIds || !Array.isArray(clientIds) || clientIds.length === 0) {
         return res.status(400).json({ error: "Selecione pelo menos um cliente" });
       }
 
-      // Verify ownership of clients that are OWNED by user (only owners can remove sharings)
-      const ownedClients = await db
+      // Get all requested clients to check ownership
+      const allClients = await db
         .select()
         .from(clients)
-        .where(and(
-          inArray(clients.id, clientIds),
-          eq(clients.createdBy, user.id)
-        ));
+        .where(inArray(clients.id, clientIds));
 
-      // Filter to only remove sharings for owned clients
-      const ownedClientIds = ownedClients.map(c => c.id);
+      console.log(`📤 UNSHARE-BULK: Encontrados ${allClients.length} clientes no DB`);
+      console.log(`📤 UNSHARE-BULK: Clientes do usuário: ${allClients.filter(c => c.createdBy === user.id).length}`);
+
+      // Filter to only clients OWNED by the user
+      const ownedClientIds = allClients
+        .filter(c => c.createdBy === user.id)
+        .map(c => c.id);
       
       if (ownedClientIds.length === 0) {
+        console.warn(`📤 UNSHARE-BULK: Usuário ${user.id} não tem propriedade de nenhum cliente`);
         return res.status(403).json({ error: "Você só pode remover compartilhamento dos seus próprios clientes" });
       }
 
@@ -2571,6 +2576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.unshareClientWithUser(clientId, sharedWithUserId);
       }
 
+      console.log(`📤 UNSHARE-BULK: ${ownedClientIds.length} compartilhamentos removidos`);
       res.json({ success: true, count: ownedClientIds.length });
     } catch (error: any) {
       console.error("Error unsharing clients:", error);

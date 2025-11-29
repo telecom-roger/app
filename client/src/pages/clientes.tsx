@@ -326,7 +326,7 @@ function BulkUnshareDialog({ selectedClientIds, onOpenChange, onSuccess, open }:
 
   const bulkUnshareMutation = useMutation({
     mutationFn: async (userId: string) => {
-      await apiRequest("DELETE", "/api/clients/unshare-bulk", { clientIds: selectedClientIds, sharedWithUserId: userId });
+      await apiRequest("POST", "/api/clients/unshare-bulk", { clientIds: selectedClientIds, sharedWithUserId: userId });
     },
     onSuccess: () => {
       toast({
