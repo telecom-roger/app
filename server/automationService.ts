@@ -634,7 +634,7 @@ async function executeAguardandoAceiteReminder(task: any) {
   await db.insert(messages).values({
     conversationId: conversation.id,
     sender: "user",  // ✅ Mostrar como mensagem enviada no chat
-    tipo: "text",
+    tipo: "texto",
     conteudo: mensagem,
     createdAt: new Date(),
   });
