@@ -16,15 +16,16 @@ export interface MessageAnalysis {
 function analyzeLocalTest(mensagem: string): MessageAnalysis {
   const msg = mensagem.toLowerCase();
   
-  // 🛑 RECUSA TOTAL → PERDIDO (palavras-chave exatas)
+  // 🛑 RECUSA TOTAL → PERDIDO (palavras-chave exatas - com e sem acentos)
   const recusaTotal = [
-    "não quero renovar",
+    "não quero renovar", "nao quero renovar",
     "cancela tudo",
-    "não tenho interesse",
-    "não quero nenhum plano",
-    "não quero",
+    "não tenho interesse", "nao tenho interesse",
+    "não quero nenhum plano", "nao quero nenhum plano",
+    "não quero", "nao quero",
     "recuso",
-    "não me interessa"
+    "não me interessa", "nao me interessa",
+    "não tenho mais interesse", "nao tenho mais interesse"
   ];
   if (recusaTotal.some(palavra => msg.includes(palavra))) {
     return {
@@ -36,13 +37,13 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
     };
   }
   
-  // ℹ️ RECUSA PARCIAL → NÃO MOVE (não gera ação)
+  // ℹ️ RECUSA PARCIAL → NÃO MOVE (não gera ação - com e sem acentos)
   const recusaParcial = [
     "cancelar algumas linhas",
     "cancelar parcial",
     "remover algumas",
     "quero apenas algumas",
-    "não quero algumas",
+    "não quero algumas", "nao quero algumas",
   ];
   if (recusaParcial.some(palavra => msg.includes(palavra))) {
     return {
