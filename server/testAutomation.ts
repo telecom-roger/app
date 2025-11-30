@@ -16,13 +16,22 @@ const ETAPAS_AUTOMATICAS_ORDER: Record<string, number> = {
 // Etapas que NÃO podem ser tocadas pela IA (100% manuais)
 const ETAPAS_MANUAIS = ["LEAD", "PROPOSTA ENVIADA", "CONTRATO ENVIADO", "AGUARDANDO CONTRATO", "AGUARDANDO ACEITE", "FECHADO"];
 
+// 🔥 Etapas onde USUÁRIO ASSUME (IA para de interferir completamente)
+const ETAPAS_USUARIO_ASSUME = ["PROPOSTA", "FORNECEDOR", "PERDIDO"];
+
 /**
  * Valida se um movimento de etapa é permitido
  * - NUNCA retrocede
  * - NUNCA mexe em etapas manuais
+ * - NUNCA mexe quando usuário assume (PROPOSTA+)
  * - Só avança ou fica na mesma
  */
 function isValidMovement(etapaAtual: string, etapaNova: string): { permitido: boolean; motivo: string } {
+  // 🔥 BLOQUEIO CRÍTICO: Se etapa atual é PROPOSTA/FORNECEDOR/PERDIDO → IA PARA COMPLETAMENTE
+  if (ETAPAS_USUARIO_ASSUME.includes(etapaAtual)) {
+    return { permitido: false, motivo: `${etapaAtual} - Usuário assume, IA PARA de interferir` };
+  }
+  
   // Verifica se etapa nova é manual (NUNCA mexe)
   if (ETAPAS_MANUAIS.includes(etapaNova)) {
     return { permitido: false, motivo: `${etapaNova} é 100% manual` };
@@ -439,7 +448,27 @@ export async function simulateClientResponse(clientId: string, userId: string, m
           console.log(`⚠️ Recusa parcial no primeiro contato - alertando atendente`);
         }
       } 
-      // 🎯 SE EXISTE OPP E deveAgir = true → MOVER PARA PRÓXIMA ETAPA
+      // 🔥 EXCEÇÃO CRÍTICA: CONTATO→PROPOSTA é OBRIGATÓRIO se cliente aprova
+      else if (existingOpp.etapa === "CONTATO" && 
+               analysis.deveAgir === true &&
+               (analysis.sentimento === "positivo" || analysis.sentimento === "fornecedor")) {
+        // MOVIMENTO OBRIGATÓRIO para PROPOSTA (aprovação clara)
+        console.log(`🔥 MOVIMENTO OBRIGATÓRIO: CONTATO → PROPOSTA (aprovação detectada)`);
+        resultOpp = await db
+          .update(opportunities)
+          .set({ 
+            etapa: "PROPOSTA",
+            titulo: `${client.nome} - ${analysis.motivo}`,
+            updatedAt: new Date()
+          })
+          .where(eq(opportunities.id, existingOpp.id))
+          .returning()
+          .then(r => r[0]);
+        
+        console.log(`✅ Oportunidade MOVIDA (OBRIGATÓRIO): CONTATO → PROPOSTA`);
+        actionType = "mover";
+      }
+      // 🎯 SE EXISTE OPP E deveAgir = true → VALIDAR MOVIMENTO
       else if (analysis.deveAgir && existingOpp.etapa !== etapaNormalizada) {
         const validacao = isValidMovement(existingOpp.etapa, etapaNormalizada);
         
