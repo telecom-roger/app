@@ -13,16 +13,24 @@ import { checkPropostaEnviadaTimeouts } from "./automationService";
 import { analyzeClientMessage } from "./aiService";
 
 // ======================== CONSTANTES DE ETAPAS (AUTOMAÇÃO) ========================
-// ⚠️ REGRAS CRÍTICAS:
-// 1. IA controla movimento em LEAD/CONTATO
-// 2. EXCÇÃO: CONTATO→PROPOSTA é OBRIGATÓRIO se cliente aprova (deveAgir=true + sentimento positivo)
-// 3. Após PROPOSTA: usuário assume, IA PARA DE AGIR
-// 4. Etapas manuais: IA NUNCA toca
-const ETAPAS_IA_CONTROLA = ["LEAD", "CONTATO"]; // IA move entre essas normalmente
-const ETAPAS_USUARIO_ASSUME = ["PROPOSTA", "FORNECEDOR", "PERDIDO"]; // Após essas, IA para
-const ETAPAS_MANUAIS = ["PROPOSTA ENVIADA", "AGUARDANDO CONTRATO", "CONTRATO ENVIADO", "AGUARDANDO ACEITE", "FECHADO"];
-const ETAPAS_AUTOMATICAS = [...ETAPAS_IA_CONTROLA, ...ETAPAS_USUARIO_ASSUME];
-const TODAS_ETAPAS = [...ETAPAS_AUTOMATICAS, ...ETAPAS_MANUAIS];
+// 🔥 REGRAS CRÍTICAS DE MOVIMENTO DA IA:
+// LEAD → Pode ir para: CONTATO, PROPOSTA, FORNECEDOR, PERDIDO
+// CONTATO → Só vai para: PROPOSTA
+// PROPOSTA → BLOQUEADO (IA não mexe)
+// PROPOSTA ENVIADA, AGUARDANDO CONTRATO, CONTRATO ENVIADO, AGUARDANDO ACEITE, AGUARDANDO ATENÇÃO, FECHADO → BLOQUEADO
+// PERDIDO → Pode voltar para: CONTATO, PROPOSTA (se cliente enviar interesse)
+// FORNECEDOR → Pode voltar para: CONTATO, PROPOSTA (se cliente enviar interesse)
+
+const ETAPAS_MANUAIS_BLOQUEADAS = [
+  "PROPOSTA", 
+  "PROPOSTA ENVIADA", 
+  "AGUARDANDO CONTRATO", 
+  "CONTRATO ENVIADO", 
+  "AGUARDANDO ACEITE",
+  "AGUARDANDO ATENÇÃO",
+  "FECHADO"
+];
+const TODAS_ETAPAS = ["LEAD", "CONTATO", "PROPOSTA", "FORNECEDOR", "PERDIDO", "PROPOSTA ENVIADA", "AGUARDANDO CONTRATO", "CONTRATO ENVIADO", "AGUARDANDO ACEITE", "AGUARDANDO ATENÇÃO", "FECHADO"];
 
 // Track campaigns in progress
 const campanhasEmProgresso = new Map<string, {
@@ -2147,13 +2155,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               orderBy: (o: any) => desc(o.createdAt),
             });
 
-            // 🛑 BLOQUEIO 1: Se etapa MANUAL → IA NÃO ANALISA
-            if (existingOpp && ETAPAS_MANUAIS.includes(existingOpp.etapa)) {
-              console.log(`🛑 IA BLOQUEADA: Oportunidade em etapa MANUAL (${existingOpp.etapa}) - Nenhuma ação automática`);
-            }
-            // 🛑 BLOQUEIO 2: Se usuário já assumiu (PROPOSTA ou além) → IA PARA COMPLETAMENTE
-            else if (existingOpp && ETAPAS_USUARIO_ASSUME.includes(existingOpp.etapa)) {
-              console.log(`🛑 IA BLOQUEADA: Usuário já conduzindo (${existingOpp.etapa}) - Nenhuma ação automática`);
+            // 🛑 BLOQUEIO 1: Se etapa BLOQUEADA → IA NÃO ANALISA
+            if (existingOpp && ETAPAS_MANUAIS_BLOQUEADAS.includes(existingOpp.etapa)) {
+              console.log(`🛑 IA BLOQUEADA: ${existingOpp.etapa} - IA PROIBIDO`);
             }
             else {
               // ✅ Analisar mensagem (oportunidade em LEAD/CONTATO ou não existe)
@@ -2161,10 +2165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const etapa = (analysis.etapa || "CONTATO").toUpperCase();
               console.log(`🤖 IA (CHAT): ${analysis.sentimento} (${analysis.confianca}%) → ${etapa}`);
 
-              // 🛑 Validar: análise retornou etapa VÁLIDA?
-              if (!ETAPAS_AUTOMATICAS.includes(etapa)) {
-                console.log(`🛑 ETAPA INVÁLIDA PARA IA: ${etapa} - Ignorando movimento`);
-              } else if (analysis.deveAgir === false) {
+              if (analysis.deveAgir === false) {
                 // IA diz "não mover" → criar opp em CONTATO se não existir
                 console.log(`⚠️ IA NÃO MOVE: deveAgir=false (${analysis.motivo})`);
                 if (!existingOpp) {
@@ -2198,13 +2199,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   console.log(`🔥 OPP MOVIDA (OBRIGATÓRIO): ${existingOpp.etapa} → PROPOSTA (aprovação detectada)`);
                   await storage.recalculateClientStatus(conv.clientId);
                 } else {
-                  // Validar movimento normal: só permite avanço DENTRO de ETAPAS_IA_CONTROLA
-                  const currentIndex = ETAPAS_IA_CONTROLA.indexOf(existingOpp.etapa);
-                  const newIndex = ETAPAS_IA_CONTROLA.indexOf(etapa);
-                  
-                  // IA só move DENTRO de ETAPAS_IA_CONTROLA (LEAD → CONTATO)
-                  if (currentIndex >= 0 && newIndex > currentIndex) {
-                    // Movimento válido (avanço em etapas IA)
+                  // Validar movimento: só LEAD e CONTATO
+                  if (existingOpp.etapa === "LEAD") {
+                    // LEAD é livre
                     await db.update(opportunities).set({ 
                       etapa: etapa,
                       titulo: `${client.nome} - ${analysis.motivo}`,
@@ -2213,16 +2210,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     
                     console.log(`✅ OPP MOVIDA (CHAT): ${existingOpp.etapa} → ${etapa}`);
                     await storage.recalculateClientStatus(conv.clientId);
-                  } else if (newIndex === currentIndex) {
-                    console.log(`ℹ️ OPP JÁ EM ${etapa} - Sem movimento`);
+                  } else if (existingOpp.etapa === "CONTATO" && etapa === "PROPOSTA") {
+                    // CONTATO → PROPOSTA (obrigatório se deveAgir=true)
+                    await db.update(opportunities).set({ 
+                      etapa: "PROPOSTA",
+                      titulo: `${client.nome} - ${analysis.motivo}`,
+                      updatedAt: new Date()
+                    }).where(eq(opportunities.id, existingOpp.id));
+                    
+                    console.log(`✅ OPP MOVIDA (OBRIGATÓRIO CHAT): CONTATO → PROPOSTA`);
+                    await storage.recalculateClientStatus(conv.clientId);
                   } else {
-                    console.log(`🛑 MOVIMENTO INVÁLIDO: ${existingOpp.etapa} → ${etapa}`);
+                    console.log(`🛑 MOVIMENTO NÃO PERMITIDO: ${existingOpp.etapa} → ${etapa}`);
                   }
                 }
               } else if (!existingOpp) {
                 // Criar nova oportunidade na etapa detectada
-                // Mas sempre criar em CONTATO (primeira etapa IA controla)
-                const etapaParaCriar = ETAPAS_IA_CONTROLA.includes(etapa) ? etapa : "CONTATO";
+                // Mas sempre criar em CONTATO ou LEAD
+                const etapaParaCriar = (etapa === "LEAD" || etapa === "CONTATO") ? etapa : "CONTATO";
                 const [newOpp] = await db.insert(opportunities).values({
                   clientId: conv.clientId,
                   titulo: `${client.nome} - ${analysis.motivo}`,

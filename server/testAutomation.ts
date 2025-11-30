@@ -5,63 +5,72 @@ import { automationTasks, followUps, clientScores, opportunities, messages, conv
 import { analyzeClientMessage } from "./aiService";
 
 // ======================== VALIDAÇÃO DE MOVIMENTO ========================
-// Ordem de prioridade: CONTATO(0) < PROPOSTA(1) < FORNECEDOR(2) < PERDIDO(3)
-const ETAPAS_AUTOMATICAS_ORDER: Record<string, number> = {
-  "CONTATO": 0,
-  "PROPOSTA": 1,
-  "FORNECEDOR": 2,
-  "PERDIDO": 3,
-};
+// 🔥 REGRAS CRÍTICAS DE MOVIMENTO DA IA:
+// LEAD → Pode ir para: CONTATO, PROPOSTA, FORNECEDOR, PERDIDO
+// CONTATO → Só vai para: PROPOSTA
+// PROPOSTA → BLOQUEADO (IA não mexe)
+// PROPOSTA ENVIADA → BLOQUEADO (IA não mexe)
+// AGUARDANDO CONTRATO → BLOQUEADO (IA não mexe)
+// CONTRATO ENVIADO → BLOQUEADO (IA não mexe)
+// AGUARDANDO ACEITE → BLOQUEADO (IA não mexe)
+// AGUARDANDO ATENÇÃO → BLOQUEADO (IA não mexe)
+// FECHADO → BLOQUEADO (IA não mexe)
+// PERDIDO → Pode ir para: CONTATO, PROPOSTA (se cliente enviar interesse)
+// FORNECEDOR → Pode ir para: CONTATO, PROPOSTA (se cliente enviar interesse)
 
 // Etapas que NÃO podem ser tocadas pela IA (100% manuais)
-const ETAPAS_MANUAIS = ["LEAD", "PROPOSTA ENVIADA", "CONTRATO ENVIADO", "AGUARDANDO CONTRATO", "AGUARDANDO ACEITE", "FECHADO"];
-
-// 🔥 Etapas onde USUÁRIO ASSUME (IA para de interferir completamente)
-const ETAPAS_USUARIO_ASSUME = ["PROPOSTA", "FORNECEDOR", "PERDIDO"];
+const ETAPAS_MANUAIS_BLOQUEADAS = [
+  "PROPOSTA", 
+  "PROPOSTA ENVIADA", 
+  "AGUARDANDO CONTRATO", 
+  "CONTRATO ENVIADO", 
+  "AGUARDANDO ACEITE", 
+  "AGUARDANDO ATENÇÃO",
+  "FECHADO"
+];
 
 /**
  * Valida se um movimento de etapa é permitido
- * - NUNCA retrocede
- * - NUNCA mexe em etapas manuais
- * - NUNCA mexe quando usuário assume (PROPOSTA+)
- * - Só avança ou fica na mesma
+ * Regras:
+ * - LEAD: livre (pode ir para qualquer lugar)
+ * - CONTATO: só → PROPOSTA
+ * - PROPOSTA+: bloqueado (5 etapas manuais)
+ * - PERDIDO: pode voltar se interesse (→ CONTATO ou PROPOSTA)
+ * - FORNECEDOR: pode voltar se interesse (→ CONTATO ou PROPOSTA)
  */
 function isValidMovement(etapaAtual: string, etapaNova: string): { permitido: boolean; motivo: string } {
-  // 🔥 BLOQUEIO CRÍTICO: Se etapa atual é PROPOSTA/FORNECEDOR/PERDIDO → IA PARA COMPLETAMENTE
-  if (ETAPAS_USUARIO_ASSUME.includes(etapaAtual)) {
-    return { permitido: false, motivo: `${etapaAtual} - Usuário assume, IA PARA de interferir` };
+  // 🔥 BLOQUEIO: Se etapa atual está nas "manuais bloqueadas" → IA PARA COMPLETAMENTE
+  if (ETAPAS_MANUAIS_BLOQUEADAS.includes(etapaAtual)) {
+    return { permitido: false, motivo: `${etapaAtual} - IA PROIBIDO` };
   }
   
-  // Verifica se etapa nova é manual (NUNCA mexe)
-  if (ETAPAS_MANUAIS.includes(etapaNova)) {
-    return { permitido: false, motivo: `${etapaNova} é 100% manual` };
+  // 🔥 CONTATO → só pode ir para PROPOSTA
+  if (etapaAtual === "CONTATO" && etapaNova !== "PROPOSTA") {
+    return { permitido: false, motivo: `${etapaAtual} → ${etapaNova}: CONTATO só vai para PROPOSTA` };
   }
   
-  // Verifica se etapa atual é manual (nunca sai)
-  if (ETAPAS_MANUAIS.includes(etapaAtual)) {
-    return { permitido: false, motivo: `${etapaAtual} é 100% manual - IA não mexe` };
+  // 🔥 LEAD → livre (pode ir para qualquer lugar)
+  if (etapaAtual === "LEAD") {
+    return { permitido: true, motivo: "LEAD é livre" };
   }
   
-  // Se são iguais, permite (sem movimento)
+  // 🔥 PERDIDO ou FORNECEDOR → pode voltar para CONTATO ou PROPOSTA (interesse)
+  if ((etapaAtual === "PERDIDO" || etapaAtual === "FORNECEDOR") && 
+      (etapaNova === "CONTATO" || etapaNova === "PROPOSTA")) {
+    return { permitido: true, motivo: `${etapaAtual} → ${etapaNova}: Volta por interesse` };
+  }
+  
+  // 🔥 Se são iguais, permite (sem movimento)
   if (etapaAtual === etapaNova) {
     return { permitido: true, motivo: "Mesma etapa - sem mudança" };
   }
   
-  // Verifica se está avançando (não retrocedendo)
-  const ordem_atual = ETAPAS_AUTOMATICAS_ORDER[etapaAtual];
-  const ordem_nova = ETAPAS_AUTOMATICAS_ORDER[etapaNova];
-  
-  if (ordem_atual === undefined || ordem_nova === undefined) {
-    return { permitido: false, motivo: "Etapa desconhecida" };
+  // Outros movimentos de PERDIDO/FORNECEDOR são bloqueados
+  if (etapaAtual === "PERDIDO" || etapaAtual === "FORNECEDOR") {
+    return { permitido: false, motivo: `${etapaAtual} → ${etapaNova}: Só pode voltar para CONTATO ou PROPOSTA` };
   }
   
-  if (ordem_nova < ordem_atual && etapaNova !== "PERDIDO") {
-    // Está retrocedendo e não é PERDIDO (que é final)
-    return { permitido: false, motivo: `Não pode retroceder: ${etapaAtual} → ${etapaNova}` };
-  }
-  
-  // Pode retroceder para PERDIDO apenas se for rejeição total
-  return { permitido: true, motivo: "Movimento válido" };
+  return { permitido: false, motivo: `Movimento não mapeado: ${etapaAtual} → ${etapaNova}` };
 }
 
 // ======================== TESTE RÁPIDO: Intervalos pequenos para teste ========================
