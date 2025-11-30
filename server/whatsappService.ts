@@ -353,6 +353,7 @@ async function processIncomingMessages(sessionId: string, m: any) {
 
             // Notificar vendedor
             await storage.createNotification({
+              tipo: "ia_sentimento",
               titulo: `🤖 IA: ${analysis.sentimento.toUpperCase()}`,
               descricao: `${analysis.motivo}. Sugestão: ${analysis.sugestao}`,
               clientId: conversation.clientId,
