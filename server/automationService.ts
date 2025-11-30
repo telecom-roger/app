@@ -365,36 +365,37 @@ async function executeContractReminder(task: any) {
     conversation = newConv;
   }
   
-  // Mensagens randomizadas por dia
-  const messages_templates: Record<number, string[]> = {
-    0: [
-      `Olá, tudo bem? Podemos seguir com a contratação? Qualquer dúvida é só me chamar.`,
-      `Oi! Tudo certo? Conseguimos avançar com o plano? Estou por aqui caso precise de algo.`,
-      `Olá, tudo bem? Podemos finalizar sua contratação agora? Ficou com alguma dúvida?`,
-      `Oi! Só confirmando: deseja seguir com o plano que conversamos? Se quiser ajustar algo, me avise!`,
-      `Olá! Tudo bem por aí? Posso dar andamento na contratação para você? Qualquer dúvida me avisa.`,
-      `Olá, tudo bem? Qualquer dúvida sobre o plano ou condições, estou à disposição. Podemos avançar?`,
-      `Olá, tudo bem? Só passando pra saber se deseja continuar com a contratação. Qualquer dúvida me avisa.`,
-    ],
-    1: [
-      `Oi, tudo bem? Vamos seguir com a renovação do plano? Ficou com alguma dúvida?`,
-      `Oi! Só checando aqui - chegou tudo ok? Alguma dúvida na proposta?`,
-      `E aí? Tudo bem com a proposta? Vamos contratar?`,
-    ],
-    2: [
-      `Oi, tudo bem? Vamos seguir com a renovação do plano? Ficou com alguma dúvida?`,
-      `Chegou aqui o momento da decisão! Vamos prosseguir com a contratação?`,
-      `Está tudo pronto para contratar. Quando podemos começar?`,
-    ],
-    3: [
-      `Oi, tudo bem? Vamos seguir com a renovação do plano? Ficou com alguma dúvida?`,
-      `Última tentativa! Vamos contratar? Estamos aqui pra ajudar!`,
-      `Essa é a última mensagem - vamos fechar isso aí? Estamos esperando!`,
-    ],
-  };
+  // 🔥 LER MENSAGENS DO BANCO (automation_configs)
+  const config = await db.query.automationConfigs.findFirst({
+    where: (ac: any) => eq(ac.jobType, "contract_reminder"),
+  });
+  
+  let messages_templates = config?.mensagensTemplates || {};
+  
+  // Fallback para mensagens padrão se não houver no banco
+  if (Object.keys(messages_templates).length === 0) {
+    messages_templates = {
+      0: [
+        `Olá, tudo bem? Podemos seguir com a contratação? Qualquer dúvida é só me chamar.`,
+        `Oi! Tudo certo? Conseguimos avançar com o plano? Estou por aqui caso precise de algo.`,
+        `Olá, tudo bem? Podemos finalizar sua contratação agora? Ficou com alguma dúvida?`,
+        `Oi! Só confirmando: deseja seguir com o plano que conversamos? Se quiser ajustar algo, me avise!`,
+        `Olá! Tudo bem por aí? Posso dar andamento na contratação para você? Qualquer dúvida me avisa.`,
+        `Olá, tudo bem? Qualquer dúvida sobre o plano ou condições, estou à disposição. Podemos avançar?`,
+        `Olá, tudo bem? Só passando pra saber se deseja continuar com a contratação. Qualquer dúvida me avisa.`,
+      ],
+    };
+  }
   
   // Pegar array de mensagens do dia e randomizar
-  const dayMessages = messages_templates[Math.min(daysSinceCreation, 3)] || messages_templates[3];
+  const dayKey = Math.min(daysSinceCreation, 3).toString();
+  const dayMessages = (messages_templates as any)[dayKey] || (messages_templates as any)["0"] || [];
+  
+  if (dayMessages.length === 0) {
+    console.warn(`⚠️ Nenhuma mensagem disponível para o dia ${daysSinceCreation}`);
+    return;
+  }
+  
   const randomIndex = Math.floor(Math.random() * dayMessages.length);
   const mensagem = dayMessages[randomIndex];
   
@@ -452,11 +453,25 @@ async function executeContratoEnviadoMessage(task: any) {
     conversation = newConv;
   }
   
-  // 2 mensagens randomizadas
-  const messages_templates: string[] = [
-    `Oi!\nSeu contrato já chegou no seu e-mail.\nÉ só abrir o link, colocar a data de nascimento do gestor e seguir as etapas.\n\nVocê vai receber um e-mail com o TOKEN de confirmação.\nInforme o código e pronto — assinatura concluída.\n\nQualquer dúvida estou por aqui!`,
-    `Olá!\nO contrato foi enviado para o seu e-mail.\nÉ só clicar no link, inserir a data de nascimento do gestor e avançar.\n\nDepois disso, você vai receber um e-mail com o TOKEN.\nBasta inserir no campo solicitado e finalizar a assinatura.\n\nQualquer dúvida, estou à disposição.`,
-  ];
+  // 🔥 LER MENSAGENS DO BANCO (automation_configs)
+  const config = await db.query.automationConfigs.findFirst({
+    where: (ac: any) => eq(ac.jobType, "contrato_enviado_message"),
+  });
+  
+  let messages_templates = (config?.mensagensTemplates as any)?.["0"] || [];
+  
+  // Fallback para mensagens padrão se não houver no banco
+  if (messages_templates.length === 0) {
+    messages_templates = [
+      `Oi!\nSeu contrato já chegou no seu e-mail.\nÉ só abrir o link, colocar a data de nascimento do gestor e seguir as etapas.\n\nVocê vai receber um e-mail com o TOKEN de confirmação.\nInforme o código e pronto — assinatura concluída.\n\nQualquer dúvida estou por aqui!`,
+      `Olá!\nO contrato foi enviado para o seu e-mail.\nÉ só clicar no link, inserir a data de nascimento do gestor e avançar.\n\nDepois disso, você vai receber um e-mail com o TOKEN.\nBasta inserir no campo solicitado e finalizar a assinatura.\n\nQualquer dúvida, estou à disposição.`,
+    ];
+  }
+  
+  if (messages_templates.length === 0) {
+    console.warn(`⚠️ Nenhuma mensagem disponível para Contrato Enviado`);
+    return;
+  }
   
   // Pegar mensagem randomizada
   const randomIndex = Math.floor(Math.random() * messages_templates.length);
@@ -672,14 +687,32 @@ async function executeAguardandoAceiteReminder(task: any) {
   
   console.log(`💬 Enviando lembrete ${lembreteNum}/3 de Aguardando Aceite para ${client.nome}`);
   
-  // Mensagens pelos 3 dias
-  const messages_templates: Record<number, string> = {
-    1: `Olá, tudo bem?\nSeu contrato já está pronto para assinatura digital.\nPor favor, clique no link que você recebeu e finalize o aceite.\nSe tiver alguma dúvida, estou à disposição!`,
-    2: `Oi, tudo bem?\nSó passando para lembrar que seu contrato ainda está aguardando assinatura.\nAssine o quanto antes para garantir os benefícios.\nQualquer dúvida, me avise!`,
-    3: `Oi, tudo bem?\nEste é o último lembrete para assinatura do contrato.\nPara não gerar atrasos, finalize o aceite o quanto antes clicando no link enviado no email.\nSe precisar de ajuda, estou à disposição!`,
-  };
+  // 🔥 LER MENSAGENS DO BANCO (automation_configs)
+  const config = await db.query.automationConfigs.findFirst({
+    where: (ac: any) => eq(ac.jobType, "aguardando_aceite_reminder"),
+  });
   
-  const mensagem = messages_templates[lembreteNum] || messages_templates[1];
+  let messages_templates = config?.mensagensTemplates || {};
+  
+  // Fallback para mensagens padrão se não houver no banco
+  if (Object.keys(messages_templates).length === 0) {
+    messages_templates = {
+      1: [`Olá, tudo bem?\nSeu contrato já está pronto para assinatura digital.\nPor favor, clique no link que você recebeu e finalize o aceite.\nSe tiver alguma dúvida, estou à disposição!`],
+      2: [`Oi, tudo bem?\nSó passando para lembrar que seu contrato ainda está aguardando assinatura.\nAssine o quanto antes para garantir os benefícios.\nQualquer dúvida, me avise!`],
+      3: [`Oi, tudo bem?\nEste é o último lembrete para assinatura do contrato.\nPara não gerar atrasos, finalize o aceite o quanto antes clicando no link enviado no email.\nSe precisar de ajuda, estou à disposição!`],
+    };
+  }
+  
+  const dayMessages = (messages_templates as any)[lembreteNum] || (messages_templates as any)[1] || [];
+  
+  if (!Array.isArray(dayMessages) || dayMessages.length === 0) {
+    console.warn(`⚠️ Nenhuma mensagem disponível para lembrete ${lembreteNum}`);
+    return;
+  }
+  
+  // Se tem múltiplas mensagens para o dia, randomiza
+  const randomIndex = Math.floor(Math.random() * dayMessages.length);
+  const mensagem = dayMessages[randomIndex];
   
   // Buscar ou criar conversation do cliente
   let conversation = await db.query.conversations.findFirst({
