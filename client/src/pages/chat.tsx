@@ -413,7 +413,15 @@ export default function Chat() {
         const messagePreview = newMessage.conteudo.substring(0, 50) + 
           (newMessage.conteudo.length > 50 ? "..." : "");
         
-        // Mostra notificação se a janela não está em foco OU se há múltiplas mensagens
+        // SEMPRE tocar som quando recebe mensagem de cliente
+        try {
+          playNotificationSound();
+          console.log("🔊 Som de notificação tocado");
+        } catch (err) {
+          console.log("⚠️ Erro ao tocar som:", err);
+        }
+        
+        // Mostra notificação visual se a janela não está em foco OU se há múltiplas mensagens
         if (!document.hasFocus() || messages.length > previousMessageCount + 1) {
           if ("Notification" in window && Notification.permission === "granted") {
             new Notification(`Nova mensagem de ${clientName}`, {
@@ -421,13 +429,9 @@ export default function Chat() {
               icon: "/icon.png",
               tag: `message-${newMessage.conversationId}`,
             });
-            
-            // Tocar som de notificação
-            try {
-              playNotificationSound();
-            } catch (err) {
-              console.log("Não foi possível reproduzir som:", err);
-            }
+            console.log("📬 Notificação visual mostrada");
+          } else {
+            console.log("⚠️ Notificações bloqueadas ou não suportadas");
           }
         }
       }
