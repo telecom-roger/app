@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq, and, desc, asc, sql, ilike, or, inArray } from "drizzle-orm";
+import { eq, and, desc, asc, sql, ilike, or, inArray, count } from "drizzle-orm";
 import type {
   Client,
   InsertClient,
@@ -676,6 +676,7 @@ export async function toggleConversationHidden(conversationId: string, userId: s
 }
 
 export async function getConversations(userId: string): Promise<any[]> {
+  // ✅ Get all conversations (not hidden) - filter empty ones client-side
   const result = await db
     .select({
       id: conversations.id,
@@ -701,24 +702,28 @@ export async function getConversations(userId: string): Promise<any[]> {
     .where(and(eq(conversations.userId, userId), eq(conversations.oculta, false)))
     .orderBy(desc(conversations.ultimaMensagemEm));
   
-  // Add unread message counts and filter out empty conversations (without messages)
-  const withCounts = await Promise.all(result.map(async (row) => {
-    const unreadCount = await countUnreadMessages(row.id);
-    const messageCount = await db
-      .select({ count: sql`count(*)` })
-      .from(messages)
-      .where(eq(messages.conversationId, row.id));
-    
-    return {
-      ...row,
-      unreadCount,
-      client: row.client && row.client.id ? row.client : null,
-      messageCount: Number(messageCount[0]?.count || 0)
-    };
-  }));
+  // Filter out empty conversations (without messages) and add unread counts
+  const filtered = await Promise.all(
+    result.map(async (row) => {
+      const msgCount = await db
+        .select({ count: count() })
+        .from(messages)
+        .where(eq(messages.conversationId, row.id));
+      
+      const hasMessages = Number(msgCount[0]?.count || 0) > 0;
+      if (!hasMessages) return null;
+      
+      const unreadCount = await countUnreadMessages(row.id);
+      return {
+        ...row,
+        unreadCount,
+        client: row.client && row.client.id ? row.client : null
+      };
+    })
+  );
   
-  // Filter out conversations with no messages
-  return withCounts.filter(conv => conv.messageCount > 0);
+  // Remove nulls
+  return filtered.filter(Boolean);
 }
 
 export async function getMessages(conversationId: string, limit: number = 50): Promise<Message[]> {
