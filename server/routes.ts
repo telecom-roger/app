@@ -44,6 +44,9 @@ const campanhasEmProgresso = new Map<string, {
   parar: boolean;
 }>();
 
+// Environment check
+const isDev = process.env.REPLIT_DEPLOYMENT !== "1";
+
 // Admin middleware
 function requireAdmin(req: Request, res: Response, next: Function) {
   const user = (req.user as any);
@@ -53,9 +56,24 @@ function requireAdmin(req: Request, res: Response, next: Function) {
   next();
 }
 
+// Test endpoints only in dev
+function onlyInDev(req: Request, res: Response, next: Function) {
+  if (!isDev) {
+    return res.status(404).json({ error: "Not found" });
+  }
+  next();
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
   await setupAuth(app);
+
+  // Block all test endpoints in production
+  if (!isDev) {
+    app.use("/api/test/", (req: Request, res: Response) => {
+      res.status(404).json({ error: "Not found" });
+    });
+  }
 
   // ==================== SCHEDULER: CAMPANHAS AGENDADAS ====================
   // Executa a cada 1 minuto
