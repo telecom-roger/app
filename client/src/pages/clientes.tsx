@@ -665,6 +665,18 @@ export default function Clientes() {
               <div className="flex gap-2 flex-wrap items-center pt-2 border-t border-slate-200 dark:border-slate-700">
                 <Button
                   size="sm"
+                  variant={statusFilter === "em_fechamento" ? "default" : "outline"}
+                  onClick={() => setStatusFilter(statusFilter === "em_fechamento" ? "todos" : "em_fechamento")}
+                  data-testid="button-filter-aguardando-atencao"
+                  className="h-8 text-xs bg-orange-50 dark:bg-orange-950 hover:bg-orange-100 dark:hover:bg-orange-900 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800"
+                >
+                  ⏰ Aguardando Atenção
+                </Button>
+
+                <div className="h-6 w-px bg-border" />
+
+                <Button
+                  size="sm"
                   variant="outline"
                   onClick={() => {
                     const novoSet = new Set(selectedClientIds);
