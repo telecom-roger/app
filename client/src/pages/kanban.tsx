@@ -562,14 +562,11 @@ function KanbanColumn({
       <Card className={`h-full flex flex-col border-0 shadow-sm bg-white dark:bg-slate-800/50 transition-all ${isDragOver ? "bg-slate-100 dark:bg-slate-700/50 ring-2 ring-offset-2 ring-blue-500" : ""}`}>
         <CardHeader className="pb-4 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`h-3 w-3 rounded-full ${coluna.cor}`} />
-              <div className="flex flex-col">
-                <h3 className="font-semibold text-slate-900 dark:text-white">{coluna.titulo}</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Total: R$ {formatValue(coluna.oportunidades.reduce((sum, opp) => sum + parseValue(opp.valorEstimado || "0"), 0))}
-                </p>
-              </div>
+            <div className="flex flex-col">
+              <h3 className="font-semibold text-slate-900 dark:text-white">{coluna.titulo}</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Total: R$ {formatValue(coluna.oportunidades.reduce((sum, opp) => sum + parseValue(opp.valorEstimado || "0"), 0))}
+              </p>
             </div>
             <Badge variant="secondary" className="ml-auto bg-slate-100 dark:bg-slate-900">
               {coluna.oportunidades.length}
