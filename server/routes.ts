@@ -2217,30 +2217,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
               etapaAtual: existingOpp?.etapa,
             });
 
-            // Garantir que deveCriarNovoNegocio é sempre um boolean
-            const deveCriarNovo = analysis.deveCriarNovoNegocio === true;
+            // ✅ GARANTIR: deveCriarNovoNegocio sempre é calculado corretamente
+            // Se está em FECHADO/PERDIDO e análise permite movimento → SEMPRE criar novo
+            const estáEmFechadoOuPerdido = existingOpp && (existingOpp.etapa === "FECHADO" || existingOpp.etapa === "PERDIDO");
+            const deveCriarNovo = analysis.deveCriarNovoNegocio === true || estáEmFechadoOuPerdido;
             
             console.log(`🤖 [Chat] "${conteudo}" → etapa: ${analysis.etapa}, deveAgir: ${analysis.deveAgir}, deveCriarNovo: ${deveCriarNovo} (opp atual: ${existingOpp?.etapa})`);
 
-            // ✅ PRIORIDADE 1: CRIAR NOVO NEGÓCIO (FECHADO/PERDIDO)
-            // Ignora deveAgir quando deve criar novo (pois FECHADO/PERDIDO têm deveAgir=false)
-            if (existingOpp && deveCriarNovo) {
+            // ✅ PRIORIDADE 1: CRIAR NOVO NEGÓCIO (FECHADO/PERDIDO ou deveCriarNovo=true)
+            if (existingOpp && deveCriarNovo && analysis.etapa && analysis.etapa !== "") {
               const novaOpp = await storage.createOpportunity({
                 clientId: conversation.clientId,
                 titulo: `${client?.nome} - Novo Ciclo`,
                 etapa: analysis.etapa,
                 userId: user.id,
               });
-              console.log(`🆕 [Chat] NOVO negócio criado em ${analysis.etapa} (opp ${existingOpp.etapa} congelada em ${existingOpp.etapa})`);
+              console.log(`🆕 [Chat] NOVO negócio criado em ${analysis.etapa} (${existingOpp.etapa} congelada)`);
             }
             // ✅ PRIORIDADE 2: MOVER OPORTUNIDADE EXISTENTE
-            // Apenas se pode agir E não é para criar novo
-            else if (existingOpp && !deveCriarNovo && existingOpp.etapa !== analysis.etapa && analysis.deveAgir) {
+            // Apenas se pode agir, NÃO está em FECHADO/PERDIDO, E etapa é diferente
+            else if (existingOpp && !estáEmFechadoOuPerdido && existingOpp.etapa !== analysis.etapa && analysis.deveAgir) {
               await db.update(opportunities).set({ etapa: analysis.etapa }).where(eq(opportunities.id, existingOpp.id));
               console.log(`✅ [Chat] Oportunidade movida de ${existingOpp.etapa} para ${analysis.etapa}`);
             } 
-            // ✅ PRIORIDADE 3: CRIAR PRIMEIRA OPORTUNIDADE
-            else if (!existingOpp && analysis.etapa !== "AUTOMÁTICA" && analysis.deveAgir) {
+            // ✅ PRIORIDADE 3: CRIAR PRIMEIRA OPORTUNIDADE (nenhuma existe ainda)
+            else if (!existingOpp && analysis.etapa && analysis.etapa !== "AUTOMÁTICA" && analysis.deveAgir) {
               const novaOpp = await storage.createOpportunity({
                 clientId: conversation.clientId,
                 titulo: `${client?.nome} - Chat`,
