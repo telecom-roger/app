@@ -549,13 +549,13 @@ function OpportunityCard({
             {cliente?.nome && (
               <p 
                 onClick={() => navigate(`/clientes/${cliente.id}`)}
-                className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase truncate hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors"
+                className="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase truncate hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors"
                 data-testid={`text-cliente-nome-${cliente.id}`}
               >
                 {cliente.nome}
               </p>
             )}
-            <h4 className="font-medium leading-snug break-words text-slate-900 dark:text-white">{oportunidade.titulo}</h4>
+            <h4 className="text-sm font-medium leading-snug break-words text-slate-900 dark:text-white">{oportunidade.titulo}</h4>
           </div>
           <div className="flex flex-col items-end gap-2 flex-shrink-0">
             <div className={`h-3 w-3 rounded-full animate-pulse flex-shrink-0 ${getStatusColor(oportunidade.etapa)}`} data-testid={`status-indicator-${oportunidade.id}`} />
