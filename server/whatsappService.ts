@@ -404,18 +404,13 @@ async function handleIncomingMessages(sessionId: string, sock: any) {
     sock.ev.removeAllListeners("messages.update");
   }
   
-  sessionListeners.delete(sessionId); // Reset completamente
   sessionListeners.set(sessionId, true);
   console.log(`\n🎯🎯🎯 LISTENER REGISTRADO E ATIVADO PARA: ${sessionId} 🎯🎯🎯\n`);
 
   // Only listen to new messages (upsert), NOT status updates (update)
   // messages.update is for delivery status, NOT for incoming messages
-  sock.ev.once("messages.upsert", (m: any) => {
-    // Use .once para garantir que processa uma vez por reconexão
-    processIncomingMessages(sessionId, m);
-    // Re-register listener para próximas mensagens
-    sock.ev.on("messages.upsert", (m: any) => processIncomingMessages(sessionId, m));
-  });
+  // Use .on() (dedup logic via Set prevents duplicates)
+  sock.ev.on("messages.upsert", (m: any) => processIncomingMessages(sessionId, m));
   
   console.log(`[LISTENER] Aguardando mensagens para ${sessionId}...`);
 }
