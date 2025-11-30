@@ -313,7 +313,7 @@ CLIENTE: ${clienteInfo?.nome || "Desconhecido"}
 
 ▶️ 4 ETAPAS (escolha 1 - SEMPRE EM MAIÚSCULA):
 1. "CONTATO" - Pergunta preço/valor OU mensagem inicial ("oi", "tudo bem?")
-2. "PROPOSTA" - APROVAÇÃO: "ok", "sim", "manda", "gostei", "legal", "adorei"
+2. "PROPOSTA" - APROVAÇÃO ("ok", "sim", "manda", "gostei", "legal", "adorei") OU SOLICITAÇÃO DE PROPOSTA ("me envia a proposta", "envia proposta", "manda proposta", "quero ver a proposta")
 3. "AUTOMÁTICA" - Mensagens automáticas: "deixe contato", "breve", "aguarde"
 4. "PERDIDO" - APENAS RECUSA TOTAL (rejeitou tudo)
 
@@ -327,7 +327,9 @@ JSON - ETAPAS EM MAIÚSCULA:
 EXEMPLOS:
 ✓ "Não quero renovar nada" → etapa:"PERDIDO", deveAgir:true, ehRecusaParcial:false
 ✓ "Cancelar algumas linhas" → etapa:"CONTATO", deveAgir:false, ehRecusaParcial:true
-✓ "Ok, manda" → etapa:"PROPOSTA", deveAgir:true, ehRecusaParcial:false`;
+✓ "Ok, manda" → etapa:"PROPOSTA", deveAgir:true, ehRecusaParcial:false
+✓ "Me envia a proposta por favor" → etapa:"PROPOSTA", deveAgir:true, ehRecusaParcial:false
+✓ "Envia a proposta" → etapa:"PROPOSTA", deveAgir:true, ehRecusaParcial:false`;
 
     const response = await Promise.race([
       client.chat.completions.create({
