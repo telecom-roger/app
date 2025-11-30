@@ -709,10 +709,10 @@ export default function TestAutomation() {
             )}
           </div>
 
-          {/* Test 3: Movement Limits */}
+          {/* Test 3: Mandatory CONTATO→PROPOSTA */}
           <div className="p-4 bg-blue-500/10 rounded border border-blue-500/30">
-            <p className="text-blue-300 font-bold mb-2">🎯 Teste 3: Limites de Movimento da IA</p>
-            <p className="text-xs text-slate-300 mb-3">Verifica se IA respeita limites: só move entre LEAD/CONTATO</p>
+            <p className="text-blue-300 font-bold mb-2">🔥 Teste 3: Movimento OBRIGATÓRIO CONTATO→PROPOSTA</p>
+            <p className="text-xs text-slate-300 mb-3">Se em CONTATO e cliente aprova ("ok", "manda") → DEVE mover para PROPOSTA obrigatoriamente</p>
             <Button
               onClick={() => testMovementLimitMutation.mutate()}
               disabled={testMovementLimitMutation.isPending || !clientId || !userId}

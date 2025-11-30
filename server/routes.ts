@@ -14,10 +14,11 @@ import { analyzeClientMessage } from "./aiService";
 
 // ======================== CONSTANTES DE ETAPAS (AUTOMAÇÃO) ========================
 // ⚠️ REGRAS CRÍTICAS:
-// 1. IA controla 5 etapas automáticas
-// 2. Usuário controla 5 etapas manuais (IA NUNCA toca)
+// 1. IA controla movimento em LEAD/CONTATO
+// 2. EXCÇÃO: CONTATO→PROPOSTA é OBRIGATÓRIO se cliente aprova (deveAgir=true + sentimento positivo)
 // 3. Após PROPOSTA: usuário assume, IA PARA DE AGIR
-const ETAPAS_IA_CONTROLA = ["LEAD", "CONTATO"]; // IA só move entre essas
+// 4. Etapas manuais: IA NUNCA toca
+const ETAPAS_IA_CONTROLA = ["LEAD", "CONTATO"]; // IA move entre essas normalmente
 const ETAPAS_USUARIO_ASSUME = ["PROPOSTA", "FORNECEDOR", "PERDIDO"]; // Após essas, IA para
 const ETAPAS_MANUAIS = ["PROPOSTA ENVIADA", "AGUARDANDO CONTRATO", "CONTRATO ENVIADO", "AGUARDANDO ACEITE", "FECHADO"];
 const ETAPAS_AUTOMATICAS = [...ETAPAS_IA_CONTROLA, ...ETAPAS_USUARIO_ASSUME];
@@ -2179,25 +2180,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   await storage.recalculateClientStatus(conv.clientId);
                 }
               } else if (existingOpp && existingOpp.etapa !== etapa) {
-                // Validar movimento: só permite avanço, nunca retrocesso, nunca para etapas de usuário
-                const currentIndex = ETAPAS_IA_CONTROLA.indexOf(existingOpp.etapa);
-                const newIndex = ETAPAS_IA_CONTROLA.indexOf(etapa);
+                // 🔥 EXCEÇÃO CRÍTICA: Se em CONTATO e cliente aprova → DEVE mover para PROPOSTA
+                const ehTransicaoObrigatoriaCONTATOtoPROPOSTA = 
+                  existingOpp.etapa === "CONTATO" && 
+                  etapa === "PROPOSTA" && 
+                  analysis.deveAgir === true &&
+                  (analysis.sentimento === "positivo" || analysis.sentimento === "fornecedor");
                 
-                // IA só move DENTRO de ETAPAS_IA_CONTROLA (LEAD → CONTATO)
-                if (currentIndex >= 0 && newIndex > currentIndex) {
-                  // Movimento válido (avanço em etapas IA)
+                if (ehTransicaoObrigatoriaCONTATOtoPROPOSTA) {
+                  // 🔥 MOVIMENTO OBRIGATÓRIO: CONTATO → PROPOSTA (aprovação clara)
                   await db.update(opportunities).set({ 
-                    etapa: etapa,
+                    etapa: "PROPOSTA",
                     titulo: `${client.nome} - ${analysis.motivo}`,
                     updatedAt: new Date()
                   }).where(eq(opportunities.id, existingOpp.id));
                   
-                  console.log(`✅ OPP MOVIDA (CHAT): ${existingOpp.etapa} → ${etapa}`);
+                  console.log(`🔥 OPP MOVIDA (OBRIGATÓRIO): ${existingOpp.etapa} → PROPOSTA (aprovação detectada)`);
                   await storage.recalculateClientStatus(conv.clientId);
-                } else if (newIndex === currentIndex) {
-                  console.log(`ℹ️ OPP JÁ EM ${etapa} - Sem movimento`);
                 } else {
-                  console.log(`🛑 MOVIMENTO INVÁLIDO: ${existingOpp.etapa} → ${etapa}`);
+                  // Validar movimento normal: só permite avanço DENTRO de ETAPAS_IA_CONTROLA
+                  const currentIndex = ETAPAS_IA_CONTROLA.indexOf(existingOpp.etapa);
+                  const newIndex = ETAPAS_IA_CONTROLA.indexOf(etapa);
+                  
+                  // IA só move DENTRO de ETAPAS_IA_CONTROLA (LEAD → CONTATO)
+                  if (currentIndex >= 0 && newIndex > currentIndex) {
+                    // Movimento válido (avanço em etapas IA)
+                    await db.update(opportunities).set({ 
+                      etapa: etapa,
+                      titulo: `${client.nome} - ${analysis.motivo}`,
+                      updatedAt: new Date()
+                    }).where(eq(opportunities.id, existingOpp.id));
+                    
+                    console.log(`✅ OPP MOVIDA (CHAT): ${existingOpp.etapa} → ${etapa}`);
+                    await storage.recalculateClientStatus(conv.clientId);
+                  } else if (newIndex === currentIndex) {
+                    console.log(`ℹ️ OPP JÁ EM ${etapa} - Sem movimento`);
+                  } else {
+                    console.log(`🛑 MOVIMENTO INVÁLIDO: ${existingOpp.etapa} → ${etapa}`);
+                  }
                 }
               } else if (!existingOpp) {
                 // Criar nova oportunidade na etapa detectada
@@ -3703,7 +3723,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // TEST: IA movement limits (only LEAD/CONTATO)
+  // TEST: Mandatory CONTATO→PROPOSTA on approval
   app.post("/api/test/ia-movement-limits", isAuthenticated, async (req, res) => {
     try {
       const { clientId, userId } = req.body;
@@ -3711,17 +3731,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 1. Delete existing opps
       await db.delete(opportunities).where(eq(opportunities.clientId, clientId));
       
-      // 2. Create opp in LEAD
+      // 2. Create opp in CONTATO
       const [opp] = await db.insert(opportunities).values({
         clientId,
-        titulo: "Teste Movement Limits",
-        etapa: "LEAD",
+        titulo: "Teste Movimento Obrigatório",
+        etapa: "CONTATO",
         valorEstimado: "5000",
         responsavelId: userId,
         ordem: 0,
       }).returning();
       
-      // 3. Send "Ok, manda" (should move to CONTATO, not PROPOSTA)
+      // 3. Send "Ok, manda" (should MOVE to PROPOSTA - obrigatório)
       const conv = await storage.createOrGetConversation(clientId, userId);
       await storage.createMessage({
         conversationId: conv.id,
@@ -3730,15 +3750,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         conteudo: "Ok, manda",
       });
       
-      // 4. Check final stage (should be CONTATO max, not PROPOSTA)
+      // 4. Check final stage (DEVE ser PROPOSTA - movimento obrigatório)
       const oppAfter = await db.query.opportunities.findFirst({
         where: (o: any) => eq(o.id, opp.id),
       });
       
       res.json({
-        from: "LEAD",
+        from: "CONTATO",
         to: oppAfter?.etapa,
-        success: ["LEAD", "CONTATO"].includes(oppAfter?.etapa || ""),
+        success: oppAfter?.etapa === "PROPOSTA", // DEVE ser PROPOSTA
+        deveSerPROPOSTA: true,
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
