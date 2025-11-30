@@ -383,7 +383,8 @@ async function processIncomingMessages(sessionId: string, m: any) {
                 }
                 
                 if (mensagemAutomatica) {
-                  // ⏰ Verificar se NÃO enviou nos últimos 3 horas
+                  // ⏰ Verificar se NÃO enviou A MESMA MENSAGEM nos últimos 3 horas
+                  // (permite enviar mensagens diferentes de etapas diferentes)
                   const treHorasAtras = new Date(Date.now() - 3 * 60 * 60 * 1000);
                   const ultimaMsgAutomatica = await db
                     .select()
@@ -392,10 +393,13 @@ async function processIncomingMessages(sessionId: string, m: any) {
                       eq(messages.conversationId, conversation.id),
                       eq(messages.sender, "bot"),
                       eq(messages.tipo, "texto"),
+                      eq(messages.conteudo, mensagemAutomatica), // ← MESMA MENSAGEM
                       gte(messages.createdAt, treHorasAtras)
                     ))
                     .orderBy(desc(messages.createdAt))
                     .limit(1);
+                  
+                  console.log(`⏰ [ANTI-SPAM] Última msg igual: ${ultimaMsgAutomatica.length > 0 ? "SIM (bloqueado)" : "NÃO (liberado)"}`);
                   
                   if (ultimaMsgAutomatica.length === 0) {
                     console.log(`🚀 [RESPOSTA POSITIVA] Preparando envio automático...`);
