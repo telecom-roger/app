@@ -192,6 +192,27 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     };
   }
   
+  // 📋 SOLICITAÇÃO DE PROPOSTA → PROPOSTA
+  const solicitacaoProposta = [
+    "me envia a proposta", "envia a proposta", "envia proposta", "manda proposta",
+    "me manda a proposta", "quero ver a proposta", "mostra a proposta",
+    "me mostra a proposta", "qual e a proposta", "qual é a proposta"
+  ];
+  if (solicitacaoProposta.some(palavra => msg.includes(palavra))) {
+    const proposedStage = "PROPOSTA";
+    const isAllowed = validateMovement(etapaAtual, proposedStage);
+    return {
+      sentimento: "positivo",
+      confianca: 95,
+      motivo: "Solicitação de proposta detectada",
+      etapa: proposedStage,
+      deveAgir: isAllowed,
+      ehRecusaParcial: false,
+      ehMensagemAutomatica: false,
+      sugestao: "Enviar proposta",
+    };
+  }
+
   // ✅ APROVAÇÃO → PROPOSTA
   const aprovacao = [
     "ok", "sim", "manda", "pode enviar", "quero renovar", "topa", "pode", "vamos la",
