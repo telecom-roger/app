@@ -451,32 +451,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Altera status do cliente para "em_fechamento"
       const updatedClient = await storage.updateClient(req.params.id, { status: "em_fechamento" });
 
-      // Encontra oportunidade do cliente e move para "AGUARDANDO ATENÇÃO"
-      const opportunities = await storage.getOpportunities({
-        userId: user.id,
-        etapa: undefined,
-      });
-      const clientOpp = opportunities.find((o) => o.clientId === req.params.id);
-      
-      if (clientOpp) {
-        // Se existe, move para AGUARDANDO ATENÇÃO
-        if (clientOpp.etapa?.toUpperCase() !== "AGUARDANDO ATENÇÃO") {
-          await storage.updateOpportunity(clientOpp.id, {
-            etapa: "AGUARDANDO ATENÇÃO",
-          });
-          console.log(`✅ Oportunidade MOVIDA para AGUARDANDO ATENÇÃO`);
-        }
-      } else {
-        // Se não existe, CRIA em AGUARDANDO ATENÇÃO
-        await storage.createOpportunity({
-          clientId: req.params.id,
-          titulo: `${client.nome} - Aguardando Atenção`,
-          etapa: "AGUARDANDO ATENÇÃO",
-          responsavelId: user.id,
-        });
-        console.log(`✨ Oportunidade CRIADA em AGUARDANDO ATENÇÃO`);
-      }
-
       // Registra na timeline
       await storage.createInteraction({
         clientId: req.params.id,

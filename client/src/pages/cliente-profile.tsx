@@ -94,10 +94,9 @@ export default function ClienteProfile() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/clients", id] });
       queryClient.invalidateQueries({ queryKey: ["/api/timeline", id] });
-      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
       toast({
         title: "Sucesso",
-        description: "Cliente marcado como 'Aguardando Atenção' e movido para o Kanban",
+        description: "Cliente marcado como 'Aguardando Atenção'",
       });
     },
     onError: () => {
