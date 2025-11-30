@@ -271,7 +271,7 @@ export default function Chat() {
   });
 
   // Fetch all opportunities
-  const { data: allOpportunities = [] } = useQuery<any[]>({
+  const { data: allOpportunities = [], refetch: refetchOpportunities } = useQuery<any[]>({
     queryKey: ["/api/opportunities"],
   });
 
@@ -318,6 +318,8 @@ export default function Chat() {
           if (selectedConversationId === data.conversationId) {
             refetchMessages();
           }
+          // Refetch opportunities em tempo real para atualizar Kanban quando IA cria oportunidade
+          refetchOpportunities();
         }
       } catch (e) {
         console.error("Erro ao processar WebSocket:", e);
@@ -333,7 +335,7 @@ export default function Chat() {
         ws.close();
       }
     };
-  }, [selectedConversationId, refetchConversations, refetchMessages]);
+  }, [selectedConversationId, refetchConversations, refetchMessages, refetchOpportunities]);
 
   // Scroll to bottom when messages change or conversation is selected
   useEffect(() => {
