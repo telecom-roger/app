@@ -437,8 +437,34 @@ export async function simulateClientResponse(clientId: string, userId: string, m
       let statusAtualizado: string | null = null;
       let alerta = "";
       
+      // 🤖 DETECÇÃO ESPECIAL: Se mensagem automática → MOVER PARA AUTOMÁTICA (mesmo em etapas bloqueadas)
+      if (analysis.ehMensagemAutomatica) {
+        console.log(`🤖 MENSAGEM AUTOMÁTICA DETECTADA - Movendo para AUTOMÁTICA`);
+        if (existingOpp) {
+          resultOpp = await db.update(opportunities).set({ 
+            etapa: "AUTOMÁTICA",
+            titulo: `${client.nome} - Aguardando resposta (mensagem automática)`,
+            updatedAt: new Date()
+          }).where(eq(opportunities.id, existingOpp.id))
+          .returning()
+          .then(r => r[0]);
+          console.log(`✅ OPP MOVIDA (AUTOMÁTICO): ${existingOpp.etapa} → AUTOMÁTICA`);
+          actionType = "mover";
+        } else {
+          resultOpp = await db.insert(opportunities).values({
+            clientId,
+            titulo: `${client.nome} - Aguardando resposta (mensagem automática)`,
+            etapa: "AUTOMÁTICA",
+            valorEstimado: "5000",
+            responsavelId: userId,
+            ordem: 0,
+          }).returning().then(r => r[0]);
+          console.log(`✅ OPP CRIADA (AUTOMÁTICO): AUTOMÁTICA`);
+          actionType = "criar";
+        }
+      } 
       // 🎯 SE NÃO EXISTE OPP → SEMPRE CRIAR (até mesmo recusa parcial)
-      if (!existingOpp) {
+      else if (!existingOpp) {
         console.log(`✨ CRIANDO nova opportunity em ${etapaNormalizada}`);
         resultOpp = await db.insert(opportunities).values({
           clientId,
