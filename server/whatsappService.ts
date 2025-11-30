@@ -47,7 +47,6 @@ const sessionStatus = new Map<string, string>();
 const sessionUsers = new Map<string, string>();
 const sessionListeners = new Map<string, boolean>();
 const keepAliveIntervals = new Map<string, NodeJS.Timeout>();
-const processedMessageIds = new Set<string>(); // 🔴 DEDUP: Evita processar mesma msg 2x
 
 let reconnectAttempts = new Map<string, number>();
 
@@ -99,14 +98,6 @@ async function processIncomingMessages(sessionId: string, m: any) {
     console.log(`[RECEBIMENTO] 🎯 Processando ${msgs.length} mensagens para ${sessionId}`);
 
     for (const msg of msgs) {
-      // 🔴 DEDUP: Ignora se já processou essa mensagem
-      const msgId = `${msg.key.remoteJid}-${msg.key.id}`;
-      if (processedMessageIds.has(msgId)) {
-        console.log(`[RECEBIMENTO] ⏭️ Pulando msg já processada: ${msgId}`);
-        continue;
-      }
-      processedMessageIds.add(msgId);
-      
       if (msg.key.fromMe) {
         console.log(`[RECEBIMENTO] ➡️ Pulando msg enviada por mim (fromMe)`);
         continue;
@@ -358,22 +349,6 @@ async function processIncomingMessages(sessionId: string, m: any) {
                 createdBy: userId,
                 meta: { etapa: analysis.etapa, motivo: analysis.motivo, tipo_movimento: "automática" },
               });
-              
-              // 🚀 TRIGGER: Se criou opp em CONTATO ou PROPOSTA, dispara automação de mensagem IMEDIATAMENTE
-              if (analysis.etapa === "CONTATO" || analysis.etapa === "PROPOSTA") {
-                console.log(`🚀 Disparando automação de Contato Message para opp recém-criada (etapa: ${analysis.etapa})`);
-                try {
-                  const { executeContatoMessage } = await import("./automationService");
-                  await executeContatoMessage({
-                    userId,
-                    clientId: conversation.clientId,
-                    dados: { opportunityId: novaOpp.id, etapa: analysis.etapa },
-                  });
-                  console.log(`✅ Contato Message disparada com sucesso para ${analysis.etapa}`);
-                } catch (error) {
-                  console.error(`❌ Erro ao disparar contato_message:`, error);
-                }
-              }
             }
 
             // Notificar vendedor
@@ -397,19 +372,14 @@ async function processIncomingMessages(sessionId: string, m: any) {
 }
 
 async function handleIncomingMessages(sessionId: string, sock: any) {
-  // 🔴 EVITAR LISTENERS DUPLICADOS - Remover TUDO antes de registrar novo
-  if (sessionListeners.has(sessionId)) {
-    console.log(`⚠️ Removendo listeners antigos para ${sessionId}`);
-    sock.ev.removeAllListeners("messages.upsert");
-    sock.ev.removeAllListeners("messages.update");
-  }
+  // Reset listener flag for this socket (important on reconnect)
+  sessionListeners.delete(sessionId);
   
   sessionListeners.set(sessionId, true);
   console.log(`\n🎯🎯🎯 LISTENER REGISTRADO E ATIVADO PARA: ${sessionId} 🎯🎯🎯\n`);
 
   // Only listen to new messages (upsert), NOT status updates (update)
   // messages.update is for delivery status, NOT for incoming messages
-  // Use .on() (dedup logic via Set prevents duplicates)
   sock.ev.on("messages.upsert", (m: any) => processIncomingMessages(sessionId, m));
   
   console.log(`[LISTENER] Aguardando mensagens para ${sessionId}...`);

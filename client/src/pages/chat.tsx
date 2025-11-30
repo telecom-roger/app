@@ -316,22 +316,6 @@ export default function Chat() {
         const data = JSON.parse(event.data);
         if (data.type === "new_message") {
           console.log("📬 Nova mensagem recebida em tempo real:", data);
-          
-          // 🔴 ABRIR CONVERSA FECHADA AUTOMATICAMENTE - Remove de closedConversations
-          if (data.conversationId) {
-            setClosedConversations(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(data.conversationId);
-              return newSet;
-            });
-            
-            // 🔴 AUTO-SELECT conversa se nenhuma estiver selecionada ou estava fechada
-            if (!selectedConversationId) {
-              console.log(`📌 Auto-selecionando conversa: ${data.conversationId}`);
-              setSelectedConversationId(data.conversationId);
-            }
-          }
-          
           refetchConversations();
           // Se está na conversa que recebeu a mensagem, refetch mensagens também
           if (selectedConversationId === data.conversationId) {

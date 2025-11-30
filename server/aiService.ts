@@ -223,23 +223,11 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
   ];
   
   const aprovacaoPalavras = [
-    // BLOCO: ATENDIMENTO INICIAL - Respostas positivas
     "ok",
     "okay",
     "okkk",
-    "okii",
-    "certo",
-    "pode ser",
-    "claro",
     "sim",
-    "isso mesmo",
-    "fechou",
-    "manda ver",
     "pode mandar",
-    "pode fazer",
-    "pode gerar",
-    "pode seguir",
-    "faça para mim",
     "manda",
     "pode enviar",
     "quero renovar",
@@ -247,8 +235,6 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     "me envia",
     "aprova",
     "aprovado",
-    "gostei",
-    "achei bom",
     "blz",
     "beleza",
     // Emojis de confirmação
@@ -256,11 +242,7 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     "👌",
     "🙏",
     "✌️",
-    "🤝",
-    "🙌",
-    "✔️",
-    "✅",
-    "🆗"
+    "🤝"
   ];
   
   const isSolicitacaoProposta = solicitacaoProposta.some(palavra => msg.includes(palavra));

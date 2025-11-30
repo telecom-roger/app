@@ -284,21 +284,6 @@ async function executeKanbanMove(task: any) {
       .where(eq(opportunities.id, oppId));
 
     console.log(`✅ Oportunidade movida para ${toStage}!`);
-
-    // 🚀 TRIGGER: Se moveu para CONTATO ou PROPOSTA (por IA), dispara automação de mensagem IMEDIATAMENTE
-    if (toStage === "CONTATO" || toStage === "PROPOSTA") {
-      console.log(`🚀 Disparando automação de Contato Message para ${oppId} (etapa: ${toStage})`);
-      try {
-        await executeContatoMessage({
-          userId: task.userId,
-          clientId: task.clientId,
-          dados: { opportunityId: oppId, etapa: toStage },
-        });
-        console.log(`✅ Contato Message disparada com sucesso para ${toStage}`);
-      } catch (error) {
-        console.error(`❌ Erro ao disparar contato_message:`, error);
-      }
-    }
   } catch (error) {
     console.error(`❌ Erro ao mover Kanban:`, error);
     throw error;
@@ -481,8 +466,8 @@ async function executeContractReminder(task: any) {
   console.log(`✅ Mensagem enviada no chat e registrada na timeline de ${client.nome}`);
 }
 
-// ======================== CONTATO MESSAGE - Envio automático quando opportunity muda para CONTATO ou PROPOSTA ========================
-export async function executeContatoMessage(task: any) {
+// ======================== CONTATO MESSAGE - Envio automático quando opportunity muda para CONTATO ========================
+async function executeContatoMessage(task: any) {
   console.log(`💬 Contato Message para ${task.clientId}`);
   
   const opportunity = await db.query.opportunities.findFirst({
@@ -496,7 +481,7 @@ export async function executeContatoMessage(task: any) {
   });
   
   if (!client) return;
-
+  
   // Buscar ou criar conversation do cliente
   let conversation = await db.query.conversations.findFirst({
     where: (conv: any) => eq(conv.clientId, opportunity.clientId),
@@ -511,35 +496,14 @@ export async function executeContatoMessage(task: any) {
     conversation = newConv;
   }
   
-  // 🔍 VALIDAR: Evitar enviar a mesma mensagem nos últimas 3 horas (anti-spam)
-  const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000);
-  const recentMessages = await db
-    .select()
-    .from(messages)
-    .where(
-      and(
-        eq(messages.conversationId, conversation.id),
-        eq(messages.sender, "user"),
-        eq(messages.origem, "automation"),
-        eq(messages.tipo, "contato_message"),
-        gte(messages.createdAt, threeHoursAgo)
-      )
-    )
-    .limit(1);
-
-  if (recentMessages.length > 0) {
-    console.log(`⏸️ Mensagem de contato já foi enviada nos últimas 3 horas para ${client.nome}. Ignorando para evitar spam.`);
-    return;
-  }
-  
-  // 🔥 LER MENSAGENS DO BANCO (automation_configs)
+  // 🔥 LER MENSAGEM DO BANCO (automation_configs)
   const config = await db.query.automationConfigs.findFirst({
     where: (ac: any) => eq(ac.jobType, "contato_message"),
   });
   
   let messages_templates = (config?.mensagensTemplates as any)?.["0"] || [];
   
-  // Fallback para mensagens padrão se não houver no banco
+  // Fallback para mensagem padrão se não houver no banco
   if (messages_templates.length === 0) {
     messages_templates = [
       `Olá ${client.nome}!\n\nObrigado pelo contato. Estou aqui para ajudar com suas necessidades.\n\nQual é a melhor forma de eu auxiliar você hoje?`,
@@ -555,48 +519,29 @@ export async function executeContatoMessage(task: any) {
   const randomIndex = Math.floor(Math.random() * messages_templates.length);
   const mensagem = messages_templates[randomIndex];
   
-  // 1️⃣ REGISTRAR MENSAGEM NO CHAT PRIMEIRO
-  try {
-    console.log(`💾 Inserindo mensagem no chat para conversation: ${conversation.id}`);
-    const insertedMsg = await db.insert(messages).values({
-      conversationId: conversation.id,
-      sender: "user",
-      tipo: "texto",
-      conteudo: mensagem,
-      origem: "automation",
-    }).returning();
-    console.log(`✅ Mensagem inserida no chat com sucesso: ${insertedMsg[0]?.id}`);
-  } catch (error) {
-    console.error(`❌ Erro ao inserir mensagem no chat:`, error);
-    throw error;
-  }
+  // 1️⃣ REGISTRAR MENSAGEM NO CHAT
+  await db.insert(messages).values({
+    conversationId: conversation.id,
+    sender: "user",
+    tipo: "texto",
+    conteudo: mensagem,
+    origem: "automation",
+    createdAt: new Date(),
+  });
 
-  // 2️⃣ REGISTRAR NA TIMELINE DO CLIENTE (como histórico)
-  try {
-    console.log(`📝 Inserindo interação na timeline`);
-    const insertedInteraction = await db.insert(interactions).values({
-      clientId: opportunity.clientId,
-      tipo: "contato_message",
-      origem: "automation",
-      titulo: `Mensagem de Contato Enviada`,
-      texto: mensagem,
-      meta: { opportunityId: opportunity.id },
-      createdBy: task.userId,
-    }).returning();
-    console.log(`✅ Interação inserida na timeline com sucesso: ${insertedInteraction[0]?.id}`);
-  } catch (error) {
-    console.error(`❌ Erro ao inserir interação na timeline:`, error);
-    throw error;
-  }
+  // 2️⃣ REGISTRAR NA TIMELINE DO CLIENTE
+  await db.insert(interactions).values({
+    clientId: opportunity.clientId,
+    tipo: "contato_message",
+    origem: "automation",
+    titulo: `Mensagem de Contato Enviada`,
+    texto: mensagem,
+    meta: { opportunityId: opportunity.id },
+    createdBy: task.userId,
+  });
   
-  // 🎲 DELAY RANDOMIZADO (20-40s para não parecer robô)
-  const delayMs = Math.random() * 20000 + 20000; // 20-40 segundos
-  console.log(`⏳ Aguardando ${(delayMs / 1000).toFixed(1)}s antes de enviar via WhatsApp...`);
-  await new Promise(resolve => setTimeout(resolve, delayMs));
-  
-  // 3️⃣ ENVIAR VIA WHATSAPP AUTOMATICAMENTE (APÓS DELAY)
+  // 3️⃣ ENVIAR VIA WHATSAPP AUTOMATICAMENTE
   try {
-    // Pega a sessão do usuário (importante: por userId!)
     const [session] = await db
       .select()
       .from(whatsappSessions)
@@ -604,11 +549,9 @@ export async function executeContatoMessage(task: any) {
       .limit(1);
 
     if (session) {
-      // Usa client.celular (não telefone_2!)
       if (client && client.celular) {
         const isAlive = whatsappService.isSessionAlive(session.sessionId);
         if (isAlive) {
-          // Formata o telefone para WhatsApp
           let telefone = client.celular.replace(/\D/g, "");
           if (!telefone.startsWith("55")) {
             telefone = "55" + telefone;
