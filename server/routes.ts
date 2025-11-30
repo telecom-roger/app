@@ -412,6 +412,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         createdBy: (req.user as any).id,
       });
+      
+      // Verificar se celular já existe (unicidade)
+      if (validatedData.celular) {
+        const celularNormalizado = validatedData.celular.replace(/\D/g, "").trim();
+        if (celularNormalizado) {
+          const [existente] = await db
+            .select({ id: clients.id, nome: clients.nome })
+            .from(clients)
+            .where(eq(clients.celular, celularNormalizado))
+            .limit(1);
+          
+          if (existente) {
+            return res.status(400).json({ 
+              error: `Este celular já está cadastrado para o cliente: ${existente.nome}` 
+            });
+          }
+          // Normalizar celular antes de salvar
+          validatedData.celular = celularNormalizado;
+        }
+      }
+      
       const client = await storage.createClient(validatedData);
       
       // Create audit log
@@ -454,6 +475,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const validatedData = insertClientSchema.partial().parse(req.body);
+      
+      // Verificar se celular já existe (unicidade) - exceto para o próprio cliente
+      if (validatedData.celular) {
+        const celularNormalizado = validatedData.celular.replace(/\D/g, "").trim();
+        if (celularNormalizado) {
+          const [existente] = await db
+            .select({ id: clients.id, nome: clients.nome })
+            .from(clients)
+            .where(and(
+              eq(clients.celular, celularNormalizado),
+              sql`${clients.id} != ${req.params.id}`
+            ))
+            .limit(1);
+          
+          if (existente) {
+            return res.status(400).json({ 
+              error: `Este celular já está cadastrado para o cliente: ${existente.nome}` 
+            });
+          }
+          // Normalizar celular antes de salvar
+          validatedData.celular = celularNormalizado;
+        }
+      }
+      
       const client = await storage.updateClient(req.params.id, validatedData);
 
       // Create audit log
