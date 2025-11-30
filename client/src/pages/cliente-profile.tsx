@@ -303,7 +303,7 @@ export default function ClienteProfile() {
                   {timeline && timeline.length > 0 && (
                     <>
                       <Separator className="my-4" />
-                      {[...timeline].reverse().map((item) => (
+                      {timeline.map((item) => (
                         <TimelineItem key={item.id} item={item} />
                       ))}
                     </>
@@ -311,7 +311,7 @@ export default function ClienteProfile() {
                 </div>
               ) : timeline && timeline.length > 0 ? (
                 <div className="space-y-4">
-                  {[...timeline].reverse().map((item) => (
+                  {timeline.map((item) => (
                     <TimelineItem key={item.id} item={item} />
                   ))}
                 </div>
