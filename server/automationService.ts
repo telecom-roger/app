@@ -401,8 +401,8 @@ async function executeContractReminder(task: any) {
   // 1️⃣ REGISTRAR MENSAGEM NO CHAT PRIMEIRO
   await db.insert(messages).values({
     conversationId: conversation.id,
-    sender: "bot",
-    tipo: "text",
+    sender: "user",
+    tipo: "texto",
     conteudo: mensagem,
     origem: "automation",
     createdAt: new Date(),
@@ -524,18 +524,45 @@ export async function checkPropostaEnviadaTimeouts() {
           })
           .where(eq(opportunities.id, opp.id));
 
+        // Buscar ou criar conversation
+        let conversation = await db.query.conversations.findFirst({
+          where: (conv: any) => eq(conv.clientId, opp.clientId),
+        });
+
+        if (!conversation) {
+          const [newConv] = await db.insert(conversations).values({
+            clientId: opp.clientId,
+            userId: opp.responsavelId || "",
+            ultimaMensagemEm: new Date(),
+          }).returning();
+          conversation = newConv;
+        }
+
+        // Mensagem de finalização
+        const mensagem = `Sua proposta expirou após 3 dias sem retorno. Caso deseje retomar as negociações, é só me chamar!`;
+
+        // REGISTRAR MENSAGEM NO CHAT
+        await db.insert(messages).values({
+          conversationId: conversation.id,
+          sender: "user",
+          tipo: "texto",
+          conteudo: mensagem,
+          origem: "automation",
+          createdAt: new Date(),
+        });
+
         // 📋 REGISTRAR NA TIMELINE DO CLIENTE - MOVIMENTO PARA PERDIDO
         await db.insert(interactions).values({
           clientId: opp.clientId,
           tipo: "status_mudou",
           origem: "automation",
           titulo: "Oportunidade Movida para Perdido",
-          texto: "Cliente tinha interesse em renovar mas não finalizou a contratação após 4 dias sem resposta",
+          texto: mensagem,
           meta: { opportunityId: opp.id, etapa_anterior: "PROPOSTA ENVIADA", etapa_nova: "PERDIDO", dias_sem_resposta: daysSinceEnvio },
           createdBy: opp.responsavelId || undefined,
         });
         
-        console.log(`✅ Timeline registrada para movimento para PERDIDO`);
+        console.log(`✅ Timeline registrada e mensagem enviada para PERDIDO`);
         continue;
       }
       
