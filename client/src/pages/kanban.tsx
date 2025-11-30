@@ -512,14 +512,14 @@ function OpportunityCard({
     const etapaUpper = etapa.toUpperCase();
     // Vermelho
     if (etapaUpper === "AGUARDANDO ACEITE" || etapaUpper === "PERDIDO") {
-      return "bg-red-500";
+      return "bg-red-600 dark:bg-red-400";
     }
     // Verde
     if (etapaUpper === "FECHADO") {
-      return "bg-green-500";
+      return "bg-green-600 dark:bg-green-400";
     }
     // Amarelo (padrão para LEAD, CONTATO, PROPOSTA, PROPOSTA ENVIADA, AGUARDANDO CONTRATO, CONTRATO ENVIADO)
-    return "bg-yellow-500";
+    return "bg-amber-600 dark:bg-amber-400";
   };
 
   return (
@@ -547,7 +547,7 @@ function OpportunityCard({
             <h4 className="font-medium leading-snug break-words text-slate-900 dark:text-white">{oportunidade.titulo}</h4>
           </div>
           <div className="flex flex-col items-end gap-2 flex-shrink-0">
-            <div className={`h-3 w-3 rounded-full ${getStatusColor(oportunidade.etapa)}`} data-testid={`status-indicator-${oportunidade.id}`} />
+            <div className={`h-3 w-3 rounded-full animate-pulse flex-shrink-0 ${getStatusColor(oportunidade.etapa)}`} data-testid={`status-indicator-${oportunidade.id}`} />
             <div className="flex gap-1">
               <button
                 onClick={() => onEdit(oportunidade)}
