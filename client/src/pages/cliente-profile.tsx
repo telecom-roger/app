@@ -485,6 +485,7 @@ function TimelineItem({ item }: { item: any }) {
   // Get tipo movimento from meta
   const tipoMovimento = (item.meta as any)?.tipo_movimento || item.origem;
   const userName = item.userName || 'Sistema';
+  const isAutomation = tipoMovimento === 'automática' || item.origem === 'system' || item.origem === 'automation';
 
   return (
     <Card className="hover-elevate bg-white dark:bg-white border-border">
@@ -501,7 +502,11 @@ function TimelineItem({ item }: { item: any }) {
                 </h4>
                 <div className="flex items-center gap-1 flex-wrap mt-1">
                   <p className="text-[10px] text-slate-600">
-                    {formatDate(item.createdAt)} - por {tipoMovimento}
+                    {formatDate(item.createdAt)} - {isAutomation ? (
+                      <span className="italic">por IA</span>
+                    ) : (
+                      <>por {userName}</>
+                    )}
                   </p>
                 </div>
               </div>
