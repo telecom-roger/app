@@ -319,71 +319,55 @@ async function processIncomingMessages(sessionId: string, m: any) {
           try {
             const client = await storage.getClientById(conversation.clientId);
             
-            // Procurar por oportunidade existente ANTES de analisar com IA
-            const existingOpps = await storage.getOpportunities({
-              userId,
-              etapa: undefined,
-            });
-            const existingOpp = existingOpps.find((o) => o.clientId === conversation.clientId);
+            // ✅ BUSCAR OPORTUNIDADE ABERTA DO CLIENTE (excluindo FECHADO/PERDIDO)
+            const openOpp = await storage.getOpenOpportunityForClient(conversation.clientId);
             
             const analysis = await analyzeClientMessage(conteudo, {
               nome: client?.nome,
-              etapaAtual: existingOpp?.etapa,
+              etapaAtual: openOpp?.etapa,
             });
             
             console.log(`🔍 [DEBUG ANÁLISE] Mensagem: "${conteudo}"`);
             console.log(`   Sentimento: ${analysis.sentimento}, Intenção: ${analysis.intenção}, Etapa: ${analysis.etapa}`);
-            console.log(`   DeveAgir: ${analysis.deveAgir}, Confiança: ${analysis.confianca}, DeveCriarNovo: ${analysis.deveCriarNovoNegocio}`);
+            console.log(`   DeveAgir: ${analysis.deveAgir}, Confiança: ${analysis.confianca}`);
+            console.log(`   OpenOpp: ${openOpp ? openOpp.etapa : "NENHUMA"}`);
 
-            // ✅ PRIORIDADE 1: CRIAR NOVO se está em FECHADO/PERDIDO (sempre)
-            const estáEmFechadoOuPerdido = existingOpp && (existingOpp.etapa === "FECHADO" || existingOpp.etapa === "PERDIDO");
-            if (estáEmFechadoOuPerdido && analysis.etapa && analysis.etapa !== "") {
-              const novoOpp = await storage.createOpportunity({
-                clientId: conversation.clientId,
-                titulo: `${client?.nome} - Novo Ciclo`,
-                etapa: analysis.etapa,
-                responsavelId: userId,
-              });
-              console.log(`🆕 NOVO negócio criado em ${analysis.etapa} (${existingOpp.etapa} congelada)`);
-              
-              // 📝 REGISTRAR CRIAÇÃO NO TIMELINE
-              await storage.createInteraction({
-                clientId: conversation.clientId,
-                tipo: "oportunidade_criada",
-                origem: "automation",
-                titulo: `Novo Ciclo de Negócio - ${analysis.etapa}`,
-                texto: `Novo ciclo iniciado. Etapa anterior: ${existingOpp.etapa} | Motivo: ${analysis.motivo}`,
-                createdBy: userId,
-                meta: { etapa: analysis.etapa, motivo: analysis.motivo, tipo_movimento: "novo_ciclo" },
-              });
-            }
-            // ✅ PRIORIDADE 2: MOVER se não é FECHADO/PERDIDO e pode agir
-            else if (existingOpp && !estáEmFechadoOuPerdido && existingOpp.etapa !== analysis.etapa && analysis.deveAgir) {
-              await storage.updateOpportunity(existingOpp.id, {
-                etapa: analysis.etapa,
-              });
-              console.log(`✅ Oportunidade movida de ${existingOpp.etapa} para ${analysis.etapa}`);
-            }
-            // ✅ PRIORIDADE 3: CRIAR PRIMEIRA oportunidade se não existir
-            else if (!existingOpp && analysis.etapa !== "AUTOMÁTICA" && analysis.deveAgir) {
-              const novaOpp = await storage.createOpportunity({
-                clientId: conversation.clientId,
-                titulo: `${client?.nome} - Resposta IA`,
-                etapa: analysis.etapa,
-                responsavelId: userId,
-              });
-              console.log(`✨ Oportunidade CRIADA em: ${analysis.etapa}`);
-              
-              // 📝 REGISTRAR CRIAÇÃO NO TIMELINE (IA)
-              await storage.createInteraction({
-                clientId: conversation.clientId,
-                tipo: "oportunidade_criada",
-                origem: "automation",
-                titulo: `Oportunidade de Negócio - ${analysis.etapa}`,
-                texto: `Etapa: ${analysis.etapa} | Motivo: ${analysis.motivo}`,
-                createdBy: userId,
-                meta: { etapa: analysis.etapa, motivo: analysis.motivo, tipo_movimento: "automática" },
-              });
+            // ✅ REGRA SIMPLIFICADA:
+            // - Se tem oportunidade ABERTA → ATUALIZA essa
+            // - Se NÃO tem oportunidade aberta → CRIA nova
+            
+            if (openOpp) {
+              // ✅ TEM NEGÓCIO ABERTO → ATUALIZAR (se etapa diferente e pode agir)
+              if (openOpp.etapa !== analysis.etapa && analysis.deveAgir) {
+                await storage.updateOpportunity(openOpp.id, {
+                  etapa: analysis.etapa,
+                });
+                console.log(`✅ Oportunidade ATUALIZADA de ${openOpp.etapa} para ${analysis.etapa}`);
+              } else {
+                console.log(`ℹ️ Oportunidade mantida em ${openOpp.etapa} (mesma etapa ou IA não agiu)`);
+              }
+            } else {
+              // ✅ NÃO TEM NEGÓCIO ABERTO → CRIAR NOVO
+              if (analysis.etapa && analysis.etapa !== "AUTOMÁTICA" && analysis.etapa !== "") {
+                const novaOpp = await storage.createOpportunity({
+                  clientId: conversation.clientId,
+                  titulo: `${client?.nome} - Novo Negócio`,
+                  etapa: analysis.etapa,
+                  responsavelId: userId,
+                });
+                console.log(`🆕 NOVO negócio CRIADO em ${analysis.etapa}`);
+                
+                // 📝 REGISTRAR CRIAÇÃO NO TIMELINE
+                await storage.createInteraction({
+                  clientId: conversation.clientId,
+                  tipo: "oportunidade_criada",
+                  origem: "automation",
+                  titulo: `Novo Negócio - ${analysis.etapa}`,
+                  texto: `Etapa: ${analysis.etapa} | Motivo: ${analysis.motivo}`,
+                  createdBy: userId,
+                  meta: { etapa: analysis.etapa, motivo: analysis.motivo, tipo_movimento: "automática" },
+                });
+              }
             }
 
             // ✅ ENVIAR MENSAGEM DE INTERESSE AUTOMÁTICA (se resposta positiva)

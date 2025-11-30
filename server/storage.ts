@@ -1289,3 +1289,24 @@ export async function getOpportunitiesByClientId(clientId: string): Promise<Oppo
     .from(opportunities)
     .where(eq(opportunities.clientId, clientId));
 }
+
+// ✅ HELPER: Buscar oportunidade ABERTA do cliente (excluindo FECHADO e PERDIDO)
+// Retorna a primeira oportunidade aberta encontrada, ou null se não houver
+export async function getOpenOpportunityForClient(clientId: string): Promise<Opportunity | null> {
+  const ETAPAS_FECHADAS = ["FECHADO", "PERDIDO"];
+  
+  const allOpps = await db
+    .select()
+    .from(opportunities)
+    .where(eq(opportunities.clientId, clientId));
+  
+  // Filtrar apenas oportunidades ABERTAS (não FECHADO nem PERDIDO)
+  const openOpps = allOpps.filter(opp => !ETAPAS_FECHADAS.includes(opp.etapa));
+  
+  if (openOpps.length === 0) {
+    return null;
+  }
+  
+  // Retornar a mais recente (ou a primeira encontrada)
+  return openOpps[0];
+}
