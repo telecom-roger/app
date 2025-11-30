@@ -499,9 +499,16 @@ function TimelineItem({ item }: { item: Interaction }) {
                 <h4 className="font-semibold text-xs" data-testid={`timeline-item-title-${item.id}`}>
                   {item.titulo || item.tipo}
                 </h4>
-                <p className="text-[10px] text-muted-foreground">
-                  {item.createdAt ? new Date(item.createdAt).toLocaleString('pt-BR') : 'Data desconhecida'}
-                </p>
+                <div className="flex items-center gap-1 flex-wrap">
+                  <p className="text-[10px] text-muted-foreground">
+                    {item.createdAt ? new Date(item.createdAt).toLocaleString('pt-BR') : 'Data desconhecida'}
+                  </p>
+                  {(item as any).origem === "automation" && (
+                    <span className="text-[10px] text-muted-foreground italic" data-testid={`timeline-ai-${item.id}`}>
+                      enviado por IA
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             {item.texto && (
