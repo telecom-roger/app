@@ -95,6 +95,7 @@ export default function Kanban() {
   const [filtroResponsavel, setFiltroResponsavel] = useState<string>("todos");
   const [filtroEtapa, setFiltroEtapa] = useState<string>("todas");
   const [filtroPeriodo, setFiltroPeriodo] = useState<string>("todas");
+  const [filtroCliente, setFiltroCliente] = useState<string>("");
   const [filtroDataInicio, setFiltroDataInicio] = useState<string>("");
   const [filtroDataFim, setFiltroDataFim] = useState<string>("");
   const [showNovaOportunidade, setShowNovaOportunidade] = useState(false);
@@ -237,7 +238,7 @@ export default function Kanban() {
     return { inicio, fim };
   };
 
-  // Filtrar oportunidades por responsável, etapa e período
+  // Filtrar oportunidades por responsável, etapa, período e cliente
   const oportunidadesFiltradas = (oportunidades || []).filter(op => {
     // Filtro responsável
     if (filtroResponsavel !== "todos") {
@@ -256,6 +257,16 @@ export default function Kanban() {
         const opDate = new Date(op.createdAt);
         if (opDate < inicio || opDate > fim) return false;
       }
+    }
+    
+    // Filtro cliente (nome ou CNPJ)
+    if (filtroCliente.trim()) {
+      const cliente = clientes.find((c: any) => c.id === op.clientId);
+      if (!cliente) return false;
+      const searchTerm = filtroCliente.toLowerCase().trim();
+      const nomeMatch = cliente.nome?.toLowerCase().includes(searchTerm);
+      const cnpjMatch = cliente.cnpj?.toLowerCase().includes(searchTerm);
+      if (!nomeMatch && !cnpjMatch) return false;
     }
     
     return true;
@@ -361,6 +372,15 @@ export default function Kanban() {
           {/* Controls */}
           <div className="flex flex-col gap-3">
             <div className="flex flex-col lg:flex-row gap-2 lg:gap-3 items-start lg:items-center flex-wrap">
+              <Input
+                type="text"
+                value={filtroCliente}
+                onChange={(e) => setFiltroCliente(e.target.value)}
+                placeholder="Buscar cliente ou CNPJ..."
+                className="w-full lg:w-56 text-xs lg:text-sm border-slate-200 dark:border-slate-700"
+                data-testid="input-filtro-cliente"
+              />
+
               <Select value={filtroResponsavel} onValueChange={setFiltroResponsavel}>
                 <SelectTrigger className="w-full lg:w-48 text-xs lg:text-sm border-slate-200 dark:border-slate-700" data-testid="select-responsavel">
                   <SelectValue placeholder="Responsável" />
