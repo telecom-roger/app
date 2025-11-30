@@ -308,7 +308,7 @@
   /* Scrollbar estilos para o sidebar */
   .sidebar [data-radix-scroll-area-viewport] {
     scrollbar-width: auto;
-    scrollbar-color: hsl(var(--sidebar-foreground) / 0.55) transparent;
+    scrollbar-color: hsl(var(--sidebar-foreground) / 0.15) transparent;
   }
 
   .sidebar [data-radix-scroll-area-viewport]::-webkit-scrollbar {
@@ -320,27 +320,27 @@
   }
 
   .sidebar [data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--sidebar-foreground) / 0.55);
+    background-color: hsl(var(--sidebar-foreground) / 0.15);
     border-radius: 4px;
     border: 2px solid transparent;
     background-clip: padding-box;
   }
 
   .sidebar [data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb:hover {
-    background-color: hsl(var(--sidebar-foreground) / 0.75);
+    background-color: hsl(var(--sidebar-foreground) / 0.4);
     background-clip: padding-box;
   }
 
   /* Dark mode scrollbar */
   .dark .sidebar [data-radix-scroll-area-viewport] {
-    scrollbar-color: hsl(var(--sidebar-foreground) / 0.6) transparent;
+    scrollbar-color: hsl(var(--sidebar-foreground) / 0.2) transparent;
   }
 
   .dark .sidebar [data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--sidebar-foreground) / 0.6);
+    background-color: hsl(var(--sidebar-foreground) / 0.2);
   }
 
   .dark .sidebar [data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb:hover {
-    background-color: hsl(var(--sidebar-foreground) / 0.8);
+    background-color: hsl(var(--sidebar-foreground) / 0.45);
   }
 }
