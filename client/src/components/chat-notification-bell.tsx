@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, ExternalLink } from "lucide-react";
+import { MessageCircle, ExternalLink } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -66,7 +66,7 @@ export function ChatNotificationBell() {
           className="relative"
           data-testid="button-chat-notifications"
         >
-          <Bell className="h-5 w-5" />
+          <MessageCircle className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge
               variant="destructive"
