@@ -890,16 +890,16 @@ async function executeAguardandoAceiteReminder(task: any) {
   }
 }
 
-// ======================== SCHEDULER DE CRON (executar a cada 1 minuto - PRODUÇÃO) ========================
+// ======================== SCHEDULER DE CRON (executar a cada 30 segundos - PRODUÇÃO) ========================
 export function startAutomationCron() {
-  console.log(`\n⏰ [AUTOMATION CRON] Iniciando scheduler (1 minuto - PRODUÇÃO)...`);
+  console.log(`\n⏰ [AUTOMATION CRON] Iniciando scheduler (30 segundos - PRODUÇÃO)...`);
   
-  // Executar a cada 1 minuto em produção
+  // Executar a cada 30 segundos em produção
   const interval = setInterval(() => {
     processAutomationTasks().catch(console.error);
     checkPropostaEnviadaTimeouts().catch(console.error);
     checkAguardandoAceiteTimeouts().catch(console.error);
-  }, 60 * 1000);
+  }, 30 * 1000);
 
   // Executar também na inicialização
   processAutomationTasks().catch(console.error);
