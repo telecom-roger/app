@@ -2701,7 +2701,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`📌 Criando oportunidade com valor: ${valorEstimado / 100}`);
           const opp = await storage.createOpportunity({
             clientId,
-            titulo: `Oportunidade - ${client.nome}`,
+            titulo: `Oportunidade de Negócio - ${tagName}`,
             valorEstimado,
             etapa: tagName,
             responsavelId: user.id,
