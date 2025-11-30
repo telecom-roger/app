@@ -28,6 +28,7 @@ interface Message {
   arquivo?: string;
   nomeArquivo?: string;
   mimeType?: string;
+  origem?: string;  // ✅ "automation" para mensagens enviadas por IA
 }
 
 // Function to render text with clickable links
