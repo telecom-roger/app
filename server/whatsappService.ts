@@ -388,8 +388,11 @@ async function processIncomingMessages(sessionId: string, m: any) {
 }
 
 async function handleIncomingMessages(sessionId: string, sock: any) {
-  // Reset listener flag for this socket (important on reconnect)
-  sessionListeners.delete(sessionId);
+  // 🔴 EVITAR LISTENERS DUPLICADOS - Remover listeners antigos ANTES de registrar novos
+  if (sessionListeners.has(sessionId)) {
+    console.log(`⚠️ Removendo listeners antigos para ${sessionId}`);
+    sock.ev.removeAllListeners("messages.upsert");
+  }
   
   sessionListeners.set(sessionId, true);
   console.log(`\n🎯🎯🎯 LISTENER REGISTRADO E ATIVADO PARA: ${sessionId} 🎯🎯🎯\n`);
