@@ -121,6 +121,11 @@ const adminItems = [
     icon: Mail,
   },
   {
+    title: "Automação",
+    url: "/admin/automacao",
+    icon: Zap,
+  },
+  {
     title: "Configurações",
     url: "/admin/configuracoes",
     icon: Settings,

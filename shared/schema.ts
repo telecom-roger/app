@@ -671,3 +671,28 @@ export const insertClientScoreSchema = createInsertSchema(clientScores).omit({
 
 export type ClientScore = typeof clientScores.$inferSelect;
 export type InsertClientScore = z.infer<typeof insertClientScoreSchema>;
+
+// ==================== AUTOMATION CONFIGS ====================
+export const automationConfigs = pgTable("automation_configs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobType: varchar("job_type", { length: 50 }).notNull(), // follow_up, re_engagement, score_update, contract_reminder, etc
+  ativo: boolean("ativo").default(true),
+  horarios: text("horarios").array().default(sql`ARRAY[]::text[]`), // ['08:00', '16:30']
+  timeout2h: boolean("timeout_2h").default(true),
+  timeout4dias: boolean("timeout_4_dias").default(true),
+  diasSemana: text("dias_semana").array().default(sql`ARRAY['segunda', 'terca', 'quarta', 'quinta', 'sexta']::text[]`),
+  mensagensTemplates: jsonb("mensagens_templates").default(sql`'[]'::jsonb`), // array de templates por job
+  intervaloScheduler: integer("intervalo_scheduler").default(60), // segundos
+  emailNotificacoes: boolean("email_notificacoes").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertAutomationConfigSchema = createInsertSchema(automationConfigs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type AutomationConfig = typeof automationConfigs.$inferSelect;
+export type InsertAutomationConfig = z.infer<typeof insertAutomationConfigSchema>;

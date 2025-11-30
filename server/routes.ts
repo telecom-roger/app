@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { z } from "zod";
 import { eq, and, or, ilike, desc, sql, lte, inArray, isNull, gte, between } from "drizzle-orm";
 import cron from "node-cron";
-import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, insertClientSharingSchema, whatsappSessions, clients, interactions, conversations, messages, campaigns as campaignsTable, templates as templatesTable, tags, clientSharing, notifications, users, campaignSendings, campaignGroups, opportunities, automationTasks } from "@shared/schema";
+import { insertClientSchema, insertOpportunitySchema, insertCampaignSchema, insertTemplateSchema, insertClientSharingSchema, whatsappSessions, clients, interactions, conversations, messages, campaigns as campaignsTable, templates as templatesTable, tags, clientSharing, notifications, users, campaignSendings, campaignGroups, opportunities, automationTasks, automationConfigs } from "@shared/schema";
 import * as storage from "./storage";
 import * as whatsappService from "./whatsappService";
 import { setupAuth, isAuthenticated } from "./localAuth";
@@ -3571,6 +3571,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("❌ Cleanup error:", error);
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
+  // ==================== ADMIN: AUTOMATION CONFIGS ====================
+  app.get("/api/admin/automation-configs", isAuthenticated, requireAdmin, async (req, res) => {
+    try {
+      const configs = await db.select().from(automationConfigs);
+      
+      // Convert to object keyed by jobType for easy access
+      const configsObject: Record<string, any> = {};
+      for (const config of configs) {
+        configsObject[config.jobType] = config;
+      }
+      
+      res.json(configsObject);
+    } catch (error) {
+      console.error("❌ Error fetching automation configs:", error);
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
+  app.patch("/api/admin/automation-configs", isAuthenticated, requireAdmin, async (req, res) => {
+    try {
+      const { jobType, ativo, horarios, timeout2h, timeout4dias, intervaloScheduler, emailNotificacoes } = req.body;
+      
+      if (!jobType) {
+        return res.status(400).json({ error: "jobType is required" });
+      }
+
+      // Check if config exists
+      const existing = await db
+        .select()
+        .from(automationConfigs)
+        .where(eq(automationConfigs.jobType, jobType));
+
+      let result;
+      if (existing.length > 0) {
+        // Update
+        [result] = await db
+          .update(automationConfigs)
+          .set({
+            ativo: ativo !== undefined ? ativo : existing[0].ativo,
+            horarios: horarios || existing[0].horarios,
+            timeout2h: timeout2h !== undefined ? timeout2h : existing[0].timeout2h,
+            timeout4dias: timeout4dias !== undefined ? timeout4dias : existing[0].timeout4dias,
+            intervaloScheduler: intervaloScheduler || existing[0].intervaloScheduler,
+            emailNotificacoes: emailNotificacoes !== undefined ? emailNotificacoes : existing[0].emailNotificacoes,
+            updatedAt: new Date(),
+          })
+          .where(eq(automationConfigs.jobType, jobType))
+          .returning();
+      } else {
+        // Create
+        [result] = await db
+          .insert(automationConfigs)
+          .values({
+            jobType,
+            ativo: ativo !== undefined ? ativo : true,
+            horarios: horarios || [],
+            timeout2h: timeout2h !== undefined ? timeout2h : true,
+            timeout4dias: timeout4dias !== undefined ? timeout4dias : true,
+            intervaloScheduler: intervaloScheduler || 60,
+            emailNotificacoes: emailNotificacoes !== undefined ? emailNotificacoes : true,
+          })
+          .returning();
+      }
+
+      res.json({
+        success: true,
+        message: "✅ Configuração atualizada",
+        config: result,
+      });
+    } catch (error) {
+      console.error("❌ Error updating automation config:", error);
       res.status(500).json({ error: String(error) });
     }
   });
