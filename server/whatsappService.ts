@@ -349,6 +349,22 @@ async function processIncomingMessages(sessionId: string, m: any) {
                 createdBy: userId,
                 meta: { etapa: analysis.etapa, motivo: analysis.motivo, tipo_movimento: "automática" },
               });
+              
+              // 🚀 TRIGGER: Se criou opp em CONTATO ou PROPOSTA, dispara automação de mensagem IMEDIATAMENTE
+              if (analysis.etapa === "CONTATO" || analysis.etapa === "PROPOSTA") {
+                console.log(`🚀 Disparando automação de Contato Message para opp recém-criada (etapa: ${analysis.etapa})`);
+                try {
+                  const { executeContatoMessage } = await import("./automationService");
+                  await executeContatoMessage({
+                    userId,
+                    clientId: conversation.clientId,
+                    dados: { opportunityId: novaOpp.id, etapa: analysis.etapa },
+                  });
+                  console.log(`✅ Contato Message disparada com sucesso para ${analysis.etapa}`);
+                } catch (error) {
+                  console.error(`❌ Erro ao disparar contato_message:`, error);
+                }
+              }
             }
 
             // Notificar vendedor

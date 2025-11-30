@@ -482,7 +482,7 @@ async function executeContractReminder(task: any) {
 }
 
 // ======================== CONTATO MESSAGE - Envio automático quando opportunity muda para CONTATO ou PROPOSTA ========================
-async function executeContatoMessage(task: any) {
+export async function executeContatoMessage(task: any) {
   console.log(`💬 Contato Message para ${task.clientId}`);
   
   const opportunity = await db.query.opportunities.findFirst({
