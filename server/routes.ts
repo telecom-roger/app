@@ -2070,6 +2070,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mimeType,
       });
 
+      // 🤖 ANÁLISE IA - Se for mensagem de texto e tiver cliente associado
+      if (tipo === "texto" && conteudo && conversation.clientId) {
+        try {
+          const [client] = await db.select().from(clients).where(eq(clients.id, conversation.clientId)).limit(1);
+          
+          // Buscar oportunidade existente
+          const [existingOpp] = await db
+            .select()
+            .from(opportunities)
+            .where(eq(opportunities.clientId, conversation.clientId))
+            .orderBy(desc(opportunities.createdAt))
+            .limit(1);
+
+          const analysis = await analyzeClientMessage(conteudo, {
+            nome: client?.nome,
+            etapaAtual: existingOpp?.etapa,
+          });
+
+          console.log(`🤖 [Chat] "${conteudo}" → etapa: ${analysis.etapa}, deveAgir: ${analysis.deveAgir}`);
+
+          // Mover oportunidade se análise indicar movimento
+          if (existingOpp && existingOpp.etapa !== analysis.etapa && analysis.deveAgir) {
+            await db.update(opportunities).set({ etapa: analysis.etapa }).where(eq(opportunities.id, existingOpp.id));
+            console.log(`✅ [Chat] Oportunidade movida para: ${analysis.etapa}`);
+          } else if (!existingOpp && analysis.etapa !== "AUTOMÁTICA" && analysis.deveAgir) {
+            // Criar nova oportunidade
+            const novaOpp = await storage.createOpportunity({
+              clientId: conversation.clientId,
+              titulo: `${client?.nome} - Chat`,
+              etapa: analysis.etapa,
+              userId: user.id,
+            });
+            console.log(`✅ [Chat] Nova oportunidade criada: ${analysis.etapa}`);
+          }
+        } catch (iaError) {
+          console.error("⚠️ [Chat] Erro na análise IA:", iaError);
+        }
+      }
+
       // 🚀 ENVIAR MENSAGEM PARA WHATSAPP
       try {
         if (conversation && conversation.clientId) {
