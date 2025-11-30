@@ -69,6 +69,8 @@ export default function AdminAutomacaoAdvanced() {
   const [editingMsgs, setEditingMsgs] = useState<Record<number, string[]>>({});
   const [newHorario, setNewHorario] = useState("");
   const [mensagemPadraoRespostaIA, setMensagemPadraoRespostaIA] = useState("");
+  const [mensagemContatoPositivo, setMensagemContatoPositivo] = useState("");
+  const [mensagemPropostaPositivo, setMensagemPropostaPositivo] = useState("");
 
   // Fetch configs
   const { data: configs = {}, isLoading } = useQuery({
@@ -103,13 +105,19 @@ export default function AdminAutomacaoAdvanced() {
     }
   }, [jobConfig, selectedJobForMessages]);
 
-  // Carrega a mensagem padrão da IA quando configs mudam
+  // Carrega as mensagens da IA quando configs mudam
   useEffect(() => {
     if (configs && typeof configs === 'object') {
-      // Procura por qualquer job que tenha a mensagem padrão
+      // Procura por qualquer job que tenha as mensagens
       const firstConfig = Object.values(configs)[0] as any;
       if (firstConfig?.mensagemPadraoRespostaIA) {
         setMensagemPadraoRespostaIA(firstConfig.mensagemPadraoRespostaIA);
+      }
+      if (firstConfig?.mensagemContatoPositivo) {
+        setMensagemContatoPositivo(firstConfig.mensagemContatoPositivo);
+      }
+      if (firstConfig?.mensagemPropostaPositivo) {
+        setMensagemPropostaPositivo(firstConfig.mensagemPropostaPositivo);
       }
     }
   }, [configs]);
@@ -442,35 +450,60 @@ export default function AdminAutomacaoAdvanced() {
               </label>
             </div>
 
-            <div className="border-t pt-4">
-              <label className="text-sm font-semibold text-muted-foreground mb-2 block">
-                💬 Mensagem Automática Padrão da IA
-              </label>
-              <p className="text-xs text-muted-foreground mb-3">
-                Mensagem enviada automaticamente quando cliente responde no chat e IA cria o card
-              </p>
-              <Textarea
-                value={mensagemPadraoRespostaIA}
-                onChange={(e) => setMensagemPadraoRespostaIA(e.target.value)}
-                placeholder="Ex: Obrigado pelo seu interesse! Estou analisando sua resposta e um de nossos especialistas entrará em contato em breve."
-                className="min-h-20 text-sm resize-none"
-                data-testid="mensagem-ia-padrao"
-              />
-              <Button
-                size="sm"
-                onClick={() => {
-                  updateConfigMutation.mutate({
-                    jobType: "ia_resposta_padrao",
-                    mensagemPadraoRespostaIA,
-                  });
-                }}
-                disabled={updateConfigMutation.isPending}
-                className="w-full gap-2 h-8 mt-3"
-                data-testid="btn-save-mensagem-ia"
-              >
-                <Save className="w-4 h-4" />
-                {updateConfigMutation.isPending ? "Salvando..." : "Salvar Mensagem"}
-              </Button>
+            <div className="border-t pt-4 space-y-4">
+              <div>
+                <label className="text-sm font-semibold text-muted-foreground mb-2 block">
+                  💬 Respostas Positivas - Atendimento Inicial
+                </label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Mensagens enviadas quando cliente demonstra interesse (ok, claro, pode mandar, etc)
+                </p>
+                
+                {/* Mensagem para CONTATO */}
+                <div className="mb-4 p-3 bg-muted/50 rounded-lg">
+                  <label className="text-xs font-semibold block mb-2">
+                    📌 Mensagem quando IA criar card em CONTATO
+                  </label>
+                  <Textarea
+                    value={mensagemContatoPositivo}
+                    onChange={(e) => setMensagemContatoPositivo(e.target.value)}
+                    placeholder="Ex: Ótimo! Vou preparar as informações sobre nossos serviços para você. Qualquer dúvida é só chamar!"
+                    className="min-h-16 text-sm resize-none"
+                    data-testid="mensagem-contato-positivo"
+                  />
+                </div>
+
+                {/* Mensagem para PROPOSTA */}
+                <div className="mb-4 p-3 bg-muted/50 rounded-lg">
+                  <label className="text-xs font-semibold block mb-2">
+                    💰 Mensagem quando IA criar card em PROPOSTA
+                  </label>
+                  <Textarea
+                    value={mensagemPropostaPositivo}
+                    onChange={(e) => setMensagemPropostaPositivo(e.target.value)}
+                    placeholder="Ex: Perfeito! Estou gerando sua proposta personalizada agora. Você receberá em instantes!"
+                    className="min-h-16 text-sm resize-none"
+                    data-testid="mensagem-proposta-positivo"
+                  />
+                </div>
+
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    updateConfigMutation.mutate({
+                      jobType: "ia_resposta_positiva",
+                      mensagemContatoPositivo,
+                      mensagemPropostaPositivo,
+                    });
+                  }}
+                  disabled={updateConfigMutation.isPending}
+                  className="w-full gap-2 h-8"
+                  data-testid="btn-save-mensagens-positivas"
+                >
+                  <Save className="w-4 h-4" />
+                  {updateConfigMutation.isPending ? "Salvando..." : "Salvar Mensagens de Interesse"}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

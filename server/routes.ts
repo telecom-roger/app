@@ -4147,6 +4147,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           intervaloScheduler: 60,
           emailNotificacoes: true,
           mensagemPadraoRespostaIA: "",
+          mensagemContatoPositivo: "",
+          mensagemPropostaPositivo: "",
         });
       }
 
@@ -4159,7 +4161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/admin/automation-configs", isAuthenticated, async (req, res) => {
     try {
-      const { jobType, ativo, horarios, timeout2h, timeout4dias, diasSemana, mensagensTemplates, intervaloScheduler, emailNotificacoes, mensagemPadraoRespostaIA } = req.body;
+      const { jobType, ativo, horarios, timeout2h, timeout4dias, diasSemana, mensagensTemplates, intervaloScheduler, emailNotificacoes, mensagemPadraoRespostaIA, mensagemContatoPositivo, mensagemPropostaPositivo } = req.body;
       
       if (!jobType) {
         return res.status(400).json({ error: "jobType is required" });
@@ -4186,6 +4188,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             intervaloScheduler: intervaloScheduler !== undefined ? intervaloScheduler : existing[0].intervaloScheduler,
             emailNotificacoes: emailNotificacoes !== undefined ? emailNotificacoes : existing[0].emailNotificacoes,
             mensagemPadraoRespostaIA: mensagemPadraoRespostaIA !== undefined ? mensagemPadraoRespostaIA : existing[0].mensagemPadraoRespostaIA,
+            mensagemContatoPositivo: mensagemContatoPositivo !== undefined ? mensagemContatoPositivo : existing[0].mensagemContatoPositivo,
+            mensagemPropostaPositivo: mensagemPropostaPositivo !== undefined ? mensagemPropostaPositivo : existing[0].mensagemPropostaPositivo,
             updatedAt: new Date(),
           })
           .where(eq(automationConfigs.jobType, jobType))
@@ -4205,6 +4209,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             intervaloScheduler: intervaloScheduler || 60,
             emailNotificacoes: emailNotificacoes !== undefined ? emailNotificacoes : true,
             mensagemPadraoRespostaIA: mensagemPadraoRespostaIA || "",
+            mensagemContatoPositivo: mensagemContatoPositivo || "",
+            mensagemPropostaPositivo: mensagemPropostaPositivo || "",
           })
           .returning();
       }

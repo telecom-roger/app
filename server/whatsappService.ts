@@ -7,8 +7,8 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import * as storage from "./storage";
 import { db } from "./db";
-import { or, ilike, eq } from "drizzle-orm";
-import { clients as clientsTable } from "@shared/schema";
+import { or, ilike, eq, and, desc, gte } from "drizzle-orm";
+import { clients as clientsTable, automationConfigs, messages } from "@shared/schema";
 import { analyzeClientMessage } from "./aiService";
 
 const execAsync = promisify(exec);
@@ -357,6 +357,78 @@ async function processIncomingMessages(sessionId: string, m: any) {
               });
             }
 
+            // ✅ ENVIAR MENSAGEM DE INTERESSE AUTOMÁTICA (se resposta positiva)
+            if ((analysis.sentimento === "positivo" || analysis.intenção === "aprovacao_envio") && analysis.etapa !== "AUTOMÁTICA") {
+              try {
+                // Buscar config de automação para pegar a mensagem apropriada
+                const [config] = await db.select().from(automationConfigs).where(eq(automationConfigs.jobType, "ia_resposta_positiva")).limit(1);
+                
+                let mensagemAutomatica = "";
+                if (analysis.etapa === "CONTATO" && config?.mensagemContatoPositivo) {
+                  mensagemAutomatica = config.mensagemContatoPositivo;
+                } else if (analysis.etapa === "PROPOSTA" && config?.mensagemPropostaPositivo) {
+                  mensagemAutomatica = config.mensagemPropostaPositivo;
+                }
+                
+                if (mensagemAutomatica) {
+                  // ⏰ Verificar se NÃO enviou nos últimos 3 horas
+                  const treHorasAtras = new Date(Date.now() - 3 * 60 * 60 * 1000);
+                  const ultimaMsgAutomatica = await db
+                    .select()
+                    .from(messages)
+                    .where(and(
+                      eq(messages.conversationId, conversation.id),
+                      eq(messages.sender, "bot"),
+                      eq(messages.tipo, "texto"),
+                      gte(messages.createdAt, treHorasAtras)
+                    ))
+                    .orderBy(desc(messages.createdAt))
+                    .limit(1);
+                  
+                  if (ultimaMsgAutomatica.length === 0) {
+                    // 💬 SALVAR MENSAGEM NO CHAT
+                    await storage.createMessage({
+                      conversationId: conversation.id,
+                      sender: "bot",
+                      tipo: "texto",
+                      conteudo: mensagemAutomatica,
+                    });
+                    
+                    // 📝 ADICIONAR À TIMELINE
+                    await storage.createInteraction({
+                      clientId: conversation.clientId,
+                      tipo: "nota",
+                      origem: "automation",
+                      titulo: "Resposta Automática de Interesse",
+                      texto: mensagemAutomatica,
+                      createdBy: userId,
+                      meta: { tipo: "resposta_positiva", etapa: analysis.etapa },
+                    });
+                    
+                    // 📱 ENVIAR VIA WHATSAPP (fire-and-forget)
+                    if (isSessionAlive(userId)) {
+                      const telefoneFormatado = client?.celular?.replace(/\D/g, '').replace(/^55/, '');
+                      if (telefoneFormatado) {
+                        try {
+                          const sock = activeSessions.get(userId);
+                          if (sock) {
+                            await sock.sendMessage(`${telefoneFormatado}@c.us`, { text: mensagemAutomatica });
+                            console.log(`✅ Mensagem automática enviada via WhatsApp: ${telefoneFormatado}`);
+                          }
+                        } catch (err) {
+                          console.warn(`⚠️ Erro ao enviar WhatsApp (ignorado):`, err);
+                        }
+                      }
+                    }
+                  } else {
+                    console.log(`⏰ Mensagem não enviada (já foi enviada nos últimos 3h)`);
+                  }
+                }
+              } catch (err) {
+                console.warn(`⚠️ Erro ao enviar mensagem automática (ignorado):`, err);
+              }
+            }
+            
             // Notificar vendedor
             await storage.createNotification({
               tipo: "ia_sentimento",

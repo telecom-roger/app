@@ -688,6 +688,8 @@ export const automationConfigs = pgTable("automation_configs", {
   intervaloScheduler: integer("intervalo_scheduler").default(60), // segundos
   emailNotificacoes: boolean("email_notificacoes").default(true),
   mensagemPadraoRespostaIA: text("mensagem_padrao_resposta_ia"), // Mensagem automática quando cliente envia msg e IA responde
+  mensagemContatoPositivo: text("mensagem_contato_positivo"), // Resposta positiva → CONTATO
+  mensagemPropostaPositivo: text("mensagem_proposta_positivo"), // Resposta positiva → PROPOSTA
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
