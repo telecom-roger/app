@@ -496,7 +496,7 @@ export async function executeContatoMessage(task: any) {
   });
   
   if (!client) return;
-  
+
   // Buscar ou criar conversation do cliente
   let conversation = await db.query.conversations.findFirst({
     where: (conv: any) => eq(conv.clientId, opportunity.clientId),
@@ -511,35 +511,14 @@ export async function executeContatoMessage(task: any) {
     conversation = newConv;
   }
   
-  // 🔍 VERIFICAR SE JÁ ENVIOU NOS ÚLTIMAS 3 HORAS (evitar duplicação)
-  const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000);
-  const lastMessage = await db
-    .select()
-    .from(messages)
-    .where(
-      and(
-        eq(messages.conversationId, conversation.id),
-        eq(messages.sender, "user"),
-        eq(messages.origem, "automation"),
-        gte(messages.createdAt, threeHoursAgo)
-      )
-    )
-    .orderBy((m: any) => desc(m.createdAt))
-    .limit(1);
-
-  if (lastMessage && lastMessage.length > 0) {
-    console.log(`⏸️ Mensagem de contato já foi enviada nos últimas 3 horas. Ignorando...`);
-    return;
-  }
-  
-  // 🔥 LER MENSAGEM DO BANCO (automation_configs)
+  // 🔥 LER MENSAGENS DO BANCO (automation_configs)
   const config = await db.query.automationConfigs.findFirst({
     where: (ac: any) => eq(ac.jobType, "contato_message"),
   });
   
   let messages_templates = (config?.mensagensTemplates as any)?.["0"] || [];
   
-  // Fallback para mensagem padrão se não houver no banco
+  // Fallback para mensagens padrão se não houver no banco
   if (messages_templates.length === 0) {
     messages_templates = [
       `Olá ${client.nome}!\n\nObrigado pelo contato. Estou aqui para ajudar com suas necessidades.\n\nQual é a melhor forma de eu auxiliar você hoje?`,
@@ -555,7 +534,7 @@ export async function executeContatoMessage(task: any) {
   const randomIndex = Math.floor(Math.random() * messages_templates.length);
   const mensagem = messages_templates[randomIndex];
   
-  // 1️⃣ REGISTRAR MENSAGEM NO CHAT
+  // 1️⃣ REGISTRAR MENSAGEM NO CHAT PRIMEIRO
   await db.insert(messages).values({
     conversationId: conversation.id,
     sender: "user",
@@ -565,7 +544,7 @@ export async function executeContatoMessage(task: any) {
     createdAt: new Date(),
   });
 
-  // 2️⃣ REGISTRAR NA TIMELINE DO CLIENTE
+  // 2️⃣ REGISTRAR NA TIMELINE DO CLIENTE (como histórico)
   await db.insert(interactions).values({
     clientId: opportunity.clientId,
     tipo: "contato_message",
@@ -576,8 +555,9 @@ export async function executeContatoMessage(task: any) {
     createdBy: task.userId,
   });
   
-  // 3️⃣ ENVIAR VIA WHATSAPP AUTOMATICAMENTE
+  // 3️⃣ ENVIAR VIA WHATSAPP AUTOMATICAMENTE (IGUAL AO ENDPOINT POST)
   try {
+    // Pega a sessão do usuário (importante: por userId!)
     const [session] = await db
       .select()
       .from(whatsappSessions)
@@ -585,9 +565,11 @@ export async function executeContatoMessage(task: any) {
       .limit(1);
 
     if (session) {
+      // Usa client.celular (não telefone_2!)
       if (client && client.celular) {
         const isAlive = whatsappService.isSessionAlive(session.sessionId);
         if (isAlive) {
+          // Formata o telefone para WhatsApp
           let telefone = client.celular.replace(/\D/g, "");
           if (!telefone.startsWith("55")) {
             telefone = "55" + telefone;
