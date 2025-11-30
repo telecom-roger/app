@@ -2217,24 +2217,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
               etapaAtual: existingOpp?.etapa,
             });
 
-            console.log(`🤖 [Chat] "${conteudo}" → etapa: ${analysis.etapa}, deveAgir: ${analysis.deveAgir}, deveCriarNovo: ${analysis.deveCriarNovoNegocio}`);
+            // Garantir que deveCriarNovoNegocio é sempre um boolean
+            const deveCriarNovo = analysis.deveCriarNovoNegocio === true;
+            
+            console.log(`🤖 [Chat] "${conteudo}" → etapa: ${analysis.etapa}, deveAgir: ${analysis.deveAgir}, deveCriarNovo: ${deveCriarNovo} (opp atual: ${existingOpp?.etapa})`);
 
-            // Se análise indica "criar novo negócio" (FECHADO/PERDIDO recebem mensagem) → Criar nova oportunidade
-            if (existingOpp && analysis.deveCriarNovoNegocio && analysis.deveAgir) {
+            // PRIORIDADE 1: Se deve criar novo negócio → Criar NOVO e NÃO mover o antigo
+            if (existingOpp && deveCriarNovo && analysis.deveAgir) {
               const novaOpp = await storage.createOpportunity({
                 clientId: conversation.clientId,
                 titulo: `${client?.nome} - Novo Ciclo`,
                 etapa: analysis.etapa,
                 userId: user.id,
               });
-              console.log(`🆕 [Chat] Novo negócio criado em ${analysis.etapa} (cliente estava em ${existingOpp.etapa})`);
+              console.log(`🆕 [Chat] NOVO negócio criado em ${analysis.etapa} (antigo permanece em ${existingOpp.etapa})`);
             }
-            // Mover oportunidade se análise indicar movimento e NÃO criar novo
-            else if (existingOpp && existingOpp.etapa !== analysis.etapa && analysis.deveAgir && !analysis.deveCriarNovoNegocio) {
+            // PRIORIDADE 2: Se NÃO deve criar novo E pode mover → Mover oportunidade existente
+            else if (existingOpp && !deveCriarNovo && existingOpp.etapa !== analysis.etapa && analysis.deveAgir) {
               await db.update(opportunities).set({ etapa: analysis.etapa }).where(eq(opportunities.id, existingOpp.id));
-              console.log(`✅ [Chat] Oportunidade movida para: ${analysis.etapa}`);
+              console.log(`✅ [Chat] Oportunidade movida de ${existingOpp.etapa} para ${analysis.etapa}`);
             } 
-            // Criar primeira oportunidade se não existir
+            // PRIORIDADE 3: Criar primeira oportunidade se não existir
             else if (!existingOpp && analysis.etapa !== "AUTOMÁTICA" && analysis.deveAgir) {
               const novaOpp = await storage.createOpportunity({
                 clientId: conversation.clientId,
