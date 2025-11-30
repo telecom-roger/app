@@ -3198,9 +3198,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== TEST CONTRATO ENVIADO - Envio direto ====================
   app.post("/api/test/contrato-enviado", async (req, res) => {
     try {
+      console.log(`\n📄 [TEST CONTRATO ENVIADO] Endpoint chamado!`);
       const { clientId, userId } = req.body;
+      console.log(`   clientId: ${clientId}, userId: ${userId}`);
       
       if (!clientId || !userId) {
+        console.log(`❌ Faltando clientId ou userId`);
         return res.status(400).json({ error: "clientId e userId são obrigatórios" });
       }
 
