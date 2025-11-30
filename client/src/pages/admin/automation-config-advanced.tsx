@@ -64,11 +64,13 @@ export default function AdminAutomacaoAdvanced() {
           msgs[dayNum] = Array.isArray(value) ? value : [];
         }
       });
+      console.log("✅ Mensagens carregadas para", selectedJob, ":", msgs);
       setEditingMsgs(msgs);
     } else {
+      console.log("⚠️ Nenhuma mensagem no config para", selectedJob);
       setEditingMsgs({});
     }
-  }, [config]);
+  }, [config, selectedJob]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
