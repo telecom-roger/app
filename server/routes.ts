@@ -3176,16 +3176,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         conversation = newConv;
       }
 
-      // 4. Mensagens templates (cobrança contrato)
-      const day0Messages = [
-        `Olá, tudo bem? Podemos seguir com a contratação? Qualquer dúvida é só me chamar.`,
-        `Oi! Tudo certo? Conseguimos avançar com o plano? Estou por aqui caso precise de algo.`,
-        `Olá, tudo bem? Podemos finalizar sua contratação agora? Ficou com alguma dúvida?`,
-        `Oi! Só confirmando: deseja seguir com o plano que conversamos? Se quiser ajustar algo, me avise!`,
-        `Olá! Tudo bem por aí? Posso dar andamento na contratação para você? Qualquer dúvida me avisa.`,
-        `Olá, tudo bem? Qualquer dúvida sobre o plano ou condições, estou à disposição. Podemos avançar?`,
-        `Olá, tudo bem? Só passando pra saber se deseja continuar com a contratação. Qualquer dúvida me avisa.`,
-      ];
+      // 4. 🔥 LER MENSAGENS DO BANCO (automation_configs) - NÃO HARDCODE!
+      const config = await db.query.automationConfigs.findFirst({
+        where: (ac: any) => eq(ac.jobType, "contract_reminder"),
+      });
+      
+      let day0Messages = (config?.mensagensTemplates as any)?.["0"] || [];
+      
+      // Fallback apenas se vazio
+      if (day0Messages.length === 0) {
+        day0Messages = [
+          `Olá, tudo bem? Podemos seguir com a contratação? Qualquer dúvida é só me chamar.`,
+          `Oi! Tudo certo? Conseguimos avançar com o plano? Estou por aqui caso precise de algo.`,
+          `Olá, tudo bem? Podemos finalizar sua contratação agora? Ficou com alguma dúvida?`,
+          `Oi! Só confirmando: deseja seguir com o plano que conversamos? Se quiser ajustar algo, me avise!`,
+          `Olá! Tudo bem por aí? Posso dar andamento na contratação para você? Qualquer dúvida me avisa.`,
+          `Olá, tudo bem? Qualquer dúvida sobre o plano ou condições, estou à disposição. Podemos avançar?`,
+          `Olá, tudo bem? Só passando pra saber se deseja continuar com a contratação. Qualquer dúvida me avisa.`,
+        ];
+      }
+      
       const randomIdx = Math.floor(Math.random() * day0Messages.length);
       const mensagem = day0Messages[randomIdx];
 
@@ -3283,11 +3293,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         conversation = newConv;
       }
 
-      // 5. Mensagens templates
-      const messages_templates = [
-        `Oi!\nSeu contrato já chegou no seu e-mail.\nÉ só abrir o link, colocar a data de nascimento do gestor e seguir as etapas.\n\nVocê vai receber um e-mail com o TOKEN de confirmação.\nInforme o código e pronto — assinatura concluída.\n\nQualquer dúvida estou por aqui!`,
-        `Olá!\nO contrato foi enviado para o seu e-mail.\nÉ só clicar no link, inserir a data de nascimento do gestor e avançar.\n\nDepois disso, você vai receber um e-mail com o TOKEN.\nBasta inserir no campo solicitado e finalizar a assinatura.\n\nQualquer dúvida, estou à disposição.`,
-      ];
+      // 5. 🔥 LER MENSAGENS DO BANCO (automation_configs) - NÃO HARDCODE!
+      const configContrato = await db.query.automationConfigs.findFirst({
+        where: (ac: any) => eq(ac.jobType, "contrato_enviado_message"),
+      });
+      
+      let messages_templates = (configContrato?.mensagensTemplates as any)?.["0"] || [];
+      
+      // Fallback apenas se vazio
+      if (messages_templates.length === 0) {
+        messages_templates = [
+          `Oi!\nSeu contrato já chegou no seu e-mail.\nÉ só abrir o link, colocar a data de nascimento do gestor e seguir as etapas.\n\nVocê vai receber um e-mail com o TOKEN de confirmação.\nInforme o código e pronto — assinatura concluída.\n\nQualquer dúvida estou por aqui!`,
+          `Olá!\nO contrato foi enviado para o seu e-mail.\nÉ só clicar no link, inserir a data de nascimento do gestor e avançar.\n\nDepois disso, você vai receber um e-mail com o TOKEN.\nBasta inserir no campo solicitado e finalizar a assinatura.\n\nQualquer dúvida, estou à disposição.`,
+        ];
+      }
+      
       const randomIdx = Math.floor(Math.random() * messages_templates.length);
       const mensagem = messages_templates[randomIdx];
 

@@ -370,10 +370,15 @@ async function executeContractReminder(task: any) {
     where: (ac: any) => eq(ac.jobType, "contract_reminder"),
   });
   
+  console.log(`📊 [DEBUG] Config completo:`, JSON.stringify(config, null, 2));
+  console.log(`📊 [DEBUG] mensagensTemplates:`, config?.mensagensTemplates);
+  console.log(`📊 [DEBUG] Keys:`, Object.keys(config?.mensagensTemplates || {}));
+  
   let messages_templates = config?.mensagensTemplates || {};
   
   // Fallback para mensagens padrão se não houver no banco
   if (Object.keys(messages_templates).length === 0) {
+    console.warn(`⚠️ [FALLBACK ACIONADO] Usando mensagens hardcoded para contract_reminder`);
     messages_templates = {
       0: [
         `Olá, tudo bem? Podemos seguir com a contratação? Qualquer dúvida é só me chamar.`,
