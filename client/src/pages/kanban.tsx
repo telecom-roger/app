@@ -330,7 +330,9 @@ export default function Kanban() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todas as oportunidades</SelectItem>
-                  <SelectItem value={user?.id ? String(user.id) : ""}>Minhas oportunidades</SelectItem>
+                  {user?.id && (
+                    <SelectItem value={String(user.id)}>Minhas oportunidades</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
 
