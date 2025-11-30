@@ -142,8 +142,17 @@ export default function Kanban() {
   const moveCardMutation = useMutation({
     mutationFn: async ({ id, etapa }: { id: string; etapa: string }) => {
       await apiRequest("PATCH", `/api/opportunities/${id}/move`, { etapa });
+      return { id, etapa };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Atualizar estado local imediatamente para mudar cor da bolinha na hora
+      queryClient.setQueryData(["/api/opportunities"], (old: Opportunity[] | undefined) => {
+        if (!old) return old;
+        return old.map(opp => 
+          opp.id === data.id ? { ...opp, etapa: data.etapa } : opp
+        );
+      });
+      // Depois invalidar para sincronizar com servidor
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] }); // Invalidar cache de clientes
       queryClient.invalidateQueries({ queryKey: ["/api/chat/conversations"] }); // Sincronizar com chat
