@@ -222,8 +222,8 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     "me mostra a proposta"
   ];
   
-  // 🔥 APROVAÇÕES GENÉRICAS - Mantém na etapa atual, apenas sentimento positivo
-  const aprovacaoGenerica = [
+  // 🎯 APROVAÇÕES QUE MOVEM PARA PROPOSTA - Cliente concordando/aprovando
+  const aprovacaoParaProposta = [
     "ok",
     "sim",
     "claro",
@@ -244,11 +244,7 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     "legal",
     "otimo",
     "boa",
-    "blz"
-  ];
-  
-  // 🎯 APROVAÇÕES QUE MOVEM PARA PROPOSTA - Pedidos explícitos
-  const aprovacaoParaProposta = [
+    "blz",
     "pode mandar",
     "pode enviar",
     "quero renovar",
@@ -259,6 +255,9 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     "quero",
     "manda"
   ];
+  
+  // 🔥 APROVAÇÕES GENÉRICAS - (lista vazia, todas vão para PROPOSTA agora)
+  const aprovacaoGenerica: string[] = [];
   
   const isSolicitacaoProposta = solicitacaoProposta.some(palavra => msg.includes(palavra));
   const isAprovacaoParaProposta = aprovacaoParaProposta.some(palavra => msg.includes(palavra) && !msg.includes("nao"));
