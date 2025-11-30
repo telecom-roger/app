@@ -9,15 +9,24 @@ Papa.parse(dominio, {
   complete: (results: any) => {
     const organized = results.data
       .filter((row: any) => row['RAZÃO SOCIAL']?.trim())
-      .map((row: any) => {
+      .map((row: any, idx: number) => {
         const tel1 = row['Telefone 1']?.trim() || '';
         const tel2 = row['Telefone 2']?.trim() || '';
         const celularCombinado = [tel1, tel2].filter(t => t).join(' / ');
         
+        // Debugging primeira linha
+        if (idx === 0) {
+          console.log('🔍 DEBUG - Primeiros 5 campos:');
+          const cols = Object.keys(row).slice(0, 25);
+          cols.forEach((col, i) => {
+            console.log(`  ${i}: ${col} = ${row[col]?.substring(0, 30)}`);
+          });
+        }
+        
         return {
           'ID': '',
           'Nome': row['RAZÃO SOCIAL']?.trim() || '',
-          'CNPJ': row['Processado']?.trim() || '',
+          'CNPJ': row['CNPJ/CPF do grupo econômico']?.trim() || '',
           'Email': row['E-mail do Gestor']?.trim() || '',
           'Celular': celularCombinado || '',
           'Segmento': '',
@@ -44,7 +53,7 @@ Papa.parse(dominio, {
 
     const csv = Papa.unparse(organized);
     writeFileSync('./attached_assets/DOMINIO_ORGANIZADO.csv', csv);
-    console.log(`✅ ${organized.length} registros organizados!`);
-    console.log('✨ CNPJ corrigido + Celulares combinados (Tel1 / Tel2)');
+    console.log(`✅ ${organized.length} registros prontos!`);
+    console.log('✨ Celulares combinados (Tel1 / Tel2)');
   }
 });
