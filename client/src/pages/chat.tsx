@@ -392,8 +392,8 @@ export default function Chat() {
       })
     : clients;
 
-  // Sort conversations by last message date (most recent first)
-  const sortedConversations = [...conversations]
+  // Filter conversations (backend already sorts by ultimaMensagemEm DESC)
+  const sortedConversations = conversations
     .filter(conv => {
       // Filter out closed conversations
       if (closedConversations.has(conv.id)) {
@@ -404,11 +404,6 @@ export default function Chat() {
         return (conv.client.tags as string[]).includes(selectedTag);
       }
       return true;
-    })
-    .sort((a, b) => {
-      const aTime = a.ultimaMensagemEm ? new Date(a.ultimaMensagemEm).getTime() : 0;
-      const bTime = b.ultimaMensagemEm ? new Date(b.ultimaMensagemEm).getTime() : 0;
-      return bTime - aTime;
     });
 
   // Get or create conversation by phone
