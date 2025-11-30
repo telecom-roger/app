@@ -567,7 +567,7 @@ function KanbanColumn({
               <div className="flex flex-col">
                 <h3 className="font-semibold text-slate-900 dark:text-white">{coluna.titulo}</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Total: R$ {formatValue(coluna.oportunidades.reduce((sum, opp) => sum + parseValue(opp.valorEstimado), 0))}
+                  Total: R$ {formatValue(coluna.oportunidades.reduce((sum, opp) => sum + parseValue(opp.valorEstimado || "0"), 0))}
                 </p>
               </div>
             </div>
@@ -674,14 +674,14 @@ function OpportunityCard({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <CardContent className="p-2.5 space-y-1.5">
-        {/* Bloco 1: Cliente + CNPJ + Status */}
-        <div className="flex items-start justify-between gap-1.5">
+      <CardContent className="p-3 space-y-2">
+        {/* Bloco 1: Cliente + CNPJ */}
+        <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             {cliente?.nome && (
               <p 
                 onClick={() => navigate(`/clientes/${cliente.id}`)}
-                className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase truncate hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors"
+                className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase truncate hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors"
                 data-testid={`text-cliente-nome-${cliente.id}`}
                 title={cliente.nome}
               >
@@ -689,66 +689,71 @@ function OpportunityCard({
               </p>
             )}
             {cliente?.cnpj && (
-              <p className="text-xs text-slate-500 dark:text-slate-400 truncate" title={cliente.cnpj}>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate font-mono" title={cliente.cnpj}>
                 {cliente.cnpj}
               </p>
             )}
           </div>
-          <div className={`h-2 w-2 rounded-full animate-pulse flex-shrink-0 ${getStatusColor(oportunidade.etapa)}`} data-testid={`status-indicator-${oportunidade.id}`} />
+          <div className={`h-2.5 w-2.5 rounded-full animate-pulse flex-shrink-0 ${getStatusColor(oportunidade.etapa)}`} data-testid={`status-indicator-${oportunidade.id}`} />
         </div>
 
-        {/* Bloco 2: Título + Valor */}
-        <div className="flex items-start justify-between gap-1.5">
-          <h4 className="text-xs font-semibold leading-tight text-slate-900 dark:text-white truncate flex-1 min-w-0" title={oportunidade.titulo}>
-            {oportunidade.titulo}
-          </h4>
-          {oportunidade.valorEstimado && (
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex-shrink-0 whitespace-nowrap">
-              {oportunidade.valorEstimado}
-            </span>
-          )}
-        </div>
+        {/* Bloco 2: Título */}
+        <h4 className="text-sm font-semibold leading-tight text-slate-900 dark:text-white line-clamp-2" title={oportunidade.titulo}>
+          {oportunidade.titulo}
+        </h4>
 
-        {/* Bloco 3: Responsável + Prazo */}
-        <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+        {/* Bloco 3: Valor + Responsável */}
+        <div className="flex items-center justify-between text-xs gap-2">
+          <div className="flex items-center gap-1">
+            {oportunidade.valorEstimado && (
+              <>
+                <DollarSign className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                  {oportunidade.valorEstimado}
+                </span>
+              </>
+            )}
+          </div>
           {responsavel && (
-            <span className="truncate flex-1" title={responsavel.firstName || responsavel.email}>
+            <span className="text-slate-600 dark:text-slate-400 truncate flex-shrink-0" title={responsavel.firstName || responsavel.email}>
               {responsavel.firstName || responsavel.email?.split('@')[0]}
             </span>
           )}
+        </div>
+
+        {/* Bloco 4: Prazo + Botões */}
+        <div className="flex items-center justify-between text-xs">
           {oportunidade.prazo && (
-            <span className="flex-shrink-0 whitespace-nowrap">
+            <span className="text-slate-600 dark:text-slate-400 flex-shrink-0">
               {new Date(oportunidade.prazo).toLocaleDateString("pt-BR")}
             </span>
           )}
-        </div>
-
-        {/* Bloco 4: Botões */}
-        <div className="flex items-center justify-start gap-0.5 pt-0.5">
-          <button
-            onClick={() => navigate(`/chat?clientId=${cliente?.id}`)}
-            className="text-slate-600 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-400 transition-colors p-1"
-            data-testid={`button-chat-${oportunidade.id}`}
-            title="Chat"
-          >
-            <MessageCircle className="h-3 w-3" />
-          </button>
-          <button
-            onClick={() => onEdit(oportunidade)}
-            className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-1"
-            data-testid={`button-edit-${oportunidade.id}`}
-            title="Editar"
-          >
-            <Edit2 className="h-3 w-3" />
-          </button>
-          <button
-            onClick={() => onDelete(oportunidade.id)}
-            className="text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1"
-            data-testid={`button-delete-${oportunidade.id}`}
-            title="Excluir"
-          >
-            <Trash2 className="h-3 w-3" />
-          </button>
+          <div className="flex items-center justify-end gap-1">
+            <button
+              onClick={() => navigate(`/chat?clientId=${cliente?.id}`)}
+              className="text-slate-600 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-400 transition-colors p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700"
+              data-testid={`button-chat-${oportunidade.id}`}
+              title="Chat"
+            >
+              <MessageCircle className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => onEdit(oportunidade)}
+              className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700"
+              data-testid={`button-edit-${oportunidade.id}`}
+              title="Editar"
+            >
+              <Edit2 className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => onDelete(oportunidade.id)}
+              className="text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700"
+              data-testid={`button-delete-${oportunidade.id}`}
+              title="Excluir"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </CardContent>
     </Card>
