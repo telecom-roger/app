@@ -1424,19 +1424,19 @@ export default function Chat() {
           setSelectedStage("");
         }
       }}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-[#2A2B2D] border border-slate-200 dark:border-[#3C4043]">
           <DialogTitle className="sr-only">Informações do Cliente</DialogTitle>
           {clientDetailLoading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-purple-600 dark:text-purple-400" />
+              <Loader2 className="h-6 w-6 animate-spin text-[#1A73E8]" />
             </div>
           ) : detailedClient ? (
             <div className="space-y-6">
               {/* Header - Cliente */}
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-4">
-                  <Avatar className="h-16 w-16 flex-shrink-0 border-2 border-purple-600/20 dark:border-purple-400/20">
-                    <AvatarFallback className="bg-purple-600/10 dark:bg-purple-400/10 text-purple-700 dark:text-purple-300 font-bold text-xl">
+                  <Avatar className="h-16 w-16 flex-shrink-0 border-2 border-[#1A73E8]/20">
+                    <AvatarFallback className="bg-[#1A73E8]/10 text-[#1A73E8] font-bold text-xl">
                       {(detailedClient.nome || "C")
                         .split(" ")
                         .slice(0, 2)
@@ -1446,7 +1446,7 @@ export default function Chat() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-[#FFFFFF]">
                       {detailedClient.nome || "Sem nome"}
                     </h2>
                     <button
@@ -1454,7 +1454,7 @@ export default function Chat() {
                         navigate(`/clientes/${detailedClient.id}`);
                         setShowClientInfo(false);
                       }}
-                      className="flex items-center gap-1 text-sm text-purple-600 dark:text-purple-400 hover:underline hover-elevate mt-1 transition-colors"
+                      className="flex items-center gap-1 text-sm text-[#1A73E8] hover:underline hover-elevate mt-1 transition-colors"
                       data-testid="button-edit-client"
                     >
                       <User className="h-3.5 w-3.5" />
@@ -1467,32 +1467,32 @@ export default function Chat() {
               {/* Dados do Cliente - Grid 3 colunas */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {detailedClient.celular && (
-                  <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">CELULAR</p>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">{detailedClient.celular}</p>
+                  <div className="bg-slate-50 dark:bg-[#202124] rounded-lg p-3 border border-slate-200 dark:border-[#3C4043]">
+                    <p className="text-xs font-semibold text-slate-600 dark:text-[#A9A9A9] mb-1">CELULAR</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-[#FFFFFF]">{detailedClient.celular}</p>
                   </div>
                 )}
                 {detailedClient.email && (
-                  <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">EMAIL</p>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white break-all">{detailedClient.email}</p>
+                  <div className="bg-slate-50 dark:bg-[#202124] rounded-lg p-3 border border-slate-200 dark:border-[#3C4043]">
+                    <p className="text-xs font-semibold text-slate-600 dark:text-[#A9A9A9] mb-1">EMAIL</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-[#FFFFFF] break-all">{detailedClient.email}</p>
                   </div>
                 )}
                 {detailedClient.carteira && (
-                  <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">CARTEIRA</p>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">{detailedClient.carteira}</p>
+                  <div className="bg-slate-50 dark:bg-[#202124] rounded-lg p-3 border border-slate-200 dark:border-[#3C4043]">
+                    <p className="text-xs font-semibold text-slate-600 dark:text-[#A9A9A9] mb-1">CARTEIRA</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-[#FFFFFF]">{detailedClient.carteira}</p>
                   </div>
                 )}
                 {detailedClient.cnpj && (
-                  <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">CNPJ</p>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white font-mono">{detailedClient.cnpj}</p>
+                  <div className="bg-slate-50 dark:bg-[#202124] rounded-lg p-3 border border-slate-200 dark:border-[#3C4043]">
+                    <p className="text-xs font-semibold text-slate-600 dark:text-[#A9A9A9] mb-1">CNPJ</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-[#FFFFFF] font-mono">{detailedClient.cnpj}</p>
                   </div>
                 )}
                 {detailedClient.status && (
-                  <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">STATUS</p>
+                  <div className="bg-slate-50 dark:bg-[#202124] rounded-lg p-3 border border-slate-200 dark:border-[#3C4043]">
+                    <p className="text-xs font-semibold text-slate-600 dark:text-[#A9A9A9] mb-1">STATUS</p>
                     <Badge className={(() => {
                       const statusColors: Record<string, string> = {
                         lead_quente: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
@@ -1508,17 +1508,17 @@ export default function Chat() {
                   </div>
                 )}
                 {clientOpportunities && clientOpportunities.length > 0 && (
-                  <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">ETAPA ATUAL</p>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">{clientOpportunities[0].etapa.toUpperCase()}</p>
+                  <div className="bg-slate-50 dark:bg-[#202124] rounded-lg p-3 border border-slate-200 dark:border-[#3C4043]">
+                    <p className="text-xs font-semibold text-slate-600 dark:text-[#A9A9A9] mb-1">ETAPA ATUAL</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-[#FFFFFF]">{clientOpportunities[0].etapa.toUpperCase()}</p>
                   </div>
                 )}
               </div>
 
               {/* Etiquetas/Tags */}
               {allTags && allTags.length > 0 && (
-                <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
-                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">Etiquetas</h3>
+                <div className="border-t border-slate-200 dark:border-[#3C4043] pt-4">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-[#FFFFFF] mb-3">Etiquetas</h3>
                   <div className="flex flex-wrap gap-2">
                     {allTags.map((tag) => {
                       const isCurrentTag = detailedClient?.tags?.[0] === tag.nome;
@@ -1556,17 +1556,17 @@ export default function Chat() {
               )}
 
               {/* Criar Negócio - Card Principal */}
-              <Card className="border border-purple-200 dark:border-purple-800 bg-purple-50/30 dark:bg-purple-950/20 p-4">
+              <Card className="border border-[#1A73E8]/30 dark:border-[#1A73E8]/30 bg-[#1A73E8]/5 dark:bg-[#1A73E8]/10 p-4">
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <Zap className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                    <h3 className="font-semibold text-slate-900 dark:text-white">Criar Novo Negócio</h3>
+                    <Zap className="h-5 w-5 text-[#1A73E8]" />
+                    <h3 className="font-semibold text-slate-900 dark:text-[#FFFFFF]">Criar Novo Negócio</h3>
                   </div>
                   
                   {/* Valor + Etapa em linha */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2 block">Valor Estimado</label>
+                      <label className="text-xs font-semibold text-slate-600 dark:text-[#A9A9A9] mb-2 block">Valor Estimado</label>
                       <Input
                         type="text"
                         placeholder="Ex: 5000 ou R$ 5.000"
@@ -1577,7 +1577,7 @@ export default function Chat() {
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2 block">Etapa</label>
+                      <label className="text-xs font-semibold text-slate-600 dark:text-[#A9A9A9] mb-2 block">Etapa</label>
                       <Select value={selectedStage} onValueChange={setSelectedStage}>
                         <SelectTrigger className="h-9 text-sm" data-testid="select-opp-stage">
                           <SelectValue placeholder="Selecione..." />
@@ -1595,7 +1595,7 @@ export default function Chat() {
                   <Button
                     onClick={() => createOpportunityMutation.mutate()}
                     disabled={!selectedStage || createOpportunityMutation.isPending}
-                    className="w-full bg-purple-600 hover:bg-purple-700 dark:bg-purple-600 dark:hover:bg-purple-700 text-white"
+                    className="w-full bg-[#1A73E8] hover:bg-[#185ABC] text-white"
                     data-testid="button-create-opportunity"
                   >
                     {createOpportunityMutation.isPending ? (
@@ -1609,7 +1609,7 @@ export default function Chat() {
               </Card>
             </div>
           ) : (
-            <p className="text-sm text-slate-600 dark:text-slate-400 text-center py-8">
+            <p className="text-sm text-slate-600 dark:text-[#A9A9A9] text-center py-8">
               Não foi possível carregar informações
             </p>
           )}
