@@ -284,6 +284,23 @@ async function executeKanbanMove(task: any) {
       .where(eq(opportunities.id, oppId));
 
     console.log(`✅ Oportunidade movida para ${toStage}!`);
+
+    // 🚀 TRIGGER: Se moveu para CONTATO (por IA), dispara automação de mensagem
+    if (toStage === "CONTATO") {
+      console.log(`🚀 Disparando automação de Contato Message para ${oppId}`);
+      try {
+        await db.insert(automationTasks).values({
+          userId: task.userId,
+          clientId: task.clientId,
+          tipo: "contato_message",
+          proximaExecucao: new Date(),
+          dados: { opportunityId: oppId },
+        });
+        console.log(`✅ Task de Contato Message criada`);
+      } catch (error) {
+        console.error(`❌ Erro ao disparar contato_message:`, error);
+      }
+    }
   } catch (error) {
     console.error(`❌ Erro ao mover Kanban:`, error);
     throw error;
