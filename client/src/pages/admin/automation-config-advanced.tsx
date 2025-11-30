@@ -28,8 +28,8 @@ const JOBS_ADVANCED = [
     nome: "📄 Contrato Enviado",
     descricao: "Mensagens de instrução de assinatura",
     dias: [0],
-    temHorarios: false,
-    temTimeout: false,
+    temHorarios: true,
+    temTimeout: true,
   },
   {
     id: "aguardando_aceite_reminder",
@@ -37,7 +37,7 @@ const JOBS_ADVANCED = [
     descricao: "3 lembretes progressivos",
     dias: [1, 2, 3],
     temHorarios: true,
-    temTimeout: false,
+    temTimeout: true,
   },
 ];
 
@@ -170,8 +170,8 @@ export default function AdminAutomacaoAdvanced() {
           <Tabs defaultValue="mensagens" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
-              {job.temHorarios && <TabsTrigger value="horarios">Horários</TabsTrigger>}
-              {job.temTimeout && <TabsTrigger value="dias">Dias Semana</TabsTrigger>}
+              <TabsTrigger value="horarios">Horários</TabsTrigger>
+              <TabsTrigger value="dias">Dias Semana</TabsTrigger>
             </TabsList>
 
             {/* TAB: MENSAGENS */}
@@ -223,8 +223,7 @@ export default function AdminAutomacaoAdvanced() {
             </TabsContent>
 
             {/* TAB: HORÁRIOS */}
-            {job.temHorarios && (
-              <TabsContent value="horarios" className="space-y-4">
+            <TabsContent value="horarios" className="space-y-4">
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">Horários de Envio</CardTitle>
@@ -264,11 +263,9 @@ export default function AdminAutomacaoAdvanced() {
                   </CardContent>
                 </Card>
               </TabsContent>
-            )}
 
             {/* TAB: DIAS SEMANA */}
-            {job.temTimeout && (
-              <TabsContent value="dias" className="space-y-4">
+            <TabsContent value="dias" className="space-y-4">
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">Dias da Semana</CardTitle>
@@ -304,7 +301,6 @@ export default function AdminAutomacaoAdvanced() {
                   </CardContent>
                 </Card>
               </TabsContent>
-            )}
           </Tabs>
         )}
 
