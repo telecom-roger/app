@@ -250,3 +250,41 @@ VALIDAÇÕES:
 - `import_clean.ts` (script reutilizável para imports)
 
 **Status**: ✅ Base de clientes DOMINIO 100% importada!
+
+---
+
+## 🚀 FASE 19 - NOVO STATUS REMARKETING (Nov 30)
+
+### ✅ STATUS "REMARKETING" IMPLEMENTADO!
+
+**O que foi adicionado:**
+
+1. **Novo Status: REMARKETING** ✅
+   - Detecta clientes que voltaram com interesse após PERDIDO
+   - Aplicado automaticamente quando:
+     - Cliente tem oportunidades PERDIDAS anteriores E
+     - Criou uma nova oportunidade em LEAD/CONTATO/AUTOMÁTICA
+   
+2. **Status Completos Atualizados**:
+   - ✅ ativo          → Oportunidade em FECHADO
+   - 🔥 lead_quente    → Sem oportunidades criadas
+   - 💬 engajado       → Em CONTATO ou AUTOMÁTICA
+   - 💼 em_negociacao  → Em PROPOSTA ou PROPOSTA ENVIADA
+   - 🤝 em_fechamento  → Em CONTRATO/ACEITE/ATENÇÃO
+   - 🔄 **remarketing**  → **Reconversão após rejeição** ← NOVO!
+   - ❌ perdido        → Todas as oportunidades PERDIDAS
+
+**Fluxo de Remarketing:**
+```
+Cliente em PERDIDO (sem esperança)
+        ↓
+Envia nova mensagem / Recebe contato
+        ↓
+IA cria NOVA oportunidade em LEAD
+        ↓
+Status muda para "REMARKETING" 🔄
+        ↓
+Você reconverte o cliente!
+```
+
+**Status**: ✅ REMARKETING 100% OPERACIONAL!

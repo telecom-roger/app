@@ -1212,7 +1212,7 @@ export async function recordEtapaChange(
  * Regra: Status reflete a etapa mais avançada, exceto FECHADO (sempre manual) e PERDIDO (só se todas forem perdidas)
  * Ordem de prioridade (menor número = mais avançado):
  * FECHADO → AGUARDANDO ACEITE → CONTRATO ENVIADO → AGUARDANDO CONTRATO → AGUARDANDO ATENÇÃO →
- * PROPOSTA ENVIADA → PROPOSTA → AUTOMÁTICA → CONTATO → LEAD
+ * PROPOSTA ENVIADA → PROPOSTA → AUTOMÁTICA → CONTATO → LEAD → REMARKETING
  */
 export async function recalculateClientStatus(clientId: string): Promise<string> {
   // Buscar todas as oportunidades do cliente
@@ -1237,6 +1237,19 @@ export async function recalculateClientStatus(clientId: string): Promise<string>
   // Se todas são PERDIDAS → Perdido
   if (activeOpps.length === 0) {
     return "perdido";
+  }
+
+  // REMARKETING: Se tem oportunidades ativas MAS também tem oportunidades PERDIDAS
+  // Significa que o cliente voltou com interesse após rejeição
+  const hasLostOpps = clientOpportunities.some((opp) => opp.etapa === "PERDIDO");
+  if (hasLostOpps && activeOpps.length > 0) {
+    // Se a oportunidade ativa é em LEAD/CONTATO, é REMARKETING puro
+    const isRemarketingStage = activeOpps.some((opp) => 
+      opp.etapa === "LEAD" || opp.etapa === "CONTATO" || opp.etapa === "AUTOMÁTICA"
+    );
+    if (isRemarketingStage) {
+      return "remarketing";
+    }
   }
 
   // Ordem de prioridade (menor número = mais avançado)
