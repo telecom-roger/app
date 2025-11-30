@@ -3278,13 +3278,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ==================== EXPORT CLIENTS ====================
-  app.get("/api/admin/export-clients", isAuthenticated, requireAdmin, async (req, res) => {
+  app.get("/api/admin/export-clients", isAuthenticated, async (req, res) => {
     try {
       const user = req.user as any;
       const result = await storage.getClients({
-        userId: user.dbUser.id,
+        userId: user.dbUser?.id || user.id,
         limit: 100000,
-        isAdmin: true
+        isAdmin: false
       });
       
       const clientsList = result.clientes || [];
