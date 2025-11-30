@@ -3264,7 +3264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 5. REGISTRAR MENSAGEM NO CHAT PRIMEIRO
       await db.insert(messages).values({
         conversationId: conversation.id,
-        sender: "bot",
+        sender: "user",
         tipo: "texto",
         conteudo: mensagem,
         origem: "automation",
