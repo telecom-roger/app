@@ -307,13 +307,18 @@ EXEMPLOS:
 ✓ "Cancelar algumas linhas" → etapa:"CONTATO", deveAgir:false, ehRecusaParcial:true
 ✓ "Ok, manda" → etapa:"PROPOSTA", deveAgir:true, ehRecusaParcial:false`;
 
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      max_tokens: 300,
-      messages: [{ role: "user", content: prompt }],
-    });
+    const response = await Promise.race([
+      client.chat.completions.create({
+        model: "gpt-4o-mini",
+        max_tokens: 300,
+        messages: [{ role: "user", content: prompt }],
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("OpenAI timeout: 30s")), 30000)
+      ),
+    ]);
 
-    const messageContent = response.choices[0].message.content;
+    const messageContent = (response as any).choices[0].message.content;
     if (!messageContent) throw new Error("Empty response from AI");
 
     console.log(`📝 [DEBUG] Resposta bruta do OpenAI: ${messageContent}`);
