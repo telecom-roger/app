@@ -687,6 +687,7 @@ export const automationConfigs = pgTable("automation_configs", {
   mensagensTemplates: jsonb("mensagens_templates").default(sql`'{}'::jsonb`),
   intervaloScheduler: integer("intervalo_scheduler").default(60), // segundos
   emailNotificacoes: boolean("email_notificacoes").default(true),
+  mensagemPadraoRespostaIA: text("mensagem_padrao_resposta_ia"), // Mensagem automática quando cliente envia msg e IA responde
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -68,6 +68,7 @@ export default function AdminAutomacaoAdvanced() {
   const [selectedJobForMessages, setSelectedJobForMessages] = useState("contract_reminder");
   const [editingMsgs, setEditingMsgs] = useState<Record<number, string[]>>({});
   const [newHorario, setNewHorario] = useState("");
+  const [mensagemPadraoRespostaIA, setMensagemPadraoRespostaIA] = useState("");
 
   // Fetch configs
   const { data: configs = {}, isLoading } = useQuery({
@@ -101,6 +102,17 @@ export default function AdminAutomacaoAdvanced() {
       setEditingMsgs({});
     }
   }, [jobConfig, selectedJobForMessages]);
+
+  // Carrega a mensagem padrão da IA quando configs mudam
+  useEffect(() => {
+    if (configs && typeof configs === 'object') {
+      // Procura por qualquer job que tenha a mensagem padrão
+      const firstConfig = Object.values(configs)[0] as any;
+      if (firstConfig?.mensagemPadraoRespostaIA) {
+        setMensagemPadraoRespostaIA(firstConfig.mensagemPadraoRespostaIA);
+      }
+    }
+  }, [configs]);
 
   // Update config mutation
   const updateConfigMutation = useMutation({
@@ -428,6 +440,37 @@ export default function AdminAutomacaoAdvanced() {
                 />
                 Email Notificações Habilitadas
               </label>
+            </div>
+
+            <div className="border-t pt-4">
+              <label className="text-sm font-semibold text-muted-foreground mb-2 block">
+                💬 Mensagem Automática Padrão da IA
+              </label>
+              <p className="text-xs text-muted-foreground mb-3">
+                Mensagem enviada automaticamente quando cliente responde no chat e IA cria o card
+              </p>
+              <Textarea
+                value={mensagemPadraoRespostaIA}
+                onChange={(e) => setMensagemPadraoRespostaIA(e.target.value)}
+                placeholder="Ex: Obrigado pelo seu interesse! Estou analisando sua resposta e um de nossos especialistas entrará em contato em breve."
+                className="min-h-20 text-sm resize-none"
+                data-testid="mensagem-ia-padrao"
+              />
+              <Button
+                size="sm"
+                onClick={() => {
+                  updateConfigMutation.mutate({
+                    jobType: "ia_resposta_padrao",
+                    mensagemPadraoRespostaIA,
+                  });
+                }}
+                disabled={updateConfigMutation.isPending}
+                className="w-full gap-2 h-8 mt-3"
+                data-testid="btn-save-mensagem-ia"
+              >
+                <Save className="w-4 h-4" />
+                {updateConfigMutation.isPending ? "Salvando..." : "Salvar Mensagem"}
+              </Button>
             </div>
           </CardContent>
         </Card>

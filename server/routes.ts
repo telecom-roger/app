@@ -4146,6 +4146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           mensagensTemplates: {},
           intervaloScheduler: 60,
           emailNotificacoes: true,
+          mensagemPadraoRespostaIA: "",
         });
       }
 
@@ -4158,7 +4159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/admin/automation-configs", isAuthenticated, async (req, res) => {
     try {
-      const { jobType, ativo, horarios, timeout2h, timeout4dias, diasSemana, mensagensTemplates, intervaloScheduler, emailNotificacoes } = req.body;
+      const { jobType, ativo, horarios, timeout2h, timeout4dias, diasSemana, mensagensTemplates, intervaloScheduler, emailNotificacoes, mensagemPadraoRespostaIA } = req.body;
       
       if (!jobType) {
         return res.status(400).json({ error: "jobType is required" });
@@ -4184,6 +4185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             mensagensTemplates: mensagensTemplates !== undefined ? mensagensTemplates : existing[0].mensagensTemplates,
             intervaloScheduler: intervaloScheduler !== undefined ? intervaloScheduler : existing[0].intervaloScheduler,
             emailNotificacoes: emailNotificacoes !== undefined ? emailNotificacoes : existing[0].emailNotificacoes,
+            mensagemPadraoRespostaIA: mensagemPadraoRespostaIA !== undefined ? mensagemPadraoRespostaIA : existing[0].mensagemPadraoRespostaIA,
             updatedAt: new Date(),
           })
           .where(eq(automationConfigs.jobType, jobType))
@@ -4202,6 +4204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             mensagensTemplates: mensagensTemplates || {},
             intervaloScheduler: intervaloScheduler || 60,
             emailNotificacoes: emailNotificacoes !== undefined ? emailNotificacoes : true,
+            mensagemPadraoRespostaIA: mensagemPadraoRespostaIA || "",
           })
           .returning();
       }
