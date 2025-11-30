@@ -296,6 +296,12 @@ async function processIncomingMessages(sessionId: string, m: any) {
 
         console.log(`[RECEBIMENTO] Conversa encontrada/criada: ${conversation.id}`);
         
+        // 🔓 REABRIR CONVERSA SE ESTIVER OCULTA (cliente respondeu = reabre automaticamente)
+        if (conversation.oculta) {
+          console.log(`🔓 Reabrindo conversa oculta automaticamente (cliente respondeu): ${conversation.id}`);
+          await storage.toggleConversationHidden(conversation.id, userId, false);
+        }
+        
         await storage.createMessage({
           conversationId: conversation.id,
           sender: "client",
