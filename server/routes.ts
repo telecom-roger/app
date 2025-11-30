@@ -2002,6 +2002,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Esconder/desocultar conversa (reabre automaticamente quando cliente manda msg)
+  app.patch("/api/chat/conversations/:conversationId/hide", isAuthenticated, async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      const { oculta } = req.body;
+      const user = (req.user as any);
+
+      // Verificar se a conversa pertence ao usuário
+      const [conversation] = await db
+        .select()
+        .from(conversations)
+        .where(and(eq(conversations.id, conversationId), eq(conversations.userId, user.id)))
+        .limit(1);
+
+      if (!conversation) {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+
+      await db.update(conversations).set({ oculta: Boolean(oculta) }).where(eq(conversations.id, conversationId));
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error hiding conversation:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/chat/messages/:conversationId", isAuthenticated, async (req, res) => {
     try {
       const { conversationId } = req.params;
