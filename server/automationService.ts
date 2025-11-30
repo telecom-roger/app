@@ -566,25 +566,47 @@ export async function checkPropostaEnviadaTimeouts() {
   }
 }
 
-// ======================== HELPER: Calcular próximo horário para AGUARDANDO ACEITE (TESTE RÁPIDO) ========================
+// ======================== HELPER: Calcular próximo horário para AGUARDANDO ACEITE (PRODUÇÃO) ========================
 function getNextAguardandoAceiteTime(lastTaskData: any): Date {
   const now = new Date();
-  
-  // PARA TESTES: Tempos MUITO menores!
+  const spTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
   const lembreteNum = lastTaskData?.lembrete || 1;
   
   if (lembreteNum === 1) {
-    // 1º lembrete: 5 segundos depois
-    return new Date(Date.now() + 5 * 1000);
+    // 1º lembrete: HOJE às 16:30 SP, se não passou, ou amanhã às 08:00
+    const today = new Date(spTime);
+    today.setHours(16, 30, 0, 0);
+    if (today > spTime) return today;
+    
+    const tomorrow = new Date(spTime);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(8, 0, 0, 0);
+    return tomorrow;
   } else if (lembreteNum === 2) {
-    // 2º lembrete: 5 segundos depois do anterior (total: 10s desde início)
-    return new Date(Date.now() + 5 * 1000);
+    // 2º lembrete: Amanhã às 08:00 (weekday)
+    const nextDay = new Date(spTime);
+    nextDay.setDate(nextDay.getDate() + 1);
+    nextDay.setHours(8, 0, 0, 0);
+    
+    // Se cair no fim de semana, pular para próximo dia útil
+    while (nextDay.getDay() === 0 || nextDay.getDay() === 6) {
+      nextDay.setDate(nextDay.getDate() + 1);
+    }
+    return nextDay;
   } else if (lembreteNum === 3) {
-    // 3º lembrete: 5 segundos depois
-    return new Date(Date.now() + 5 * 1000);
+    // 3º lembrete: Dia seguinte às 08:00 (weekday)
+    const nextDay = new Date(spTime);
+    nextDay.setDate(nextDay.getDate() + 1);
+    nextDay.setHours(8, 0, 0, 0);
+    
+    // Se cair no fim de semana, pular para próximo dia útil
+    while (nextDay.getDay() === 0 || nextDay.getDay() === 6) {
+      nextDay.setDate(nextDay.getDate() + 1);
+    }
+    return nextDay;
   }
   
-  return new Date(Date.now() + 5 * 1000);
+  return new Date(Date.now() + 24 * 60 * 60 * 1000); // Fallback: próximo dia
 }
 
 // ======================== AGUARDANDO ACEITE - Lembretes de Assinatura de Contrato ========================
@@ -679,16 +701,16 @@ async function executeAguardandoAceiteReminder(task: any) {
   }
 }
 
-// ======================== SCHEDULER DE CRON (executar a cada 5 segundos para TESTES RÁPIDOS) ========================
+// ======================== SCHEDULER DE CRON (executar a cada 1 minuto - PRODUÇÃO) ========================
 export function startAutomationCron() {
-  console.log(`\n⏰ [AUTOMATION CRON] Iniciando scheduler (5 seg para testes rápidos)...`);
+  console.log(`\n⏰ [AUTOMATION CRON] Iniciando scheduler (1 minuto - PRODUÇÃO)...`);
   
-  // Executar a cada 5 segundos (para testes SUPER rápidos!)
+  // Executar a cada 1 minuto em produção
   const interval = setInterval(() => {
     processAutomationTasks().catch(console.error);
     checkPropostaEnviadaTimeouts().catch(console.error);
     checkAguardandoAceiteTimeouts().catch(console.error);
-  }, 5 * 1000);
+  }, 60 * 1000);
 
   // Executar também na inicialização
   processAutomationTasks().catch(console.error);
