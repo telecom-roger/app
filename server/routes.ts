@@ -3480,6 +3480,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== TEST CLEANUP ====================
+  app.post("/api/test/cleanup", async (req, res) => {
+    try {
+      // Delete all automation messages
+      const deletedMessages = await db
+        .delete(messages)
+        .where(eq(messages.origem, "automation"))
+        .returning();
+
+      // Delete all automation interactions
+      const deletedInteractions = await db
+        .delete(interactions)
+        .where(eq(interactions.origem, "automation"))
+        .returning();
+
+      res.json({
+        success: true,
+        message: "✅ Limpeza concluída!",
+        deletedMessages: deletedMessages.length,
+        deletedInteractions: deletedInteractions.length,
+        detalhes: `${deletedMessages.length} mensagens e ${deletedInteractions.length} interações removidas da base de dados`
+      });
+    } catch (error) {
+      console.error("❌ Cleanup error:", error);
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

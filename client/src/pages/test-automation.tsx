@@ -12,6 +12,7 @@ export default function TestAutomation() {
   const [message, setMessage] = useState("Ótimo! Gostei da proposta");
   const [contractReminderResult, setContractReminderResult] = useState<any>(null);
   const [contratoEnviadoResult, setContratoEnviadoResult] = useState<any>(null);
+  const [cleanupResult, setCleanupResult] = useState<any>(null);
 
   // Get clients and users list
   const { data: testData = { clients: [], users: [] }, isLoading: loadingTestData } = useQuery({
@@ -142,6 +143,25 @@ export default function TestAutomation() {
         title: data.cliente.changed ? "✅ Status Atualizado!" : "⚠️ Status Inalterado", 
         description: `${data.cliente.statusAntes} → ${data.cliente.statusDepois}` 
       });
+    },
+    onError: (error: any) => {
+      toast({ title: "❌ Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Cleanup test data
+  const cleanupMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/test/cleanup", {});
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setCleanupResult(data);
+      toast({ title: "✅ Limpeza Concluída!", description: data.detalhes });
+      refetchTestOpps();
+      setContractReminderResult(null);
+      setContratoEnviadoResult(null);
+      setStatusAutomationResult(null);
     },
     onError: (error: any) => {
       toast({ title: "❌ Erro", description: error.message, variant: "destructive" });
@@ -423,6 +443,34 @@ export default function TestAutomation() {
                 <p className="text-slate-500 text-xs ml-2">Sem oportunidades - Status: LEAD_QUENTE</p>
               )}
             </div>
+          </div>
+        )}
+      </Card>
+
+      {/* CLEANUP */}
+      <Card className="p-6 bg-slate-800 border-red-500/20">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-white">🧹 Limpar Dados de Teste</h2>
+          <span className="text-xs text-red-400 bg-red-500/10 px-2 py-1 rounded">CUIDADO!</span>
+        </div>
+
+        <p className="text-slate-300 mb-4 text-xs">
+          Remove TODAS as mensagens de automação do chat e timelines. Útil para resetar dados de teste.
+        </p>
+
+        <Button
+          onClick={() => cleanupMutation.mutate()}
+          disabled={cleanupMutation.isPending}
+          className="w-full bg-red-600 hover:bg-red-700 mb-4"
+          data-testid="button-cleanup"
+        >
+          {cleanupMutation.isPending ? "Limpando..." : "🗑️ Remover Dados de Teste"}
+        </Button>
+
+        {cleanupResult && (
+          <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded">
+            <p className="text-orange-300 font-bold">✅ {cleanupResult.message}</p>
+            <p className="text-slate-300 text-xs mt-2">Deletados: <span className="text-slate-200">{cleanupResult.detalhes}</span></p>
           </div>
         )}
       </Card>
