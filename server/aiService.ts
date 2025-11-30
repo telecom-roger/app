@@ -5,10 +5,11 @@ const client = new OpenAI({
 });
 
 export interface MessageAnalysis {
-  sentimento: "positivo" | "negativo" | "neutro" | "fornecedor";
+  sentimento: "positivo" | "negativo" | "neutro";
   confianca: number;
   motivo: string;
-  etapa: "CONTATO" | "PROPOSTA" | "AUTOMÁTICA" | "PERDIDO" | "LEAD";
+  intenção: "solicitacao_info" | "aprovacao_envio" | "resposta_automatica" | "rejeicao_clara" | "rejeicao_parcial" | "indefinida";
+  etapa: "CONTATO" | "PROPOSTA" | "AUTOMÁTICA" | "PERDIDO" | "";
   deveAgir: boolean; // true = movimento permitido, false = bloqueado
   ehRecusaParcial: boolean;
   ehMensagemAutomatica: boolean;
@@ -57,12 +58,15 @@ function normalizeMessage(text: string): string {
 function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysis {
   const msg = normalizeMessage(mensagem);
   
-  // 🤖 DETECTAR MENSAGENS AUTOMÁTICAS (deve ir para AUTOMÁTICA)
+  // 🎯 1️⃣ DETECTAR MENSAGENS AUTOMÁTICAS (PRIMEIRA VERIFICAÇÃO)
   const mensagensAutomaticas = [
-    "fora do horario de atendimento",
-    "fora do horário de atendimento",
-    "estamos fora do horario",
-    "estamos fora do horário",
+    "deixe seu contato",
+    "aguarde",
+    "nosso suporte retornará",
+    "estamos verificando",
+    "fora do horario",
+    "fora do horário",
+    "estamos fora",
     "nao estamos disponiveis",
     "não estamos disponíveis",
     "nao estamos em atendimento",
@@ -71,15 +75,8 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     "responderemos",
     "breve entraremos",
     "em breve entraremos",
-    "deixe seu contato",
     "mensagem automatica",
     "mensagem automática",
-    "segunda a sexta",
-    "segunda à sexta",
-    "9h as 18h",
-    "9h às 18h",
-    "agradecemos a compreensao",
-    "agradecemos a compreensão"
   ];
   
   if (mensagensAutomaticas.some(palavra => msg.includes(palavra))) {
@@ -88,74 +85,109 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     return {
       sentimento: "neutro",
       confianca: 100,
-      motivo: "Mensagem automática do sistema - cliente aguardando retorno",
+      intenção: "resposta_automatica",
+      motivo: "Resposta automática do sistema",
       etapa: proposedStage,
       deveAgir: isAllowed,
       ehRecusaParcial: false,
       ehMensagemAutomatica: true,
-      sugestao: "Aguardando retorno automático do sistema",
+      sugestao: "Aguardando retorno do sistema",
     };
   }
   
-  // 🛑 RECUSA TOTAL → PERDIDO (verifica PRIMEIRO - é mais específico com "nada"/"tudo")
-  // Procura por: "não quero renovar NADA", "cancela TUDO", "recusa completa"
-  // VERIFICAR RECUSA PARCIAL PRIMEIRO (mais específico que total)
+  // 🛑 2️⃣ DETECTAR REJEIÇÕES PARCIAIS (NÃO MOVER PARA PERDIDO!)
+  // Cliente quer modificar parte, cancelar algumas linhas, reduzir, etc
   const recusaParcialPalavrasChave = [
     "cancelar algumas linhas",
     "algumas linhas",
-    "cancelar parcial",
-    "remover algumas",
     "nao quero todas as linhas",
     "nao vou renovar todas",
     "nao vai renovar todas",
     "apenas algumas",
-    "so algumas",
+    "nao vai renovar todas",
     "reduzir",
     "diminuir",
-    "retirar apenas",
+    "remover apenas",
     "quero so",
     "somente",
-    "vou pensar",
-    "deixa comigo",
-    "depois te falo",
-    "ta bom",
-    "ok blz",
-    "e tal",
-    "nao agora",
-    "depois",
-    "preciso consultar",
-    "quanto pago de multa",
-    "qual e a multa"
+    "precisam cancelar algumas",
+    "cancelar parcial",
+    "mexer no plano",
+    "ajustar o plano",
+    "modificar as linhas"
   ];
   
   if (recusaParcialPalavrasChave.some(palavra => msg.includes(palavra))) {
     return {
       sentimento: "neutro",
-      confianca: 70,
-      motivo: "Recusa parcial ou indecisão - cliente quer modificar, não rejeitar",
-      etapa: "CONTATO",
+      confianca: 85,
+      intenção: "rejeicao_parcial",
+      motivo: "Cliente quer ajustes parciais/cancelamento de algumas linhas - negócio ativo",
+      etapa: "", // NÃO MOVER
       deveAgir: false,
-      ehRecusaParcial: msg.includes("cancelar") || msg.includes("reduzir") || msg.includes("remover"),
+      ehRecusaParcial: true,
       ehMensagemAutomatica: false,
-      sugestao: "Cliente deseja ajustes - negociar modificações",
+      sugestao: "Alertar atendente - cliente quer ajustes, não é perda total",
     };
   }
   
-  // APÓS VERIFICAR PARCIAL, VERIFICAR TOTAL
+  // ⏸️ 3️⃣ DETECTAR INDECISÃO/ADIAMENTO (NÃO MOVER!)
+  // Cliente está indeciso, quer pensar, está ocupado, etc
+  const indecisaoPalavrasChave = [
+    "vou pensar",
+    "deixa comigo",
+    "depois te falo",
+    "estou ocupado",
+    "ocupado agora",
+    "agora nao posso",
+    "nao posso agora",
+    "vamos ver depois",
+    "depois a gente conversa",
+    "nao sei ainda",
+    "tenho que pensar",
+    "deixa eu avaliar",
+    "preciso verificar",
+    "preciso consultar",
+    "quanto pago de multa",
+    "qual e a multa",
+    "se eu cancelar",
+    "quanto custa cancelar"
+  ];
+  
+  if (indecisaoPalavrasChave.some(palavra => msg.includes(palavra))) {
+    return {
+      sentimento: "neutro",
+      confianca: 75,
+      intenção: "indefinida",
+      motivo: "Cliente indeciso ou ocupado - sem decisão clara",
+      etapa: "", // NÃO MOVER
+      deveAgir: false,
+      ehRecusaParcial: false,
+      ehMensagemAutomatica: false,
+      sugestao: "Aguardar próxima mensagem do cliente",
+    };
+  }
+  
+  // 🛑 4️⃣ DETECTAR REJEIÇÕES CLARAS → PERDIDO
+  // APENAS rejeições absolutas, sem ambiguidade
   const recusaTotalPalavrasChave = [
     "nao quero renovar nada",
-    "cancela tudo",
-    "recuso",
+    "nao quero renovar",
     "nao tenho interesse",
-    "nao quero nenhum",
-    "empresa nao existe",
-    "nao vai dar pra continuar",
-    "muito caro demais",
-    "vou para concorrente",
-    "trocar de fornecedor",
-    "sem interesse",
-    "finaliza",
-    "desliga"
+    "nao quero contratar",
+    "nao quero continuar",
+    "cancela tudo",
+    "cancele tudo",
+    "quero cancelar",
+    "nao tenho mais empresa",
+    "empresa fechou",
+    "eu cancelei o plano",
+    "nao tenho mais plano",
+    "eu mudei de operadora",
+    "pode encerrar",
+    "nao tenho mais a empresa",
+    "pode cancelar",
+    "favor cancelar"
   ];
   
   if (recusaTotalPalavrasChave.some(palavra => msg.includes(palavra))) {
@@ -164,107 +196,120 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     return {
       sentimento: "negativo",
       confianca: 95,
-      motivo: "Recusa total detectada - cliente rejeita tudo",
+      intenção: "rejeicao_clara",
+      motivo: "Rejeição clara e definitiva",
       etapa: proposedStage,
       deveAgir: isAllowed,
       ehRecusaParcial: false,
       ehMensagemAutomatica: false,
-      sugestao: "Arquivar oportunidade",
+      sugestao: "Mover para PERDIDO",
     };
   }
   
-  
-  // 📲 AUTOMÁTICA
-  const automatica = ["deixe seu contato", "breve", "aguarde", "em breve", "entro em contato"];
-  if (automatica.some(palavra => msg.includes(palavra))) {
-    const proposedStage = "AUTOMÁTICA";
-    const isAllowed = validateMovement(etapaAtual, proposedStage);
-    return {
-      sentimento: "fornecedor",
-      confianca: 90,
-      motivo: "Mensagem automática",
-      etapa: proposedStage,
-      deveAgir: isAllowed,
-      ehRecusaParcial: false,
-      ehMensagemAutomatica: true,
-      permitidoEmProducao: isAllowed,
-      sugestao: "Aguardando resposta",
-    };
-  }
-  
-  // 📋 SOLICITAÇÃO DE PROPOSTA → PROPOSTA (VERIFICAR PRIMEIRO!)
+  // ✅ 5️⃣ DETECTAR APROVAÇÃO/SOLICITAÇÃO DE PROPOSTA → PROPOSTA
+  // "ok", "sim", "manda", "me envia proposta", etc
   const solicitacaoProposta = [
-    "me envia proposta", "envia proposta", "manda proposta",
-    "me envia a proposta", "envia a proposta", "manda a proposta",
-    "quero ver a proposta", "mostra a proposta", "me mostra a proposta"
+    "me envia proposta",
+    "envia proposta",
+    "manda proposta",
+    "me envia a proposta",
+    "envia a proposta",
+    "manda a proposta",
+    "quero ver a proposta",
+    "quero a proposta",
+    "me passa a proposta",
+    "mostra a proposta",
+    "me mostra a proposta"
   ];
-  if (solicitacaoProposta.some(palavra => msg.toLowerCase().includes(palavra.toLowerCase()))) {
+  
+  const aprovacaoPalavras = [
+    "ok",
+    "sim",
+    "pode mandar",
+    "manda",
+    "pode enviar",
+    "quero renovar",
+    "quero saber",
+    "me envia",
+    "aprova",
+    "aprovado"
+  ];
+  
+  const isSolicitacaoProposta = solicitacaoProposta.some(palavra => msg.includes(palavra));
+  const isAprovacao = aprovacaoPalavras.some(palavra => msg.includes(palavra) && !msg.includes("nao"));
+  
+  if (isSolicitacaoProposta || isAprovacao) {
     const proposedStage = "PROPOSTA";
     const isAllowed = validateMovement(etapaAtual, proposedStage);
-    console.log(`📋 [LOCAL] Detectado: solicitação de proposta → PROPOSTA`);
+    console.log(`📋 [LOCAL] Detectado: solicitação/aprovação de proposta → PROPOSTA`);
     return {
       sentimento: "positivo",
       confianca: 95,
-      motivo: "Solicitação de proposta detectada",
+      intenção: "aprovacao_envio",
+      motivo: isSolicitacaoProposta ? "Solicitação de proposta" : "Aprovação/concordância",
       etapa: proposedStage,
       deveAgir: isAllowed,
       ehRecusaParcial: false,
       ehMensagemAutomatica: false,
-      sugestao: "Enviar proposta",
-    };
-  }
-
-  // ✅ APROVAÇÃO → PROPOSTA
-  const aprovacao = [
-    "ok", "sim", "manda", "pode enviar", "quero renovar", "topa", "pode", "vamos la",
-    "gostei", "adorei", "legal", "otimo", "maravilha", "perfeito", "excelente",
-    "bora", "vamo", "blz", "show", "massa", "incrivel", "top", "amei"
-  ];
-  if (aprovacao.some(palavra => msg.includes(palavra))) {
-    const proposedStage = "PROPOSTA";
-    const isAllowed = validateMovement(etapaAtual, proposedStage);
-    return {
-      sentimento: "positivo",
-      confianca: 95,
-      motivo: "Aprovação detectada",
-      etapa: proposedStage,
-      deveAgir: isAllowed,
-      ehRecusaParcial: false,
-      ehMensagemAutomatica: false,
-      sugestao: "Enviar proposta",
+      sugestao: "Enviar proposta/simulador",
     };
   }
   
-  // ❓ INFORMAÇÃO → CONTATO
-  const precoKeywords = ["preco", "quanto", "valor", "custa"];
-  if (precoKeywords.some(palavra => msg.includes(palavra))) {
+  // ❓ 6️⃣ DETECTAR SOLICITAÇÃO DE INFORMAÇÕES → CONTATO
+  // Preço, valor, como funciona, quando vence, migrar, etc
+  const solicitacaoInfoPalavras = [
+    "preco",
+    "valor",
+    "quanto",
+    "custa",
+    "como funciona",
+    "quais planos",
+    "me explica",
+    "enviar detalhes",
+    "quando vence",
+    "meu contrato",
+    "migrar",
+    "pre pago",
+    "me liga",
+    "pode me ligar",
+    "informacoes",
+    "informações",
+    "detalhes",
+    "planos",
+    "opcoes",
+    "opções",
+    "tarifas"
+  ];
+  
+  if (solicitacaoInfoPalavras.some(palavra => msg.includes(palavra))) {
     const proposedStage = "CONTATO";
     const isAllowed = validateMovement(etapaAtual, proposedStage);
     return {
       sentimento: "positivo",
       confianca: 85,
-      motivo: "Pergunta sobre preço",
+      intenção: "solicitacao_info",
+      motivo: "Cliente pedindo informações",
       etapa: proposedStage,
       deveAgir: isAllowed,
       ehRecusaParcial: false,
       ehMensagemAutomatica: false,
-      sugestao: "Enviar tabela",
+      sugestao: "Enviar informações/detalhes",
     };
   }
   
-  // 🤷 NEUTRO → CONTATO (padrão para qualquer mensagem inicial)
+  // 🤷 7️⃣ PADRÃO: Mensagem inicial/neutra → CONTATO
   const proposedStage = "CONTATO";
   const isAllowed = validateMovement(etapaAtual, proposedStage);
   return {
     sentimento: "neutro",
     confianca: 50,
-    motivo: "Mensagem inicial",
+    intenção: "indefinida",
+    motivo: "Mensagem genérica/inicial",
     etapa: proposedStage,
     deveAgir: isAllowed,
     ehRecusaParcial: false,
     ehMensagemAutomatica: false,
-    permitidoEmProducao: isAllowed,
-    sugestao: "Engajar",
+    sugestao: "Engajar com cliente",
   };
 }
 

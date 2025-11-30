@@ -89,6 +89,41 @@ JOBS:
 6. Envia para WhatsApp automaticamente
 ```
 
+**🎯 REGRAS DE CLASSIFICAÇÃO DE INTENÇÃO (ATUALIZADO):**
+
+1. **CONTATO** - Cliente pedindo informações
+   - Palavras: "preço", "valor", "quanto", "custa", "como funciona", "quais planos", "me explica", "enviar detalhes", "quando vence", "meu contrato", "migrar", "me liga"
+   - Intenção: `solicitacao_info`
+   - Etapa: `CONTATO`
+
+2. **PROPOSTA** - Cliente dando aprovação ou pedindo proposta
+   - Palavras: "ok", "sim", "pode mandar", "manda", "me envia", "me envia proposta", "quero saber", "aprovado"
+   - Intenção: `aprovacao_envio`
+   - Etapa: `PROPOSTA`
+
+3. **AUTOMÁTICA** - Respostas automáticas/frias
+   - Palavras: "deixe seu contato", "aguarde", "nosso suporte retornará", "estamos verificando"
+   - Intenção: `resposta_automatica`
+   - Etapa: `AUTOMÁTICA`
+
+4. **PERDIDO** - Apenas rejeições CLARAS
+   - Palavras: "não quero renovar nada", "não tenho interesse", "pode encerrar", "cancela tudo", "empresa fechou", "eu cancelei o plano"
+   - Intenção: `rejeicao_clara`
+   - Etapa: `PERDIDO`
+   - **⚠️ IMPORTANTE**: NÃO mover quando rejeição é parcial/ambígua
+
+5. **REJEIÇÃO PARCIAL** - Cliente quer ajustes, NÃO é perda
+   - Palavras: "cancelar algumas linhas", "não quero renovar TODAS", "reduzir", "diminuir", "mexer no plano"
+   - Intenção: `rejeicao_parcial`
+   - Etapa: "" (NÃO MOVER)
+   - Ação: Alertar atendente para negociar
+
+6. **INDEFINIDA** - Cliente indeciso ou ocupado
+   - Palavras: "vou pensar", "deixa comigo", "estou ocupado agora", "vamos ver depois", "quanto pago de multa"
+   - Intenção: `indefinida`
+   - Etapa: "" (NÃO MOVER)
+   - Ação: Aguardar próxima mensagem
+
 **AI Movement Rules** (11 etapas):
 - LEAD → IA move para: CONTATO, PROPOSTA, FORNECEDOR, PERDIDO
 - CONTATO → IA move para: PROPOSTA, PERDIDO
