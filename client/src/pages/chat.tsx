@@ -1233,21 +1233,22 @@ export default function Chat() {
                         )}
                         
                         <div className="flex items-center justify-between gap-2 mt-1 pt-0.5">
-                          <p className="text-xs opacity-70">
-                            {new Date(msg.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                          </p>
+                          <div className="flex items-center gap-1">
+                            <p className="text-xs opacity-70">
+                              {new Date(msg.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                            </p>
+                            {msg.origem === "automation" && (
+                              <Badge variant="secondary" className="text-xs" data-testid={`badge-ai-${msg.id}`}>
+                                IA
+                              </Badge>
+                            )}
+                          </div>
                           {msg.sender === "user" && (
                             <span className="text-xs opacity-70">
                               {msg.lido ? "✓✓" : "✓"}
                             </span>
                           )}
                         </div>
-                        
-                        {msg.origem === "automation" && (
-                          <p className="text-xs mt-1 opacity-60 italic">
-                            Enviado por IA
-                          </p>
-                        )}
                       </div>
                     </div>
                   ))
