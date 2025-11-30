@@ -312,25 +312,31 @@ async function processIncomingMessages(sessionId: string, m: any) {
         if (tipo === "texto" && conteudo && conversation.clientId) {
           try {
             const client = await storage.getClientById(conversation.clientId);
-            console.log(`\n🤖 Iniciando análise com IA...`);
-            const analysis = await analyzeClientMessage(conteudo, {
-              nome: client?.nome,
-            });
-
-            // Procurar por oportunidade existente
+            
+            // Procurar por oportunidade existente ANTES de analisar com IA
             const existingOpps = await storage.getOpportunities({
               userId,
               etapa: undefined,
             });
             const existingOpp = existingOpps.find((o) => o.clientId === conversation.clientId);
+            
+            console.log(`\n🤖 Iniciando análise com IA...`);
+            console.log(`📍 Etapa atual da oportunidade: ${existingOpp?.etapa || "Sem oportunidade"}`);
+            
+            const analysis = await analyzeClientMessage(conteudo, {
+              nome: client?.nome,
+              etapaAtual: existingOpp?.etapa, // ✅ PASSAR ETAPA ATUAL PARA VALIDAR REGRAS
+            });
 
-            if (existingOpp && existingOpp.etapa !== analysis.etapa) {
-              // Mover oportunidade existente
+            if (existingOpp && existingOpp.etapa !== analysis.etapa && analysis.deveAgir) {
+              // Mover oportunidade existente (apenas se permitido)
               await storage.updateOpportunity(existingOpp.id, {
                 etapa: analysis.etapa,
               });
               console.log(`✅ Oportunidade MOVIDA para: ${analysis.etapa} (${analysis.motivo})`);
-            } else if (!existingOpp && analysis.etapa !== "AUTOMÁTICA") {
+            } else if (existingOpp && !analysis.deveAgir) {
+              console.log(`⚠️ Movimento bloqueado pelas regras de IA: ${existingOpp.etapa} → ${analysis.etapa}`);
+            } else if (!existingOpp && analysis.etapa !== "AUTOMÁTICA" && analysis.deveAgir) {
               // Criar nova oportunidade se não existir
               const novaOpp = await storage.createOpportunity({
                 clientId: conversation.clientId,
