@@ -556,25 +556,38 @@ export async function executeContatoMessage(task: any) {
   const mensagem = messages_templates[randomIndex];
   
   // 1️⃣ REGISTRAR MENSAGEM NO CHAT PRIMEIRO
-  await db.insert(messages).values({
-    conversationId: conversation.id,
-    sender: "user",
-    tipo: "texto",
-    conteudo: mensagem,
-    origem: "automation",
-    createdAt: new Date(),
-  });
+  try {
+    console.log(`💾 Inserindo mensagem no chat para conversation: ${conversation.id}`);
+    const insertedMsg = await db.insert(messages).values({
+      conversationId: conversation.id,
+      sender: "user",
+      tipo: "texto",
+      conteudo: mensagem,
+      origem: "automation",
+    }).returning();
+    console.log(`✅ Mensagem inserida no chat com sucesso: ${insertedMsg[0]?.id}`);
+  } catch (error) {
+    console.error(`❌ Erro ao inserir mensagem no chat:`, error);
+    throw error;
+  }
 
   // 2️⃣ REGISTRAR NA TIMELINE DO CLIENTE (como histórico)
-  await db.insert(interactions).values({
-    clientId: opportunity.clientId,
-    tipo: "contato_message",
-    origem: "automation",
-    titulo: `Mensagem de Contato Enviada`,
-    texto: mensagem,
-    meta: { opportunityId: opportunity.id },
-    createdBy: task.userId,
-  });
+  try {
+    console.log(`📝 Inserindo interação na timeline`);
+    const insertedInteraction = await db.insert(interactions).values({
+      clientId: opportunity.clientId,
+      tipo: "contato_message",
+      origem: "automation",
+      titulo: `Mensagem de Contato Enviada`,
+      texto: mensagem,
+      meta: { opportunityId: opportunity.id },
+      createdBy: task.userId,
+    }).returning();
+    console.log(`✅ Interação inserida na timeline com sucesso: ${insertedInteraction[0]?.id}`);
+  } catch (error) {
+    console.error(`❌ Erro ao inserir interação na timeline:`, error);
+    throw error;
+  }
   
   // 🎲 DELAY RANDOMIZADO (20-40s para não parecer robô)
   const delayMs = Math.random() * 20000 + 20000; // 20-40 segundos
