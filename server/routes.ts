@@ -3261,7 +3261,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const randomIdx = Math.floor(Math.random() * messages_templates.length);
       const mensagem = messages_templates[randomIdx];
       
-      // Inserir na tabela de mensagens do chat
+      // 5. REGISTRAR MENSAGEM NO CHAT PRIMEIRO
       await db.insert(messages).values({
         conversationId: conversation.id,
         sender: "bot",
@@ -3271,7 +3271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdAt: new Date(),
       });
       
-      // 6. Registrar na timeline
+      // 6. REGISTRAR NA TIMELINE DO CLIENTE (como histórico)
       await db.insert(interactions).values({
         clientId,
         tipo: "contrato_enviado",
@@ -3284,7 +3284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        message: "✅ Contrato Enviado - Mensagem registrada na timeline!",
+        message: "✅ Contrato Enviado - Mensagem enviada no chat e registrada na timeline!",
         cliente: client.nome,
         oportunidade_etapa: "CONTRATO ENVIADO",
         mensagem_enviada: mensagem.substring(0, 50) + "...",

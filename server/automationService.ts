@@ -351,6 +351,20 @@ async function executeContractReminder(task: any) {
   
   console.log(`💬 Enviando cobrança de contrato - Dia ${daysSinceCreation} para ${client.nome}`);
   
+  // Buscar ou criar conversation do cliente
+  let conversation = await db.query.conversations.findFirst({
+    where: (conv: any) => eq(conv.clientId, opportunity.clientId),
+  });
+
+  if (!conversation) {
+    const [newConv] = await db.insert(conversations).values({
+      clientId: opportunity.clientId,
+      userId: task.userId,
+      ultimaMensagemEm: new Date(),
+    }).returning();
+    conversation = newConv;
+  }
+  
   // Mensagens randomizadas por dia
   const messages_templates: Record<number, string[]> = {
     0: [
@@ -384,16 +398,17 @@ async function executeContractReminder(task: any) {
   const randomIndex = Math.floor(Math.random() * dayMessages.length);
   const mensagem = dayMessages[randomIndex];
   
-  // Registrar mensagem no banco
+  // 1️⃣ REGISTRAR MENSAGEM NO CHAT PRIMEIRO
   await db.insert(messages).values({
-    conversationId: `reminder-${opportunity.id}`,
+    conversationId: conversation.id,
     sender: "bot",
     tipo: "text",
     conteudo: mensagem,
+    origem: "automation",
     createdAt: new Date(),
   });
 
-  // 📋 REGISTRAR NA TIMELINE DO CLIENTE
+  // 2️⃣ REGISTRAR NA TIMELINE DO CLIENTE (como histórico)
   await db.insert(interactions).values({
     clientId: opportunity.clientId,
     tipo: "contract_reminder",
@@ -404,7 +419,7 @@ async function executeContractReminder(task: any) {
     createdBy: task.userId,
   });
   
-  console.log(`✅ Mensagem registrada na timeline de ${client.nome}`);
+  console.log(`✅ Mensagem enviada no chat e registrada na timeline de ${client.nome}`);
 }
 
 // ======================== CONTRATO ENVIADO - Envio automático quando opportunity muda para essa etapa ========================
@@ -447,16 +462,17 @@ async function executeContratoEnviadoMessage(task: any) {
   const randomIndex = Math.floor(Math.random() * messages_templates.length);
   const mensagem = messages_templates[randomIndex];
   
-  // Registrar mensagem no banco (usando conversation ID válida)
+  // 1️⃣ REGISTRAR MENSAGEM NO CHAT PRIMEIRO
   await db.insert(messages).values({
     conversationId: conversation.id,
     sender: "bot",
     tipo: "text",
     conteudo: mensagem,
+    origem: "automation",
     createdAt: new Date(),
   });
 
-  // 📋 REGISTRAR NA TIMELINE DO CLIENTE
+  // 2️⃣ REGISTRAR NA TIMELINE DO CLIENTE (como histórico)
   await db.insert(interactions).values({
     clientId: opportunity.clientId,
     tipo: "contrato_enviado",
@@ -467,7 +483,7 @@ async function executeContratoEnviadoMessage(task: any) {
     createdBy: task.userId,
   });
   
-  console.log(`✅ Mensagem de Contrato Enviado registrada para ${client.nome}`);
+  console.log(`✅ Mensagem enviada no chat e registrada na timeline para ${client.nome}`);
 }
 
 // ======================== VERIFICAR PROPOSTAS ENVIADAS - Lógica de 2h timeout + 3 dias + horários comerciais ========================

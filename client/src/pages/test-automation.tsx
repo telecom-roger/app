@@ -11,6 +11,7 @@ export default function TestAutomation() {
   const [userId, setUserId] = useState("");
   const [message, setMessage] = useState("Ótimo! Gostei da proposta");
   const [contractReminderResult, setContractReminderResult] = useState<any>(null);
+  const [contratoEnviadoResult, setContratoEnviadoResult] = useState<any>(null);
 
   // Get clients and users list
   const { data: testData = { clients: [], users: [] }, isLoading: loadingTestData } = useQuery({
@@ -78,7 +79,8 @@ export default function TestAutomation() {
       return res.json();
     },
     onSuccess: (data) => {
-      toast({ title: "✅ Contrato Enviado!", description: `Etapa: ${data.oportunidade_etapa}` });
+      setContratoEnviadoResult(data);
+      toast({ title: "✅ Contrato Enviado - Mensagem Registrada!", description: `Mensagem para ${data.cliente}` });
       refetchTestOpps();
     },
     onError: (error: any) => {
@@ -335,6 +337,16 @@ export default function TestAutomation() {
         >
           {contratoEnviadoMutation.isPending ? "Enviando..." : "📄 Testar Contrato Enviado"}
         </Button>
+
+        {contratoEnviadoResult && (
+          <div className="p-3 bg-green-500/10 border border-green-500/30 rounded">
+            <p className="text-green-300 font-bold">✅ {contratoEnviadoResult.message}</p>
+            <p className="text-slate-300 text-xs mt-2">Cliente: <span className="text-slate-200">{contratoEnviadoResult.cliente}</span></p>
+            <p className="text-slate-300 text-xs">Etapa: <span className="text-slate-200">{contratoEnviadoResult.oportunidade_etapa}</span></p>
+            <p className="text-slate-300 text-xs">Mensagem: <span className="text-slate-200">{contratoEnviadoResult.mensagem_enviada}</span></p>
+            <p className="text-slate-300 text-xs">📍 Verifique no chat do cliente em /chat</p>
+          </div>
+        )}
       </Card>
 
       {/* AGUARDANDO ACEITE TEST */}
