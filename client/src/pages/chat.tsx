@@ -1359,7 +1359,7 @@ export default function Chat() {
                 {clientOpportunities && clientOpportunities.length > 0 && (
                   <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
                     <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">ETAPA ATUAL</p>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">{clientOpportunities[0].etapa}</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">{clientOpportunities[0].etapa.toUpperCase()}</p>
                   </div>
                 )}
               </div>
