@@ -654,67 +654,60 @@ function OpportunityCard({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <CardContent className="p-4 space-y-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            {cliente?.nome && (
-              <p 
-                onClick={() => navigate(`/clientes/${cliente.id}`)}
-                className="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase truncate hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors"
-                data-testid={`text-cliente-nome-${cliente.id}`}
-              >
-                {cliente.nome}
-              </p>
-            )}
-            <h4 className="text-sm font-medium leading-snug break-words text-slate-900 dark:text-white">{oportunidade.titulo}</h4>
-          </div>
-          <div className="flex flex-col items-end gap-2 flex-shrink-0">
-            <div className={`h-3 w-3 rounded-full animate-pulse flex-shrink-0 ${getStatusColor(oportunidade.etapa)}`} data-testid={`status-indicator-${oportunidade.id}`} />
-            <div className="flex gap-1">
-              <button
-                onClick={() => navigate(`/chat?clientId=${cliente?.id}`)}
-                className="text-slate-600 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-400 transition-colors"
-                data-testid={`button-chat-${oportunidade.id}`}
-              >
-                <MessageCircle className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => onEdit(oportunidade)}
-                className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                data-testid={`button-edit-${oportunidade.id}`}
-              >
-                <Edit2 className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => onDelete(oportunidade.id)}
-                className="text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                data-testid={`button-delete-${oportunidade.id}`}
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+      <CardContent className="p-3 space-y-2">
+        {/* Linha 1: Cliente + Status Indicator */}
+        <div className="flex items-center justify-between gap-2">
+          {cliente?.nome && (
+            <p 
+              onClick={() => navigate(`/clientes/${cliente.id}`)}
+              className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase truncate hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors flex-1 min-w-0"
+              data-testid={`text-cliente-nome-${cliente.id}`}
+              title={cliente.nome}
+            >
+              {cliente.nome}
+            </p>
+          )}
+          <div className={`h-2 w-2 rounded-full animate-pulse flex-shrink-0 ${getStatusColor(oportunidade.etapa)}`} data-testid={`status-indicator-${oportunidade.id}`} />
         </div>
 
-        {oportunidade.valorEstimado && (
-          <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-            <DollarSign className="h-4 w-4" />
-            <span>{oportunidade.valorEstimado}</span>
-          </div>
-        )}
-
-        <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 gap-2">
-          {oportunidade.prazo && (
-            <span>
-              {new Date(oportunidade.prazo).toLocaleDateString("pt-BR")}
+        {/* Linha 2: Título + Valor */}
+        <div className="flex items-start justify-between gap-2">
+          <h4 className="text-sm font-medium leading-tight text-slate-900 dark:text-white truncate flex-1 min-w-0" title={oportunidade.titulo}>
+            {oportunidade.titulo}
+          </h4>
+          {oportunidade.valorEstimado && (
+            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex-shrink-0 whitespace-nowrap">
+              {oportunidade.valorEstimado}
             </span>
           )}
-          {oportunidade.responsavelId && (
-            <div className="flex items-center gap-1">
-              <User className="h-3 w-3" />
-              <span>Atribuído</span>
-            </div>
-          )}
+        </div>
+
+        {/* Linha 3: Botões */}
+        <div className="flex items-center justify-start gap-1 pt-1">
+          <button
+            onClick={() => navigate(`/chat?clientId=${cliente?.id}`)}
+            className="text-slate-600 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-400 transition-colors p-1"
+            data-testid={`button-chat-${oportunidade.id}`}
+            title="Abrir chat"
+          >
+            <MessageCircle className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => onEdit(oportunidade)}
+            className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-1"
+            data-testid={`button-edit-${oportunidade.id}`}
+            title="Editar"
+          >
+            <Edit2 className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => onDelete(oportunidade.id)}
+            className="text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1"
+            data-testid={`button-delete-${oportunidade.id}`}
+            title="Excluir"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
         </div>
       </CardContent>
     </Card>
