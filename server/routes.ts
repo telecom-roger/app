@@ -4133,6 +4133,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== TEST ENDPOINT - CLEANUP TIMELINES & MESSAGES ====================
+  app.post("/api/test/cleanup-timelines-messages", async (req, res) => {
+    try {
+      console.log(`\n🗑️ [TEST] DELETANDO TODAS AS TIMELINES E MENSAGENS...`);
+      
+      // Contar antes de deletar
+      const messagesBefore = await db.select().from(messages);
+      const interactionsBefore = await db.select().from(interactions);
+      
+      // Deletar todas as mensagens
+      await db.delete(messages);
+      
+      // Deletar todas as interações/timelines
+      await db.delete(interactions);
+      
+      console.log(`✅ [TEST] Cleanup concluído!`);
+      console.log(`   - ${messagesBefore.length} mensagens deletadas`);
+      console.log(`   - ${interactionsBefore.length} interações deletadas`);
+      
+      res.json({
+        success: true,
+        message: "✅ Timelines e mensagens deletadas com sucesso!",
+        deleted: {
+          messages: messagesBefore.length,
+          interactions: interactionsBefore.length,
+          total: messagesBefore.length + interactionsBefore.length,
+        },
+        timestamp: new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }),
+      });
+    } catch (error) {
+      console.error("❌ Error cleaning up timelines and messages:", error);
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
 
   const httpServer = createServer(app);
 
