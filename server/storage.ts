@@ -701,17 +701,24 @@ export async function getConversations(userId: string): Promise<any[]> {
     .where(and(eq(conversations.userId, userId), eq(conversations.oculta, false)))
     .orderBy(desc(conversations.ultimaMensagemEm));
   
-  // Add unread message counts
+  // Add unread message counts and filter out empty conversations (without messages)
   const withCounts = await Promise.all(result.map(async (row) => {
     const unreadCount = await countUnreadMessages(row.id);
+    const messageCount = await db
+      .select({ count: sql`count(*)` })
+      .from(messages)
+      .where(eq(messages.conversationId, row.id));
+    
     return {
       ...row,
       unreadCount,
-      client: row.client && row.client.id ? row.client : null
+      client: row.client && row.client.id ? row.client : null,
+      messageCount: Number(messageCount[0]?.count || 0)
     };
   }));
   
-  return withCounts;
+  // Filter out conversations with no messages
+  return withCounts.filter(conv => conv.messageCount > 0);
 }
 
 export async function getMessages(conversationId: string, limit: number = 50): Promise<Message[]> {
