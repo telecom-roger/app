@@ -1238,9 +1238,9 @@ export default function Chat() {
                               {new Date(msg.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                             </p>
                             {msg.origem === "automation" && (
-                              <Badge variant="secondary" className="text-xs" data-testid={`badge-ai-${msg.id}`}>
-                                IA
-                              </Badge>
+                              <span className="text-xs opacity-60 italic" data-testid={`badge-ai-${msg.id}`}>
+                                enviado por IA
+                              </span>
                             )}
                           </div>
                           {msg.sender === "user" && (
