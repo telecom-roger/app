@@ -6,12 +6,16 @@ export default {
   theme: {
     extend: {
       borderRadius: {
-        DEFAULT: "0.25rem", /* 4px */
-        sm: "0.25rem", /* 4px */
-        md: "0.25rem", /* 4px */
-        lg: "0.25rem", /* 4px */
-        xl: "0.25rem", /* 4px */
-        "2xl": "0.25rem", /* 4px */
+        DEFAULT: "0.25rem", /* 4px - cartões */
+        sm: "0.25rem", /* 4px - cartões */
+        md: "0.25rem", /* 4px - cartões */
+        lg: "0.25rem", /* 4px - cartões */
+        xl: "0.25rem", /* 4px - cartões */
+        "2xl": "0.25rem", /* 4px - cartões */
+        button: "1rem", /* 16px - botões */
+        input: "0.375rem", /* 6px - inputs */
+        badge: "1.5rem", /* 24px - badges (pílula) */
+        container: "0", /* 0px - containers principais */
       },
       colors: {
         // Flat / base colors (regular buttons)
