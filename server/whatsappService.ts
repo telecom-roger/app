@@ -47,6 +47,7 @@ const sessionStatus = new Map<string, string>();
 const sessionUsers = new Map<string, string>();
 const sessionListeners = new Map<string, boolean>();
 const keepAliveIntervals = new Map<string, NodeJS.Timeout>();
+const processedMessageIds = new Set<string>(); // 🔴 DEDUP: Evita processar mesma msg 2x
 
 let reconnectAttempts = new Map<string, number>();
 
@@ -98,6 +99,14 @@ async function processIncomingMessages(sessionId: string, m: any) {
     console.log(`[RECEBIMENTO] 🎯 Processando ${msgs.length} mensagens para ${sessionId}`);
 
     for (const msg of msgs) {
+      // 🔴 DEDUP: Ignora se já processou essa mensagem
+      const msgId = `${msg.key.remoteJid}-${msg.key.id}`;
+      if (processedMessageIds.has(msgId)) {
+        console.log(`[RECEBIMENTO] ⏭️ Pulando msg já processada: ${msgId}`);
+        continue;
+      }
+      processedMessageIds.add(msgId);
+      
       if (msg.key.fromMe) {
         console.log(`[RECEBIMENTO] ➡️ Pulando msg enviada por mim (fromMe)`);
         continue;
@@ -388,18 +397,25 @@ async function processIncomingMessages(sessionId: string, m: any) {
 }
 
 async function handleIncomingMessages(sessionId: string, sock: any) {
-  // 🔴 EVITAR LISTENERS DUPLICADOS - Remover listeners antigos ANTES de registrar novos
+  // 🔴 EVITAR LISTENERS DUPLICADOS - Remover TUDO antes de registrar novo
   if (sessionListeners.has(sessionId)) {
     console.log(`⚠️ Removendo listeners antigos para ${sessionId}`);
     sock.ev.removeAllListeners("messages.upsert");
+    sock.ev.removeAllListeners("messages.update");
   }
   
+  sessionListeners.delete(sessionId); // Reset completamente
   sessionListeners.set(sessionId, true);
   console.log(`\n🎯🎯🎯 LISTENER REGISTRADO E ATIVADO PARA: ${sessionId} 🎯🎯🎯\n`);
 
   // Only listen to new messages (upsert), NOT status updates (update)
   // messages.update is for delivery status, NOT for incoming messages
-  sock.ev.on("messages.upsert", (m: any) => processIncomingMessages(sessionId, m));
+  sock.ev.once("messages.upsert", (m: any) => {
+    // Use .once para garantir que processa uma vez por reconexão
+    processIncomingMessages(sessionId, m);
+    // Re-register listener para próximas mensagens
+    sock.ev.on("messages.upsert", (m: any) => processIncomingMessages(sessionId, m));
+  });
   
   console.log(`[LISTENER] Aguardando mensagens para ${sessionId}...`);
 }

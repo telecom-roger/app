@@ -324,6 +324,12 @@ export default function Chat() {
               newSet.delete(data.conversationId);
               return newSet;
             });
+            
+            // 🔴 AUTO-SELECT conversa se nenhuma estiver selecionada ou estava fechada
+            if (!selectedConversationId) {
+              console.log(`📌 Auto-selecionando conversa: ${data.conversationId}`);
+              setSelectedConversationId(data.conversationId);
+            }
           }
           
           refetchConversations();
