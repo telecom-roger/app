@@ -93,6 +93,7 @@ export default function Kanban() {
   const { toast } = useToast();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [filtroResponsavel, setFiltroResponsavel] = useState<string>("todos");
+  const [filtroEtapa, setFiltroEtapa] = useState<string>("todas");
   const [filtroDataInicio, setFiltroDataInicio] = useState<string>("");
   const [filtroDataFim, setFiltroDataFim] = useState<string>("");
   const [showNovaOportunidade, setShowNovaOportunidade] = useState(false);
@@ -204,11 +205,16 @@ export default function Kanban() {
     },
   });
 
-  // Filtrar oportunidades por responsável e data
+  // Filtrar oportunidades por responsável, etapa e data
   const oportunidadesFiltradas = (oportunidades || []).filter(op => {
     // Filtro responsável - se filtro está ativo E responsável é diferente, exclui
     if (filtroResponsavel !== "todos") {
       if (op.responsavelId !== filtroResponsavel) return false;
+    }
+    
+    // Filtro etapa
+    if (filtroEtapa !== "todas") {
+      if (op.etapa?.toLowerCase() !== filtroEtapa.toLowerCase()) return false;
     }
     
     // Filtro data
@@ -325,6 +331,20 @@ export default function Kanban() {
                 <SelectContent>
                   <SelectItem value="todos">Todas as oportunidades</SelectItem>
                   <SelectItem value={user?.id ? String(user.id) : ""}>Minhas oportunidades</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={filtroEtapa} onValueChange={setFiltroEtapa}>
+                <SelectTrigger className="w-full lg:w-48 text-xs lg:text-sm border-slate-200 dark:border-slate-700" data-testid="select-etapa">
+                  <SelectValue placeholder="Etapa" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as etapas</SelectItem>
+                  {colunas.map((coluna) => (
+                    <SelectItem key={coluna.id} value={coluna.titulo}>
+                      {coluna.titulo}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               
