@@ -3576,7 +3576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ==================== ADMIN: AUTOMATION CONFIGS ====================
-  app.get("/api/admin/automation-configs", isAuthenticated, requireAdmin, async (req, res) => {
+  app.get("/api/admin/automation-configs", isAuthenticated, async (req, res) => {
     try {
       const configs = await db.select().from(automationConfigs);
       
@@ -3594,7 +3594,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get specific job config
-  app.get("/api/admin/automation-configs/:jobType", isAuthenticated, requireAdmin, async (req, res) => {
+  app.get("/api/admin/automation-configs/:jobType", isAuthenticated, async (req, res) => {
     try {
       const { jobType } = req.params;
       const configs = await db
@@ -3622,7 +3622,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/automation-configs", isAuthenticated, requireAdmin, async (req, res) => {
+  app.patch("/api/admin/automation-configs", isAuthenticated, async (req, res) => {
     try {
       const { jobType, ativo, horarios, timeout2h, timeout4dias, diasSemana, mensagensTemplates, intervaloScheduler, emailNotificacoes } = req.body;
       
