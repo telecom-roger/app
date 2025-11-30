@@ -1,4 +1,4 @@
-import { Bell, Check } from "lucide-react";
+import { MessageCircle, Check } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -57,7 +57,7 @@ export function NotificationBell() {
         className="relative"
         data-testid="button-notifications-bell"
       >
-        <Bell className="h-5 w-5" />
+        <MessageCircle className="h-5 w-5" />
         {unreadCount > 0 && (
           <span
             className="absolute -top-1 -right-1 h-5 w-5 bg-destructive text-white flex items-center justify-center text-xs font-semibold rounded-full shadow-md"
