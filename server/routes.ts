@@ -2292,14 +2292,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         normalizado = normalizado.substring(2);
       }
       
-      // Buscar por telefone ou por nome
+      // Buscar por telefone, razão social ou nome do gestor
       let [client] = await db
         .select()
         .from(clients)
         .where(or(
           ilike(clients.celular, `%${normalizado}%`),
           ilike(clients.telefone2, `%${normalizado}%`),
-          ilike(clients.nome, `%${phone}%`) // Buscar também por nome
+          ilike(clients.nome, `%${phone}%`), // Razão social / Nome
+          ilike(clients.nomeGestor, `%${phone}%`) // Nome do gestor
         ))
         .limit(1);
       
