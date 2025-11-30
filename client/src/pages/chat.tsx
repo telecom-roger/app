@@ -1116,7 +1116,7 @@ export default function Chat() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                           <Avatar className="h-8 w-8 flex-shrink-0" data-testid={`avatar-${conv.id}`}>
-                            <AvatarFallback className="bg-purple-200 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 text-xs font-bold">
+                            <AvatarFallback className="bg-slate-300 dark:bg-[#E8EAED] text-slate-700 dark:text-[#1F1F1F] text-xs font-bold">
                               {initials}
                             </AvatarFallback>
                           </Avatar>
