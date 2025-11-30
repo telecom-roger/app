@@ -282,17 +282,18 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     };
   }
   
-  // ✅ APROVAÇÃO GENÉRICA → Mantém na etapa atual (sentimento positivo, sem mover)
+  // ✅ APROVAÇÃO GENÉRICA → Move para CONTATO (não para PROPOSTA)
   if (isAprovacaoGenerica) {
-    const currentStage = (etapaAtual as "" | "CONTATO" | "PROPOSTA" | "AUTOMÁTICA" | "PERDIDO") || "CONTATO";
-    console.log(`📋 [LOCAL] Detectado: aprovação genérica → mantém em ${currentStage}`);
+    const proposedStage = "CONTATO";
+    const isAllowed = validateMovement(etapaAtual, proposedStage);
+    console.log(`📋 [LOCAL] Detectado: aprovação genérica → CONTATO`);
     return {
       sentimento: "positivo",
       confianca: 85,
-      intenção: "solicitacao_info", // Mantém compatível com tipo
+      intenção: "solicitacao_info",
       motivo: "Aprovação genérica do cliente",
-      etapa: currentStage,
-      deveAgir: false, // NÃO move automaticamente
+      etapa: proposedStage,
+      deveAgir: isAllowed, // Move para CONTATO se permitido
       ehRecusaParcial: false,
       ehMensagemAutomatica: false,
       sugestao: "Cliente respondeu positivamente, continuar atendimento",
