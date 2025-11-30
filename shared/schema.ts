@@ -690,6 +690,7 @@ export const automationConfigs = pgTable("automation_configs", {
   mensagemPadraoRespostaIA: text("mensagem_padrao_resposta_ia"), // Mensagem automática quando cliente envia msg e IA responde
   mensagemContatoPositivo: text("mensagem_contato_positivo"), // Resposta positiva → CONTATO
   mensagemPropostaPositivo: text("mensagem_proposta_positivo"), // Resposta positiva → PROPOSTA
+  mensagemFechado: text("mensagem_fechado"), // Mensagem ao mover manualmente para FECHADO
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

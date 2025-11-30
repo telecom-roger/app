@@ -71,6 +71,7 @@ export default function AdminAutomacaoAdvanced() {
   const [mensagemPadraoRespostaIA, setMensagemPadraoRespostaIA] = useState("");
   const [mensagemContatoPositivo, setMensagemContatoPositivo] = useState("");
   const [mensagemPropostaPositivo, setMensagemPropostaPositivo] = useState("");
+  const [mensagemFechado, setMensagemFechado] = useState("");
 
   // Fetch configs
   const { data: configs = {}, isLoading } = useQuery({
@@ -118,6 +119,9 @@ export default function AdminAutomacaoAdvanced() {
       }
       if (firstConfig?.mensagemPropostaPositivo) {
         setMensagemPropostaPositivo(firstConfig.mensagemPropostaPositivo);
+      }
+      if (firstConfig?.mensagemFechado) {
+        setMensagemFechado(firstConfig.mensagemFechado);
       }
     }
   }, [configs]);
@@ -487,6 +491,20 @@ export default function AdminAutomacaoAdvanced() {
                   />
                 </div>
 
+                {/* Mensagem ao Fechar */}
+                <div className="mb-4 p-3 bg-muted/50 rounded-lg">
+                  <label className="text-xs font-semibold block mb-2">
+                    ✅ Mensagem ao mover MANUALMENTE para FECHADO
+                  </label>
+                  <Textarea
+                    value={mensagemFechado}
+                    onChange={(e) => setMensagemFechado(e.target.value)}
+                    placeholder="Ex: Excelente! Seu contrato foi fechado. Obrigado pela confiança!"
+                    className="min-h-16 text-sm resize-none"
+                    data-testid="mensagem-fechado"
+                  />
+                </div>
+
                 <Button
                   size="sm"
                   onClick={() => {
@@ -494,6 +512,7 @@ export default function AdminAutomacaoAdvanced() {
                       jobType: "ia_resposta_positiva",
                       mensagemContatoPositivo,
                       mensagemPropostaPositivo,
+                      mensagemFechado,
                     });
                   }}
                   disabled={updateConfigMutation.isPending}

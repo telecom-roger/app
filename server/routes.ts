@@ -744,6 +744,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // 🚀 TRIGGER: Se moveu para FECHADO manualmente, envia mensagem automática
+      if (opportunity && etapaNormalizada === "FECHADO" && oldOpportunity.etapa !== "FECHADO") {
+        console.log(`🚀 Enviando mensagem de fechamento para ${opportunity.id}`);
+        try {
+          // Buscar config de automação e cliente
+          const [config] = await db.select().from(automationConfigs).where(eq(automationConfigs.jobType, "ia_resposta_positiva")).limit(1);
+          const client = await storage.getClientById(opportunity.clientId || "");
+          
+          if (config?.mensagemFechado && client?.celular) {
+            // ⏱️ Delay randomico entre 20-40 segundos
+            const delayMs = (Math.random() * 20 + 20) * 1000; // 20-40 segundos
+            console.log(`⏱️ Aguardando ${Math.round(delayMs / 1000)}s antes de enviar mensagem de fechamento...`);
+            
+            // Fire-and-forget: não espera o timeout
+            setTimeout(async () => {
+              try {
+                if (whatsappService.isSessionAlive(user.id)) {
+                  const sock = whatsappService.activeSessions?.get(user.id);
+                  if (sock) {
+                    const telefoneFormatado = client.celular?.replace(/\D/g, '').replace(/^55/, '');
+                    if (telefoneFormatado) {
+                      await sock.sendMessage(`${telefoneFormatado}@c.us`, { text: config.mensagemFechado });
+                      console.log(`✅ Mensagem de fechamento enviada via WhatsApp (após delay): ${telefoneFormatado}`);
+                    }
+                  }
+                }
+              } catch (err) {
+                console.warn(`⚠️ Erro ao enviar mensagem de fechamento (ignorado):`, err);
+              }
+            }, delayMs);
+          }
+        } catch (error) {
+          console.warn(`⚠️ Erro ao processar mensagem de fechamento (ignorado):`, error);
+        }
+      }
+
       res.json(opportunity);
     } catch (error: any) {
       console.error("Error moving opportunity:", error);
