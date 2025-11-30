@@ -268,7 +268,7 @@ async function processIncomingMessages(sessionId: string, m: any) {
             
             // Auto-create new client - store WITHOUT 55 prefix (senderPhone already normalized)
             const novoCliente = await storage.createClient({
-              nome: `Novo contato ${senderPhone}`,
+              nome: `NOVO CONTATO -> ${senderPhone}`,
               celular: senderPhone,
               status: "Lead",
               carteira: "CONTATO",

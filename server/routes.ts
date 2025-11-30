@@ -3636,7 +3636,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Auto-create new client
         const novoCliente = await storage.createClient({
-          nome: `Novo contato ${normalizado}`,
+          nome: `NOVO CONTATO -> ${normalizado}`,
           celular: normalizado,
           status: "Lead",
           carteira: "CONTATO",
