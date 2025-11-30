@@ -42,23 +42,30 @@ const JOBS_ADVANCED = [
 ];
 
 export default function AdminAutomacaoAdvanced() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [selectedJob, setSelectedJob] = useState("contract_reminder");
   const [editingMsgs, setEditingMsgs] = useState<Record<number, string[]>>({});
 
-  // Fetch config do job selecionado
   const { data: config, isLoading, refetch } = useQuery({
     queryKey: [`/api/admin/automation-configs/${selectedJob}`],
+    enabled: !!user,
   });
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      setTimeout(() => (window.location.href = "/api/login"), 500);
+    }
+  }, [authLoading, user]);
 
   useEffect(() => {
     if (config?.mensagensTemplates) {
       setEditingMsgs(config.mensagensTemplates);
+    } else if (config) {
+      setEditingMsgs({});
     }
   }, [config]);
 
-  // Mutation para salvar
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
       return apiRequest("PATCH", "/api/admin/automation-configs", {
@@ -137,7 +144,6 @@ export default function AdminAutomacaoAdvanced() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-5xl mx-auto space-y-6">
-        {/* Header */}
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Zap className="w-6 h-6 text-primary" />
@@ -148,7 +154,6 @@ export default function AdminAutomacaoAdvanced() {
           </p>
         </div>
 
-        {/* Job Selector */}
         <div className="grid gap-2">
           {JOBS_ADVANCED.map((j) => (
             <Button
@@ -174,7 +179,6 @@ export default function AdminAutomacaoAdvanced() {
               <TabsTrigger value="dias">Dias Semana</TabsTrigger>
             </TabsList>
 
-            {/* TAB: MENSAGENS */}
             <TabsContent value="mensagens" className="space-y-4">
               {job.dias.map((dia) => (
                 <Card key={dia}>
@@ -222,89 +226,86 @@ export default function AdminAutomacaoAdvanced() {
               ))}
             </TabsContent>
 
-            {/* TAB: HORÁRIOS */}
             <TabsContent value="horarios" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Horários de Envio</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <p className="text-sm text-muted-foreground">
-                      Horários em que o job executará (timezone São Paulo)
-                    </p>
-                    <div className="flex gap-2 flex-wrap">
-                      {(config.horarios || []).map((h: string) => (
-                        <Badge key={h} variant="default">
-                          <Clock className="w-3 h-3 mr-1" />
-                          {h}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {["08:00", "16:30", "10:00", "14:00"].map((h) => (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Horários de Envio</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Horários em que o job executará (timezone São Paulo)
+                  </p>
+                  <div className="flex gap-2 flex-wrap">
+                    {(config.horarios || []).map((h: string) => (
+                      <Badge key={h} variant="default">
+                        <Clock className="w-3 h-3 mr-1" />
+                        {h}
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {["08:00", "16:30", "10:00", "14:00"].map((h) => (
+                      <Button
+                        key={h}
+                        variant={
+                          config.horarios?.includes(h) ? "default" : "outline"
+                        }
+                        onClick={() => {
+                          const current = config.horarios || [];
+                          const updated = current.includes(h)
+                            ? current.filter((x: string) => x !== h)
+                            : [...current, h];
+                          handleSaveHorarios(updated);
+                        }}
+                        data-testid={`btn-horario-${h}`}
+                      >
+                        {h}
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="dias" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Dias da Semana</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Selecione os dias que o job pode executar
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {["segunda", "terca", "quarta", "quinta", "sexta", "sabado", "domingo"].map(
+                      (dia) => (
                         <Button
-                          key={h}
+                          key={dia}
                           variant={
-                            config.horarios?.includes(h) ? "default" : "outline"
+                            config.diasSemana?.includes(dia)
+                              ? "default"
+                              : "outline"
                           }
                           onClick={() => {
-                            const current = config.horarios || [];
-                            const updated = current.includes(h)
-                              ? current.filter((x: string) => x !== h)
-                              : [...current, h];
-                            handleSaveHorarios(updated);
+                            const current = config.diasSemana || [];
+                            const updated = current.includes(dia)
+                              ? current.filter((x: string) => x !== dia)
+                              : [...current, dia];
+                            handleSaveDias(updated);
                           }}
-                          data-testid={`btn-horario-${h}`}
+                          data-testid={`btn-dia-${dia}`}
                         >
-                          {h}
+                          {dia.charAt(0).toUpperCase() + dia.slice(1)}
                         </Button>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-            {/* TAB: DIAS SEMANA */}
-            <TabsContent value="dias" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Dias da Semana</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <p className="text-sm text-muted-foreground">
-                      Selecione os dias que o job pode executar
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {["segunda", "terca", "quarta", "quinta", "sexta", "sabado", "domingo"].map(
-                        (dia) => (
-                          <Button
-                            key={dia}
-                            variant={
-                              config.diasSemana?.includes(dia)
-                                ? "default"
-                                : "outline"
-                            }
-                            onClick={() => {
-                              const current = config.diasSemana || [];
-                              const updated = current.includes(dia)
-                                ? current.filter((x: string) => x !== dia)
-                                : [...current, dia];
-                              handleSaveDias(updated);
-                            }}
-                            data-testid={`btn-dia-${dia}`}
-                          >
-                            {dia.charAt(0).toUpperCase() + dia.slice(1)}
-                          </Button>
-                        )
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                      )
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
         )}
 
-        {/* Save Button */}
         {job && (
           <Button
             size="lg"
@@ -318,7 +319,6 @@ export default function AdminAutomacaoAdvanced() {
           </Button>
         )}
 
-        {/* Info */}
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
