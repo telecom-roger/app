@@ -333,14 +333,39 @@ async function processIncomingMessages(sessionId: string, m: any) {
             
             console.log(`🔍 [DEBUG ANÁLISE] Mensagem: "${conteudo}"`);
             console.log(`   Sentimento: ${analysis.sentimento}, Intenção: ${analysis.intenção}, Etapa: ${analysis.etapa}`);
-            console.log(`   DeveAgir: ${analysis.deveAgir}, Confiança: ${analysis.confianca}`);
+            console.log(`   DeveAgir: ${analysis.deveAgir}, Confiança: ${analysis.confianca}, DeveCriarNovo: ${analysis.deveCriarNovoNegocio}`);
 
-            if (existingOpp && existingOpp.etapa !== analysis.etapa && analysis.deveAgir) {
+            // ✅ PRIORIDADE 1: CRIAR NOVO se está em FECHADO/PERDIDO (sempre)
+            const estáEmFechadoOuPerdido = existingOpp && (existingOpp.etapa === "FECHADO" || existingOpp.etapa === "PERDIDO");
+            if (estáEmFechadoOuPerdido && analysis.etapa && analysis.etapa !== "") {
+              const novoOpp = await storage.createOpportunity({
+                clientId: conversation.clientId,
+                titulo: `${client?.nome} - Novo Ciclo`,
+                etapa: analysis.etapa,
+                responsavelId: userId,
+              });
+              console.log(`🆕 NOVO negócio criado em ${analysis.etapa} (${existingOpp.etapa} congelada)`);
+              
+              // 📝 REGISTRAR CRIAÇÃO NO TIMELINE
+              await storage.createInteraction({
+                clientId: conversation.clientId,
+                tipo: "oportunidade_criada",
+                origem: "automation",
+                titulo: `Novo Ciclo de Negócio - ${analysis.etapa}`,
+                texto: `Novo ciclo iniciado. Etapa anterior: ${existingOpp.etapa} | Motivo: ${analysis.motivo}`,
+                createdBy: userId,
+                meta: { etapa: analysis.etapa, motivo: analysis.motivo, tipo_movimento: "novo_ciclo" },
+              });
+            }
+            // ✅ PRIORIDADE 2: MOVER se não é FECHADO/PERDIDO e pode agir
+            else if (existingOpp && !estáEmFechadoOuPerdido && existingOpp.etapa !== analysis.etapa && analysis.deveAgir) {
               await storage.updateOpportunity(existingOpp.id, {
                 etapa: analysis.etapa,
               });
-            } else if (!existingOpp && analysis.etapa !== "AUTOMÁTICA" && analysis.deveAgir) {
-              // Criar nova oportunidade se não existir
+              console.log(`✅ Oportunidade movida de ${existingOpp.etapa} para ${analysis.etapa}`);
+            }
+            // ✅ PRIORIDADE 3: CRIAR PRIMEIRA oportunidade se não existir
+            else if (!existingOpp && analysis.etapa !== "AUTOMÁTICA" && analysis.deveAgir) {
               const novaOpp = await storage.createOpportunity({
                 clientId: conversation.clientId,
                 titulo: `${client?.nome} - Resposta IA`,
