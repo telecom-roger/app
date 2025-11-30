@@ -499,69 +499,43 @@ export async function analyzeClientMessage(
   clienteInfo?: { nome?: string; etapaAtual?: string }
 ): Promise<MessageAnalysis> {
   try {
-    // Usar análise local confiável (keywords) ao invés de OpenAI por agora
-    const useLocalMode = true; // 🎯 KEYWORDS LOCAIS - Usando lista de palavras-chave definida
+    // 🎯 SISTEMA HÍBRIDO: Keywords primeiro, OpenAI como fallback inteligente
     
-    if (useLocalMode) {
-      return analyzeLocalTest(mensagem, clienteInfo?.etapaAtual);
+    // 1️⃣ PRIMEIRO: Tentar análise local (palavras-chave definidas pelo usuário)
+    const localAnalysis = analyzeLocalTest(mensagem, clienteInfo?.etapaAtual);
+    
+    // 2️⃣ Se análise local tem alta confiança (>= 75) → usar local
+    if (localAnalysis.confianca >= 75) {
+      console.log(`📝 [KEYWORDS] "${mensagem}" → ${localAnalysis.etapa} (confiança: ${localAnalysis.confianca}%)`);
+      return localAnalysis;
     }
+    
+    // 3️⃣ Se confiança baixa (< 75) → usar OpenAI para entender melhor
+    console.log(`🤖 [HÍBRIDO] Confiança local baixa (${localAnalysis.confianca}%), consultando IA...`);
 
-    const prompt = `Analise RAPIDAMENTE essa resposta de cliente. Retorne JSON PURO (sem markdown, SEM CODE FENCE):
+    const prompt = `Analise a resposta do cliente e classifique. Retorne APENAS JSON puro:
 
 MENSAGEM: "${mensagem}"
-CLIENTE: ${clienteInfo?.nome || "Desconhecido"}
 
-⚠️ VERIFICAÇÃO DE SOLICITAÇÃO DE PROPOSTA (PRIMEIRO!):
-- Se mensagem contém: "me envia proposta", "envia proposta", "manda proposta", "quero ver a proposta"
-- RETORNE: etapa:"PROPOSTA", deveAgir:true, confianca:95
+🎯 REGRAS DE CLASSIFICAÇÃO (SIGA EXATAMENTE):
 
-🎯 DISTINÇÃO CRÍTICA - ORDEM DE VERIFICAÇÃO:
+**POSITIVE/CLOSING → etapa:"PROPOSTA"**
+Palavras: ok, certo, beleza, blz, tranquilo, combinado, pode ser, fechado, gostei, quero, interesse, manda aí, me manda, bora, perfeito, maravilha, show, top, excelente, aprovado, ótimo, adorei, legal, massa, vamos fechar, pode ativar, quero contratar, onde assino, manda o link, 👍, 👌, ✔️
 
-**⚠️ CUIDADO: "TODAS as linhas" = PARCIAL, não TOTAL!**
-- TOTAL: "NADA", "TUDO", "RECUSO COMPLETO" (cliente rejeita 100%)
-- PARCIAL: "ALGUMAS", "TODAS (menos algumas)", "REDUZIR", "CANCELAR PARCIAL"
+**NEUTRAL/CONFUSION/URGENCY → etapa:"CONTATO"**
+Palavras: oi, olá, bom dia, boa tarde, boa noite, por favor, informações, tenho dúvida, qual valor, quanto fica, explica, como funciona, não entendi, confuso, pode explicar, qual diferença, urgente, preciso hoje, agiliza
 
-1️⃣ RECUSA TOTAL (rejeição COMPLETA) → PERDIDO, deveAgir=true
-   Keywords exatos: "nada", "tudo", "recuso" sem contexto de parcial
-   Exemplos:
-   ✓ "Não quero renovar nada" → perdido, true
-   ✓ "Cancela tudo" → perdido, true
-   ✓ "Recuso, não tenho interesse" → perdido, true
-   ✗ "Não vou renovar TODAS as linhas" → PARCIAL (note: "todas as" = parcial)
+**NEGATIVE → etapa:"PERDIDO"**
+Palavras: caro, muito caro, não quero, não gostei, não tenho interesse, para de mandar mensagem, não insista, chato, pare, bloquear, absurdo, péssimo, ruim, insatisfeito, não me interessa, cancela tudo
 
-2️⃣ RECUSA PARCIAL/ALTERAÇÃO (quer modificar PARTE) → Mantém etapa, deveAgir=false
-   Keywords: "algumas", "parcial", "reduzir", "diminuir", "cancelar alguns"
-   Exemplos:
-   ✓ "Quero cancelar algumas linhas" → false (sem mover, alertar atendente)
-   ✓ "Não vou renovar TODAS as linhas" → false (quer manter ALGUMAS)
-   ✓ "Reduzir apenas alguns serviços" → false (sem mover)
+**AUTOMÁTICA → etapa:"AUTOMÁTICA"**
+Palavras: deixe seu contato, aguarde, nosso suporte retornará, estamos verificando
 
-3️⃣ INDECISÃO/CONVERSA NEUTRA (sem decisão) → Mantém etapa, deveAgir=false
-   Exemplos:
-   ✓ "Vou pensar" → false
-   ✓ "Deixa comigo" → false
-   ✓ "Se eu cancelar quanto pago de multa?" → false (informação, não decisão)
+**INDECISÃO → etapa:"" (não mover)**
+Palavras: vou pensar, deixa comigo, estou ocupado, depois conversamos
 
-▶️ 4 ETAPAS (escolha 1 - SEMPRE EM MAIÚSCULA):
-1. "CONTATO" - Pergunta preço/valor OU mensagem inicial ("oi", "tudo bem?")
-2. "PROPOSTA" - APROVAÇÃO ("ok", "sim", "manda", "gostei", "legal", "adorei") OU SOLICITAÇÃO DE PROPOSTA ("me envia a proposta", "envia proposta", "manda proposta", "quero ver a proposta")
-3. "AUTOMÁTICA" - Mensagens automáticas: "deixe contato", "breve", "aguarde"
-4. "PERDIDO" - APENAS RECUSA TOTAL (rejeitou tudo)
-
-▶️ RETORNE deveAgir + ehRecusaParcial:
-- deveAgir: true = Move para próxima etapa, false = Mantém etapa atual
-- ehRecusaParcial: true = Cliente quer ajustes (alertar atendente), false = Padrão
-
-JSON OBRIGATÓRIO (sem markdown, sem fence, APENAS JSON):
-{"sentimento":"positivo","confianca":95,"motivo":"Cliente aprovou","etapa":"PROPOSTA","deveAgir":true,"ehRecusaParcial":false,"ehMensagemAutomatica":false,"sugestao":"Enviar proposta"}
-
-EXEMPLOS CRÍTICOS:
-✓ "me envia proposta" → etapa:"PROPOSTA", deveAgir:true ⚠️ IMPORTANTE!
-✓ "Envia a proposta" → etapa:"PROPOSTA", deveAgir:true ⚠️ IMPORTANTE!
-✓ "Me envia a proposta por favor" → etapa:"PROPOSTA", deveAgir:true
-✓ "Ok, manda" → etapa:"PROPOSTA", deveAgir:true, ehRecusaParcial:false
-✓ "Cancelar algumas linhas" → etapa:"CONTATO", deveAgir:false, ehRecusaParcial:true
-✓ "Não quero renovar nada" → etapa:"PERDIDO", deveAgir:true, ehRecusaParcial:false`;
+JSON OBRIGATÓRIO:
+{"sentimento":"positivo|neutro|negativo","confianca":85,"motivo":"razão","etapa":"PROPOSTA|CONTATO|PERDIDO|AUTOMÁTICA|","deveAgir":true|false,"ehRecusaParcial":false,"ehMensagemAutomatica":false,"sugestao":"ação"}`;
 
     const response = await Promise.race([
       client.chat.completions.create({
@@ -577,26 +551,26 @@ EXEMPLOS CRÍTICOS:
     const messageContent = (response as any).choices[0].message.content;
     if (!messageContent) throw new Error("Empty response from AI");
 
-    const analysis = JSON.parse(messageContent) as MessageAnalysis;
+    const aiAnalysis = JSON.parse(messageContent) as MessageAnalysis;
     
-    // Normalizar etapa para MAIÚSCULA (OpenAI pode retornar em minúscula)
-    analysis.etapa = analysis.etapa.toUpperCase() as any;
+    // Normalizar etapa para MAIÚSCULA
+    aiAnalysis.etapa = (aiAnalysis.etapa || "").toUpperCase() as any;
     
-    console.log(`🤖 [OpenAI] "${mensagem}" → etapa: ${analysis.etapa}, deveAgir: ${analysis.deveAgir}`);
+    console.log(`🤖 [OpenAI] "${mensagem}" → ${aiAnalysis.etapa} (confiança: ${aiAnalysis.confianca}%)`);
     
-    // Validar movimento baseado em etapa atual
-    const isMovementAllowed = validateMovement(clienteInfo?.etapaAtual, analysis.etapa);
+    // 4️⃣ VALIDAÇÃO: Garantir que IA respeita as regras de movimento
+    const isMovementAllowed = validateMovement(clienteInfo?.etapaAtual, aiAnalysis.etapa);
     
-    if (!isMovementAllowed && analysis.deveAgir) {
-      analysis.deveAgir = false;
-      console.log(`⚠️ [BLOQUEADO] ${clienteInfo?.etapaAtual} → ${analysis.etapa} (não permitido)`);
+    if (!isMovementAllowed && aiAnalysis.deveAgir) {
+      aiAnalysis.deveAgir = false;
+      console.log(`⚠️ [BLOQUEADO] ${clienteInfo?.etapaAtual} → ${aiAnalysis.etapa} (não permitido)`);
     }
     
-    return analysis;
+    return aiAnalysis;
   } catch (error) {
-    console.error(`❌ [OpenAI Error] Caindo para local: "${mensagem}"`, error);
+    console.error(`❌ [OpenAI Error] Usando keywords locais: "${mensagem}"`, error);
     const localAnalysis = analyzeLocalTest(mensagem, clienteInfo?.etapaAtual);
-    console.log(`📝 [Local] "${mensagem}" → etapa: ${localAnalysis.etapa}, deveAgir: ${localAnalysis.deveAgir}`);
+    console.log(`📝 [FALLBACK] "${mensagem}" → ${localAnalysis.etapa}`);
     return localAnalysis;
   }
 }
