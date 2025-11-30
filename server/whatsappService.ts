@@ -271,7 +271,7 @@ async function processIncomingMessages(sessionId: string, m: any) {
               nome: `Novo contato ${senderPhone}`,
               celular: senderPhone,
               status: "Lead",
-              carteira: "Dominio",
+              carteira: "CONTATO",
               createdBy: userId, // Atrelar ao usuário que recebeu a mensagem
             });
             

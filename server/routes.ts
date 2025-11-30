@@ -3639,7 +3639,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           nome: `Novo contato ${normalizado}`,
           celular: normalizado,
           status: "Lead",
-          carteira: "Dominio",
+          carteira: "CONTATO",
           createdBy: user.id,
         });
 
