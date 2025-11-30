@@ -50,6 +50,30 @@ export function ChatNotificationBell() {
     }
   };
 
+  const handleMarkAllAsRead = async () => {
+    try {
+      const unreadNotifs = notifications.filter(n => !n.lida);
+      await Promise.all(
+        unreadNotifs.map(notif =>
+          fetch(`/api/notifications/${notif.id}/read`, {
+            method: "POST",
+          })
+        )
+      );
+      await queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      toast({
+        title: "Sucesso",
+        description: "Todas as notificações marcadas como lidas",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível marcar todas como lidas",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleViewClient = (clientId: string | undefined) => {
     if (clientId) {
       navigate(`/clientes/${clientId}`);
@@ -80,8 +104,17 @@ export function ChatNotificationBell() {
       <PopoverContent align="end" className="w-80 p-0">
         <div className="bg-background rounded-lg overflow-hidden">
           {/* Header */}
-          <div className="px-4 py-3 border-b bg-slate-50 dark:bg-slate-900/50">
+          <div className="px-4 py-3 border-b bg-slate-50 dark:bg-slate-900/50 flex items-center justify-between">
             <h3 className="font-semibold text-sm">Atividades</h3>
+            {unreadCount > 0 && (
+              <button
+                onClick={handleMarkAllAsRead}
+                className="text-xs text-primary hover:underline font-medium transition-colors"
+                data-testid="button-mark-all-as-read"
+              >
+                Marcar tudo como lido
+              </button>
+            )}
           </div>
 
           {/* Content */}
