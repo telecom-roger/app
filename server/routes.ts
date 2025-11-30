@@ -15,7 +15,7 @@ import { analyzeClientMessage } from "./aiService";
 // ======================== CONSTANTES DE ETAPAS (AUTOMAÇÃO) ========================
 // 🔥 REGRAS CRÍTICAS DE MOVIMENTO DA IA:
 // LEAD → Pode ir para: CONTATO, PROPOSTA, FORNECEDOR, PERDIDO
-// CONTATO → Só vai para: PROPOSTA
+// CONTATO → Pode ir para: PROPOSTA ou PERDIDO
 // PROPOSTA → BLOQUEADO (IA não mexe)
 // PROPOSTA ENVIADA, AGUARDANDO CONTRATO, CONTRATO ENVIADO, AGUARDANDO ACEITE, AGUARDANDO ATENÇÃO, FECHADO → BLOQUEADO
 // PERDIDO → Pode voltar para: CONTATO, PROPOSTA (se cliente enviar interesse)
@@ -2155,15 +2155,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
               orderBy: (o: any) => desc(o.createdAt),
             });
 
-            // 🛑 BLOQUEIO 1: Se etapa BLOQUEADA → IA NÃO ANALISA
-            if (existingOpp && ETAPAS_MANUAIS_BLOQUEADAS.includes(existingOpp.etapa)) {
+            // ✅ Analisar mensagem (oportunidade em LEAD/CONTATO ou não existe)
+            const analysis = await analyzeClientMessage(conteudo, { nome: client.nome });
+            const etapa = (analysis.etapa || "CONTATO").toUpperCase();
+            console.log(`🤖 IA (CHAT): ${analysis.sentimento} (${analysis.confianca}%) → ${etapa}`);
+
+            // 🤖 DETECÇÃO: Se mensagem automática → MOVER PARA FORNECEDOR (mesmo em etapas bloqueadas)
+            if (analysis.ehMensagemAutomatica) {
+              console.log(`🤖 MENSAGEM AUTOMÁTICA DETECTADA - Movendo para FORNECEDOR`);
+              if (existingOpp) {
+                await db.update(opportunities).set({ 
+                  etapa: "FORNECEDOR",
+                  titulo: `${client.nome} - Aguardando resposta (mensagem automática)`,
+                  updatedAt: new Date()
+                }).where(eq(opportunities.id, existingOpp.id));
+                console.log(`✅ OPP MOVIDA (AUTOMÁTICO): ${existingOpp.etapa} → FORNECEDOR`);
+                await storage.recalculateClientStatus(conv.clientId);
+              } else {
+                // Criar nova oportunidade em FORNECEDOR
+                const [newOpp] = await db.insert(opportunities).values({
+                  clientId: conv.clientId,
+                  titulo: `${client.nome} - Aguardando resposta (mensagem automática)`,
+                  etapa: "FORNECEDOR",
+                  valorEstimado: "5000",
+                  responsavelId: user.id || conv.userId,
+                  ordem: 0,
+                }).returning();
+                console.log(`✅ OPP CRIADA (AUTOMÁTICO): FORNECEDOR`);
+                await storage.recalculateClientStatus(conv.clientId);
+              }
+            }
+            // 🛑 BLOQUEIO: Se etapa BLOQUEADA → IA NÃO ANALISA (exceto mensagem automática)
+            else if (existingOpp && ETAPAS_MANUAIS_BLOQUEADAS.includes(existingOpp.etapa)) {
               console.log(`🛑 IA BLOQUEADA: ${existingOpp.etapa} - IA PROIBIDO`);
             }
             else {
-              // ✅ Analisar mensagem (oportunidade em LEAD/CONTATO ou não existe)
-              const analysis = await analyzeClientMessage(conteudo, { nome: client.nome });
-              const etapa = (analysis.etapa || "CONTATO").toUpperCase();
-              console.log(`🤖 IA (CHAT): ${analysis.sentimento} (${analysis.confianca}%) → ${etapa}`);
+              // ✅ Analisar movimento normal
 
               if (analysis.deveAgir === false) {
                 // IA diz "não mover" → criar opp em CONTATO se não existir
@@ -2210,15 +2237,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     
                     console.log(`✅ OPP MOVIDA (CHAT): ${existingOpp.etapa} → ${etapa}`);
                     await storage.recalculateClientStatus(conv.clientId);
-                  } else if (existingOpp.etapa === "CONTATO" && etapa === "PROPOSTA") {
-                    // CONTATO → PROPOSTA (obrigatório se deveAgir=true)
+                  } else if (existingOpp.etapa === "CONTATO" && (etapa === "PROPOSTA" || etapa === "PERDIDO")) {
+                    // CONTATO → PROPOSTA ou PERDIDO
                     await db.update(opportunities).set({ 
-                      etapa: "PROPOSTA",
+                      etapa: etapa,
                       titulo: `${client.nome} - ${analysis.motivo}`,
                       updatedAt: new Date()
                     }).where(eq(opportunities.id, existingOpp.id));
                     
-                    console.log(`✅ OPP MOVIDA (OBRIGATÓRIO CHAT): CONTATO → PROPOSTA`);
+                    console.log(`✅ OPP MOVIDA (CHAT): CONTATO → ${etapa}`);
                     await storage.recalculateClientStatus(conv.clientId);
                   } else {
                     console.log(`🛑 MOVIMENTO NÃO PERMITIDO: ${existingOpp.etapa} → ${etapa}`);

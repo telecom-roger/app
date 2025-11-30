@@ -11,6 +11,7 @@ export interface MessageAnalysis {
   etapa: "CONTATO" | "PROPOSTA" | "FORNECEDOR" | "PERDIDO" | "LEAD"; // Etapas automáticas em MAIÚSCULA
   deveAgir: boolean; // true = mover/criar, false = manter etapa atual sem mover
   ehRecusaParcial: boolean; // true = recusa parcial/alteração, alerta atendente
+  ehMensagemAutomatica: boolean; // true = mensagem automática do sistema (deve ir para FORNECEDOR)
   sugestao: string;
 }
 
@@ -25,6 +26,44 @@ function normalizeMessage(text: string): string {
 // Modo de teste local (sem OpenAI API)
 function analyzeLocalTest(mensagem: string): MessageAnalysis {
   const msg = normalizeMessage(mensagem);
+  
+  // 🤖 DETECTAR MENSAGENS AUTOMÁTICAS (deve ir para FORNECEDOR)
+  const mensagensAutomaticas = [
+    "fora do horario de atendimento",
+    "fora do horário de atendimento",
+    "estamos fora do horario",
+    "estamos fora do horário",
+    "nao estamos disponiveis",
+    "não estamos disponíveis",
+    "nao estamos em atendimento",
+    "não estamos em atendimento",
+    "retornaremos",
+    "responderemos",
+    "breve entraremos",
+    "em breve entraremos",
+    "deixe seu contato",
+    "mensagem automatica",
+    "mensagem automática",
+    "segunda a sexta",
+    "segunda à sexta",
+    "9h as 18h",
+    "9h às 18h",
+    "agradecemos a compreensao",
+    "agradecemos a compreensão"
+  ];
+  
+  if (mensagensAutomaticas.some(palavra => msg.includes(palavra))) {
+    return {
+      sentimento: "neutro",
+      confianca: 100,
+      motivo: "Mensagem automática do sistema - cliente aguardando retorno",
+      etapa: "FORNECEDOR",
+      deveAgir: true, // true = move para FORNECEDOR
+      ehRecusaParcial: false,
+      ehMensagemAutomatica: true,
+      sugestao: "Aguardando retorno automático do sistema",
+    };
+  }
   
   // 🛑 RECUSA TOTAL → PERDIDO (verifica PRIMEIRO - é mais específico com "nada"/"tudo")
   // Procura por: "não quero renovar NADA", "cancela TUDO", "recusa completa"
@@ -65,6 +104,7 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
       etapa: "CONTATO",
       deveAgir: false,
       ehRecusaParcial: msg.includes("cancelar") || msg.includes("reduzir") || msg.includes("remover"),
+      ehMensagemAutomatica: false,
       sugestao: "⚠️ Cliente deseja ajustes - negociar modificações",
     };
   }
@@ -94,6 +134,7 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
       etapa: "PERDIDO",
       deveAgir: true, // true = move para PERDIDO
       ehRecusaParcial: false,
+      ehMensagemAutomatica: false,
       sugestao: "Arquivar oportunidade",
     };
   }
@@ -109,6 +150,7 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
       etapa: "FORNECEDOR",
       deveAgir: true,
       ehRecusaParcial: false,
+      ehMensagemAutomatica: true,
       sugestao: "Aguardando resposta",
     };
   }
@@ -127,6 +169,7 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
       etapa: "PROPOSTA",
       deveAgir: true,
       ehRecusaParcial: false,
+      ehMensagemAutomatica: false,
       sugestao: "Enviar proposta",
     };
   }
@@ -141,6 +184,7 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
       etapa: "CONTATO",
       deveAgir: true,
       ehRecusaParcial: false,
+      ehMensagemAutomatica: false,
       sugestao: "Enviar tabela",
     };
   }
@@ -153,6 +197,7 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
     etapa: "CONTATO",
     deveAgir: true,
     ehRecusaParcial: false,
+    ehMensagemAutomatica: false,
     sugestao: "Engajar",
   };
 }

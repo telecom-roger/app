@@ -7,7 +7,7 @@ import { analyzeClientMessage } from "./aiService";
 // ======================== VALIDAÇÃO DE MOVIMENTO ========================
 // 🔥 REGRAS CRÍTICAS DE MOVIMENTO DA IA:
 // LEAD → Pode ir para: CONTATO, PROPOSTA, FORNECEDOR, PERDIDO
-// CONTATO → Só vai para: PROPOSTA
+// CONTATO → Pode ir para: PROPOSTA ou PERDIDO
 // PROPOSTA → BLOQUEADO (IA não mexe)
 // PROPOSTA ENVIADA → BLOQUEADO (IA não mexe)
 // AGUARDANDO CONTRATO → BLOQUEADO (IA não mexe)
@@ -33,8 +33,8 @@ const ETAPAS_MANUAIS_BLOQUEADAS = [
  * Valida se um movimento de etapa é permitido
  * Regras:
  * - LEAD: livre (pode ir para qualquer lugar)
- * - CONTATO: só → PROPOSTA
- * - PROPOSTA+: bloqueado (5 etapas manuais)
+ * - CONTATO: pode ir para PROPOSTA ou PERDIDO
+ * - PROPOSTA+: bloqueado (7 etapas manuais)
  * - PERDIDO: pode voltar se interesse (→ CONTATO ou PROPOSTA)
  * - FORNECEDOR: pode voltar se interesse (→ CONTATO ou PROPOSTA)
  */
@@ -44,9 +44,9 @@ function isValidMovement(etapaAtual: string, etapaNova: string): { permitido: bo
     return { permitido: false, motivo: `${etapaAtual} - IA PROIBIDO` };
   }
   
-  // 🔥 CONTATO → só pode ir para PROPOSTA
-  if (etapaAtual === "CONTATO" && etapaNova !== "PROPOSTA") {
-    return { permitido: false, motivo: `${etapaAtual} → ${etapaNova}: CONTATO só vai para PROPOSTA` };
+  // 🔥 CONTATO → pode ir para PROPOSTA ou PERDIDO
+  if (etapaAtual === "CONTATO" && etapaNova !== "PROPOSTA" && etapaNova !== "PERDIDO") {
+    return { permitido: false, motivo: `${etapaAtual} → ${etapaNova}: CONTATO só vai para PROPOSTA ou PERDIDO` };
   }
   
   // 🔥 LEAD → livre (pode ir para qualquer lugar)
