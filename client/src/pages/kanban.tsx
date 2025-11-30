@@ -122,6 +122,7 @@ export default function Kanban() {
   const { data: oportunidades, isLoading, refetch } = useQuery<Opportunity[]>({
     queryKey: ["/api/opportunities"],
     enabled: isAuthenticated,
+    refetchInterval: 2000, // Refetch a cada 2 segundos para atualizar cards quando IA cria oportunidade
   });
 
   const { data: clientesData } = useQuery<{ clientes: any[]; total: number }>({
