@@ -431,7 +431,7 @@ async function executeContractReminder(task: any) {
     if (client.telefone) {
       // Buscar sessão ativa de WhatsApp
       const session = await db.query.whatsappSessions.findFirst({
-        where: (s: any) => eq(s.status, "connected"),
+        where: (s: any) => eq(s.status, "conectada"),
       });
       
       if (session && client.telefone_2) {
@@ -808,7 +808,7 @@ async function executeAguardandoAceiteReminder(task: any) {
     if (client.telefone_2) {
       // Buscar sessão ativa de WhatsApp
       const session = await db.query.whatsappSessions.findFirst({
-        where: (s: any) => eq(s.status, "connected"),
+        where: (s: any) => eq(s.status, "conectada"),
       });
       
       if (session) {
