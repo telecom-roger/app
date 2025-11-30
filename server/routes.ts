@@ -517,7 +517,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const opportunityData = {
         ...validatedData,
         responsavelId: user.id,
-        etapa: validatedData.etapa.toUpperCase() // Normalizar etapa para MAIÚSCULA
+        etapa: validatedData.etapa ? validatedData.etapa.toUpperCase() : "LEAD" // Normalizar etapa para MAIÚSCULA
       };
 
       const opportunity = await storage.createOpportunity(opportunityData);
@@ -678,7 +678,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const opportunity = await storage.updateOpportunity(req.params.id, validatedData);
 
       // 🔄 RECALCULATE CLIENT STATUS if etapa changed
-      if (oldOpportunity.clientId && (validatedData.etapa || validatedData.status)) {
+      if (oldOpportunity.clientId && validatedData.etapa) {
         const newStatus = await storage.recalculateClientStatus(oldOpportunity.clientId);
         await storage.updateClient(oldOpportunity.clientId, { status: newStatus });
       }
@@ -2129,7 +2129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`🤖 IA (CHAT): ${analysis.sentimento} (${analysis.confianca}%) → ${analysis.etapa}`);
 
             // 3. Criar/mover oportunidade se análise indicar ação
-            if (analysis.etapa !== "automatico") {
+            if (analysis.etapa) {
               const etapasFinais = ["PERDIDO", "FECHADO"];
               let existingOpp = await db.query.opportunities.findFirst({
                 where: (o: any) => 

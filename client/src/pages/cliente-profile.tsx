@@ -367,12 +367,6 @@ export default function ClienteProfile() {
                       clientId={id || ""}
                       label="Telefone"
                     />
-                    <EditableField
-                      value={cliente?.contato}
-                      field="contato"
-                      clientId={id || ""}
-                      label="Pessoa de Contato"
-                    />
                   </div>
                 )}
               </div>
@@ -389,12 +383,6 @@ export default function ClienteProfile() {
                       field="carteira"
                       clientId={id || ""}
                       label="Carteira"
-                    />
-                    <EditableField
-                      value={cliente?.planoAtual}
-                      field="planoAtual"
-                      clientId={id || ""}
-                      label="Plano"
                     />
                   </div>
                 </div>
@@ -418,12 +406,6 @@ export default function ClienteProfile() {
                       field="numero"
                       clientId={id || ""}
                       label="Número"
-                    />
-                    <EditableField
-                      value={cliente?.complemento}
-                      field="complemento"
-                      clientId={id || ""}
-                      label="Complemento"
                     />
                     <EditableField
                       value={cliente?.cidade}
