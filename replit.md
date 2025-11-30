@@ -132,3 +132,38 @@ JOBS:
 - FORNECEDOR → IA move para CONTATO/PROPOSTA (se interesse)
 
 **Status**: ✅ PLATAFORMA 100% FUNCIONAL PARA PRODUÇÃO!
+
+---
+
+## 🚀 FASE 16 - NOVO CICLO DE VENDAS PARA CLIENTES FECHADO/PERDIDO (Nov 30)
+
+### ✅ IMPLEMENTAÇÃO CONCLUÍDA COM SUCESSO!
+
+**O que foi implementado:**
+
+1. **Flag `deveCriarNovoNegocio` adicionado** ✅
+   - Novo campo na interface `MessageAnalysis` para indicar quando criar novo negócio
+   - Quando cliente em FECHADO/PERDIDO responde → Cria NOVA oportunidade ao invés de mover
+
+2. **Lógica de `validateMovement` atualizada** ✅
+   - Agora retorna objeto `{ allowed, shouldCreateNew }`
+   - Se está em FECHADO/PERDIDO e pode mover → `shouldCreateNew = true`
+
+3. **Fluxo de chat atualizado** ✅
+   - Prioridade: Se `deveCriarNovoNegocio` = true → Cria nova oportunidade
+   - Se `deveCriarNovoNegocio` = false → Move oportunidade existente
+   - Cada ciclo de venda é independente com seus dados
+
+**Cada ciclo é único:**
+```
+Ciclo 1: LEAD → CONTATO → PROPOSTA → FECHADO
+Ciclo 2: (Cliente responde) → CRIA NOVO em CONTATO/PROPOSTA → FECHADO
+Ciclo 3: (Cliente responde novamente) → CRIA NOVO → FECHADO
+```
+
+**Regra de IA atualizada:**
+- FECHADO → ["CONTATO", "PROPOSTA"] = **Criar novo negócio**
+- PERDIDO → ["CONTATO", "PROPOSTA"] = **Criar novo negócio**
+- Todas outras etapas = Mover existente
+
+**Status**: ✅ VENDAS MULTICLICLO 100% OPERACIONAL!

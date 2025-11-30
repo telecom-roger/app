@@ -2217,21 +2217,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
               etapaAtual: existingOpp?.etapa,
             });
 
-            console.log(`🤖 [Chat] "${conteudo}" → etapa: ${analysis.etapa}, deveAgir: ${analysis.deveAgir}`);
+            console.log(`🤖 [Chat] "${conteudo}" → etapa: ${analysis.etapa}, deveAgir: ${analysis.deveAgir}, deveCriarNovo: ${analysis.deveCriarNovoNegocio}`);
 
-            // Mover oportunidade se análise indicar movimento
-            if (existingOpp && existingOpp.etapa !== analysis.etapa && analysis.deveAgir) {
+            // Se análise indica "criar novo negócio" (FECHADO/PERDIDO recebem mensagem) → Criar nova oportunidade
+            if (existingOpp && analysis.deveCriarNovoNegocio && analysis.deveAgir) {
+              const novaOpp = await storage.createOpportunity({
+                clientId: conversation.clientId,
+                titulo: `${client?.nome} - Novo Ciclo`,
+                etapa: analysis.etapa,
+                userId: user.id,
+              });
+              console.log(`🆕 [Chat] Novo negócio criado em ${analysis.etapa} (cliente estava em ${existingOpp.etapa})`);
+            }
+            // Mover oportunidade se análise indicar movimento e NÃO criar novo
+            else if (existingOpp && existingOpp.etapa !== analysis.etapa && analysis.deveAgir && !analysis.deveCriarNovoNegocio) {
               await db.update(opportunities).set({ etapa: analysis.etapa }).where(eq(opportunities.id, existingOpp.id));
               console.log(`✅ [Chat] Oportunidade movida para: ${analysis.etapa}`);
-            } else if (!existingOpp && analysis.etapa !== "AUTOMÁTICA" && analysis.deveAgir) {
-              // Criar nova oportunidade
+            } 
+            // Criar primeira oportunidade se não existir
+            else if (!existingOpp && analysis.etapa !== "AUTOMÁTICA" && analysis.deveAgir) {
               const novaOpp = await storage.createOpportunity({
                 clientId: conversation.clientId,
                 titulo: `${client?.nome} - Chat`,
                 etapa: analysis.etapa,
                 userId: user.id,
               });
-              console.log(`✅ [Chat] Nova oportunidade criada: ${analysis.etapa}`);
+              console.log(`✅ [Chat] Primeira oportunidade criada: ${analysis.etapa}`);
             }
           } catch (iaError) {
             console.error("⚠️ [Chat] Erro na análise IA:", iaError);

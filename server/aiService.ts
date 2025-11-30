@@ -11,6 +11,7 @@ export interface MessageAnalysis {
   intenção: "solicitacao_info" | "aprovacao_envio" | "resposta_automatica" | "rejeicao_clara" | "rejeicao_parcial" | "indefinida";
   etapa: "CONTATO" | "PROPOSTA" | "AUTOMÁTICA" | "PERDIDO" | "";
   deveAgir: boolean; // true = movimento permitido, false = bloqueado
+  deveCriarNovoNegocio: boolean; // true = criar novo negócio ao invés de mover (para FECHADO/PERDIDO)
   ehRecusaParcial: boolean;
   ehMensagemAutomatica: boolean;
   sugestao: string;
@@ -26,24 +27,31 @@ const AI_MOVEMENT_RULES: Record<string, string[]> = {
   "CONTRATO ENVIADO": [], // IA PROIBIDO
   "AGUARDANDO ACEITE": [], // IA PROIBIDO
   "AGUARDANDO ATENÇÃO": [], // IA PROIBIDO
-  "FECHADO": [], // IA PROIBIDO
-  "PERDIDO": ["CONTATO", "PROPOSTA"], // Se cliente enviar interesse
+  "FECHADO": ["CONTATO", "PROPOSTA"], // Se cliente responder novamente, reinicia o funil
+  "PERDIDO": ["CONTATO", "PROPOSTA"], // Se cliente enviar interesse, reinicia o funil
   "FORNECEDOR": ["CONTATO", "PROPOSTA"], // Se cliente enviar interesse
   "AUTOMÁTICA": ["CONTATO", "PROPOSTA", "PERDIDO"], // De automática pode voltar
 };
 
-function validateMovement(currentStage: string | undefined, proposedStage: string): boolean {
+function validateMovement(currentStage: string | undefined, proposedStage: string): { allowed: boolean; shouldCreateNew: boolean } {
   // Se não houver etapa atual, aceitar (criar novo)
-  if (!currentStage) return true;
+  if (!currentStage) return { allowed: true, shouldCreateNew: false };
   
   const allowedStages = AI_MOVEMENT_RULES[currentStage] || [];
   const isAllowed = allowedStages.includes(proposedStage);
+  
+  // Se está em FECHADO/PERDIDO e pode mover → Criar novo negócio ao invés de mover
+  const shouldCreateNew = (currentStage === "FECHADO" || currentStage === "PERDIDO") && isAllowed;
   
   if (!isAllowed) {
     console.log(`⚠️ Movimento bloqueado: ${currentStage} → ${proposedStage}`);
   }
   
-  return isAllowed;
+  if (shouldCreateNew) {
+    console.log(`🆕 ${currentStage} → ${proposedStage}: Criar novo negócio ao invés de mover`);
+  }
+  
+  return { allowed: isAllowed, shouldCreateNew };
 }
 
 // Normalizar mensagem: minúsculas + remove acentos
@@ -81,7 +89,7 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
   
   if (mensagensAutomaticas.some(palavra => msg.includes(palavra))) {
     const proposedStage = "AUTOMÁTICA";
-    const isAllowed = validateMovement(etapaAtual, proposedStage);
+    const { allowed: isAllowed, shouldCreateNew } = validateMovement(etapaAtual, proposedStage);
     return {
       sentimento: "neutro",
       confianca: 100,
@@ -89,6 +97,7 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
       motivo: "Resposta automática do sistema",
       etapa: proposedStage,
       deveAgir: isAllowed,
+      deveCriarNovoNegocio: shouldCreateNew,
       ehRecusaParcial: false,
       ehMensagemAutomatica: true,
       sugestao: "Aguardando retorno do sistema",
@@ -125,6 +134,7 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
       motivo: "Cliente quer ajustes parciais/cancelamento de algumas linhas - negócio ativo",
       etapa: "", // NÃO MOVER
       deveAgir: false,
+      deveCriarNovoNegocio: false,
       ehRecusaParcial: true,
       ehMensagemAutomatica: false,
       sugestao: "Alertar atendente - cliente quer ajustes, não é perda total",
@@ -162,6 +172,7 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
       motivo: "Cliente indeciso ou ocupado - sem decisão clara",
       etapa: "", // NÃO MOVER
       deveAgir: false,
+      deveCriarNovoNegocio: false,
       ehRecusaParcial: false,
       ehMensagemAutomatica: false,
       sugestao: "Aguardar próxima mensagem do cliente",
@@ -225,7 +236,7 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
   
   if (recusaTotalPalavrasChave.some(palavra => msg.includes(palavra))) {
     const proposedStage = "PERDIDO";
-    const isAllowed = validateMovement(etapaAtual, proposedStage);
+    const { allowed: isAllowed, shouldCreateNew } = validateMovement(etapaAtual, proposedStage);
     return {
       sentimento: "negativo",
       confianca: 95,
@@ -233,6 +244,7 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
       motivo: "Rejeição clara e definitiva",
       etapa: proposedStage,
       deveAgir: isAllowed,
+      deveCriarNovoNegocio: shouldCreateNew,
       ehRecusaParcial: false,
       ehMensagemAutomatica: false,
       sugestao: "Mover para PERDIDO",
@@ -351,7 +363,7 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
   // 🎯 PEDIDO EXPLÍCITO DE PROPOSTA → Move para PROPOSTA
   if (isSolicitacaoProposta || isAprovacaoParaProposta) {
     const proposedStage = "PROPOSTA";
-    const isAllowed = validateMovement(etapaAtual, proposedStage);
+    const { allowed: isAllowed, shouldCreateNew } = validateMovement(etapaAtual, proposedStage);
     console.log(`📋 [LOCAL] Detectado: pedido explícito de proposta → PROPOSTA`);
     return {
       sentimento: "positivo",
@@ -360,6 +372,7 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
       motivo: isSolicitacaoProposta ? "Solicitação de proposta" : "Aprovação/concordância para proposta",
       etapa: proposedStage,
       deveAgir: isAllowed,
+      deveCriarNovoNegocio: shouldCreateNew,
       ehRecusaParcial: false,
       ehMensagemAutomatica: false,
       sugestao: "Enviar proposta/simulador",
@@ -369,7 +382,7 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
   // ✅ APROVAÇÃO GENÉRICA → Move para CONTATO (não para PROPOSTA)
   if (isAprovacaoGenerica) {
     const proposedStage = "CONTATO";
-    const isAllowed = validateMovement(etapaAtual, proposedStage);
+    const { allowed: isAllowed, shouldCreateNew } = validateMovement(etapaAtual, proposedStage);
     console.log(`📋 [LOCAL] Detectado: aprovação genérica → CONTATO`);
     return {
       sentimento: "positivo",
@@ -378,6 +391,7 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
       motivo: "Aprovação genérica do cliente",
       etapa: proposedStage,
       deveAgir: isAllowed, // Move para CONTATO se permitido
+      deveCriarNovoNegocio: shouldCreateNew,
       ehRecusaParcial: false,
       ehMensagemAutomatica: false,
       sugestao: "Cliente respondeu positivamente, continuar atendimento",
@@ -464,7 +478,7 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
   
   if (solicitacaoInfoPalavras.some(palavra => msg.includes(palavra))) {
     const proposedStage = "CONTATO";
-    const isAllowed = validateMovement(etapaAtual, proposedStage);
+    const { allowed: isAllowed, shouldCreateNew } = validateMovement(etapaAtual, proposedStage);
     return {
       sentimento: "positivo",
       confianca: 85,
@@ -472,6 +486,7 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
       motivo: "Cliente pedindo informações",
       etapa: proposedStage,
       deveAgir: isAllowed,
+      deveCriarNovoNegocio: shouldCreateNew,
       ehRecusaParcial: false,
       ehMensagemAutomatica: false,
       sugestao: "Enviar informações/detalhes",
@@ -480,7 +495,7 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
   
   // 🤷 7️⃣ PADRÃO: Mensagem inicial/neutra → CONTATO
   const proposedStage = "CONTATO";
-  const isAllowed = validateMovement(etapaAtual, proposedStage);
+  const { allowed: isAllowed, shouldCreateNew } = validateMovement(etapaAtual, proposedStage);
   return {
     sentimento: "neutro",
     confianca: 50,
@@ -488,6 +503,7 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     motivo: "Mensagem genérica/inicial",
     etapa: proposedStage,
     deveAgir: isAllowed,
+    deveCriarNovoNegocio: shouldCreateNew,
     ehRecusaParcial: false,
     ehMensagemAutomatica: false,
     sugestao: "Engajar com cliente",
@@ -559,12 +575,15 @@ JSON OBRIGATÓRIO:
     console.log(`🤖 [OpenAI] "${mensagem}" → ${aiAnalysis.etapa} (confiança: ${aiAnalysis.confianca}%)`);
     
     // 4️⃣ VALIDAÇÃO: Garantir que IA respeita as regras de movimento
-    const isMovementAllowed = validateMovement(clienteInfo?.etapaAtual, aiAnalysis.etapa);
+    const { allowed: isMovementAllowed, shouldCreateNew } = validateMovement(clienteInfo?.etapaAtual, aiAnalysis.etapa);
     
     if (!isMovementAllowed && aiAnalysis.deveAgir) {
       aiAnalysis.deveAgir = false;
       console.log(`⚠️ [BLOQUEADO] ${clienteInfo?.etapaAtual} → ${aiAnalysis.etapa} (não permitido)`);
     }
+    
+    // Marcar se deve criar novo negócio (para FECHADO/PERDIDO)
+    aiAnalysis.deveCriarNovoNegocio = shouldCreateNew;
     
     return aiAnalysis;
   } catch (error) {
