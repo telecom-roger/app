@@ -227,6 +227,12 @@ export async function getContactsByClientId(clientId: string): Promise<Contact[]
 // ==================== OPPORTUNITY STORAGE ====================
 export async function createOpportunity(data: InsertOpportunity): Promise<Opportunity> {
   const [result] = await db.insert(opportunities).values(data).returning();
+  
+  // Recalculate client's commercial status
+  if (result?.clientId) {
+    await recalculateClientCommercialStatus(result.clientId);
+  }
+  
   return result;
 }
 
@@ -239,6 +245,12 @@ export async function updateOpportunity(
     .set({ ...data, updatedAt: new Date() })
     .where(eq(opportunities.id, id))
     .returning();
+  
+  // Recalculate client's commercial status
+  if (result?.clientId) {
+    await recalculateClientCommercialStatus(result.clientId);
+  }
+  
   return result;
 }
 
@@ -280,7 +292,73 @@ export async function getOpportunityById(id: string): Promise<Opportunity | unde
 }
 
 export async function deleteOpportunity(id: string): Promise<void> {
+  // Get opportunity before deleting to know which client to update
+  const opp = await getOpportunityById(id);
   await db.delete(opportunities).where(eq(opportunities.id, id));
+  
+  // Recalculate client's commercial status
+  if (opp?.clientId) {
+    await recalculateClientCommercialStatus(opp.clientId);
+  }
+}
+
+// Calculate client's commercial status based on opportunities
+export async function calculateCommercialStatus(clientId: string): Promise<string> {
+  // Get all opportunities for this client
+  const opps = await db.select().from(opportunities).where(eq(opportunities.clientId, clientId));
+  
+  if (opps.length === 0) {
+    return "base_frio"; // No opportunities
+  }
+
+  // Check for FECHADO opportunities
+  const hasFechado = opps.some(o => o.etapa === "FECHADO");
+  if (hasFechado) {
+    return "ativo"; // Has closed deal
+  }
+
+  // Check for PERDIDO opportunities
+  const hasPerdido = opps.some(o => o.etapa === "PERDIDO");
+  
+  // Check for active opportunities (not FECHADO or PERDIDO)
+  const activeOpps = opps.filter(o => o.etapa !== "FECHADO" && o.etapa !== "PERDIDO");
+  
+  if (activeOpps.length === 0 && hasPerdido) {
+    return "perdido"; // All opportunities are PERDIDO
+  }
+
+  // If has both lost history and active opportunities, it's remarketing
+  if (hasPerdido && activeOpps.length > 0) {
+    return "remarketing";
+  }
+
+  // Categorize by active opportunity stages
+  const stages = activeOpps.map(o => o.etapa);
+  
+  if (stages.some(s => s === "CONTATO" || s === "AUTOMÁTICA")) {
+    return "engajado"; // In contact or automatic response
+  }
+  
+  if (stages.some(s => s === "PROPOSTA" || s === "PROPOSTA ENVIADA")) {
+    return "em_negociacao"; // In proposal phase
+  }
+  
+  if (stages.some(s => s === "AGUARDANDO CONTRATO" || s === "CONTRATO ENVIADO" || s === "AGUARDANDO ACEITE" || s === "AGUARDANDO ATENÇÃO")) {
+    return "em_fechamento"; // In closing phase
+  }
+
+  // Default: has opportunities but none categorized
+  return "lead_quente"; // Interested lead
+}
+
+// Recalculate and update client's commercial status
+export async function recalculateClientCommercialStatus(clientId: string): Promise<void> {
+  const newStatus = await calculateCommercialStatus(clientId);
+  const client = await getClientById(clientId);
+  
+  if (client && client.statusComercial !== newStatus) {
+    await updateClient(clientId, { statusComercial: newStatus });
+  }
 }
 
 // ==================== CAMPAIGN STORAGE ====================

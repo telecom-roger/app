@@ -48,6 +48,7 @@ export const clients = pgTable("clients", {
   nome: text("nome").notNull(),
   cnpj: varchar("cnpj", { length: 14 }),
   status: varchar("status", { length: 50 }).notNull().default("ativo"),
+  statusComercial: varchar("status_comercial", { length: 50 }).notNull().default("base_frio"), // base_frio, lead_quente, engajado, em_negociacao, em_fechamento, ativo, perdido, remarketing
   parceiro: varchar("parceiro", { length: 50 }), // MIRAI, 3M
   tipoCliente: varchar("tipo_cliente", { length: 100 }),
   carteira: varchar("carteira", { length: 100 }),
