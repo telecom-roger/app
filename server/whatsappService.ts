@@ -405,19 +405,30 @@ async function processIncomingMessages(sessionId: string, m: any) {
                       meta: { tipo: "resposta_positiva", etapa: analysis.etapa },
                     });
                     
-                    // 📱 ENVIAR VIA WHATSAPP (fire-and-forget)
+                    // 📱 ENVIAR VIA WHATSAPP COM DELAY RANDOMICO (fire-and-forget)
                     if (isSessionAlive(userId)) {
                       const telefoneFormatado = client?.celular?.replace(/\D/g, '').replace(/^55/, '');
                       if (telefoneFormatado) {
-                        try {
-                          const sock = activeSessions.get(userId);
-                          if (sock) {
-                            await sock.sendMessage(`${telefoneFormatado}@c.us`, { text: mensagemAutomatica });
-                            console.log(`✅ Mensagem automática enviada via WhatsApp: ${telefoneFormatado}`);
+                        // ⏱️ Delay randomico entre 20-40 segundos
+                        const delayMs = (Math.random() * 20 + 20) * 1000; // 20-40 segundos
+                        console.log(`⏱️ Aguardando ${Math.round(delayMs / 1000)}s antes de enviar para WhatsApp...`);
+                        
+                        // Fire-and-forget: não espera o timeout
+                        setTimeout(async () => {
+                          try {
+                            if (isSessionAlive(userId)) {
+                              const sock = activeSessions.get(userId);
+                              if (sock) {
+                                await sock.sendMessage(`${telefoneFormatado}@c.us`, { text: mensagemAutomatica });
+                                console.log(`✅ Mensagem automática enviada via WhatsApp (após delay): ${telefoneFormatado}`);
+                              }
+                            } else {
+                              console.warn(`⚠️ Sessão não mais ativa ao tentar enviar mensagem atrasada`);
+                            }
+                          } catch (err) {
+                            console.warn(`⚠️ Erro ao enviar WhatsApp com delay (ignorado):`, err);
                           }
-                        } catch (err) {
-                          console.warn(`⚠️ Erro ao enviar WhatsApp (ignorado):`, err);
-                        }
+                        }, delayMs);
                       }
                     }
                   } else {
