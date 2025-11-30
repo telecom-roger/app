@@ -35,7 +35,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, GripVertical, User, DollarSign, Trash2, Edit2, TrendingUp, Zap, Settings } from "lucide-react";
+import { Plus, GripVertical, User, DollarSign, Trash2, Edit2, TrendingUp, Zap, Settings, MessageCircle } from "lucide-react";
 import type { Opportunity, KanbanStage } from "@shared/schema";
 import { insertOpportunitySchema } from "@shared/schema";
 
@@ -575,6 +575,13 @@ function OpportunityCard({
           <div className="flex flex-col items-end gap-2 flex-shrink-0">
             <div className={`h-3 w-3 rounded-full animate-pulse flex-shrink-0 ${getStatusColor(oportunidade.etapa)}`} data-testid={`status-indicator-${oportunidade.id}`} />
             <div className="flex gap-1">
+              <button
+                onClick={() => navigate(`/chat?clientId=${cliente?.id}`)}
+                className="text-slate-600 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-400 transition-colors"
+                data-testid={`button-chat-${oportunidade.id}`}
+              >
+                <MessageCircle className="h-4 w-4" />
+              </button>
               <button
                 onClick={() => onEdit(oportunidade)}
                 className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
