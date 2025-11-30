@@ -267,11 +267,13 @@ export default function Chat() {
     enabled: !!currentClientId,
   });
 
-  // Fetch opportunities for current client
-  const { data: clientOpportunities = [] } = useQuery<any[]>({
-    queryKey: currentClientId ? ["/api/opportunities", currentClientId] : [],
-    enabled: !!currentClientId,
+  // Fetch all opportunities
+  const { data: allOpportunities = [] } = useQuery<any[]>({
+    queryKey: ["/api/opportunities"],
   });
+
+  // Filter opportunities for current client
+  const clientOpportunities = allOpportunities.filter(opp => opp.clientId === currentClientId);
 
   // Load saved business value when popup opens or client changes
   useEffect(() => {
