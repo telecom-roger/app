@@ -141,7 +141,13 @@ export default function Kanban() {
     },
   });
 
+  const { data: usersData = [] } = useQuery<any[]>({
+    queryKey: ["/api/users"],
+    enabled: isAuthenticated,
+  });
+
   const clientes = clientesData?.clientes || [];
+  const users = usersData || [];
   const colunas = stages.length > 0 ? stages.sort((a, b) => a.ordem - b.ordem) : DEFAULT_STAGES;
 
   const moveCardMutation = useMutation({
@@ -272,6 +278,13 @@ export default function Kanban() {
     return true;
   });
 
+  const getColumnColor = (titulo: string): string => {
+    const tituloUpper = titulo.toUpperCase();
+    if (tituloUpper === "FECHADO") return "bg-green-600 dark:bg-green-400";
+    if (tituloUpper === "PERDIDO" || tituloUpper === "AGUARDANDO ACEITE") return "bg-red-600 dark:bg-red-400";
+    return "bg-amber-600 dark:bg-amber-400";
+  };
+
   const totalOportunidades = oportunidadesFiltradas.length;
   const oportunidadesFechadas = oportunidadesFiltradas.filter(op => op.etapa === 'fechado').length;
   
@@ -280,13 +293,14 @@ export default function Kanban() {
     .filter(op => {
       if (!op.etapa) return false;
       if (op.etapa === 'fechado' || op.etapa === 'perdido') return false;
-      if (op.etapa.toLowerCase().includes('perdido')) return false;
+      if (op.etapa?.toLowerCase().includes('perdido')) return false;
       return true;
     })
-    .reduce((sum, op) => sum + parseValue(op.valorEstimado), 0);
+    .reduce((sum, op) => sum + parseValue(op.valorEstimado || "0"), 0);
 
   const oportunidadesPorEtapaFiltradas = colunas.map(coluna => ({
     ...coluna,
+    cor: getColumnColor(coluna.titulo),
     oportunidades: oportunidadesFiltradas.filter(op => op.etapa?.toLowerCase() === coluna.titulo.toLowerCase()),
   }));
 
@@ -463,6 +477,7 @@ export default function Kanban() {
                   coluna={coluna}
                   isLoading={isLoading}
                   clientes={clientes}
+                  users={users}
                   onMoveCard={(id, etapa) => {
                     setDraggedCard(null);
                     moveCardMutation.mutate({ id, etapa });
@@ -500,6 +515,7 @@ function KanbanColumn({
   coluna,
   isLoading,
   clientes,
+  users,
   onMoveCard,
   onDeleteCard,
   onEditCard,
@@ -509,6 +525,7 @@ function KanbanColumn({
   coluna: { id: string; titulo: string; cor: string; oportunidades: Opportunity[] };
   isLoading: boolean;
   clientes: any[];
+  users: any[];
   onMoveCard: (id: string, etapa: string) => void;
   onDeleteCard: (id: string) => void;
   onEditCard: (oportunidade: Opportunity) => void;
@@ -570,6 +587,7 @@ function KanbanColumn({
                 key={oportunidade.id}
                 oportunidade={oportunidade}
                 cliente={clientes.find(c => c.id === oportunidade.clientId)}
+                responsavel={users.find(u => u.id === oportunidade.responsavelId)}
                 onDelete={onDeleteCard}
                 onEdit={onEditCard}
                 draggedCard={draggedCard}
@@ -590,6 +608,7 @@ function KanbanColumn({
 function OpportunityCard({
   oportunidade,
   cliente,
+  responsavel,
   onDelete,
   onEdit,
   draggedCard,
@@ -597,6 +616,7 @@ function OpportunityCard({
 }: {
   oportunidade: Opportunity;
   cliente?: any;
+  responsavel?: any;
   onDelete: (id: string) => void;
   onEdit: (oportunidade: Opportunity) => void;
   draggedCard: { id: string; fromEtapa: string } | null;
@@ -654,43 +674,64 @@ function OpportunityCard({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <CardContent className="p-3 space-y-2">
-        {/* Linha 1: Cliente + Status Indicator */}
-        <div className="flex items-center justify-between gap-2">
-          {cliente?.nome && (
-            <p 
-              onClick={() => navigate(`/clientes/${cliente.id}`)}
-              className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase truncate hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors flex-1 min-w-0"
-              data-testid={`text-cliente-nome-${cliente.id}`}
-              title={cliente.nome}
-            >
-              {cliente.nome}
-            </p>
-          )}
+      <CardContent className="p-2.5 space-y-1.5">
+        {/* Bloco 1: Cliente + CNPJ + Status */}
+        <div className="flex items-start justify-between gap-1.5">
+          <div className="flex-1 min-w-0">
+            {cliente?.nome && (
+              <p 
+                onClick={() => navigate(`/clientes/${cliente.id}`)}
+                className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase truncate hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors"
+                data-testid={`text-cliente-nome-${cliente.id}`}
+                title={cliente.nome}
+              >
+                {cliente.nome}
+              </p>
+            )}
+            {cliente?.cnpj && (
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate" title={cliente.cnpj}>
+                {cliente.cnpj}
+              </p>
+            )}
+          </div>
           <div className={`h-2 w-2 rounded-full animate-pulse flex-shrink-0 ${getStatusColor(oportunidade.etapa)}`} data-testid={`status-indicator-${oportunidade.id}`} />
         </div>
 
-        {/* Linha 2: Título + Valor */}
-        <div className="flex items-start justify-between gap-2">
-          <h4 className="text-sm font-medium leading-tight text-slate-900 dark:text-white truncate flex-1 min-w-0" title={oportunidade.titulo}>
+        {/* Bloco 2: Título + Valor */}
+        <div className="flex items-start justify-between gap-1.5">
+          <h4 className="text-xs font-semibold leading-tight text-slate-900 dark:text-white truncate flex-1 min-w-0" title={oportunidade.titulo}>
             {oportunidade.titulo}
           </h4>
           {oportunidade.valorEstimado && (
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex-shrink-0 whitespace-nowrap">
+            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex-shrink-0 whitespace-nowrap">
               {oportunidade.valorEstimado}
             </span>
           )}
         </div>
 
-        {/* Linha 3: Botões */}
-        <div className="flex items-center justify-start gap-1 pt-1">
+        {/* Bloco 3: Responsável + Prazo */}
+        <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+          {responsavel && (
+            <span className="truncate flex-1" title={responsavel.firstName || responsavel.email}>
+              {responsavel.firstName || responsavel.email?.split('@')[0]}
+            </span>
+          )}
+          {oportunidade.prazo && (
+            <span className="flex-shrink-0 whitespace-nowrap">
+              {new Date(oportunidade.prazo).toLocaleDateString("pt-BR")}
+            </span>
+          )}
+        </div>
+
+        {/* Bloco 4: Botões */}
+        <div className="flex items-center justify-start gap-0.5 pt-0.5">
           <button
             onClick={() => navigate(`/chat?clientId=${cliente?.id}`)}
             className="text-slate-600 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-400 transition-colors p-1"
             data-testid={`button-chat-${oportunidade.id}`}
-            title="Abrir chat"
+            title="Chat"
           >
-            <MessageCircle className="h-3.5 w-3.5" />
+            <MessageCircle className="h-3 w-3" />
           </button>
           <button
             onClick={() => onEdit(oportunidade)}
@@ -698,7 +739,7 @@ function OpportunityCard({
             data-testid={`button-edit-${oportunidade.id}`}
             title="Editar"
           >
-            <Edit2 className="h-3.5 w-3.5" />
+            <Edit2 className="h-3 w-3" />
           </button>
           <button
             onClick={() => onDelete(oportunidade.id)}
@@ -706,7 +747,7 @@ function OpportunityCard({
             data-testid={`button-delete-${oportunidade.id}`}
             title="Excluir"
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash2 className="h-3 w-3" />
           </button>
         </div>
       </CardContent>
