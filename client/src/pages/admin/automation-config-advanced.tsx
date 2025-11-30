@@ -53,7 +53,29 @@ const ALL_JOBS = [
   },
 ];
 
-const JOBS_WITH_MESSAGES = ALL_JOBS.filter((j) => ["contract_reminder", "contrato_enviado_message", "aguardando_aceite_reminder"].includes(j.id));
+const JOBS_WITH_MESSAGES = [
+  {
+    id: "contract_reminder",
+    nome: "Contract Reminder",
+    descricao: "Lembretes 2h, 4 dias",
+    icon: Clock,
+    dias: [1, 2, 3, 4],
+  },
+  {
+    id: "contrato_enviado_message",
+    nome: "Contrato Enviado",
+    descricao: "Instrui assinatura",
+    icon: MessageSquare,
+    dias: [1],
+  },
+  {
+    id: "aguardando_aceite_reminder",
+    nome: "Aguardando Aceite",
+    descricao: "3 lembretes + move",
+    icon: Clock,
+    dias: [1, 2, 3],
+  },
+];
 const DIAS_SEMANA = ["segunda", "terca", "quarta", "quinta", "sexta", "sabado", "domingo"];
 
 export default function AdminAutomacaoAdvanced() {
@@ -67,14 +89,14 @@ export default function AdminAutomacaoAdvanced() {
   const [mensagemContatoPositivo, setMensagemContatoPositivo] = useState("");
   const [mensagemPropostaPositivo, setMensagemPropostaPositivo] = useState("");
   const [mensagemFechado, setMensagemFechado] = useState("");
-  const [expandedDays, setExpandedDays] = useState<Record<number, boolean>>({});
+  const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set());
 
-  const { data: configs = {}, isLoading } = useQuery({
+  const { data: configs = {}, isLoading } = useQuery<Record<string, any>>({
     queryKey: ["/api/admin/automation-configs"],
     enabled: !!user,
   });
 
-  const { data: jobConfig, isLoading: jobLoading, refetch: refetchJobConfig } = useQuery({
+  const { data: jobConfig, isLoading: jobLoading, refetch: refetchJobConfig } = useQuery<any>({
     queryKey: [`/api/admin/automation-configs/${selectedJobForMessages}`],
     enabled: !!user && !!selectedJobForMessages,
   });
@@ -95,8 +117,12 @@ export default function AdminAutomacaoAdvanced() {
         }
       });
       setEditingMsgs(msgs);
+      // Auto-expand todos os dias quando carregar
+      const allDays = new Set(Object.keys(msgs).map(k => parseInt(k)));
+      setExpandedDays(allDays);
     } else {
       setEditingMsgs({});
+      setExpandedDays(new Set());
     }
   }, [jobConfig, selectedJobForMessages]);
 
@@ -219,10 +245,15 @@ export default function AdminAutomacaoAdvanced() {
   };
 
   const toggleDayExpanded = (dia: number) => {
-    setExpandedDays(prev => ({
-      ...prev,
-      [dia]: !prev[dia]
-    }));
+    setExpandedDays(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(dia)) {
+        newSet.delete(dia);
+      } else {
+        newSet.add(dia);
+      }
+      return newSet;
+    });
   };
 
   const selectedJob = JOBS_WITH_MESSAGES.find((j) => j.id === selectedJobForMessages);
@@ -448,7 +479,7 @@ export default function AdminAutomacaoAdvanced() {
                   <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                     {daysWithMessages.map((dia) => {
                       const msgCount = editingMsgs[dia]?.length || 0;
-                      const isExpanded = expandedDays[dia];
+                      const isExpanded = expandedDays.has(dia);
                       return (
                         <Card key={dia} className="border-0 bg-white dark:bg-slate-800/50">
                           {/* Header que pode ser clicado para expandir */}
