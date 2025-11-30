@@ -94,6 +94,7 @@ export default function Kanban() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [filtroResponsavel, setFiltroResponsavel] = useState<string>("todos");
   const [filtroEtapa, setFiltroEtapa] = useState<string>("todas");
+  const [filtroPeriodo, setFiltroPeriodo] = useState<string>("todas");
   const [filtroDataInicio, setFiltroDataInicio] = useState<string>("");
   const [filtroDataFim, setFiltroDataFim] = useState<string>("");
   const [showNovaOportunidade, setShowNovaOportunidade] = useState(false);
@@ -205,9 +206,40 @@ export default function Kanban() {
     },
   });
 
-  // Filtrar oportunidades por responsável, etapa e data
+  // Calcular datas baseado no período
+  const getDateRangeForPeriod = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    let inicio = new Date(today);
+    let fim = new Date(today);
+    fim.setHours(23, 59, 59, 999);
+    
+    if (filtroPeriodo === "semana") {
+      // Última segunda-feira
+      const dayOfWeek = today.getDay();
+      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      inicio = new Date(today);
+      inicio.setDate(today.getDate() - daysToMonday);
+      inicio.setHours(0, 0, 0, 0);
+    } else if (filtroPeriodo === "mes") {
+      // Primeiro dia do mês
+      inicio = new Date(today.getFullYear(), today.getMonth(), 1);
+    } else if (filtroPeriodo === "custom") {
+      // Usar datas do input
+      if (filtroDataInicio) inicio = new Date(filtroDataInicio);
+      if (filtroDataFim) {
+        fim = new Date(filtroDataFim);
+        fim.setHours(23, 59, 59, 999);
+      }
+    }
+    
+    return { inicio, fim };
+  };
+
+  // Filtrar oportunidades por responsável, etapa e período
   const oportunidadesFiltradas = (oportunidades || []).filter(op => {
-    // Filtro responsável - se filtro está ativo E responsável é diferente, exclui
+    // Filtro responsável
     if (filtroResponsavel !== "todos") {
       if (op.responsavelId !== filtroResponsavel) return false;
     }
@@ -217,9 +249,14 @@ export default function Kanban() {
       if (op.etapa?.toLowerCase() !== filtroEtapa.toLowerCase()) return false;
     }
     
-    // Filtro data
-    if (filtroDataInicio && op.createdAt && new Date(op.createdAt) < new Date(filtroDataInicio)) return false;
-    if (filtroDataFim && op.createdAt && new Date(op.createdAt) > new Date(filtroDataFim)) return false;
+    // Filtro período
+    if (filtroPeriodo !== "todas") {
+      const { inicio, fim } = getDateRangeForPeriod();
+      if (op.createdAt) {
+        const opDate = new Date(op.createdAt);
+        if (opDate < inicio || opDate > fim) return false;
+      }
+    }
     
     return true;
   });
@@ -349,24 +386,41 @@ export default function Kanban() {
                   ))}
                 </SelectContent>
               </Select>
-              
-              <Input
-                type="date"
-                value={filtroDataInicio}
-                onChange={(e) => setFiltroDataInicio(e.target.value)}
-                placeholder="Data início"
-                className="w-full lg:w-40 text-xs lg:text-sm border-slate-200 dark:border-slate-700"
-                data-testid="input-filtro-data-inicio"
-              />
-              
-              <Input
-                type="date"
-                value={filtroDataFim}
-                onChange={(e) => setFiltroDataFim(e.target.value)}
-                placeholder="Data fim"
-                className="w-full lg:w-40 text-xs lg:text-sm border-slate-200 dark:border-slate-700"
-                data-testid="input-filtro-data-fim"
-              />
+
+              <Select value={filtroPeriodo} onValueChange={setFiltroPeriodo}>
+                <SelectTrigger className="w-full lg:w-48 text-xs lg:text-sm border-slate-200 dark:border-slate-700" data-testid="select-periodo">
+                  <SelectValue placeholder="Período" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as datas</SelectItem>
+                  <SelectItem value="hoje">Hoje</SelectItem>
+                  <SelectItem value="semana">Esta semana</SelectItem>
+                  <SelectItem value="mes">Este mês</SelectItem>
+                  <SelectItem value="custom">Período customizado</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {filtroPeriodo === "custom" && (
+                <>
+                  <Input
+                    type="date"
+                    value={filtroDataInicio}
+                    onChange={(e) => setFiltroDataInicio(e.target.value)}
+                    placeholder="Data início"
+                    className="w-full lg:w-40 text-xs lg:text-sm border-slate-200 dark:border-slate-700"
+                    data-testid="input-filtro-data-inicio"
+                  />
+                  
+                  <Input
+                    type="date"
+                    value={filtroDataFim}
+                    onChange={(e) => setFiltroDataFim(e.target.value)}
+                    placeholder="Data fim"
+                    className="w-full lg:w-40 text-xs lg:text-sm border-slate-200 dark:border-slate-700"
+                    data-testid="input-filtro-data-fim"
+                  />
+                </>
+              )}
 
               <Button 
                 data-testid="button-nova-oportunidade" 
