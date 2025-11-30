@@ -381,12 +381,6 @@ export default function Chat() {
       return res.json();
     },
     onSuccess: (data: any) => {
-      // Remove from closed conversations when opened
-      setClosedConversations(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(data.id);
-        return newSet;
-      });
       setSelectedConversationId(data.id);
       setSearchTerm("");
       setShowSearchResults(false);
@@ -473,12 +467,6 @@ export default function Chat() {
   };
 
   const handleSelectConversation = (conversationId: string) => {
-    // Remove from closed conversations when opened again
-    setClosedConversations(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(conversationId);
-      return newSet;
-    });
     setSelectedConversationId(conversationId);
     queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
   };
