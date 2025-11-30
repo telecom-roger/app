@@ -681,7 +681,8 @@ export const automationConfigs = pgTable("automation_configs", {
   timeout2h: boolean("timeout_2h").default(true),
   timeout4dias: boolean("timeout_4_dias").default(true),
   diasSemana: text("dias_semana").array().default(sql`ARRAY['segunda', 'terca', 'quarta', 'quinta', 'sexta']::text[]`),
-  mensagensTemplates: jsonb("mensagens_templates").default(sql`'[]'::jsonb`), // array de templates por job
+  // Estrutura: { dia_0: [...msgs], dia_1: [...msgs], ... }
+  mensagensTemplates: jsonb("mensagens_templates").default(sql`'{}'::jsonb`),
   intervaloScheduler: integer("intervalo_scheduler").default(60), // segundos
   emailNotificacoes: boolean("email_notificacoes").default(true),
   createdAt: timestamp("created_at").defaultNow(),

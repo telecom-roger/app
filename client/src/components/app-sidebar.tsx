@@ -126,6 +126,11 @@ const adminItems = [
     icon: Zap,
   },
   {
+    title: "Automação Avançado",
+    url: "/admin/automacao-avancado",
+    icon: Settings,
+  },
+  {
     title: "Configurações",
     url: "/admin/configuracoes",
     icon: Settings,

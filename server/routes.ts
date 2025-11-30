@@ -3593,9 +3593,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get specific job config
+  app.get("/api/admin/automation-configs/:jobType", isAuthenticated, requireAdmin, async (req, res) => {
+    try {
+      const { jobType } = req.params;
+      const configs = await db
+        .select()
+        .from(automationConfigs)
+        .where(eq(automationConfigs.jobType, jobType));
+
+      if (configs.length === 0) {
+        // Return default config
+        return res.json({
+          jobType,
+          ativo: true,
+          horarios: [],
+          diasSemana: ["segunda", "terca", "quarta", "quinta", "sexta"],
+          mensagensTemplates: {},
+          intervaloScheduler: 60,
+          emailNotificacoes: true,
+        });
+      }
+
+      res.json(configs[0]);
+    } catch (error) {
+      console.error("❌ Error fetching job config:", error);
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
   app.patch("/api/admin/automation-configs", isAuthenticated, requireAdmin, async (req, res) => {
     try {
-      const { jobType, ativo, horarios, timeout2h, timeout4dias, intervaloScheduler, emailNotificacoes } = req.body;
+      const { jobType, ativo, horarios, timeout2h, timeout4dias, diasSemana, mensagensTemplates, intervaloScheduler, emailNotificacoes } = req.body;
       
       if (!jobType) {
         return res.status(400).json({ error: "jobType is required" });
@@ -3614,10 +3643,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .update(automationConfigs)
           .set({
             ativo: ativo !== undefined ? ativo : existing[0].ativo,
-            horarios: horarios || existing[0].horarios,
+            horarios: horarios !== undefined ? horarios : existing[0].horarios,
             timeout2h: timeout2h !== undefined ? timeout2h : existing[0].timeout2h,
             timeout4dias: timeout4dias !== undefined ? timeout4dias : existing[0].timeout4dias,
-            intervaloScheduler: intervaloScheduler || existing[0].intervaloScheduler,
+            diasSemana: diasSemana !== undefined ? diasSemana : existing[0].diasSemana,
+            mensagensTemplates: mensagensTemplates !== undefined ? mensagensTemplates : existing[0].mensagensTemplates,
+            intervaloScheduler: intervaloScheduler !== undefined ? intervaloScheduler : existing[0].intervaloScheduler,
             emailNotificacoes: emailNotificacoes !== undefined ? emailNotificacoes : existing[0].emailNotificacoes,
             updatedAt: new Date(),
           })
@@ -3633,6 +3664,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             horarios: horarios || [],
             timeout2h: timeout2h !== undefined ? timeout2h : true,
             timeout4dias: timeout4dias !== undefined ? timeout4dias : true,
+            diasSemana: diasSemana || ["segunda", "terca", "quarta", "quinta", "sexta"],
+            mensagensTemplates: mensagensTemplates || {},
             intervaloScheduler: intervaloScheduler || 60,
             emailNotificacoes: emailNotificacoes !== undefined ? emailNotificacoes : true,
           })
