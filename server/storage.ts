@@ -1113,26 +1113,22 @@ export async function recordEtapaChange(
   clientId: string,
   etapaAnterior: string,
   etapaNova: string,
-  tipo: "manual" | "ia" | "sistema", // manual = usuário, ia = IA, sistema = sistema/job
+  tipo: "manual" | "ia" | "sistema",
   userId?: string
 ): Promise<void> {
   try {
-    let tipoInteracao = "etapa_mudou";
-    let titulo = `Etapa alterada: ${etapaAnterior} → ${etapaNova}`;
-    let origem = "manual";
+    console.log(`📝 [TIMELINE] Iniciando registro: ${etapaAnterior} → ${etapaNova} (${tipo})`);
+    console.log(`   ClientID: ${clientId}, OppID: ${opportunityId}, UserID: ${userId}`);
 
-    if (tipo === "ia") {
-      origem = "ia";
-      titulo = `Etapa alterada pela IA: ${etapaAnterior} → ${etapaNova}`;
-    } else if (tipo === "sistema") {
-      origem = "sistema";
-      titulo = `Etapa alterada pelo sistema: ${etapaAnterior} → ${etapaNova}`;
-    } else {
-      origem = "usuario";
-      titulo = `Etapa alterada manualmente: ${etapaAnterior} → ${etapaNova}`;
-    }
+    const tipoInteracao = "etapa_mudou";
+    const origem = tipo === "ia" ? "ia" : tipo === "sistema" ? "sistema" : "usuario";
+    const titulo = tipo === "ia" 
+      ? `Etapa alterada pela IA: ${etapaAnterior} → ${etapaNova}`
+      : tipo === "sistema"
+      ? `Etapa alterada pelo sistema: ${etapaAnterior} → ${etapaNova}`
+      : `Etapa alterada manualmente: ${etapaAnterior} → ${etapaNova}`;
 
-    await db.insert(interactions).values({
+    const insertData = {
       clientId,
       tipo: tipoInteracao,
       origem,
@@ -1144,12 +1140,17 @@ export async function recordEtapaChange(
         etapa_nova: etapaNova,
         tipo_movimento: tipo === "manual" ? "manual (usuário)" : tipo === "ia" ? "automática (IA)" : "automática (sistema)",
       },
-      createdBy: userId,
-    });
+      createdBy: userId || null,
+    };
 
-    console.log(`📝 Timeline registrada: ${etapaAnterior} → ${etapaNova} (${tipo})`);
-  } catch (error) {
-    console.error(`❌ Erro ao registrar mudança de etapa:`, error);
+    console.log(`📝 [TIMELINE] Inserindo dados:`, JSON.stringify(insertData, null, 2));
+
+    const result = await db.insert(interactions).values(insertData).returning();
+    
+    console.log(`✅ [TIMELINE] Registrada com sucesso! ID: ${result[0]?.id}`);
+  } catch (error: any) {
+    console.error(`❌ [TIMELINE] ERRO ao registrar:`, error?.message || error);
+    console.error(`❌ [TIMELINE] Stack:`, error?.stack);
   }
 }
 
