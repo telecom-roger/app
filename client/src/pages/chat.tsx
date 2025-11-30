@@ -409,8 +409,8 @@ export default function Chat() {
       setSearchTerm("");
       setShowSearchResults(false);
       
-      // Refetch em background para garantir dados atualizados
-      refetchConversations();
+      // Não fazer refetch imediato - deixar o polling normal cuidar
+      // O refetch sobrescrevia o cache e fechava a conversa
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
     },
     onError: (error: any) => {
