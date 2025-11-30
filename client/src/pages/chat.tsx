@@ -267,6 +267,12 @@ export default function Chat() {
     enabled: !!currentClientId,
   });
 
+  // Fetch opportunities for current client
+  const { data: clientOpportunities = [] } = useQuery<any[]>({
+    queryKey: currentClientId ? ["/api/opportunities", currentClientId] : [],
+    enabled: !!currentClientId,
+  });
+
   // Load saved business value when popup opens or client changes
   useEffect(() => {
     if (showClientInfo && detailedClient?.camposCustom?.valorEstimado) {
@@ -1346,6 +1352,12 @@ export default function Chat() {
                       };
                       return statusColors[detailedClient.status?.toLowerCase() || ''] || 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200';
                     })()}>{detailedClient.status.toUpperCase()}</Badge>
+                  </div>
+                )}
+                {clientOpportunities && clientOpportunities.length > 0 && (
+                  <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
+                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">ETAPA ATUAL</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">{clientOpportunities[0].etapa}</p>
                   </div>
                 )}
               </div>
