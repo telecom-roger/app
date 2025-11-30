@@ -273,16 +273,20 @@ export async function analyzeClientMessage(
 ): Promise<MessageAnalysis> {
   try {
     // Usar OpenAI para análise de sentimento (a IA entende melhor variações, acentos, erros)
-    const useLocalMode = false; // ✅ ATIVAR OPENAI - IA entende tudo!
+    const useLocalMode = true; // 🧪 TESTE LOCAL - Verificar fallback
     
     if (useLocalMode) {
       return analyzeLocalTest(mensagem, clienteInfo?.etapaAtual);
     }
 
-    const prompt = `Analise RAPIDAMENTE essa resposta de cliente. Retorne JSON PURO (sem markdown):
+    const prompt = `Analise RAPIDAMENTE essa resposta de cliente. Retorne JSON PURO (sem markdown, SEM CODE FENCE):
 
 MENSAGEM: "${mensagem}"
 CLIENTE: ${clienteInfo?.nome || "Desconhecido"}
+
+⚠️ VERIFICAÇÃO DE SOLICITAÇÃO DE PROPOSTA (PRIMEIRO!):
+- Se mensagem contém: "me envia proposta", "envia proposta", "manda proposta", "quero ver a proposta"
+- RETORNE: etapa:"PROPOSTA", deveAgir:true, confianca:95
 
 🎯 DISTINÇÃO CRÍTICA - ORDEM DE VERIFICAÇÃO:
 
@@ -321,15 +325,16 @@ CLIENTE: ${clienteInfo?.nome || "Desconhecido"}
 - deveAgir: true = Move para próxima etapa, false = Mantém etapa atual
 - ehRecusaParcial: true = Cliente quer ajustes (alertar atendente), false = Padrão
 
-JSON - ETAPAS EM MAIÚSCULA:
-{"sentimento":"positivo","confianca":95,"motivo":"Cliente aprovou","etapa":"PROPOSTA","deveAgir":true,"ehRecusaParcial":false,"sugestao":"Enviar proposta"}
+JSON OBRIGATÓRIO (sem markdown, sem fence, APENAS JSON):
+{"sentimento":"positivo","confianca":95,"motivo":"Cliente aprovou","etapa":"PROPOSTA","deveAgir":true,"ehRecusaParcial":false,"ehMensagemAutomatica":false,"sugestao":"Enviar proposta"}
 
-EXEMPLOS:
-✓ "Não quero renovar nada" → etapa:"PERDIDO", deveAgir:true, ehRecusaParcial:false
-✓ "Cancelar algumas linhas" → etapa:"CONTATO", deveAgir:false, ehRecusaParcial:true
+EXEMPLOS CRÍTICOS:
+✓ "me envia proposta" → etapa:"PROPOSTA", deveAgir:true ⚠️ IMPORTANTE!
+✓ "Envia a proposta" → etapa:"PROPOSTA", deveAgir:true ⚠️ IMPORTANTE!
+✓ "Me envia a proposta por favor" → etapa:"PROPOSTA", deveAgir:true
 ✓ "Ok, manda" → etapa:"PROPOSTA", deveAgir:true, ehRecusaParcial:false
-✓ "Me envia a proposta por favor" → etapa:"PROPOSTA", deveAgir:true, ehRecusaParcial:false
-✓ "Envia a proposta" → etapa:"PROPOSTA", deveAgir:true, ehRecusaParcial:false`;
+✓ "Cancelar algumas linhas" → etapa:"CONTATO", deveAgir:false, ehRecusaParcial:true
+✓ "Não quero renovar nada" → etapa:"PERDIDO", deveAgir:true, ehRecusaParcial:false`;
 
     const response = await Promise.race([
       client.chat.completions.create({
@@ -350,16 +355,21 @@ EXEMPLOS:
     // Normalizar etapa para MAIÚSCULA (OpenAI pode retornar em minúscula)
     analysis.etapa = analysis.etapa.toUpperCase() as any;
     
+    console.log(`🤖 [OpenAI] "${mensagem}" → etapa: ${analysis.etapa}, deveAgir: ${analysis.deveAgir}`);
+    
     // Validar movimento baseado em etapa atual
     const isMovementAllowed = validateMovement(clienteInfo?.etapaAtual, analysis.etapa);
     
     if (!isMovementAllowed && analysis.deveAgir) {
       analysis.deveAgir = false;
+      console.log(`⚠️ [BLOQUEADO] ${clienteInfo?.etapaAtual} → ${analysis.etapa} (não permitido)`);
     }
     
     return analysis;
   } catch (error) {
-    console.error("Erro ao analisar com OpenAI, usando análise local:", error);
-    return analyzeLocalTest(mensagem, clienteInfo?.etapaAtual);
+    console.error(`❌ [OpenAI Error] Caindo para local: "${mensagem}"`, error);
+    const localAnalysis = analyzeLocalTest(mensagem, clienteInfo?.etapaAtual);
+    console.log(`📝 [Local] "${mensagem}" → etapa: ${localAnalysis.etapa}, deveAgir: ${localAnalysis.deveAgir}`);
+    return localAnalysis;
   }
 }
