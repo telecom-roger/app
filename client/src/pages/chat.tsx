@@ -938,7 +938,7 @@ export default function Chat() {
                   <div className="flex items-center justify-center h-20">
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   </div>
-                ) : sortedConversations.length === 0 && closedConversations.size === 0 ? (
+                ) : sortedConversations.length === 0 ? (
                   <p className="text-sm text-slate-600 dark:text-slate-400 p-4 text-center">
                     Nenhuma conversa ainda
                   </p>
