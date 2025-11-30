@@ -553,6 +553,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userAgent: req.get("user-agent"),
       });
 
+      // 📝 REGISTRAR CRIAÇÃO NO TIMELINE
+      if (opportunity.clientId) {
+        const client = await storage.getClientById(opportunity.clientId);
+        await storage.createInteraction({
+          clientId: opportunity.clientId,
+          tipo: "oportunidade_criada",
+          origem: "manual",
+          titulo: `Oportunidade criada: ${client?.nome || 'Nova Oportunidade'}`,
+          texto: `Etapa: ${opportunity.etapa} | Valor: R$ ${opportunity.valorEstimado ? ((opportunity.valorEstimado as number) / 100).toFixed(2) : 'N/A'}`,
+          createdBy: user.id,
+          meta: { etapa: opportunity.etapa, valor: opportunity.valorEstimado },
+        });
+      }
+
       // 🔄 RECALCULATE CLIENT STATUS
       if (opportunity.clientId) {
         const newStatus = await storage.recalculateClientStatus(opportunity.clientId);
@@ -2693,6 +2707,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             responsavelId: user.id,
           });
           console.log(`✅ Oportunidade criada:`, opp.id);
+          
+          // 📝 REGISTRAR CRIAÇÃO NO TIMELINE
+          await storage.createInteraction({
+            clientId,
+            tipo: "oportunidade_criada",
+            origem: "manual",
+            titulo: `Oportunidade criada: ${client.nome}`,
+            texto: `Etapa: ${tagName} | Valor: R$ ${(valorEstimado / 100).toFixed(2)}`,
+            createdBy: user.id,
+            meta: { etapa: tagName, valor: valorEstimado },
+          });
           
           // 🔄 RECALCULATE CLIENT STATUS
           const newStatus = await storage.recalculateClientStatus(clientId);

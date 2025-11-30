@@ -466,6 +466,7 @@ function TimelineItem({ item }: { item: any }) {
     whatsapp_enviado: <MessageSquare className="h-5 w-5" />,
     status_mudou: <Target className="h-5 w-5" />,
     etapa_mudou: <Target className="h-5 w-5" />,
+    oportunidade_criada: <Target className="h-5 w-5" />,
     campanha: <Mail className="h-5 w-5" />,
   };
 

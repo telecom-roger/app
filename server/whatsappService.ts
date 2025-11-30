@@ -311,9 +311,10 @@ async function processIncomingMessages(sessionId: string, m: any) {
         // 🤖 IA: Analisar mensagem e criar/mover oportunidade automaticamente
         if (tipo === "texto" && conteudo && conversation.clientId) {
           try {
+            const client = await storage.getClientById(conversation.clientId);
             console.log(`\n🤖 Iniciando análise com IA...`);
             const analysis = await analyzeClientMessage(conteudo, {
-              nome: conversation.client?.nome,
+              nome: client?.nome,
             });
 
             // Procurar por oportunidade existente
@@ -329,15 +330,26 @@ async function processIncomingMessages(sessionId: string, m: any) {
                 etapa: analysis.etapa,
               });
               console.log(`✅ Oportunidade MOVIDA para: ${analysis.etapa} (${analysis.motivo})`);
-            } else if (!existingOpp && analysis.etapa !== "automatico") {
+            } else if (!existingOpp && analysis.etapa !== "AUTOMÁTICA") {
               // Criar nova oportunidade se não existir
               const novaOpp = await storage.createOpportunity({
                 clientId: conversation.clientId,
-                titulo: `${conversation.client?.nome} - Resposta IA`,
+                titulo: `${client?.nome} - Resposta IA`,
                 etapa: analysis.etapa,
                 responsavelId: userId,
               });
               console.log(`✨ Oportunidade CRIADA em: ${analysis.etapa}`);
+              
+              // 📝 REGISTRAR CRIAÇÃO NO TIMELINE (IA)
+              await storage.createInteraction({
+                clientId: conversation.clientId,
+                tipo: "oportunidade_criada",
+                origem: "automation",
+                titulo: `Oportunidade criada: ${client?.nome}`,
+                texto: `Etapa: ${analysis.etapa} | Motivo: ${analysis.motivo}`,
+                createdBy: userId,
+                meta: { etapa: analysis.etapa, motivo: analysis.motivo, tipo_movimento: "automática" },
+              });
             }
 
             // Notificar vendedor
