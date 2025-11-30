@@ -360,6 +360,37 @@ export default function Chat() {
     }
   }, []);
 
+  // Função para tocar som de notificação (som padrão tipo WhatsApp)
+  const playNotificationSound = () => {
+    // Som de notificação em base64 (som curto e discreto)
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const now = audioContext.currentTime;
+    
+    // Criar dois tons para simular o som de notificação do WhatsApp
+    const oscillator1 = audioContext.createOscillator();
+    const oscillator2 = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator1.frequency.value = 880; // Nota A5
+    oscillator2.frequency.value = 1320; // Nota E6
+    oscillator1.type = "sine";
+    oscillator2.type = "sine";
+    
+    oscillator1.connect(gainNode);
+    oscillator2.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    // Envelope ADSR rápido para som curto
+    gainNode.gain.setValueAtTime(0.3, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+    
+    oscillator1.start(now);
+    oscillator2.start(now + 0.1);
+    
+    oscillator1.stop(now + 0.15);
+    oscillator2.stop(now + 0.2);
+  };
+
   // Mostrar notificação ao receber nova mensagem
   useEffect(() => {
     if (messages.length > previousMessageCount && messages.length > 0) {
@@ -379,6 +410,13 @@ export default function Chat() {
               icon: "/icon.png",
               tag: `message-${newMessage.conversationId}`,
             });
+            
+            // Tocar som de notificação
+            try {
+              playNotificationSound();
+            } catch (err) {
+              console.log("Não foi possível reproduzir som:", err);
+            }
           }
         }
       }
