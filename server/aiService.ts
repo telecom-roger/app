@@ -222,23 +222,14 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     "me mostra a proposta"
   ];
   
-  const aprovacaoPalavras = [
+  // 🔥 APROVAÇÕES GENÉRICAS - Mantém na etapa atual, apenas sentimento positivo
+  const aprovacaoGenerica = [
     "ok",
     "sim",
-    "pode mandar",
-    "manda",
-    "pode enviar",
-    "quero renovar",
-    "quero saber",
-    "me envia",
-    "aprova",
-    "aprovado",
-    "proposta",
     "claro",
     "certo",
     "perfeito",
     "beleza",
-    "fechado",
     "combinado",
     "pode ser",
     "tudo bem",
@@ -247,29 +238,64 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     "gostei",
     "interessado",
     "interesse",
-    "quero",
     "vamos la",
     "bora",
-    "show"
+    "show",
+    "legal",
+    "otimo",
+    "boa",
+    "blz"
+  ];
+  
+  // 🎯 APROVAÇÕES QUE MOVEM PARA PROPOSTA - Pedidos explícitos
+  const aprovacaoParaProposta = [
+    "pode mandar",
+    "pode enviar",
+    "quero renovar",
+    "me envia",
+    "aprova",
+    "aprovado",
+    "fechado",
+    "quero",
+    "manda"
   ];
   
   const isSolicitacaoProposta = solicitacaoProposta.some(palavra => msg.includes(palavra));
-  const isAprovacao = aprovacaoPalavras.some(palavra => msg.includes(palavra) && !msg.includes("nao"));
+  const isAprovacaoParaProposta = aprovacaoParaProposta.some(palavra => msg.includes(palavra) && !msg.includes("nao"));
+  const isAprovacaoGenerica = aprovacaoGenerica.some(palavra => msg.includes(palavra) && !msg.includes("nao"));
   
-  if (isSolicitacaoProposta || isAprovacao) {
+  // 🎯 PEDIDO EXPLÍCITO DE PROPOSTA → Move para PROPOSTA
+  if (isSolicitacaoProposta || isAprovacaoParaProposta) {
     const proposedStage = "PROPOSTA";
     const isAllowed = validateMovement(etapaAtual, proposedStage);
-    console.log(`📋 [LOCAL] Detectado: solicitação/aprovação de proposta → PROPOSTA`);
+    console.log(`📋 [LOCAL] Detectado: pedido explícito de proposta → PROPOSTA`);
     return {
       sentimento: "positivo",
       confianca: 95,
       intenção: "aprovacao_envio",
-      motivo: isSolicitacaoProposta ? "Solicitação de proposta" : "Aprovação/concordância",
+      motivo: isSolicitacaoProposta ? "Solicitação de proposta" : "Aprovação/concordância para proposta",
       etapa: proposedStage,
       deveAgir: isAllowed,
       ehRecusaParcial: false,
       ehMensagemAutomatica: false,
       sugestao: "Enviar proposta/simulador",
+    };
+  }
+  
+  // ✅ APROVAÇÃO GENÉRICA → Mantém na etapa atual (sentimento positivo, sem mover)
+  if (isAprovacaoGenerica) {
+    const currentStage = (etapaAtual as "" | "CONTATO" | "PROPOSTA" | "AUTOMÁTICA" | "PERDIDO") || "CONTATO";
+    console.log(`📋 [LOCAL] Detectado: aprovação genérica → mantém em ${currentStage}`);
+    return {
+      sentimento: "positivo",
+      confianca: 85,
+      intenção: "solicitacao_info", // Mantém compatível com tipo
+      motivo: "Aprovação genérica do cliente",
+      etapa: currentStage,
+      deveAgir: false, // NÃO move automaticamente
+      ehRecusaParcial: false,
+      ehMensagemAutomatica: false,
+      sugestao: "Cliente respondeu positivamente, continuar atendimento",
     };
   }
   
