@@ -3116,12 +3116,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== TEST CONTRACT REMINDER (1 MINUTO TIMEOUT) - SÓ REGISTRA TIMELINE ====================
+  // ==================== TEST CONTRACT REMINDER - Envio direto (chat + timeline) ====================
   app.post("/api/test/contract-reminder", async (req, res) => {
     try {
+      console.log(`\n📋 [TEST CONTRACT REMINDER] Endpoint chamado!`);
       const { clientId, userId } = req.body;
+      console.log(`   clientId: ${clientId}, userId: ${userId}`);
       
       if (!clientId || !userId) {
+        console.log(`❌ Faltando clientId ou userId`);
         return res.status(400).json({ error: "clientId e userId são obrigatórios" });
       }
 
@@ -3134,7 +3137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Cliente não encontrado" });
       }
 
-      // 2. Buscar ÚLTIMA opportunity em PROPOSTA ENVIADA deste cliente (ou criar uma teste)
+      // 2. Buscar ÚLTIMA opportunity em PROPOSTA ENVIADA (ou criar uma teste)
       let opp = await db.query.opportunities.findFirst({
         where: (o: any) => 
           and(
@@ -3144,7 +3147,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         orderBy: (o: any) => desc(o.createdAt),
       });
 
-      // Se não houver, criar uma para teste com 1 minuto atrás
       if (!opp) {
         const oneMinuteAgo = new Date(Date.now() - 1 * 60 * 1000);
         const [newOpp] = await db
@@ -3160,7 +3162,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         opp = newOpp;
       }
 
-      // 3. Registrar na timeline (mensagem enviada) - Randomizar dia 0
+      // 3. Buscar ou criar conversation
+      let conversation = await db.query.conversations.findFirst({
+        where: (conv: any) => eq(conv.clientId, clientId),
+      });
+
+      if (!conversation) {
+        const [newConv] = await db.insert(conversations).values({
+          clientId,
+          userId,
+          ultimaMensagemEm: new Date(),
+        }).returning();
+        conversation = newConv;
+      }
+
+      // 4. Mensagens templates (cobrança contrato)
       const day0Messages = [
         `Olá, tudo bem? Podemos seguir com a contratação? Qualquer dúvida é só me chamar.`,
         `Oi! Tudo certo? Conseguimos avançar com o plano? Estou por aqui caso precise de algo.`,
@@ -3172,12 +3188,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ];
       const randomIdx = Math.floor(Math.random() * day0Messages.length);
       const mensagem = day0Messages[randomIdx];
-      
+
+      // 5. REGISTRAR MENSAGEM NO CHAT PRIMEIRO
+      await db.insert(messages).values({
+        conversationId: conversation.id,
+        sender: "user",
+        tipo: "texto",
+        conteudo: mensagem,
+        origem: "automation",
+        createdAt: new Date(),
+      });
+
+      // 6. REGISTRAR NA TIMELINE DO CLIENTE
       await db.insert(interactions).values({
         clientId,
         tipo: "contract_reminder",
         origem: "automation",
-        titulo: "Cobrança de Contrato Enviada",
+        titulo: "Cobrança de Contrato Enviada (1º dia)",
         texto: mensagem,
         meta: { opportunityId: opp!.id, daysSinceCreation: 0 },
         createdBy: userId,
@@ -3185,9 +3212,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        message: "✅ Mensagem registrada na timeline do cliente",
-        timeline_registered: true,
+        message: "✅ Mensagem enviada no chat e registrada na timeline!",
         cliente: client.nome,
+        oportunidade_etapa: "PROPOSTA ENVIADA",
+        mensagem_enviada: mensagem.substring(0, 50) + "...",
       });
     } catch (error) {
       console.error("❌ Test contract reminder error:", error);
