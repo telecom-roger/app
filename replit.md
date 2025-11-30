@@ -214,3 +214,39 @@ VALIDAÇÕES:
 - `server/routes.ts` - mesma lógica no chat
 
 **Status**: ✅ MULTI-VENDEDOR 100% OPERACIONAL!
+
+---
+
+## 🚀 FASE 18 - IMPORTAÇÃO DOMINIO (Nov 30)
+
+### ✅ 2876 CLIENTES DOMINIO IMPORTADOS COM SUCESSO!
+
+**O que foi feito:**
+
+1. **Processamento de arquivo DOMINIO filtrado** ✅
+   - 2876 registros extraídos e organizados
+   - CNPJ, Gestor, Endereço completo preservados
+   
+2. **Sanitização e mapeamento** ✅
+   - CPF → máx 11 dígitos
+   - CEP → máx 8 caracteres
+   - Celulares → combinados (Tel1 / Tel2)
+   - Todos os limites de campo respeitados
+
+3. **Importação em chunks** ✅
+   - 29 chunks de ~100 registros cada
+   - 100% de sucesso: 2876/2876 importados
+   - Scripts: `import_clean.ts` (script final de importação)
+
+**Campos mapeados:**
+- Nome, CNPJ, Email, Celular (Tel1+Tel2)
+- Nome Gestor, Email Gestor, CPF Gestor
+- Endereço, Número, Bairro, CEP, Cidade, UF
+- Parceiro = DOMINIO, Status = ativo
+
+**Arquivos gerados:**
+- `DOMINIO_PRONTO.csv` (784KB)
+- `DOMINIO_IMPORT.json` (1.5MB)
+- `import_clean.ts` (script reutilizável para imports)
+
+**Status**: ✅ Base de clientes DOMINIO 100% importada!
