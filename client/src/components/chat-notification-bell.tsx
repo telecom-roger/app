@@ -118,9 +118,9 @@ export function ChatNotificationBell() {
                         <div className="flex gap-2 mt-3">
                           {notif.clientId && (
                             <Button
-                              variant="link"
+                              variant="secondary"
                               size="sm"
-                              className="h-auto p-0 text-xs"
+                              className="h-auto p-0 px-2 text-xs"
                               onClick={() => handleViewClient(notif.clientId)}
                               data-testid={`button-view-client-${notif.id}`}
                             >
@@ -129,9 +129,9 @@ export function ChatNotificationBell() {
                           )}
                           {!notif.lida && (
                             <Button
-                              variant="link"
+                              variant="secondary"
                               size="sm"
-                              className="h-auto p-0 text-xs"
+                              className="h-auto p-0 px-2 text-xs"
                               onClick={() => handleMarkAsRead(notif.id)}
                               data-testid={`button-mark-read-${notif.id}`}
                             >
