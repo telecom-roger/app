@@ -1103,6 +1103,56 @@ export async function deleteKanbanStage(id: string): Promise<void> {
   await db.delete(kanbanStages).where(eq(kanbanStages.id, id));
 }
 
+// ==================== RECORD ETAPA CHANGE ====================
+/**
+ * Registra na timeline quando uma oportunidade muda de etapa
+ * Indica se foi manual (usuário), automática (IA), ou sistema
+ */
+export async function recordEtapaChange(
+  opportunityId: string,
+  clientId: string,
+  etapaAnterior: string,
+  etapaNova: string,
+  tipo: "manual" | "ia" | "sistema", // manual = usuário, ia = IA, sistema = sistema/job
+  userId?: string
+): Promise<void> {
+  try {
+    let tipoInteracao = "etapa_mudou";
+    let titulo = `Etapa alterada: ${etapaAnterior} → ${etapaNova}`;
+    let origem = "manual";
+
+    if (tipo === "ia") {
+      origem = "ia";
+      titulo = `Etapa alterada pela IA: ${etapaAnterior} → ${etapaNova}`;
+    } else if (tipo === "sistema") {
+      origem = "sistema";
+      titulo = `Etapa alterada pelo sistema: ${etapaAnterior} → ${etapaNova}`;
+    } else {
+      origem = "usuario";
+      titulo = `Etapa alterada manualmente: ${etapaAnterior} → ${etapaNova}`;
+    }
+
+    await db.insert(interactions).values({
+      clientId,
+      tipo: tipoInteracao,
+      origem,
+      titulo,
+      texto: `Mudança de etapa registrada automaticamente`,
+      meta: {
+        opportunityId,
+        etapa_anterior: etapaAnterior,
+        etapa_nova: etapaNova,
+        tipo_movimento: tipo === "manual" ? "manual (usuário)" : tipo === "ia" ? "automática (IA)" : "automática (sistema)",
+      },
+      createdBy: userId,
+    });
+
+    console.log(`📝 Timeline registrada: ${etapaAnterior} → ${etapaNova} (${tipo})`);
+  } catch (error) {
+    console.error(`❌ Erro ao registrar mudança de etapa:`, error);
+  }
+}
+
 // ==================== CLIENT STATUS AUTOMATION ====================
 /**
  * Calcula o status do cliente baseado nas oportunidades dele

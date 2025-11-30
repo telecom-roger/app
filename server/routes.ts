@@ -598,6 +598,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const etapaNormalizada = etapa.toUpperCase();
       const opportunity = await storage.updateOpportunity(req.params.id, { etapa: etapaNormalizada });
 
+      // 📝 REGISTRAR MUDANÇA NA TIMELINE (Manual - usuário)
+      if (oldOpportunity.etapa !== etapaNormalizada) {
+        await storage.recordEtapaChange(
+          req.params.id,
+          oldOpportunity.clientId || "",
+          oldOpportunity.etapa,
+          etapaNormalizada,
+          "manual",
+          (req.user as any).id
+        );
+      }
+
       // Atualizar tag do cliente para manter sincronizado
       if (oldOpportunity.clientId) {
         const client = await storage.getClientById(oldOpportunity.clientId);
@@ -696,6 +708,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const validatedData = insertOpportunitySchema.partial().parse(req.body);
       const opportunity = await storage.updateOpportunity(req.params.id, validatedData);
+
+      // 📝 REGISTRAR MUDANÇA NA TIMELINE se etapa mudou (Manual - usuário)
+      if (validatedData.etapa && oldOpportunity.etapa !== validatedData.etapa) {
+        await storage.recordEtapaChange(
+          req.params.id,
+          oldOpportunity.clientId || "",
+          oldOpportunity.etapa,
+          validatedData.etapa,
+          "manual",
+          (req.user as any).id
+        );
+      }
 
       // 🔄 RECALCULATE CLIENT STATUS if etapa changed
       if (oldOpportunity.clientId && validatedData.etapa) {
@@ -2168,12 +2192,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.log(`🛑 BLOQUEADO: ${existingOpp.etapa} é etapa bloqueada - IA não pode mexer`);
               } else if (existingOpp) {
                 // Move para AUTOMÁTICA (etapa não-bloqueada)
+                const oldEtapa = existingOpp.etapa;
                 await db.update(opportunities).set({ 
                   etapa: "AUTOMÁTICA",
                   titulo: `${client.nome} - Aguardando resposta (mensagem automática)`,
                   updatedAt: new Date()
                 }).where(eq(opportunities.id, existingOpp.id));
-                console.log(`✅ OPP MOVIDA (AUTOMÁTICO): ${existingOpp.etapa} → AUTOMÁTICA`);
+                console.log(`✅ OPP MOVIDA (AUTOMÁTICO): ${oldEtapa} → AUTOMÁTICA`);
+                // 📝 REGISTRAR NA TIMELINE (IA)
+                await storage.recordEtapaChange(existingOpp.id, conv.clientId, oldEtapa, "AUTOMÁTICA", "ia", user.id);
                 await storage.recalculateClientStatus(conv.clientId);
               } else {
                 // Criar nova oportunidade em AUTOMÁTICA
@@ -2221,35 +2248,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 if (ehTransicaoObrigatoriaCONTATOtoPROPOSTA) {
                   // 🔥 MOVIMENTO OBRIGATÓRIO: CONTATO → PROPOSTA (aprovação clara)
+                  const oldEtapa = existingOpp.etapa;
                   await db.update(opportunities).set({ 
                     etapa: "PROPOSTA",
                     titulo: `${client.nome} - ${analysis.motivo}`,
                     updatedAt: new Date()
                   }).where(eq(opportunities.id, existingOpp.id));
                   
-                  console.log(`🔥 OPP MOVIDA (OBRIGATÓRIO): ${existingOpp.etapa} → PROPOSTA (aprovação detectada)`);
+                  console.log(`🔥 OPP MOVIDA (OBRIGATÓRIO): ${oldEtapa} → PROPOSTA (aprovação detectada)`);
+                  // 📝 REGISTRAR NA TIMELINE (IA)
+                  await storage.recordEtapaChange(existingOpp.id, conv.clientId, oldEtapa, "PROPOSTA", "ia", user.id);
                   await storage.recalculateClientStatus(conv.clientId);
                 } else {
                   // Validar movimento: só LEAD e CONTATO
                   if (existingOpp.etapa === "LEAD") {
                     // LEAD é livre
+                    const oldEtapa = existingOpp.etapa;
                     await db.update(opportunities).set({ 
                       etapa: etapa,
                       titulo: `${client.nome} - ${analysis.motivo}`,
                       updatedAt: new Date()
                     }).where(eq(opportunities.id, existingOpp.id));
                     
-                    console.log(`✅ OPP MOVIDA (CHAT): ${existingOpp.etapa} → ${etapa}`);
+                    console.log(`✅ OPP MOVIDA (CHAT): ${oldEtapa} → ${etapa}`);
+                    // 📝 REGISTRAR NA TIMELINE (IA)
+                    await storage.recordEtapaChange(existingOpp.id, conv.clientId, oldEtapa, etapa, "ia", user.id);
                     await storage.recalculateClientStatus(conv.clientId);
                   } else if (existingOpp.etapa === "CONTATO" && (etapa === "PROPOSTA" || etapa === "PERDIDO")) {
                     // CONTATO → PROPOSTA ou PERDIDO
+                    const oldEtapa = existingOpp.etapa;
                     await db.update(opportunities).set({ 
                       etapa: etapa,
                       titulo: `${client.nome} - ${analysis.motivo}`,
                       updatedAt: new Date()
                     }).where(eq(opportunities.id, existingOpp.id));
                     
-                    console.log(`✅ OPP MOVIDA (CHAT): CONTATO → ${etapa}`);
+                    console.log(`✅ OPP MOVIDA (CHAT): ${oldEtapa} → ${etapa}`);
+                    // 📝 REGISTRAR NA TIMELINE (IA)
+                    await storage.recordEtapaChange(existingOpp.id, conv.clientId, oldEtapa, etapa, "ia", user.id);
                     await storage.recalculateClientStatus(conv.clientId);
                   } else {
                     console.log(`🛑 MOVIMENTO NÃO PERMITIDO: ${existingOpp.etapa} → ${etapa}`);

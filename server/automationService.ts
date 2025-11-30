@@ -585,6 +585,16 @@ export async function checkPropostaEnviadaTimeouts() {
           })
           .where(eq(opportunities.id, opp.id));
 
+        // 📝 REGISTRAR MUDANÇA NA TIMELINE (Sistema)
+        await (await import("./storage")).recordEtapaChange(
+          opp.id,
+          opp.clientId,
+          "PROPOSTA ENVIADA",
+          "PERDIDO",
+          "sistema",
+          opp.responsavelId
+        );
+
         // Buscar ou criar conversation
         let conversation = await db.query.conversations.findFirst({
           where: (conv: any) => eq(conv.clientId, opp.clientId),
@@ -610,17 +620,6 @@ export async function checkPropostaEnviadaTimeouts() {
           conteudo: mensagem,
           origem: "automation",
           createdAt: new Date(),
-        });
-
-        // 📋 REGISTRAR NA TIMELINE DO CLIENTE - MOVIMENTO PARA PERDIDO
-        await db.insert(interactions).values({
-          clientId: opp.clientId,
-          tipo: "status_mudou",
-          origem: "automation",
-          titulo: "Oportunidade Movida para Perdido",
-          texto: mensagem,
-          meta: { opportunityId: opp.id, etapa_anterior: "PROPOSTA ENVIADA", etapa_nova: "PERDIDO", dias_sem_resposta: daysSinceEnvio },
-          createdBy: opp.responsavelId || undefined,
         });
         
         console.log(`✅ Timeline registrada e mensagem enviada para PERDIDO`);

@@ -207,10 +207,21 @@ export async function executeKanbanMove(task: any) {
 
     console.log(`📊 Movendo para: ${toStage}`);
 
+    // Buscar oportunidade antiga
+    const oldOpp = await db.query.opportunities.findFirst({
+      where: (o: any) => eq(o.id, oppId),
+    });
+
     await db
       .update(opportunities)
       .set({ etapa: toStage })
       .where(eq(opportunities.id, oppId));
+
+    // 📝 REGISTRAR NA TIMELINE (Sistema - teste)
+    if (oldOpp) {
+      const storage = await import("./storage");
+      await storage.recordEtapaChange(oppId, oldOpp.clientId, oldOpp.etapa, toStage, "sistema", task.userId);
+    }
 
     console.log(`✅ Movido!`);
   } catch (error) {
