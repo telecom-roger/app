@@ -122,7 +122,6 @@ export default function Kanban() {
   const { data: oportunidades, isLoading, refetch } = useQuery<Opportunity[]>({
     queryKey: ["/api/opportunities"],
     enabled: isAuthenticated,
-    refetchInterval: 3000, // Auto-refresh a cada 3 segundos para testes
   });
 
   const { data: clientesData } = useQuery<{ clientes: any[]; total: number }>({

@@ -4115,64 +4115,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== TEST ENDPOINT - CREATE KANBAN DEMO DATA ====================
-  app.post("/api/test/create-kanban-demo", async (req, res) => {
-    try {
-      // Pegar primeiro usuário como responsável
-      const usersList: any[] = await db.select().from(users).limit(1);
-      const user = usersList[0];
-      
-      if (!user) {
-        return res.status(400).json({ error: "Nenhum usuário encontrado" });
-      }
-      
-      console.log(`\n📊 [TEST] Criando 7 cards por etapa para visualização...`);
-      
-      // Pegar etapas
-      const stages = await storage.getAllKanbanStages();
-      
-      // Pegar clientes (até 100)
-      const allClients: any[] = await db.select().from(clients).limit(100);
-      
-      if (allClients.length === 0) {
-        return res.status(400).json({ error: "Nenhum cliente disponível" });
-      }
-      
-      let createdCount = 0;
-      const results: any[] = [];
-      
-      // Criar 7 oportunidades por etapa
-      for (const stage of stages) {
-        for (let i = 0; i < 7; i++) {
-          const clientIndex = (createdCount + i) % allClients.length;
-          const client = allClients[clientIndex];
-          
-          const opp = await storage.createOpportunity({
-            clientId: client.id,
-            titulo: `DEMO - ${stage.titulo} #${i + 1}`,
-            etapa: stage.titulo,
-            responsavelId: user.id,
-            valorEstimado: ((Math.random() * 50000) + 5000).toFixed(0),
-          });
-          
-          createdCount++;
-          results.push({ stage: stage.titulo, oportunidade: opp.id });
-        }
-      }
-      
-      console.log(`✅ Criadas ${createdCount} oportunidades de teste!`);
-      
-      res.json({
-        success: true,
-        message: `✅ Criadas ${createdCount} oportunidades de teste (7 por etapa)`,
-        total: createdCount,
-        stages: stages.length,
-      });
-    } catch (error) {
-      console.error("❌ Error creating kanban demo:", error);
-      res.status(500).json({ error: String(error) });
-    }
-  });
 
   const httpServer = createServer(app);
 
