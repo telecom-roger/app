@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle, Download, Plus, Info, ExternalLink, Zap } from "lucide-react";
+import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle, Download, Plus, Info, User, Zap } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -1295,10 +1295,11 @@ export default function Chat() {
                         navigate(`/clientes/${detailedClient.id}`);
                         setShowClientInfo(false);
                       }}
-                      className="flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400 hover:underline hover-elevate mt-1 transition-colors"
+                      className="flex items-center gap-1 text-sm text-purple-600 dark:text-purple-400 hover:underline hover-elevate mt-1 transition-colors"
                       data-testid="button-edit-client"
                     >
-                      <ExternalLink className="h-3.5 w-3.5" />
+                      <User className="h-3.5 w-3.5" />
+                      Ver cliente
                     </button>
                   </div>
                 </div>
