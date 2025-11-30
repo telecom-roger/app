@@ -533,9 +533,24 @@ function OpportunityCard({
     return "bg-amber-600 dark:bg-amber-400";
   };
 
+  // Função que retorna a cor clara do card baseado na etapa
+  const getCardBackgroundColor = (etapa: string): string => {
+    const etapaUpper = etapa.toUpperCase();
+    // Vermelho claro
+    if (etapaUpper === "AGUARDANDO ACEITE" || etapaUpper === "PERDIDO") {
+      return "bg-red-100 dark:bg-red-900/20";
+    }
+    // Verde claro
+    if (etapaUpper === "FECHADO") {
+      return "bg-green-100 dark:bg-green-900/20";
+    }
+    // Amarelo claro (padrão)
+    return "bg-amber-100 dark:bg-amber-900/20";
+  };
+
   return (
     <Card
-      className={`cursor-move hover-elevate active-elevate-2 transition-all border-0 shadow-sm bg-white dark:bg-slate-900/50 ${
+      className={`cursor-move hover-elevate active-elevate-2 transition-all border-0 shadow-sm ${getCardBackgroundColor(oportunidade.etapa)} ${
         isDragging ? "opacity-50" : "opacity-100"
       }`}
       data-testid={`card-oportunidade-${oportunidade.id}`}
