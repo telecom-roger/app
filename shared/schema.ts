@@ -590,6 +590,7 @@ export const automationTasks = pgTable("automation_tasks", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  opportunityId: varchar("opportunity_id").references(() => opportunities.id, { onDelete: "cascade" }), // ✅ Para filtrar por oportunidade específica
   tipo: varchar("tipo", { length: 50 }).notNull(), // "follow_up", "re_engagement", "score_update", "auto_send"
   status: varchar("status", { length: 50 }).notNull().default("pendente"), // pendente, executado, erro
   proximaExecucao: timestamp("proxima_execucao").notNull(),
@@ -602,6 +603,7 @@ export const automationTasks = pgTable("automation_tasks", {
 }, (table) => [
   index("idx_automation_tasks_user").on(table.userId),
   index("idx_automation_tasks_client").on(table.clientId),
+  index("idx_automation_tasks_opportunity").on(table.opportunityId), // ✅ Nova índice
   index("idx_automation_tasks_status").on(table.status),
   index("idx_automation_tasks_proxima").on(table.proximaExecucao),
 ]);

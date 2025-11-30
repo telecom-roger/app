@@ -712,14 +712,14 @@ export async function checkAguardandoAceiteTimeouts() {
     console.log(`📋 Encontradas ${aguardando.length} em AGUARDANDO ACEITE`);
     
     for (const opp of aguardando) {
-      // Buscar último reminder deste contrato (ordenar por ID DESC para pegar o mais recente criado)
+      // Buscar último reminder deste contrato (filtrar por opportunityId, não clientId!)
       const lastTask = await db
         .select()
         .from(automationTasks)
         .where(
           and(
             eq(automationTasks.tipo, "aguardando_aceite_reminder"),
-            eq(automationTasks.clientId, opp.clientId)
+            eq(automationTasks.opportunityId, opp.id)  // ✅ CORRIGIDO: usar opportunityId
           )
         )
         .orderBy((t: any) => desc(t.createdAt))
@@ -733,6 +733,7 @@ export async function checkAguardandoAceiteTimeouts() {
         await db.insert(automationTasks).values({
           userId: opp.responsavelId,
           clientId: opp.clientId,
+          opportunityId: opp.id,  // ✅ Adicionar ao campo, não apenas ao dados
           tipo: "aguardando_aceite_reminder",
           proximaExecucao: nextTime,
           dados: { 
@@ -760,6 +761,7 @@ export async function checkAguardandoAceiteTimeouts() {
           await db.insert(automationTasks).values({
             userId: opp.responsavelId,
             clientId: opp.clientId,
+            opportunityId: opp.id,  // ✅ Adicionar ao campo, não apenas ao dados
             tipo: "aguardando_aceite_reminder",
             proximaExecucao,
             dados: { 
@@ -777,6 +779,7 @@ export async function checkAguardandoAceiteTimeouts() {
           await db.insert(automationTasks).values({
             userId: opp.responsavelId,
             clientId: opp.clientId,
+            opportunityId: opp.id,  // ✅ Adicionar ao campo
             tipo: "kanban_move",
             proximaExecucao,
             dados: { 
