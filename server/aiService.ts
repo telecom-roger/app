@@ -500,7 +500,7 @@ export async function analyzeClientMessage(
 ): Promise<MessageAnalysis> {
   try {
     // Usar análise local confiável (keywords) ao invés de OpenAI por agora
-    const useLocalMode = false; // 🤖 OPENAI - Ativado para teste com IA real
+    const useLocalMode = true; // 🎯 KEYWORDS LOCAIS - Usando lista de palavras-chave definida
     
     if (useLocalMode) {
       return analyzeLocalTest(mensagem, clienteInfo?.etapaAtual);
