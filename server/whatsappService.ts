@@ -391,8 +391,7 @@ async function processIncomingMessages(sessionId: string, m: any) {
                     .from(messages)
                     .where(and(
                       eq(messages.conversationId, conversation.id),
-                      eq(messages.sender, "bot"),
-                      eq(messages.tipo, "texto"),
+                      eq(messages.origem, "automation"), // ← Mensagens de automação
                       eq(messages.conteudo, mensagemAutomatica), // ← MESMA MENSAGEM
                       gte(messages.createdAt, treHorasAtras)
                     ))
@@ -404,12 +403,13 @@ async function processIncomingMessages(sessionId: string, m: any) {
                   if (ultimaMsgAutomatica.length === 0) {
                     console.log(`🚀 [RESPOSTA POSITIVA] Preparando envio automático...`);
                     
-                    // 💬 SALVAR MENSAGEM NO CHAT
+                    // 💬 SALVAR MENSAGEM NO CHAT (igual aos outros jobs)
                     const savedMessage = await storage.createMessage({
                       conversationId: conversation.id,
-                      sender: "bot",
+                      sender: "user",           // ✅ "user" para aparecer como enviada
                       tipo: "texto",
                       conteudo: mensagemAutomatica,
+                      origem: "automation",     // ✅ Marca "- enviado por IA"
                     });
                     console.log(`💬 [CHAT] Mensagem salva: ${savedMessage.id}`);
                     
