@@ -462,7 +462,7 @@ export default function Chat() {
   });
 
   const handleSelectClient = (client: Client) => {
-    const phone = (client as any).telefone || client.celular;
+    const phone = client.celular;
     if (!phone) {
       toast({
         title: "Erro",
@@ -471,6 +471,7 @@ export default function Chat() {
       });
       return;
     }
+    console.log(`[CHAT] Selecionando cliente: ${client.nome} -> Telefone: ${phone}`);
     refetchClients(); // Força atualização de cache antes de criar conversa
     getConversationMutation.mutate(phone);
   };
