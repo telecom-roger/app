@@ -1315,7 +1315,7 @@ export default function Chat() {
                 {detailedClient.email && (
                   <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
                     <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">EMAIL</p>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{detailedClient.email}</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white break-all">{detailedClient.email}</p>
                   </div>
                 )}
                 {detailedClient.carteira && (
@@ -1333,7 +1333,18 @@ export default function Chat() {
                 {detailedClient.status && (
                   <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
                     <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">STATUS</p>
-                    <Badge variant="outline">{detailedClient.status}</Badge>
+                    <Badge className={(() => {
+                      const statusColors: Record<string, string> = {
+                        lead_quente: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+                        engajado: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+                        em_negociacao: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+                        em_fechamento: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+                        ativo: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
+                        perdido: "bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200",
+                        remarketing: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
+                      };
+                      return statusColors[detailedClient.status?.toLowerCase() || ''] || 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200';
+                    })()}>{detailedClient.status.toUpperCase()}</Badge>
                   </div>
                 )}
               </div>
