@@ -285,18 +285,16 @@ async function executeKanbanMove(task: any) {
 
     console.log(`✅ Oportunidade movida para ${toStage}!`);
 
-    // 🚀 TRIGGER: Se moveu para CONTATO ou PROPOSTA (por IA), dispara automação de mensagem
+    // 🚀 TRIGGER: Se moveu para CONTATO ou PROPOSTA (por IA), dispara automação de mensagem IMEDIATAMENTE
     if (toStage === "CONTATO" || toStage === "PROPOSTA") {
       console.log(`🚀 Disparando automação de Contato Message para ${oppId} (etapa: ${toStage})`);
       try {
-        await db.insert(automationTasks).values({
+        await executeContatoMessage({
           userId: task.userId,
           clientId: task.clientId,
-          tipo: "contato_message",
-          proximaExecucao: new Date(),
           dados: { opportunityId: oppId, etapa: toStage },
         });
-        console.log(`✅ Task de Contato Message criada para ${toStage}`);
+        console.log(`✅ Contato Message disparada com sucesso para ${toStage}`);
       } catch (error) {
         console.error(`❌ Erro ao disparar contato_message:`, error);
       }
