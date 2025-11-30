@@ -2287,10 +2287,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Phone number or name required" });
       }
       
+      console.log(`[CHAT SEARCH] 🔍 Buscando: "${phone}"`);
+      
       let normalizado = phone.replace(/\D/g, "");
       if (normalizado.startsWith("55")) {
         normalizado = normalizado.substring(2);
       }
+      
+      console.log(`[CHAT SEARCH] Normalizado: "${normalizado}"`);
       
       // Buscar por telefone, razão social ou nome do gestor
       let [client] = await db
@@ -2303,6 +2307,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ilike(clients.nomeGestor, `%${phone}%`) // Nome do gestor
         ))
         .limit(1);
+      
+      console.log(`[CHAT SEARCH] Resultado: ${client ? `✅ ENCONTRADO ${client.nome}` : "❌ NÃO ENCONTRADO"}`);
       
       // Se não encontrar, criar novo cliente automaticamente
       if (!client) {
