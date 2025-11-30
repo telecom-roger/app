@@ -1426,6 +1426,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== IMPORT PARTNERS ====================
+  app.post("/api/admin/import-partners", isAuthenticated, async (req, res) => {
+    try {
+      const user = (req.user as any);
+      const { preview, parceiro, duplicatas } = req.body;
+      
+      if (!preview || !Array.isArray(preview)) {
+        return res.status(400).json({ error: "Dados inválidos" });
+      }
+
+      // Get existing clients for duplicate checking
+      const existingClients = await storage.getClients({
+        userId: user.dbUser?.id || user.id,
+        limit: 100000,
+        isAdmin: false,
+      });
+
+      const existing = existingClients.clientes || [];
+      const existingCNPJs = new Set(existing.map(c => c.cnpj).filter(Boolean));
+      const existingEmails = new Set(existing.map(c => c.email).filter(Boolean));
+      const existingPhones = new Set(existing.map(c => c.celular).filter(Boolean));
+
+      let inserted = 0;
+      let duplicados = 0;
+      const errors: string[] = [];
+
+      for (let i = 0; i < preview.length; i++) {
+        try {
+          const row = preview[i];
+          
+          // Skip empty rows
+          if (!row.nome || (!row.cnpj && !row.email && !row.celular)) {
+            duplicados++;
+            continue;
+          }
+
+          // Check for duplicates
+          if (row.cnpj && existingCNPJs.has(row.cnpj)) {
+            duplicados++;
+            continue;
+          }
+          if (row.email && existingEmails.has(row.email)) {
+            duplicados++;
+            continue;
+          }
+          if (row.celular && existingPhones.has(row.celular)) {
+            duplicados++;
+            continue;
+          }
+
+          // Map columns to schema
+          const clientData = {
+            nome: row.nome,
+            cnpj: row.cnpj || row.CNPJ || null,
+            email: row.email || row.Email || null,
+            celular: row.celular || row.Celular || row.CELULAR || null,
+            telefone2: row.telefone_2 || row.telefone2 || row.Telefone2 || null,
+            status: row.status || "ativo",
+            parceiro: parceiro,
+            tipoCliente: row.tipo_cliente || row.tipoCliente || row.tipo || null,
+            carteira: row.carteira || row.Carteira || null,
+            nomeGestor: row.nome_gestor || row.nomeGestor || null,
+            emailGestor: row.email_gestor || row.emailGestor || null,
+            cpfGestor: row.cpf_gestor || row.cpfGestor || null,
+            endereco: row.endereco || row.Endereco || null,
+            numero: row.numero || row.Numero || null,
+            bairro: row.bairro || row.Bairro || null,
+            cep: row.cep || row.CEP || null,
+            cidade: row.cidade || row.Cidade || null,
+            uf: row.uf || row.UF || null,
+            dataUltimoPedido: row.data_ultimo_pedido || null,
+            observacoes: row.observacoes || row.Observacoes || null,
+            createdBy: user.dbUser?.id || user.id,
+          };
+
+          const validated = insertClientSchema.parse(clientData);
+          await storage.createClient(validated);
+          
+          // Add to existing sets to prevent duplicates in batch
+          if (validated.cnpj) existingCNPJs.add(validated.cnpj);
+          if (validated.email) existingEmails.add(validated.email);
+          if (validated.celular) existingPhones.add(validated.celular);
+          
+          inserted++;
+        } catch (error: any) {
+          duplicados++;
+          errors.push(`Linha ${i + 1}: ${error.message}`);
+        }
+      }
+
+      res.json({
+        success: true,
+        inserted,
+        duplicados,
+        errors: errors.slice(0, 5),
+      });
+    } catch (error: any) {
+      console.error("Error importing partners:", error);
+      res.status(500).json({ error: "Erro ao importar parceiros" });
+    }
+  });
+
   // ==================== STATS ROUTES ====================
   app.get("/api/stats/dashboard", isAuthenticated, async (req, res) => {
     try {

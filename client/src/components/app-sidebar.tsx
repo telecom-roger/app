@@ -140,6 +140,11 @@ const adminItems = [
     icon: Zap,
   },
   {
+    title: "Importar Parceiros",
+    url: "/admin/import-partners",
+    icon: FileUp,
+  },
+  {
     title: "Configurações",
     url: "/admin/configuracoes",
     icon: Settings,

@@ -30,6 +30,7 @@ import AdminUsuarios from "@/pages/admin-usuarios";
 import AdminTemplates from "@/pages/admin-templates";
 import AdminAutomacao from "@/pages/admin/automation-config";
 import AdminAutomacaoAdvanced from "@/pages/admin/automation-config-advanced";
+import ImportPartners from "@/pages/admin/import-partners";
 import WhatsApp from "@/pages/whatsapp";
 import WhatsAppBroadcast from "@/pages/whatsapp-broadcast";
 import Chat from "@/pages/chat";
@@ -74,6 +75,7 @@ function Router({ isAuthenticated }: { isAuthenticated: boolean }) {
       <Route path="/admin/templates" component={AdminTemplates} />
       <Route path="/admin/automacao" component={AdminAutomacao} />
       <Route path="/admin/automacao-avancado" component={AdminAutomacaoAdvanced} />
+      <Route path="/admin/import-partners" component={ImportPartners} />
       <Route path="/test/automation" component={TestAutomation} />
       <Route path="/test/chat" component={TestChat} />
       <Route component={NotFound} />
