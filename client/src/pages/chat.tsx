@@ -1280,7 +1280,7 @@ export default function Chat() {
                 onClick={() => setShowClientInfo(true)}
                 data-testid="button-client-info"
               >
-                <Info className="h-5 w-5" />
+                <User className="h-5 w-5" />
               </Button>
               <Popover open={showQuickReplies} onOpenChange={setShowQuickReplies}>
                 <PopoverTrigger asChild>
