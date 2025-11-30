@@ -34,6 +34,13 @@ const ALL_JOBS = [
     icon: "⭐",
   },
   {
+    id: "contato_message",
+    nome: "Mensagem CONTATO",
+    descricao: "Envia WhatsApp ao mover para CONTATO",
+    icon: "💬",
+    dias: [0],
+  },
+  {
     id: "contract_reminder",
     nome: "Contract Reminder",
     descricao: "Lembretes de contratação - 2h, 4 dias",

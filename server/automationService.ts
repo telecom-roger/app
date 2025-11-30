@@ -71,6 +71,9 @@ async function executeAutomationTask(task: any) {
     case "kanban_move":
       await executeKanbanMove(task);
       break;
+    case "contato_message":
+      await executeContatoMessage(task);
+      break;
     case "contract_reminder":
       await executeContractReminder(task);
       break;
@@ -461,6 +464,119 @@ async function executeContractReminder(task: any) {
   }
   
   console.log(`✅ Mensagem enviada no chat e registrada na timeline de ${client.nome}`);
+}
+
+// ======================== CONTATO MESSAGE - Envio automático quando opportunity muda para CONTATO ========================
+async function executeContatoMessage(task: any) {
+  console.log(`💬 Contato Message para ${task.clientId}`);
+  
+  const opportunity = await db.query.opportunities.findFirst({
+    where: (o: any) => eq(o.id, task.dados?.opportunityId || ""),
+  });
+  
+  if (!opportunity) return;
+  
+  const client = await db.query.clients.findFirst({
+    where: (c: any) => eq(c.id, opportunity.clientId),
+  });
+  
+  if (!client) return;
+  
+  // Buscar ou criar conversation do cliente
+  let conversation = await db.query.conversations.findFirst({
+    where: (conv: any) => eq(conv.clientId, opportunity.clientId),
+  });
+  
+  if (!conversation) {
+    const [newConv] = await db.insert(conversations).values({
+      clientId: opportunity.clientId,
+      userId: task.userId,
+      ultimaMensagemEm: new Date(),
+    }).returning();
+    conversation = newConv;
+  }
+  
+  // 🔥 LER MENSAGEM DO BANCO (automation_configs)
+  const config = await db.query.automationConfigs.findFirst({
+    where: (ac: any) => eq(ac.jobType, "contato_message"),
+  });
+  
+  let messages_templates = (config?.mensagensTemplates as any)?.["0"] || [];
+  
+  // Fallback para mensagem padrão se não houver no banco
+  if (messages_templates.length === 0) {
+    messages_templates = [
+      `Olá ${client.nome}!\n\nObrigado pelo contato. Estou aqui para ajudar com suas necessidades.\n\nQual é a melhor forma de eu auxiliar você hoje?`,
+    ];
+  }
+  
+  if (messages_templates.length === 0) {
+    console.warn(`⚠️ Nenhuma mensagem disponível para Contato`);
+    return;
+  }
+  
+  // Pegar mensagem randomizada
+  const randomIndex = Math.floor(Math.random() * messages_templates.length);
+  const mensagem = messages_templates[randomIndex];
+  
+  // 1️⃣ REGISTRAR MENSAGEM NO CHAT
+  await db.insert(messages).values({
+    conversationId: conversation.id,
+    sender: "user",
+    tipo: "texto",
+    conteudo: mensagem,
+    origem: "automation",
+    createdAt: new Date(),
+  });
+
+  // 2️⃣ REGISTRAR NA TIMELINE DO CLIENTE
+  await db.insert(interactions).values({
+    clientId: opportunity.clientId,
+    tipo: "contato_message",
+    origem: "automation",
+    titulo: `Mensagem de Contato Enviada`,
+    texto: mensagem,
+    meta: { opportunityId: opportunity.id },
+    createdBy: task.userId,
+  });
+  
+  // 3️⃣ ENVIAR VIA WHATSAPP AUTOMATICAMENTE
+  try {
+    const [session] = await db
+      .select()
+      .from(whatsappSessions)
+      .where(and(eq(whatsappSessions.userId, task.userId), eq(whatsappSessions.status, "conectada")))
+      .limit(1);
+
+    if (session) {
+      if (client && client.celular) {
+        const isAlive = whatsappService.isSessionAlive(session.sessionId);
+        if (isAlive) {
+          let telefone = client.celular.replace(/\D/g, "");
+          if (!telefone.startsWith("55")) {
+            telefone = "55" + telefone;
+          }
+          
+          try {
+            console.log(`📱 Enviando mensagem de contato via WhatsApp para ${telefone}...`);
+            await whatsappService.sendMessage(session.sessionId, telefone, mensagem);
+            console.log(`✅ Mensagem de contato enviada via WhatsApp com sucesso para ${client.nome}`);
+          } catch (error) {
+            console.error(`❌ Erro ao enviar mensagem via WhatsApp:`, error);
+            throw error;
+          }
+        }
+      } else {
+        console.warn(`⚠️ Cliente sem celular. Mensagem só no chat.`);
+      }
+    } else {
+      console.warn(`⚠️ Nenhuma sessão WhatsApp conectada. Mensagem só no chat.`);
+    }
+  } catch (error) {
+    console.error(`❌ Erro ao enviar WhatsApp:`, error);
+  }
+  
+  console.log(`✅ Mensagem de contato enviada no chat e WhatsApp para ${client.nome}`);
 }
 
 // ======================== CONTRATO ENVIADO - Envio automático quando opportunity muda para essa etapa ========================
