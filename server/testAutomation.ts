@@ -6,7 +6,7 @@ import { analyzeClientMessage } from "./aiService";
 
 // ======================== VALIDAÇÃO DE MOVIMENTO ========================
 // 🔥 REGRAS CRÍTICAS DE MOVIMENTO DA IA:
-// LEAD → Pode ir para: CONTATO, PROPOSTA, FORNECEDOR, PERDIDO
+// LEAD → Pode ir para: CONTATO, PROPOSTA, AUTOMÁTICA, PERDIDO
 // CONTATO → Pode ir para: PROPOSTA ou PERDIDO
 // PROPOSTA → BLOQUEADO (IA não mexe)
 // PROPOSTA ENVIADA → BLOQUEADO (IA não mexe)
@@ -16,7 +16,7 @@ import { analyzeClientMessage } from "./aiService";
 // AGUARDANDO ATENÇÃO → BLOQUEADO (IA não mexe)
 // FECHADO → BLOQUEADO (IA não mexe)
 // PERDIDO → Pode ir para: CONTATO, PROPOSTA (se cliente enviar interesse)
-// FORNECEDOR → Pode ir para: CONTATO, PROPOSTA (se cliente enviar interesse)
+// AUTOMÁTICA → Pode ir para: CONTATO, PROPOSTA (se cliente enviar interesse)
 
 // Etapas que NÃO podem ser tocadas pela IA (100% manuais)
 const ETAPAS_MANUAIS_BLOQUEADAS = [
@@ -36,7 +36,7 @@ const ETAPAS_MANUAIS_BLOQUEADAS = [
  * - CONTATO: pode ir para PROPOSTA ou PERDIDO
  * - PROPOSTA+: bloqueado (7 etapas manuais)
  * - PERDIDO: pode voltar se interesse (→ CONTATO ou PROPOSTA)
- * - FORNECEDOR: pode voltar se interesse (→ CONTATO ou PROPOSTA)
+ * - AUTOMÁTICA: pode voltar se interesse (→ CONTATO ou PROPOSTA)
  */
 function isValidMovement(etapaAtual: string, etapaNova: string): { permitido: boolean; motivo: string } {
   // 🔥 BLOQUEIO: Se etapa atual está nas "manuais bloqueadas" → IA PARA COMPLETAMENTE
@@ -54,8 +54,8 @@ function isValidMovement(etapaAtual: string, etapaNova: string): { permitido: bo
     return { permitido: true, motivo: "LEAD é livre" };
   }
   
-  // 🔥 PERDIDO ou FORNECEDOR → pode voltar para CONTATO ou PROPOSTA (interesse)
-  if ((etapaAtual === "PERDIDO" || etapaAtual === "FORNECEDOR") && 
+  // 🔥 PERDIDO ou AUTOMÁTICA → pode voltar para CONTATO ou PROPOSTA (interesse)
+  if ((etapaAtual === "PERDIDO" || etapaAtual === "AUTOMÁTICA") && 
       (etapaNova === "CONTATO" || etapaNova === "PROPOSTA")) {
     return { permitido: true, motivo: `${etapaAtual} → ${etapaNova}: Volta por interesse` };
   }
@@ -65,8 +65,8 @@ function isValidMovement(etapaAtual: string, etapaNova: string): { permitido: bo
     return { permitido: true, motivo: "Mesma etapa - sem mudança" };
   }
   
-  // Outros movimentos de PERDIDO/FORNECEDOR são bloqueados
-  if (etapaAtual === "PERDIDO" || etapaAtual === "FORNECEDOR") {
+  // Outros movimentos de PERDIDO/AUTOMÁTICA são bloqueados
+  if (etapaAtual === "PERDIDO" || etapaAtual === "AUTOMÁTICA") {
     return { permitido: false, motivo: `${etapaAtual} → ${etapaNova}: Só pode voltar para CONTATO ou PROPOSTA` };
   }
   

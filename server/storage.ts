@@ -1074,7 +1074,7 @@ export async function getAllKanbanStages(): Promise<KanbanStage[]> {
       { ordem: 6, titulo: "AGUARDANDO ACEITE", descricao: "Aguardando aceitação" },
       { ordem: 7, titulo: "FECHADO", descricao: "Negócio fechado" },
       { ordem: 8, titulo: "PERDIDO", descricao: "Negócio perdido" },
-      { ordem: 9, titulo: "FORNECEDOR", descricao: "Resposta automática/Fornecedor" },
+      { ordem: 9, titulo: "AUTOMÁTICA", descricao: "Resposta automática do sistema" },
     ];
     
     console.log("📋 Inicializando 10 etapas do Kanban...");

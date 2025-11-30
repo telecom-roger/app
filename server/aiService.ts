@@ -8,10 +8,10 @@ export interface MessageAnalysis {
   sentimento: "positivo" | "negativo" | "neutro" | "fornecedor";
   confianca: number;
   motivo: string;
-  etapa: "CONTATO" | "PROPOSTA" | "FORNECEDOR" | "PERDIDO" | "LEAD"; // Etapas automáticas em MAIÚSCULA
+  etapa: "CONTATO" | "PROPOSTA" | "AUTOMÁTICA" | "PERDIDO" | "LEAD"; // Etapas automáticas em MAIÚSCULA
   deveAgir: boolean; // true = mover/criar, false = manter etapa atual sem mover
   ehRecusaParcial: boolean; // true = recusa parcial/alteração, alerta atendente
-  ehMensagemAutomatica: boolean; // true = mensagem automática do sistema (deve ir para FORNECEDOR)
+  ehMensagemAutomatica: boolean; // true = mensagem automática do sistema (deve ir para AUTOMÁTICA)
   sugestao: string;
 }
 
@@ -27,7 +27,7 @@ function normalizeMessage(text: string): string {
 function analyzeLocalTest(mensagem: string): MessageAnalysis {
   const msg = normalizeMessage(mensagem);
   
-  // 🤖 DETECTAR MENSAGENS AUTOMÁTICAS (deve ir para FORNECEDOR)
+  // 🤖 DETECTAR MENSAGENS AUTOMÁTICAS (deve ir para AUTOMÁTICA)
   const mensagensAutomaticas = [
     "fora do horario de atendimento",
     "fora do horário de atendimento",
@@ -57,8 +57,8 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
       sentimento: "neutro",
       confianca: 100,
       motivo: "Mensagem automática do sistema - cliente aguardando retorno",
-      etapa: "FORNECEDOR",
-      deveAgir: true, // true = move para FORNECEDOR
+      etapa: "AUTOMÁTICA",
+      deveAgir: true, // true = move para AUTOMÁTICA
       ehRecusaParcial: false,
       ehMensagemAutomatica: true,
       sugestao: "Aguardando retorno automático do sistema",
@@ -140,14 +140,14 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
   }
   
   
-  // 📲 FORNECEDOR
-  const fornecedor = ["deixe seu contato", "breve", "aguarde", "em breve", "entro em contato"];
-  if (fornecedor.some(palavra => msg.includes(palavra))) {
+  // 📲 AUTOMÁTICA
+  const automatica = ["deixe seu contato", "breve", "aguarde", "em breve", "entro em contato"];
+  if (automatica.some(palavra => msg.includes(palavra))) {
     return {
       sentimento: "fornecedor",
       confianca: 90,
       motivo: "Mensagem automática",
-      etapa: "FORNECEDOR",
+      etapa: "AUTOMÁTICA",
       deveAgir: true,
       ehRecusaParcial: false,
       ehMensagemAutomatica: true,
@@ -252,7 +252,7 @@ CLIENTE: ${clienteInfo?.nome || "Desconhecido"}
 ▶️ 4 ETAPAS (escolha 1 - SEMPRE EM MAIÚSCULA):
 1. "CONTATO" - Pergunta preço/valor OU mensagem inicial ("oi", "tudo bem?")
 2. "PROPOSTA" - APROVAÇÃO: "ok", "sim", "manda", "gostei", "legal", "adorei"
-3. "FORNECEDOR" - Mensagens automáticas: "deixe contato", "breve", "aguarde"
+3. "AUTOMÁTICA" - Mensagens automáticas: "deixe contato", "breve", "aguarde"
 4. "PERDIDO" - APENAS RECUSA TOTAL (rejeitou tudo)
 
 ▶️ RETORNE deveAgir + ehRecusaParcial:

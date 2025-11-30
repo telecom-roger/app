@@ -14,12 +14,12 @@ import { analyzeClientMessage } from "./aiService";
 
 // ======================== CONSTANTES DE ETAPAS (AUTOMAÇÃO) ========================
 // 🔥 REGRAS CRÍTICAS DE MOVIMENTO DA IA:
-// LEAD → Pode ir para: CONTATO, PROPOSTA, FORNECEDOR, PERDIDO
+// LEAD → Pode ir para: CONTATO, PROPOSTA, AUTOMÁTICA, PERDIDO
 // CONTATO → Pode ir para: PROPOSTA ou PERDIDO
 // PROPOSTA → BLOQUEADO (IA não mexe)
 // PROPOSTA ENVIADA, AGUARDANDO CONTRATO, CONTRATO ENVIADO, AGUARDANDO ACEITE, AGUARDANDO ATENÇÃO, FECHADO → BLOQUEADO
 // PERDIDO → Pode voltar para: CONTATO, PROPOSTA (se cliente enviar interesse)
-// FORNECEDOR → Pode voltar para: CONTATO, PROPOSTA (se cliente enviar interesse)
+// AUTOMÁTICA → Pode voltar para: CONTATO, PROPOSTA (se cliente enviar interesse)
 
 const ETAPAS_MANUAIS_BLOQUEADAS = [
   "PROPOSTA", 
@@ -30,7 +30,7 @@ const ETAPAS_MANUAIS_BLOQUEADAS = [
   "AGUARDANDO ATENÇÃO",
   "FECHADO"
 ];
-const TODAS_ETAPAS = ["LEAD", "CONTATO", "PROPOSTA", "FORNECEDOR", "PERDIDO", "PROPOSTA ENVIADA", "AGUARDANDO CONTRATO", "CONTRATO ENVIADO", "AGUARDANDO ACEITE", "AGUARDANDO ATENÇÃO", "FECHADO"];
+const TODAS_ETAPAS = ["LEAD", "CONTATO", "PROPOSTA", "AUTOMÁTICA", "PERDIDO", "PROPOSTA ENVIADA", "AGUARDANDO CONTRATO", "CONTRATO ENVIADO", "AGUARDANDO ACEITE", "AGUARDANDO ATENÇÃO", "FECHADO"];
 
 // Track campaigns in progress
 const campanhasEmProgresso = new Map<string, {
@@ -2160,28 +2160,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const etapa = (analysis.etapa || "CONTATO").toUpperCase();
             console.log(`🤖 IA (CHAT): ${analysis.sentimento} (${analysis.confianca}%) → ${etapa}`);
 
-            // 🤖 DETECÇÃO: Se mensagem automática → MOVER PARA FORNECEDOR (mesmo em etapas bloqueadas)
+            // 🤖 DETECÇÃO: Se mensagem automática → MOVER PARA AUTOMÁTICA (mesmo em etapas bloqueadas)
             if (analysis.ehMensagemAutomatica) {
-              console.log(`🤖 MENSAGEM AUTOMÁTICA DETECTADA - Movendo para FORNECEDOR`);
+              console.log(`🤖 MENSAGEM AUTOMÁTICA DETECTADA - Movendo para AUTOMÁTICA`);
               if (existingOpp) {
                 await db.update(opportunities).set({ 
-                  etapa: "FORNECEDOR",
+                  etapa: "AUTOMÁTICA",
                   titulo: `${client.nome} - Aguardando resposta (mensagem automática)`,
                   updatedAt: new Date()
                 }).where(eq(opportunities.id, existingOpp.id));
-                console.log(`✅ OPP MOVIDA (AUTOMÁTICO): ${existingOpp.etapa} → FORNECEDOR`);
+                console.log(`✅ OPP MOVIDA (AUTOMÁTICO): ${existingOpp.etapa} → AUTOMÁTICA`);
                 await storage.recalculateClientStatus(conv.clientId);
               } else {
-                // Criar nova oportunidade em FORNECEDOR
+                // Criar nova oportunidade em AUTOMÁTICA
                 const [newOpp] = await db.insert(opportunities).values({
                   clientId: conv.clientId,
                   titulo: `${client.nome} - Aguardando resposta (mensagem automática)`,
-                  etapa: "FORNECEDOR",
+                  etapa: "AUTOMÁTICA",
                   valorEstimado: "5000",
                   responsavelId: user.id || conv.userId,
                   ordem: 0,
                 }).returning();
-                console.log(`✅ OPP CRIADA (AUTOMÁTICO): FORNECEDOR`);
+                console.log(`✅ OPP CRIADA (AUTOMÁTICO): AUTOMÁTICA`);
                 await storage.recalculateClientStatus(conv.clientId);
               }
             }

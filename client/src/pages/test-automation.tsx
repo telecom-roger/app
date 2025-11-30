@@ -783,7 +783,7 @@ export default function TestAutomation() {
             <li>"OK, quero levar!" → <span className="text-green-300">Proposta</span></li>
             <li>"Não tenho interesse" → <span className="text-red-300">Perdido</span></li>
             <li>"Qual o preço?" → <span className="text-blue-300">Contato</span></li>
-            <li>"Aqui é o fornecedor com NF" → <span className="text-yellow-300">Fornecedor</span></li>
+            <li>"Aqui é o fornecedor com NF" → <span className="text-yellow-300">Automática</span></li>
           </ul>
           <p className="mt-3 text-xs text-slate-400 font-bold">📊 Regras de Status Automático:</p>
           <ul className="list-disc list-inside text-xs text-slate-400 ml-2 space-y-1">
