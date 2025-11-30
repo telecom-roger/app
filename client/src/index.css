@@ -2,8 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CACHE BUSTER: 2025-11-30-FORCE-RELOAD-v2 */
-/* LIGHT MODE - Google Ads Design System */
+/* CACHE BUSTER: 2025-11-30-FORCE-RELOAD-v3 */
+/* LIGHT MODE - Plataforma Inteligente Brand Colors */
 :root {
   --button-outline: rgba(0,0,0, .10);
   --badge-outline: rgba(0,0,0, .05);
@@ -19,26 +19,26 @@
   --sidebar: 0 0% 100%;
   --sidebar-foreground: 217 14% 41%;
   --sidebar-border: 0 0% 88%;
-  --sidebar-primary: 217 96% 62%;
+  --sidebar-primary: 268 71% 15%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 217 100% 88%;
-  --sidebar-accent-foreground: 217 96% 62%;
-  --sidebar-ring: 217 96% 52%;
+  --sidebar-accent: 245 100% 72%;
+  --sidebar-accent-foreground: 268 71% 15%;
+  --sidebar-ring: 268 71% 20%;
   --popover: 0 0% 100%;
   --popover-foreground: 217 33% 11%;
   --popover-border: 0 0% 88%;
-  --primary: 217 96% 52%;
+  --primary: 268 71% 15%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 217 100% 64%;
-  --secondary-foreground: 217 33% 11%;
+  --secondary: 245 100% 72%;
+  --secondary-foreground: 268 71% 15%;
   --muted: 0 0% 88%;
   --muted-foreground: 210 7% 54%;
-  --accent: 217 95% 51%;
+  --accent: 245 100% 72%;
   --accent-foreground: 0 0% 100%;
   --destructive: 3 97% 61%;
   --destructive-foreground: 0 0% 100%;
   --input: 0 0% 88%;
-  --ring: 217 96% 52%;
+  --ring: 268 71% 20%;
   --chart-1: 217 96% 52%;
   --chart-2: 133 52% 51%;
   --chart-3: 41 100% 61%;
@@ -103,21 +103,21 @@
   --sidebar: 240 3% 12%;
   --sidebar-foreground: 0 0% 66%;
   --sidebar-border: 210 5% 25%;
-  --sidebar-primary: 217 89% 51%;
+  --sidebar-primary: 268 71% 25%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 217 89% 51%;
-  --sidebar-accent-foreground: 0 0% 100%;
-  --sidebar-ring: 217 89% 51%;
+  --sidebar-accent: 245 100% 72%;
+  --sidebar-accent-foreground: 268 71% 15%;
+  --sidebar-ring: 245 100% 72%;
   --popover: 240 3% 17%;
   --popover-foreground: 0 0% 100%;
   --popover-border: 210 5% 25%;
-  --primary: 217 89% 51%;
+  --primary: 268 71% 25%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 217 89% 51%;
-  --secondary-foreground: 0 0% 100%;
+  --secondary: 245 100% 72%;
+  --secondary-foreground: 268 71% 15%;
   --muted: 210 5% 25%;
   --muted-foreground: 0 0% 66%;
-  --accent: 217 89% 51%;
+  --accent: 245 100% 72%;
   --accent-foreground: 0 0% 100%;
   --destructive: 6 78% 56%;
   --destructive-foreground: 0 0% 100%;
