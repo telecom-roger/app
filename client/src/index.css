@@ -346,3 +346,12 @@
     scrollbar-color: hsl(var(--sidebar-foreground) / 0.2) transparent;
   }
 }
+
+/* CHAT FORCE COLORS - OVERRIDE */
+.dark .dark\:bg-chat-avatar {
+  background-color: #F0F1F2 !important;
+}
+
+.dark .dark\:hover\:bg-chat-hover:hover {
+  background-color: #F0F1F2 !important;
+}
