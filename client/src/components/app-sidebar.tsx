@@ -1,19 +1,16 @@
 import {
   LayoutDashboard,
   Users,
-  Target,
-  Mail,
+  Kanban,
   MessageSquare,
-  FileUp,
-  Settings,
-  BarChart3,
-  Database,
   MessageCircle,
+  Mail,
   Clock,
-  Edit3,
+  FileUp,
+  BarChart3,
+  Settings,
   Zap,
-  Lightbulb,
-  Tag,
+  Briefcase,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -31,7 +28,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 
-const menuItems = [
+const operacoesItems = [
   {
     title: "Dashboard",
     url: "/",
@@ -43,20 +40,13 @@ const menuItems = [
     icon: Users,
   },
   {
-    title: "Oportunidades",
+    title: "Kanban",
     url: "/oportunidades",
-    icon: Target,
+    icon: Kanban,
   },
-  {
-    title: "Campanhas",
-    url: "/campanhas",
-    icon: Mail,
-  },
-  {
-    title: "Campanhas WhatsApp",
-    url: "/campanhas/whatsapp",
-    icon: MessageSquare,
-  },
+];
+
+const comunicacaoItems = [
   {
     title: "WhatsApp",
     url: "/whatsapp",
@@ -68,20 +58,18 @@ const menuItems = [
     icon: MessageCircle,
   },
   {
-    title: "Mensagens Rápidas",
-    url: "/mensagens-rapidas",
-    icon: Lightbulb,
+    title: "Campanhas Email",
+    url: "/campanhas",
+    icon: Mail,
   },
   {
-    title: "Etiquetas",
-    url: "/etiquetas",
-    icon: Tag,
+    title: "Campanhas WhatsApp",
+    url: "/campanhas/whatsapp",
+    icon: MessageSquare,
   },
-  {
-    title: "Modelos de Mensagens",
-    url: "/modelos-mensagens",
-    icon: Edit3,
-  },
+];
+
+const agendamentoItems = [
   {
     title: "Campanhas Agendadas",
     url: "/campanhas-agendadas",
@@ -93,9 +81,17 @@ const menuItems = [
     icon: Zap,
   },
   {
-    title: "Histórico de Campanhas",
+    title: "Histórico",
     url: "/campanhas-historico",
     icon: BarChart3,
+  },
+];
+
+const configItems = [
+  {
+    title: "Modelos de Mensagens",
+    url: "/modelos-mensagens",
+    icon: Mail,
   },
   {
     title: "Importação",
@@ -116,19 +112,14 @@ const adminItems = [
     icon: Users,
   },
   {
-    title: "Templates",
-    url: "/admin/templates",
-    icon: Mail,
-  },
-  {
     title: "Automação",
     url: "/admin/automacao",
     icon: Zap,
   },
   {
-    title: "Automação Avançado",
+    title: "Automação Avançada",
     url: "/admin/automacao-avancado",
-    icon: Settings,
+    icon: Zap,
   },
   {
     title: "Configurações",
@@ -147,7 +138,7 @@ export function AppSidebar() {
       <SidebarHeader className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary">
-            <Target className="h-6 w-6 text-primary-foreground" />
+            <Briefcase className="h-6 w-6 text-primary-foreground" />
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-semibold text-sidebar-foreground">
@@ -162,10 +153,76 @@ export function AppSidebar() {
       
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
+          <SidebarGroupLabel>Operações</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {operacoesItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location === item.url}
+                    data-testid={`link-${item.title.toLowerCase()}`}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Comunicação</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {comunicacaoItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location === item.url}
+                    data-testid={`link-${item.title.toLowerCase()}`}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Agendamento</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {agendamentoItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location === item.url}
+                    data-testid={`link-${item.title.toLowerCase()}`}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Configuração</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {configItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
