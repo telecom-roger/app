@@ -676,8 +676,8 @@ export async function toggleConversationHidden(conversationId: string, userId: s
 }
 
 export async function getConversations(userId: string): Promise<any[]> {
-  // ✅ Get all conversations (not hidden) - filter empty ones client-side
-  const result = await db
+  // ✅ Get conversations with messages, ordered by latest message
+  const conversationsData = await db
     .select({
       id: conversations.id,
       clientId: conversations.clientId,
@@ -699,12 +699,13 @@ export async function getConversations(userId: string): Promise<any[]> {
     })
     .from(conversations)
     .leftJoin(clients, eq(conversations.clientId, clients.id))
-    .where(and(eq(conversations.userId, userId), eq(conversations.oculta, false)))
+    .where(eq(conversations.userId, userId))
     .orderBy(desc(conversations.ultimaMensagemEm));
-  
-  // Filter out empty conversations (without messages) and add unread counts
-  const filtered = await Promise.all(
-    result.map(async (row) => {
+
+  // Filter to only show conversations with messages and add unread counts
+  const withCounts = await Promise.all(
+    conversationsData.map(async (row) => {
+      // Count messages in this conversation
       const msgCount = await db
         .select({ count: count() })
         .from(messages)
@@ -712,7 +713,7 @@ export async function getConversations(userId: string): Promise<any[]> {
       
       const hasMessages = Number(msgCount[0]?.count || 0) > 0;
       if (!hasMessages) return null;
-      
+
       const unreadCount = await countUnreadMessages(row.id);
       return {
         ...row,
@@ -722,8 +723,7 @@ export async function getConversations(userId: string): Promise<any[]> {
     })
   );
   
-  // Remove nulls
-  return filtered.filter(Boolean);
+  return withCounts.filter(Boolean);
 }
 
 export async function getMessages(conversationId: string, limit: number = 50): Promise<Message[]> {
