@@ -156,81 +156,80 @@ export default function AdminAutomacaoAdvanced() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-6">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <div className="min-h-screen bg-background p-4">
+      <div className="max-w-5xl mx-auto space-y-4">
         {/* Header */}
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Zap className="w-6 h-6 text-primary" />
-            </div>
-            <h1 className="text-4xl font-bold">Configuração de Automação</h1>
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-1">
+            <Zap className="w-5 h-5 text-primary" />
+            <h1 className="text-2xl font-bold">Configuração de Automação</h1>
           </div>
-          <p className="text-muted-foreground text-lg">
-            Customize mensagens, horários e dias de execução de cada job
+          <p className="text-sm text-muted-foreground">
+            Customize mensagens, horários e dias de execução
           </p>
         </div>
 
         {/* Job Selector */}
-        <div className="grid gap-3">
+        <div className="grid gap-2">
           {JOBS_ADVANCED.map((j) => (
             <button
               key={j.id}
               onClick={() => setSelectedJob(j.id)}
-              className={`p-4 rounded-lg border-2 transition-all text-left ${
+              className={`p-3 rounded-lg border transition-all text-left ${
                 selectedJob === j.id
-                  ? "border-primary bg-primary/5"
+                  ? "border-primary bg-primary/10"
                   : "border-border bg-card hover:border-primary/50"
               }`}
               data-testid={`job-select-${j.id}`}
             >
-              <div className="font-bold text-lg">{j.nome}</div>
-              <div className="text-sm text-muted-foreground">{j.descricao}</div>
+              <div className="font-bold text-base">{j.nome}</div>
+              <div className="text-xs text-muted-foreground">{j.descricao}</div>
             </button>
           ))}
         </div>
 
         {job && config && (
           <Tabs defaultValue="mensagens" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-slate-100 dark:bg-slate-800">
-              <TabsTrigger value="mensagens" className="gap-2">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="mensagens" className="gap-1 text-sm">
                 <MessageSquare className="w-4 h-4" />
                 Mensagens
               </TabsTrigger>
-              <TabsTrigger value="horarios" className="gap-2">
+              <TabsTrigger value="horarios" className="gap-1 text-sm">
                 <Clock className="w-4 h-4" />
                 Horários
               </TabsTrigger>
-              <TabsTrigger value="dias" className="gap-2">
+              <TabsTrigger value="dias" className="gap-1 text-sm">
                 <Calendar className="w-4 h-4" />
-                Dias Semana
+                Dias
               </TabsTrigger>
             </TabsList>
 
             {/* TAB: MENSAGENS */}
-            <TabsContent value="mensagens" className="space-y-6 mt-6">
+            <TabsContent value="mensagens" className="space-y-3 mt-4">
               {job.dias.map((dia) => (
-                <Card key={dia} className="border-2">
-                  <CardHeader>
+                <Card key={dia}>
+                  <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
-                      <CardTitle>Mensagens - Dia {dia}</CardTitle>
-                      <Badge variant="secondary" className="text-base px-3 py-1">
+                      <CardTitle className="text-base">Dia {dia}</CardTitle>
+                      <Badge variant="secondary" className="text-xs px-2 py-0.5">
                         {editingMsgs[dia]?.length || 0} templates
                       </Badge>
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-3">
                     {(editingMsgs[dia] || []).map((msg, idx) => (
-                      <div key={idx} className="space-y-2">
+                      <div key={idx} className="space-y-1">
                         <div className="flex items-center justify-between">
-                          <label className="text-sm font-medium">Template {idx + 1}</label>
+                          <label className="text-xs font-medium">Msg {idx + 1}</label>
                           <Button
                             size="sm"
-                            variant="destructive"
+                            variant="ghost"
                             onClick={() => handleRemoveMessage(dia, idx)}
+                            className="h-6 w-6 p-0"
                             data-testid={`btn-remove-msg-${dia}-${idx}`}
                           >
-                            <X className="w-4 h-4" />
+                            <X className="w-3 h-3" />
                           </Button>
                         </div>
                         <Textarea
@@ -238,95 +237,95 @@ export default function AdminAutomacaoAdvanced() {
                           onChange={(e) =>
                             handleUpdateMessage(dia, idx, e.target.value)
                           }
-                          placeholder="Digite a mensagem que será enviada..."
-                          className="min-h-24 text-base"
+                          placeholder="Mensagem..."
+                          className="min-h-16 text-sm resize-none"
                           data-testid={`msg-${selectedJob}-${dia}-${idx}`}
                         />
                       </div>
                     ))}
                     <Button
+                      size="sm"
                       variant="outline"
                       onClick={() => handleAddMessage(dia)}
-                      className="w-full gap-2"
+                      className="w-full gap-2 h-8"
                       data-testid={`btn-add-msg-${dia}`}
                     >
-                      <Plus className="w-4 h-4" />
-                      Adicionar Mensagem
+                      <Plus className="w-3 h-3" />
+                      Nova
                     </Button>
                   </CardContent>
                 </Card>
               ))}
 
               <Button
-                size="lg"
+                size="sm"
                 onClick={handleSaveMessages}
                 disabled={saveMutation.isPending}
-                className="w-full gap-2 text-lg py-6"
+                className="w-full gap-2 h-9"
                 data-testid="btn-save-messages"
               >
-                <Save className="w-5 h-5" />
+                <Save className="w-4 h-4" />
                 {saveMutation.isPending ? "Salvando..." : "Salvar Mensagens"}
               </Button>
             </TabsContent>
 
             {/* TAB: HORÁRIOS */}
-            <TabsContent value="horarios" className="space-y-6 mt-6">
-              <Card className="border-2">
-                <CardHeader>
-                  <CardTitle>Horários de Envio</CardTitle>
-                  <CardDescription>
-                    Configure os horários em que este job será executado (timezone São Paulo)
+            <TabsContent value="horarios" className="space-y-3 mt-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Horários de Envio</CardTitle>
+                  <CardDescription className="text-xs">
+                    Timezone: São Paulo
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-3">
                   {/* Horários Configurados */}
                   <div>
-                    <label className="text-sm font-semibold block mb-3">Horários Configurados:</label>
-                    <div className="flex flex-wrap gap-2 min-h-10">
+                    <label className="text-xs font-semibold block mb-2">Configurados:</label>
+                    <div className="flex flex-wrap gap-2 min-h-8">
                       {(config.horarios || []).length > 0 ? (
                         (config.horarios || []).map((h: string) => (
                           <Badge
                             key={h}
                             variant="default"
-                            className="flex items-center gap-2 px-3 py-1.5 text-base"
+                            className="flex items-center gap-1.5 px-2 py-0.5 text-xs"
                           >
-                            <Clock className="w-4 h-4" />
                             {h}
                             <button
                               onClick={() => handleRemoveHorario(h)}
-                              className="ml-2 hover:opacity-70"
+                              className="hover:opacity-70"
                               data-testid={`btn-remove-horario-${h}`}
                             >
-                              <X className="w-4 h-4" />
+                              <X className="w-3 h-3" />
                             </button>
                           </Badge>
                         ))
                       ) : (
-                        <span className="text-muted-foreground italic">Nenhum horário configurado</span>
+                        <span className="text-xs text-muted-foreground italic">Nenhum</span>
                       )}
                     </div>
                   </div>
 
                   {/* Adicionar Novo Horário */}
-                  <div className="border-t pt-6">
-                    <label className="text-sm font-semibold block mb-3">Adicionar Novo Horário:</label>
+                  <div className="border-t pt-3">
+                    <label className="text-xs font-semibold block mb-2">Adicionar:</label>
                     <div className="flex gap-2">
                       <Input
                         type="time"
                         value={newHorario}
                         onChange={(e) => setNewHorario(e.target.value)}
-                        placeholder="HH:MM"
-                        className="flex-1 text-base"
+                        className="flex-1 h-8 text-sm"
                         data-testid="input-new-horario"
                       />
                       <Button
+                        size="sm"
                         onClick={handleAddHorario}
                         disabled={!newHorario || saveMutation.isPending}
-                        className="gap-2"
+                        className="gap-1 h-8 px-3"
                         data-testid="btn-add-horario"
                       >
-                        <Plus className="w-4 h-4" />
-                        Adicionar
+                        <Plus className="w-3 h-3" />
+                        Add
                       </Button>
                     </div>
                   </div>
@@ -335,59 +334,57 @@ export default function AdminAutomacaoAdvanced() {
             </TabsContent>
 
             {/* TAB: DIAS SEMANA */}
-            <TabsContent value="dias" className="space-y-6 mt-6">
-              <Card className="border-2">
-                <CardHeader>
-                  <CardTitle>Dias da Semana</CardTitle>
-                  <CardDescription>
-                    Selecione os dias em que este job pode ser executado
-                  </CardDescription>
+            <TabsContent value="dias" className="space-y-3 mt-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Dias da Semana</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-3">
                   {/* Dias Selecionados */}
                   <div>
-                    <label className="text-sm font-semibold block mb-3">Dias Selecionados:</label>
-                    <div className="flex flex-wrap gap-2 min-h-10">
+                    <label className="text-xs font-semibold block mb-2">Selecionados:</label>
+                    <div className="flex flex-wrap gap-2 min-h-8">
                       {(config.diasSemana || []).length > 0 ? (
                         (config.diasSemana || []).map((d: string) => (
                           <Badge
                             key={d}
                             variant="default"
-                            className="flex items-center gap-2 px-3 py-1.5 text-base"
+                            className="flex items-center gap-1.5 px-2 py-0.5 text-xs"
                           >
                             {d.charAt(0).toUpperCase() + d.slice(1)}
                             <button
                               onClick={() => handleRemoveDia(d)}
-                              className="ml-2 hover:opacity-70"
+                              className="hover:opacity-70"
                               data-testid={`btn-remove-dia-${d}`}
                             >
-                              <X className="w-4 h-4" />
+                              <X className="w-3 h-3" />
                             </button>
                           </Badge>
                         ))
                       ) : (
-                        <span className="text-muted-foreground italic">Nenhum dia selecionado</span>
+                        <span className="text-xs text-muted-foreground italic">Nenhum</span>
                       )}
                     </div>
                   </div>
 
                   {/* Dias Disponíveis */}
-                  <div className="border-t pt-6">
-                    <label className="text-sm font-semibold block mb-3">Dias Disponíveis:</label>
-                    <div className="grid grid-cols-2 gap-2">
+                  <div className="border-t pt-3">
+                    <label className="text-xs font-semibold block mb-2">Escolher:</label>
+                    <div className="grid grid-cols-3 gap-1.5">
                       {DIAS_SEMANA.map((dia) => {
                         const isSelected = config.diasSemana?.includes(dia);
                         return (
                           <Button
                             key={dia}
+                            size="sm"
                             variant={isSelected ? "default" : "outline"}
                             onClick={() =>
                               isSelected ? handleRemoveDia(dia) : handleAddDia(dia)
                             }
-                            className="justify-start"
+                            className="h-7 text-xs"
                             data-testid={`btn-dia-${dia}`}
                           >
-                            {dia.charAt(0).toUpperCase() + dia.slice(1)}
+                            {dia.slice(0, 3)}
                           </Button>
                         );
                       })}
@@ -400,10 +397,10 @@ export default function AdminAutomacaoAdvanced() {
         )}
 
         {/* Info Box */}
-        <Alert className="border-2 border-primary/20 bg-primary/5">
-          <AlertTriangle className="h-4 w-4 text-primary" />
-          <AlertDescription>
-            <strong>💡 Informação:</strong> Todas as mudanças são salvas automaticamente quando você clica em adicionar/remover. Mensagens são selecionadas aleatoriamente do template quando o job executa.
+        <Alert className="border border-primary/20 bg-primary/5">
+          <AlertTriangle className="h-3 w-3 text-primary" />
+          <AlertDescription className="text-xs ml-1">
+            💡 Mudanças salvam automaticamente. Mensagens são selecionadas aleatoriamente.
           </AlertDescription>
         </Alert>
       </div>
