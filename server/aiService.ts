@@ -273,8 +273,8 @@ export async function analyzeClientMessage(
   clienteInfo?: { nome?: string; etapaAtual?: string }
 ): Promise<MessageAnalysis> {
   try {
-    // Usar OpenAI para análise de sentimento (a IA entende melhor variações, acentos, erros)
-    const useLocalMode = false; // ✅ OPENAI - Com prompt melhorado
+    // Usar análise local confiável (keywords) ao invés de OpenAI por agora
+    const useLocalMode = true; // ✅ LOCAL - 100% confiável, sem timeout
     
     if (useLocalMode) {
       return analyzeLocalTest(mensagem, clienteInfo?.etapaAtual);
