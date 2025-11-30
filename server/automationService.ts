@@ -525,26 +525,29 @@ async function executeContratoEnviadoMessage(task: any) {
   });
   
   // 3️⃣ ENVIAR VIA WHATSAPP AUTOMATICAMENTE
-  try {
-    if (client.telefone_2) {
-      // Buscar sessão ativa de WhatsApp
-      const session = await db.query.whatsappSessions.findFirst({
-        where: (s: any) => eq(s.status, "connected"),
-      });
-      
-      if (session) {
+  if (client.telefone_2) {
+    // Buscar sessão ativa de WhatsApp
+    const session = await db.query.whatsappSessions.findFirst({
+      where: (s: any) => eq(s.status, "connected"),
+    });
+    
+    if (session) {
+      try {
         console.log(`📱 Enviando contrato via WhatsApp para ${client.telefone_2}...`);
         await sendWhatsAppMessage(session.sessionId, client.telefone_2, mensagem);
         console.log(`✅ Contrato enviado via WhatsApp com sucesso para ${client.nome}`);
-      } else {
-        console.warn(`⚠️ Nenhuma sessão WhatsApp conectada. Mensagem só no chat.`);
+      } catch (error) {
+        console.error(`❌ Erro ao enviar mensagem via WhatsApp:`, error);
+        throw error; // Relançar para deixar tarefa pendente e reexecutar depois
       }
+    } else {
+      // ⚠️ Se não há sessão, falhar a tarefa para reexecutar depois
+      console.warn(`⚠️ Nenhuma sessão WhatsApp conectada. Mensagem será reenviada na próxima tentativa...`);
+      throw new Error("Nenhuma sessão WhatsApp conectada - tarefa será reexecutada");
     }
-  } catch (error) {
-    console.error(`❌ Erro ao enviar WhatsApp:`, error);
   }
   
-  console.log(`✅ Mensagem enviada no chat e registrada na timeline para ${client.nome}`);
+  console.log(`✅ Mensagem de contrato enviada no chat e WhatsApp para ${client.nome}`);
 }
 
 // ======================== VERIFICAR PROPOSTAS ENVIADAS - Lógica de 2h timeout + 3 dias + horários comerciais ========================
