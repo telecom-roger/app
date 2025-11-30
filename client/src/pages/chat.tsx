@@ -253,13 +253,16 @@ export default function Chat() {
   });
 
   // Fetch all clients for search
-  const { data: clients = [], isLoading: clientsLoading, refetch: refetchClients } = useQuery<Client[]>({
-    queryKey: ["/api/clients/whatsapp-list"],
+  const { data: clientsResponse = { clientes: [] }, isLoading: clientsLoading, refetch: refetchClients } = useQuery<any>({
+    queryKey: ["/api/clients"],
     refetchInterval: 2000, // Atualiza a cada 2s para pegar mudanças rapidamente
     staleTime: 0, // Sempre considerar dados como stale
     gcTime: 0, // Não cachear dados
     refetchOnWindowFocus: true, // Refetch quando voltar a janela
   });
+  
+  // Extrair array de clientes da resposta
+  const clients = clientsResponse.clientes || [];
 
   // Fetch detailed client info when selected
   const { data: detailedClient = null, isLoading: clientDetailLoading, refetch: refetchDetailedClient } = useQuery<any>({
