@@ -232,7 +232,25 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     "quero saber",
     "me envia",
     "aprova",
-    "aprovado"
+    "aprovado",
+    "proposta",
+    "claro",
+    "certo",
+    "perfeito",
+    "beleza",
+    "fechado",
+    "combinado",
+    "pode ser",
+    "tudo bem",
+    "concordo",
+    "aceito",
+    "gostei",
+    "interessado",
+    "interesse",
+    "quero",
+    "vamos la",
+    "bora",
+    "show"
   ];
   
   const isSolicitacaoProposta = solicitacaoProposta.some(palavra => msg.includes(palavra));
