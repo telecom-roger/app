@@ -276,6 +276,19 @@ async function processIncomingMessages(sessionId: string, m: any) {
             });
             
             console.log(`✅ Novo cliente criado: ${novoCliente.id} (${senderPhone})`);
+            
+            // Create timeline entry for new client created by system
+            await storage.createInteraction({
+              clientId: novoCliente.id,
+              tipo: "nota",
+              origem: "system",
+              titulo: "Contato criado por sistema",
+              texto: `Contato criado automaticamente ao receber primeira mensagem do WhatsApp em ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`,
+              createdBy: userId,
+            });
+            
+            console.log(`📍 Timeline entry criada para novo cliente`);
+            
             conversation = await storage.createOrGetConversation(novoCliente.id, userId);
             console.log(`✨ Conversa criada para novo contato: ${conversation.id}`);
           }
