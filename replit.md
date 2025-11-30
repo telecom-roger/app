@@ -173,8 +173,6 @@ AGUARDANDO ACEITE, AGUARDANDO ATENÇÃO, FECHADO
 
 ---
 
----
-
 ## 🚀 FASE 12 - MAPEAMENTO ETAPAS → STATUS DO CLIENTE (Nov 30)
 
 ### ✅ Regras de Negócio Implementadas:
@@ -213,4 +211,37 @@ CONTATO, PROPOSTA, AUTOMÁTICA, PERDIDO
 
 ---
 
-**Status Geral:** ✅ SISTEMA 100% CORRETO E TESTADO!
+## 🚀 FASE 13 - INTEGRAÇÃO WHATSAPP AUTOMÁTICA (Nov 30)
+
+### ✅ Implementação: Jobs Agora Enviam Mensagens Via WhatsApp
+
+**O que foi mudado:**
+- Jobs de automação (`contract_reminder`, `contrato_enviado_message`, `aguardando_aceite_reminder`) agora enviam mensagens **AUTOMATICAMENTE** via WhatsApp para o celular do cliente
+- Mensagens aparecem tanto no **chat interno** quanto no **WhatsApp real** do cliente
+- Se nenhuma sessão WhatsApp estiver conectada, mensagens vão apenas no chat (fallback seguro)
+
+**Arquivos Atualizados:**
+- ✅ `server/automationService.ts`:
+  - Importa `sendMessage` de `whatsappService`
+  - Cada job agora busca cliente pelo `telefone2` (campo principal)
+  - Procura sessão ativa de WhatsApp (`status: "connected"`)
+  - Envia mensagem via `sendWhatsAppMessage(sessionId, telefone2, mensagem)`
+  - Fallback gracioso se sessão não conectada ou telefone vazio
+
+**Fluxo Completo:**
+```
+1. Job executa (ex: contract_reminder)
+2. Mensagem é criada no banco (chat interno)
+3. Mensagem é registrada na timeline (histórico)
+4. ✅ NOVO: Se WhatsApp conectado → Envia via WhatsApp real
+5. Cliente recebe mensagem no WhatsApp E no chat da plataforma
+```
+
+**Validação:**
+- ✅ Respeita campo `client.telefone2` (não `telefone`)
+- ✅ Verifica status da sessão (`connected`)
+- ✅ Trata erros com try/catch
+- ✅ Logs detalhados para debugging
+
+**Status Geral:** ✅ JOBS DE AUTOMAÇÃO AGORA INTEGRADOS COM WHATSAPP REAL!
+

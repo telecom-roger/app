@@ -1,8 +1,9 @@
 import * as storage from "./storage";
 import { db } from "./db";
 import { eq, and, lt, isNull, gte, desc, sql } from "drizzle-orm";
-import { automationTasks, followUps, clientScores, opportunities, clients as clientsTable, messages, interactions, conversations } from "@shared/schema";
+import { automationTasks, followUps, clientScores, opportunities, clients as clientsTable, messages, interactions, conversations, whatsappSessions } from "@shared/schema";
 import { analyzeClientMessage } from "./aiService";
+import { sendMessage as sendWhatsAppMessage } from "./whatsappService";
 
 // ======================== HELPER: Verificar se é dia de semana ========================
 function isWeekday(): boolean {
@@ -425,6 +426,26 @@ async function executeContractReminder(task: any) {
     createdBy: task.userId,
   });
   
+  // 3️⃣ ENVIAR VIA WHATSAPP AUTOMATICAMENTE
+  try {
+    if (client.telefone) {
+      // Buscar sessão ativa de WhatsApp
+      const session = await db.query.whatsappSessions.findFirst({
+        where: (s: any) => eq(s.status, "connected"),
+      });
+      
+      if (session && client.telefone2) {
+        console.log(`📱 Enviando mensagem via WhatsApp para ${client.telefone2}...`);
+        await sendWhatsAppMessage(session.sessionId, client.telefone2, mensagem);
+        console.log(`✅ Mensagem WhatsApp enviada com sucesso para ${client.nome}`);
+      } else {
+        console.warn(`⚠️ Nenhuma sessão WhatsApp conectada ou telefone não encontrado. Mensagem só no chat.`);
+      }
+    }
+  } catch (error) {
+    console.error(`❌ Erro ao enviar WhatsApp:`, error);
+  }
+  
   console.log(`✅ Mensagem enviada no chat e registrada na timeline de ${client.nome}`);
 }
 
@@ -502,6 +523,26 @@ async function executeContratoEnviadoMessage(task: any) {
     meta: { opportunityId: opportunity.id },
     createdBy: task.userId,
   });
+  
+  // 3️⃣ ENVIAR VIA WHATSAPP AUTOMATICAMENTE
+  try {
+    if (client.telefone2) {
+      // Buscar sessão ativa de WhatsApp
+      const session = await db.query.whatsappSessions.findFirst({
+        where: (s: any) => eq(s.status, "connected"),
+      });
+      
+      if (session) {
+        console.log(`📱 Enviando contrato via WhatsApp para ${client.telefone2}...`);
+        await sendWhatsAppMessage(session.sessionId, client.telefone2, mensagem);
+        console.log(`✅ Contrato enviado via WhatsApp com sucesso para ${client.nome}`);
+      } else {
+        console.warn(`⚠️ Nenhuma sessão WhatsApp conectada. Mensagem só no chat.`);
+      }
+    }
+  } catch (error) {
+    console.error(`❌ Erro ao enviar WhatsApp:`, error);
+  }
   
   console.log(`✅ Mensagem enviada no chat e registrada na timeline para ${client.nome}`);
 }
@@ -759,6 +800,26 @@ async function executeAguardandoAceiteReminder(task: any) {
     meta: { opportunityId: opportunity.id, lembreteNum },
     createdBy: task.userId,
   });
+  
+  // 📱 ENVIAR VIA WHATSAPP AUTOMATICAMENTE
+  try {
+    if (client.telefone2) {
+      // Buscar sessão ativa de WhatsApp
+      const session = await db.query.whatsappSessions.findFirst({
+        where: (s: any) => eq(s.status, "connected"),
+      });
+      
+      if (session) {
+        console.log(`📱 Enviando lembrete ${lembreteNum} via WhatsApp para ${client.telefone2}...`);
+        await sendWhatsAppMessage(session.sessionId, client.telefone2, mensagem);
+        console.log(`✅ Lembrete ${lembreteNum}/3 enviado via WhatsApp com sucesso para ${client.nome}`);
+      } else {
+        console.warn(`⚠️ Nenhuma sessão WhatsApp conectada. Mensagem só no chat.`);
+      }
+    }
+  } catch (error) {
+    console.error(`❌ Erro ao enviar WhatsApp:`, error);
+  }
   
   console.log(`✅ Lembrete ${lembreteNum}/3 enviado para ${client.nome}`);
   
