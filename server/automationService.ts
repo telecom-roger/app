@@ -434,9 +434,9 @@ async function executeContractReminder(task: any) {
         where: (s: any) => eq(s.status, "connected"),
       });
       
-      if (session && client.telefone2) {
-        console.log(`📱 Enviando mensagem via WhatsApp para ${client.telefone2}...`);
-        await sendWhatsAppMessage(session.sessionId, client.telefone2, mensagem);
+      if (session && client.telefone_2) {
+        console.log(`📱 Enviando mensagem via WhatsApp para ${client.telefone_2}...`);
+        await sendWhatsAppMessage(session.sessionId, client.telefone_2, mensagem);
         console.log(`✅ Mensagem WhatsApp enviada com sucesso para ${client.nome}`);
       } else {
         console.warn(`⚠️ Nenhuma sessão WhatsApp conectada ou telefone não encontrado. Mensagem só no chat.`);
@@ -526,15 +526,15 @@ async function executeContratoEnviadoMessage(task: any) {
   
   // 3️⃣ ENVIAR VIA WHATSAPP AUTOMATICAMENTE
   try {
-    if (client.telefone2) {
+    if (client.telefone_2) {
       // Buscar sessão ativa de WhatsApp
       const session = await db.query.whatsappSessions.findFirst({
         where: (s: any) => eq(s.status, "connected"),
       });
       
       if (session) {
-        console.log(`📱 Enviando contrato via WhatsApp para ${client.telefone2}...`);
-        await sendWhatsAppMessage(session.sessionId, client.telefone2, mensagem);
+        console.log(`📱 Enviando contrato via WhatsApp para ${client.telefone_2}...`);
+        await sendWhatsAppMessage(session.sessionId, client.telefone_2, mensagem);
         console.log(`✅ Contrato enviado via WhatsApp com sucesso para ${client.nome}`);
       } else {
         console.warn(`⚠️ Nenhuma sessão WhatsApp conectada. Mensagem só no chat.`);
@@ -803,15 +803,15 @@ async function executeAguardandoAceiteReminder(task: any) {
   
   // 📱 ENVIAR VIA WHATSAPP AUTOMATICAMENTE
   try {
-    if (client.telefone2) {
+    if (client.telefone_2) {
       // Buscar sessão ativa de WhatsApp
       const session = await db.query.whatsappSessions.findFirst({
         where: (s: any) => eq(s.status, "connected"),
       });
       
       if (session) {
-        console.log(`📱 Enviando lembrete ${lembreteNum} via WhatsApp para ${client.telefone2}...`);
-        await sendWhatsAppMessage(session.sessionId, client.telefone2, mensagem);
+        console.log(`📱 Enviando lembrete ${lembreteNum} via WhatsApp para ${client.telefone_2}...`);
+        await sendWhatsAppMessage(session.sessionId, client.telefone_2, mensagem);
         console.log(`✅ Lembrete ${lembreteNum}/3 enviado via WhatsApp com sucesso para ${client.nome}`);
       } else {
         console.warn(`⚠️ Nenhuma sessão WhatsApp conectada. Mensagem só no chat.`);
