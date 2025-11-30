@@ -694,6 +694,7 @@ export async function getMessages(conversationId: string, limit: number = 50): P
       lido: messages.lido,
       deletado: messages.deletado,
       createdAt: messages.createdAt,
+      origem: messages.origem,  // ✅ Adicionado para retornar o campo "Enviado por IA"
     })
     .from(messages)
     .where(eq(messages.conversationId, conversationId))
