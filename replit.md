@@ -167,3 +167,50 @@ Ciclo 3: (Cliente responde novamente) → CRIA NOVO → FECHADO
 - Todas outras etapas = Mover existente
 
 **Status**: ✅ VENDAS MULTICLICLO 100% OPERACIONAL!
+
+---
+
+## 🚀 FASE 17 - ISOLAMENTO MULTI-VENDEDOR + VALIDAÇÃO REFINADA (Nov 30)
+
+### ✅ IMPLEMENTAÇÃO CONCLUÍDA COM SUCESSO!
+
+**O que foi implementado:**
+
+1. **Isolamento por Vendedor (Multi-tenant)** ✅
+   - Helper `getOpenOpportunityForClient(clientId, userId)` filtra por vendedor
+   - Cada vendedor só vê/atualiza suas próprias oportunidades
+   - Cliente pode ter múltiplas oportunidades (uma por vendedor)
+
+2. **Validação de Etapa Refinada** ✅
+   - `etapaValida` = etapa não vazia E != "AUTOMÁTICA"
+   - AUTOMÁTICA não cria nem atualiza oportunidades
+   - FECHADO/PERDIDO são considerados "congelados" (não são oportunidades abertas)
+
+3. **Guardrails de IA** ✅
+   - `deveAgir` deve ser true para criar OU atualizar
+   - Etapa deve ser diferente da atual para atualizar
+   - Logs detalhados em cada decisão
+
+**Regras de Negócio:**
+```
+OPORTUNIDADE ABERTA = etapa != FECHADO E etapa != PERDIDO
+
+QUANDO CLIENTE RESPONDE:
+├── Vendedor TEM oportunidade aberta?
+│   ├── SIM → ATUALIZA (se deveAgir E etapaValida E etapa diferente)
+│   └── NÃO → CRIA NOVA (se deveAgir E etapaValida)
+│
+└── NUNCA toca em FECHADO/PERDIDO (histórico imutável)
+
+VALIDAÇÕES:
+- etapaValida = etapa truthy E != "" E != "AUTOMÁTICA"
+- deveAgir = IA decidiu que há ação a tomar
+- userId = filtro obrigatório para buscar oportunidades
+```
+
+**Arquivos Modificados:**
+- `server/storage.ts` - getOpenOpportunityForClient com userId
+- `server/whatsappService.ts` - lógica de criação/atualização com validações
+- `server/routes.ts` - mesma lógica no chat
+
+**Status**: ✅ MULTI-VENDEDOR 100% OPERACIONAL!
