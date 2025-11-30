@@ -458,11 +458,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       const clientOpp = opportunities.find((o) => o.clientId === req.params.id);
       
-      if (clientOpp && clientOpp.etapa !== "AGUARDANDO ATENÇÃO") {
-        await storage.updateOpportunity(clientOpp.id, {
-          etapa: "AGUARDANDO ATENÇÃO",
-        });
-        console.log(`✅ Oportunidade movida para AGUARDANDO ATENÇÃO`);
+      console.log(`🔍 DEBUG: clientOpp encontrada? ${!!clientOpp}`);
+      if (clientOpp) {
+        console.log(`🔍 DEBUG: etapa atual = "${clientOpp.etapa}"`);
+        const etapaNormalizada = clientOpp.etapa?.toUpperCase();
+        console.log(`🔍 DEBUG: etapa normalizada = "${etapaNormalizada}"`);
+        
+        if (etapaNormalizada !== "AGUARDANDO ATENÇÃO") {
+          await storage.updateOpportunity(clientOpp.id, {
+            etapa: "AGUARDANDO ATENÇÃO",
+          });
+          console.log(`✅ Oportunidade movida para AGUARDANDO ATENÇÃO`);
+        } else {
+          console.log(`⚠️ Oportunidade já está em AGUARDANDO ATENÇÃO`);
+        }
+      } else {
+        console.log(`⚠️ Nenhuma oportunidade encontrada para este cliente`);
       }
 
       // Registra na timeline
