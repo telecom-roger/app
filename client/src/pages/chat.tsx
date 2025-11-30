@@ -113,6 +113,9 @@ export default function Chat() {
   const [, navigate] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  // State separado para armazenar a conversa selecionada diretamente
+  // (evita que o polling sobrescreva conversas novas sem mensagens)
+  const [selectedConversationData, setSelectedConversationData] = useState<Conversation | null>(null);
   
   // Get current authenticated user
   const { data: currentUser } = useQuery<User>({
@@ -190,7 +193,8 @@ export default function Chat() {
           
           queryClient.setQueryData(queryKey, currentConversations);
           
-          // Now select the conversation
+          // Armazenar no state separado e selecionar
+          setSelectedConversationData(conversa);
           setSelectedConversationId(conversa.id);
         })
         .catch((error) => {
@@ -237,7 +241,9 @@ export default function Chat() {
   });
 
   // Get the current conversation's client ID
-  const selectedConversation = conversations.find(c => c.id === selectedConversationId);
+  // Usa o state separado como fallback (para conversas novas sem mensagens que não aparecem no polling)
+  const conversationFromList = conversations.find(c => c.id === selectedConversationId);
+  const selectedConversation = conversationFromList || selectedConversationData;
   const currentClientId = selectedConversation?.clientId;
 
   // Fetch client notes for selected conversation
@@ -404,13 +410,13 @@ export default function Chat() {
       
       queryClient.setQueryData(queryKey, [...currentConversations]);
       
-      // Agora seleciona a conversa (ela já está no cache)
+      // Armazenar dados da conversa no state separado
+      // (evita que polling sobrescreva conversas novas sem mensagens)
+      setSelectedConversationData(data);
       setSelectedConversationId(data.id);
       setSearchTerm("");
       setShowSearchResults(false);
       
-      // Não fazer refetch imediato - deixar o polling normal cuidar
-      // O refetch sobrescrevia o cache e fechava a conversa
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
     },
     onError: (error: any) => {
@@ -492,6 +498,11 @@ export default function Chat() {
   };
 
   const handleSelectConversation = (conversationId: string) => {
+    // Buscar dados da conversa da lista e salvar no state separado
+    const conv = conversations.find(c => c.id === conversationId);
+    if (conv) {
+      setSelectedConversationData(conv);
+    }
     setSelectedConversationId(conversationId);
     queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
   };
