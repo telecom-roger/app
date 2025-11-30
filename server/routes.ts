@@ -3265,7 +3265,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await db.insert(messages).values({
         conversationId: conversation.id,
         sender: "bot",
-        tipo: "text",
+        tipo: "texto",
         conteudo: mensagem,
         origem: "automation",
         createdAt: new Date(),
