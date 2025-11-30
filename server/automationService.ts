@@ -426,21 +426,35 @@ async function executeContractReminder(task: any) {
     createdBy: task.userId,
   });
   
-  // 3️⃣ ENVIAR VIA WHATSAPP AUTOMATICAMENTE
+  // 3️⃣ ENVIAR VIA WHATSAPP AUTOMATICAMENTE (IGUAL AO ENDPOINT POST)
   try {
-    if (client.telefone) {
-      // Buscar sessão ativa de WhatsApp
-      const session = await db.query.whatsappSessions.findFirst({
-        where: (s: any) => eq(s.status, "conectada"),
-      });
-      
-      if (session && client.telefone_2) {
-        console.log(`📱 Enviando mensagem via WhatsApp para ${client.telefone_2}...`);
-        await sendWhatsAppMessage(session.sessionId, client.telefone_2, mensagem);
-        console.log(`✅ Mensagem WhatsApp enviada com sucesso para ${client.nome}`);
+    // Pega a sessão do usuário (importante: por userId!)
+    const [session] = await db
+      .select()
+      .from(whatsappSessions)
+      .where(and(eq(whatsappSessions.userId, task.userId), eq(whatsappSessions.status, "conectada")))
+      .limit(1);
+
+    if (session) {
+      // Usa client.celular (não telefone_2!)
+      if (client && client.celular) {
+        const isAlive = whatsappService.isSessionAlive(session.sessionId);
+        if (isAlive) {
+          // Formata o telefone para WhatsApp
+          let telefone = client.celular.replace(/\D/g, "");
+          if (!telefone.startsWith("55")) {
+            telefone = "55" + telefone;
+          }
+          
+          console.log(`📱 Enviando mensagem via WhatsApp para ${telefone}...`);
+          await sendWhatsAppMessage(session.sessionId, telefone, mensagem);
+          console.log(`✅ Mensagem WhatsApp enviada com sucesso para ${client.nome}`);
+        }
       } else {
-        console.warn(`⚠️ Nenhuma sessão WhatsApp conectada ou telefone não encontrado. Mensagem só no chat.`);
+        console.warn(`⚠️ Cliente sem celular. Mensagem só no chat.`);
       }
+    } else {
+      console.warn(`⚠️ Nenhuma sessão WhatsApp conectada. Mensagem só no chat.`);
     }
   } catch (error) {
     console.error(`❌ Erro ao enviar WhatsApp:`, error);
@@ -524,27 +538,44 @@ async function executeContratoEnviadoMessage(task: any) {
     createdBy: task.userId,
   });
   
-  // 3️⃣ ENVIAR VIA WHATSAPP AUTOMATICAMENTE
-  if (client.telefone_2) {
-    // Buscar sessão ativa de WhatsApp
-    const session = await db.query.whatsappSessions.findFirst({
-      where: (s: any) => eq(s.status, "connected"),
-    });
-    
+  // 3️⃣ ENVIAR VIA WHATSAPP AUTOMATICAMENTE (IGUAL AO ENDPOINT POST)
+  try {
+    // Pega a sessão do usuário (importante: por userId!)
+    const [session] = await db
+      .select()
+      .from(whatsappSessions)
+      .where(and(eq(whatsappSessions.userId, task.userId), eq(whatsappSessions.status, "conectada")))
+      .limit(1);
+
+
     if (session) {
-      try {
-        console.log(`📱 Enviando contrato via WhatsApp para ${client.telefone_2}...`);
-        await sendWhatsAppMessage(session.sessionId, client.telefone_2, mensagem);
-        console.log(`✅ Contrato enviado via WhatsApp com sucesso para ${client.nome}`);
-      } catch (error) {
-        console.error(`❌ Erro ao enviar mensagem via WhatsApp:`, error);
-        throw error; // Relançar para deixar tarefa pendente e reexecutar depois
+      // Usa client.celular (não telefone_2!)
+      if (client && client.celular) {
+        const isAlive = whatsappService.isSessionAlive(session.sessionId);
+        if (isAlive) {
+          // Formata o telefone para WhatsApp
+          let telefone = client.celular.replace(/\D/g, "");
+          if (!telefone.startsWith("55")) {
+            telefone = "55" + telefone;
+          }
+          
+          try {
+            console.log(`📱 Enviando contrato via WhatsApp para ${telefone}...`);
+            await sendWhatsAppMessage(session.sessionId, telefone, mensagem);
+            console.log(`✅ Contrato enviado via WhatsApp com sucesso para ${client.nome}`);
+          } catch (error) {
+            console.error(`❌ Erro ao enviar mensagem via WhatsApp:`, error);
+            throw error;
+          }
+        }
+      } else {
+        console.warn(`⚠️ Cliente sem celular. Mensagem só no chat.`);
       }
     } else {
-      // ⚠️ Se não há sessão, falhar a tarefa para reexecutar depois
-      console.warn(`⚠️ Nenhuma sessão WhatsApp conectada. Mensagem será reenviada na próxima tentativa...`);
-      throw new Error("Nenhuma sessão WhatsApp conectada - tarefa será reexecutada");
+      console.warn(`⚠️ Nenhuma sessão WhatsApp conectada. Mensagem só no chat.`);
     }
+  } catch (error) {
+    console.error(`❌ Erro ao enviar WhatsApp:`, error);
   }
   
   console.log(`✅ Mensagem de contrato enviada no chat e WhatsApp para ${client.nome}`);
@@ -803,21 +834,35 @@ async function executeAguardandoAceiteReminder(task: any) {
     createdBy: task.userId,
   });
   
-  // 📱 ENVIAR VIA WHATSAPP AUTOMATICAMENTE
+  // 📱 ENVIAR VIA WHATSAPP AUTOMATICAMENTE (IGUAL AO ENDPOINT POST)
   try {
-    if (client.telefone_2) {
-      // Buscar sessão ativa de WhatsApp
-      const session = await db.query.whatsappSessions.findFirst({
-        where: (s: any) => eq(s.status, "conectada"),
-      });
-      
-      if (session) {
-        console.log(`📱 Enviando lembrete ${lembreteNum} via WhatsApp para ${client.telefone_2}...`);
-        await sendWhatsAppMessage(session.sessionId, client.telefone_2, mensagem);
-        console.log(`✅ Lembrete ${lembreteNum}/3 enviado via WhatsApp com sucesso para ${client.nome}`);
+    // Pega a sessão do usuário (importante: por userId!)
+    const [session] = await db
+      .select()
+      .from(whatsappSessions)
+      .where(and(eq(whatsappSessions.userId, task.userId), eq(whatsappSessions.status, "conectada")))
+      .limit(1);
+    
+    if (session) {
+      // Usa client.celular (não telefone_2!)
+      if (client && client.celular) {
+        const isAlive = whatsappService.isSessionAlive(session.sessionId);
+        if (isAlive) {
+          // Formata o telefone para WhatsApp
+          let telefone = client.celular.replace(/\D/g, "");
+          if (!telefone.startsWith("55")) {
+            telefone = "55" + telefone;
+          }
+          
+          console.log(`📱 Enviando lembrete ${lembreteNum} via WhatsApp para ${telefone}...`);
+          await sendWhatsAppMessage(session.sessionId, telefone, mensagem);
+          console.log(`✅ Lembrete ${lembreteNum}/3 enviado via WhatsApp com sucesso para ${client.nome}`);
+        }
       } else {
-        console.warn(`⚠️ Nenhuma sessão WhatsApp conectada. Mensagem só no chat.`);
+        console.warn(`⚠️ Cliente sem celular. Mensagem só no chat.`);
       }
+    } else {
+      console.warn(`⚠️ Nenhuma sessão WhatsApp conectada. Mensagem só no chat.`);
     }
   } catch (error) {
     console.error(`❌ Erro ao enviar WhatsApp:`, error);
