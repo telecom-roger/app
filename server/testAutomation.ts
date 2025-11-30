@@ -437,10 +437,27 @@ export async function simulateClientResponse(clientId: string, userId: string, m
       let statusAtualizado: string | null = null;
       let alerta = "";
       
-      // 🤖 DETECÇÃO ESPECIAL: Se mensagem automática → MOVER PARA AUTOMÁTICA (mesmo em etapas bloqueadas)
+      // 🤖 DETECÇÃO ESPECIAL: Se mensagem automática → MOVER PARA AUTOMÁTICA (apenas se etapa NÃO bloqueada)
       if (analysis.ehMensagemAutomatica) {
-        console.log(`🤖 MENSAGEM AUTOMÁTICA DETECTADA - Movendo para AUTOMÁTICA`);
-        if (existingOpp) {
+        console.log(`🤖 MENSAGEM AUTOMÁTICA DETECTADA`);
+        // Verificar se etapa é bloqueada
+        const ETAPAS_MANUAIS_BLOQUEADAS = [
+          "PROPOSTA", 
+          "PROPOSTA ENVIADA", 
+          "AGUARDANDO CONTRATO",
+          "CONTRATO ENVIADO",
+          "AGUARDANDO ACEITE",
+          "AGUARDANDO ATENÇÃO",
+          "FECHADO"
+        ];
+        
+        if (existingOpp && ETAPAS_MANUAIS_BLOQUEADAS.includes(existingOpp.etapa)) {
+          // 🛑 BLOQUEIO: Etapa bloqueada - não pode mexer
+          console.log(`🛑 BLOQUEADO: ${existingOpp.etapa} é etapa bloqueada - IA não pode mexer`);
+          resultOpp = existingOpp;
+          actionType = "nenhuma";
+        } else if (existingOpp) {
+          // Move para AUTOMÁTICA (etapa não-bloqueada)
           resultOpp = await db.update(opportunities).set({ 
             etapa: "AUTOMÁTICA",
             titulo: `${client.nome} - Aguardando resposta (mensagem automática)`,
@@ -451,6 +468,7 @@ export async function simulateClientResponse(clientId: string, userId: string, m
           console.log(`✅ OPP MOVIDA (AUTOMÁTICO): ${existingOpp.etapa} → AUTOMÁTICA`);
           actionType = "mover";
         } else {
+          // Cria em AUTOMÁTICA (sem opp existente)
           resultOpp = await db.insert(opportunities).values({
             clientId,
             titulo: `${client.nome} - Aguardando resposta (mensagem automática)`,

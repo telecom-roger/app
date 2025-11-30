@@ -2160,10 +2160,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const etapa = (analysis.etapa || "CONTATO").toUpperCase();
             console.log(`🤖 IA (CHAT): ${analysis.sentimento} (${analysis.confianca}%) → ${etapa}`);
 
-            // 🤖 DETECÇÃO: Se mensagem automática → MOVER PARA AUTOMÁTICA (mesmo em etapas bloqueadas)
+            // 🤖 DETECÇÃO: Se mensagem automática → MOVER PARA AUTOMÁTICA (apenas se etapa NÃO bloqueada)
             if (analysis.ehMensagemAutomatica) {
-              console.log(`🤖 MENSAGEM AUTOMÁTICA DETECTADA - Movendo para AUTOMÁTICA`);
-              if (existingOpp) {
+              console.log(`🤖 MENSAGEM AUTOMÁTICA DETECTADA`);
+              // Verificar se etapa é bloqueada - se bloqueada, não faz nada
+              if (existingOpp && ETAPAS_MANUAIS_BLOQUEADAS.includes(existingOpp.etapa)) {
+                console.log(`🛑 BLOQUEADO: ${existingOpp.etapa} é etapa bloqueada - IA não pode mexer`);
+              } else if (existingOpp) {
+                // Move para AUTOMÁTICA (etapa não-bloqueada)
                 await db.update(opportunities).set({ 
                   etapa: "AUTOMÁTICA",
                   titulo: `${client.nome} - Aguardando resposta (mensagem automática)`,

@@ -145,4 +145,29 @@ AGUARDANDO CONTRATO, AGUARDANDO ACEITE, FECHADO
 
 ---
 
+## 🚀 FASE 11 - CORREÇÃO: RESPEITAR BLOQUEIO DE ETAPAS EM MENSAGENS AUTOMÁTICAS (Nov 30)
+
+### ✅ Correção Crítica:
+
+**BUG FIXADO:**
+- Mensagens automáticas estavam movendo oportunidades mesmo em etapas bloqueadas
+- Isso violava a regra fundamental: "IA NUNCA mexe em etapas bloqueadas"
+
+**REGRA AGORA 100% CORRIGIDA:**
+- Se mensagem automática detectada EM ETAPA BLOQUEADA → **NÃO FAZ NADA** (bloqueio total)
+- Se mensagem automática EM ETAPA NÃO-BLOQUEADA → Move para AUTOMÁTICA
+- Se mensagem automática SEM OPP → Cria em AUTOMÁTICA
+
+**Arquivos Atualizados:**
+- ✅ `server/testAutomation.ts` - Adicionou bloqueio em linhas 443-486
+- ✅ `server/routes.ts` - Adicionou bloqueio em linhas 2166-2194
+
+**Etapas Protegidas (IA NUNCA MEXE):**
+```
+PROPOSTA, PROPOSTA ENVIADA, AGUARDANDO CONTRATO, CONTRATO ENVIADO,
+AGUARDANDO ACEITE, AGUARDANDO ATENÇÃO, FECHADO
+```
+
+---
+
 **Status Geral:** ✅ SISTEMA 100% CORRETO E TESTADO!
