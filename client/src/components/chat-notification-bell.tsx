@@ -77,69 +77,70 @@ export function ChatNotificationBell() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold">Atividades</h3>
-            {notifications.length === 0 && (
-              <span className="text-xs text-muted-foreground">Nenhuma atividade</span>
-            )}
+      <PopoverContent align="end" className="w-80 p-0">
+        <div className="bg-background rounded-lg overflow-hidden">
+          {/* Header */}
+          <div className="px-4 py-3 border-b bg-slate-50 dark:bg-slate-900/50">
+            <h3 className="font-semibold text-sm">Atividades</h3>
           </div>
-          
-          {notifications.length > 0 && (
-            <ScrollArea className="h-80 border rounded-md p-3">
-              <div className="space-y-2">
+
+          {/* Content */}
+          {notifications.length === 0 ? (
+            <div className="p-8 text-center">
+              <p className="text-sm text-muted-foreground">Nenhuma atividade</p>
+            </div>
+          ) : (
+            <ScrollArea className="h-96">
+              <div className="space-y-3 p-3">
                 {notifications.map((notif) => (
                   <div
                     key={notif.id}
-                    className={`p-3 rounded-lg border transition-colors ${
+                    className={`p-3 rounded-md border transition-colors ${
                       notif.lida
-                        ? "bg-slate-50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-700"
-                        : "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-700"
+                        ? "border-slate-200 dark:border-slate-700 bg-background"
+                        : "border-primary/30 dark:border-primary/20 bg-primary/5 dark:bg-primary/10"
                     }`}
                     data-testid={`activity-${notif.id}`}
                   >
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2">
                       <div className="flex-1">
-                        <div className="flex items-start gap-2">
-                          <div className="flex-1">
-                            <p className="font-medium text-sm">{notif.titulo}</p>
-                            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                              {notif.descricao}
-                            </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">
-                              {new Date(notif.createdAt).toLocaleDateString('pt-BR')}
-                            </p>
-                          </div>
-                          {!notif.lida && (
-                            <div className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0 mt-1" />
-                          )}
-                        </div>
-                        <div className="flex gap-2 mt-3">
-                          {notif.clientId && (
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              className="h-auto p-0 px-2 text-xs"
-                              onClick={() => handleViewClient(notif.clientId)}
-                              data-testid={`button-view-client-${notif.id}`}
-                            >
-                              Ver cliente
-                            </Button>
-                          )}
-                          {!notif.lida && (
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              className="h-auto p-0 px-2 text-xs"
-                              onClick={() => handleMarkAsRead(notif.id)}
-                              data-testid={`button-mark-read-${notif.id}`}
-                            >
-                              Marcar como lida
-                            </Button>
-                          )}
-                        </div>
+                        <p className="font-medium text-sm leading-snug">{notif.titulo}</p>
+                        <p className="text-xs text-muted-foreground mt-1 leading-snug">
+                          {notif.descricao}
+                        </p>
+                        <p className="text-xs text-muted-foreground/60 mt-2">
+                          {new Date(notif.createdAt).toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: '2-digit'
+                          })}
+                        </p>
                       </div>
+                      {!notif.lida && (
+                        <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-2" />
+                      )}
+                    </div>
+                    
+                    {/* Actions - Small text links */}
+                    <div className="flex gap-3 mt-2 text-xs">
+                      {notif.clientId && (
+                        <button
+                          onClick={() => handleViewClient(notif.clientId)}
+                          data-testid={`button-view-client-${notif.id}`}
+                          className="text-primary hover:underline font-medium transition-colors"
+                        >
+                          Ver cliente
+                        </button>
+                      )}
+                      {!notif.lida && (
+                        <button
+                          onClick={() => handleMarkAsRead(notif.id)}
+                          data-testid={`button-mark-read-${notif.id}`}
+                          className="text-primary hover:underline font-medium transition-colors"
+                        >
+                          Marcar como lida
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
