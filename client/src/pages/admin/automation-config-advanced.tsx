@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
-import { Plus, X, Clock, CheckCircle, Zap, Save, MessageSquare, Calendar, Settings } from "lucide-react";
+import { Plus, X, Clock, CheckCircle, Zap, Save, MessageSquare, Calendar, Settings, ChevronDown } from "lucide-react";
 
 const ALL_JOBS = [
   {
@@ -67,6 +67,7 @@ export default function AdminAutomacaoAdvanced() {
   const [mensagemContatoPositivo, setMensagemContatoPositivo] = useState("");
   const [mensagemPropostaPositivo, setMensagemPropostaPositivo] = useState("");
   const [mensagemFechado, setMensagemFechado] = useState("");
+  const [expandedDays, setExpandedDays] = useState<Record<number, boolean>>({});
 
   const { data: configs = {}, isLoading } = useQuery({
     queryKey: ["/api/admin/automation-configs"],
@@ -217,7 +218,15 @@ export default function AdminAutomacaoAdvanced() {
     });
   };
 
+  const toggleDayExpanded = (dia: number) => {
+    setExpandedDays(prev => ({
+      ...prev,
+      [dia]: !prev[dia]
+    }));
+  };
+
   const selectedJob = JOBS_WITH_MESSAGES.find((j) => j.id === selectedJobForMessages);
+  const daysWithMessages = selectedJob?.dias || [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
@@ -394,7 +403,7 @@ export default function AdminAutomacaoAdvanced() {
           {/* Mensagens & Horários */}
           <div className="space-y-3">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Clock className="w-5 h-5" />
+              <MessageSquare className="w-5 h-5" />
               Customizar por Job
             </h2>
 
@@ -422,9 +431,9 @@ export default function AdminAutomacaoAdvanced() {
                 <TabsList className="grid w-full grid-cols-3 h-8">
                   <TabsTrigger value="mensagens" className="gap-1 text-xs">
                     <MessageSquare className="w-3 h-3" />
-                    Msgs
+                    Mensagens
                   </TabsTrigger>
-                  <TabsTrigger value="horarios" className="gap-1 text-xs">
+                  <TabsTrigger value="config" className="gap-1 text-xs">
                     <Clock className="w-3 h-3" />
                     Horários
                   </TabsTrigger>
@@ -434,54 +443,81 @@ export default function AdminAutomacaoAdvanced() {
                   </TabsTrigger>
                 </TabsList>
 
+                {/* TAB: MENSAGENS - Compact Mode com Collapse */}
                 <TabsContent value="mensagens" className="space-y-2 mt-3">
-                  {selectedJob.dias && selectedJob.dias.map((dia) => (
-                    <Card key={dia} className="border-0 bg-white dark:bg-slate-800/50">
-                      <CardHeader className="pb-2">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-xs">Dia {dia}</CardTitle>
-                          <Badge variant="secondary" className="text-xs px-1.5 py-0">
-                            {editingMsgs[dia]?.length || 0}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        {(editingMsgs[dia] || []).map((msg, idx) => (
-                          <div key={idx} className="space-y-1">
-                            <div className="flex items-center justify-between gap-1">
-                              <label className="text-xs font-medium">Msg {idx + 1}</label>
+                  <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                    {daysWithMessages.map((dia) => {
+                      const msgCount = editingMsgs[dia]?.length || 0;
+                      const isExpanded = expandedDays[dia];
+                      return (
+                        <Card key={dia} className="border-0 bg-white dark:bg-slate-800/50">
+                          {/* Header que pode ser clicado para expandir */}
+                          <button
+                            onClick={() => toggleDayExpanded(dia)}
+                            className="w-full flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors"
+                          >
+                            <div className="flex items-center gap-2">
+                              <ChevronDown 
+                                className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                              />
+                              <span className="text-sm font-bold text-slate-900 dark:text-white">
+                                Dia {dia}
+                              </span>
+                              <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                                {msgCount}
+                              </Badge>
+                            </div>
+                            {msgCount > 0 && !isExpanded && (
+                              <span className="text-xs text-slate-600 dark:text-slate-400">
+                                {msgCount === 1 ? "1 mensagem" : `${msgCount} mensagens`}
+                              </span>
+                            )}
+                          </button>
+
+                          {/* Conteúdo Expandível */}
+                          {isExpanded && (
+                            <CardContent className="space-y-2 border-t pt-3">
+                              {(editingMsgs[dia] || []).map((msg, idx) => (
+                                <div key={idx} className="space-y-1 p-2 bg-slate-50 dark:bg-slate-900/20 rounded-md">
+                                  <div className="flex items-center justify-between gap-1">
+                                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                                      Mensagem {idx + 1}
+                                    </label>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleRemoveMessage(dia, idx)}
+                                      className="h-5 w-5 p-0"
+                                      data-testid={`btn-remove-msg-${dia}-${idx}`}
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                  <Textarea
+                                    value={msg}
+                                    onChange={(e) => handleUpdateMessage(dia, idx, e.target.value)}
+                                    placeholder="Digite sua mensagem aqui..."
+                                    className="min-h-20 text-xs resize-none"
+                                    data-testid={`msg-${selectedJobForMessages}-${dia}-${idx}`}
+                                  />
+                                </div>
+                              ))}
                               <Button
                                 size="sm"
-                                variant="ghost"
-                                onClick={() => handleRemoveMessage(dia, idx)}
-                                className="h-5 w-5 p-0"
-                                data-testid={`btn-remove-msg-${dia}-${idx}`}
+                                variant="outline"
+                                onClick={() => handleAddMessage(dia)}
+                                className="w-full gap-1 h-7 text-xs"
+                                data-testid={`btn-add-msg-${dia}`}
                               >
-                                <X className="w-3 h-3" />
+                                <Plus className="w-3 h-3" />
+                                Adicionar Mensagem
                               </Button>
-                            </div>
-                            <Textarea
-                              value={msg}
-                              onChange={(e) => handleUpdateMessage(dia, idx, e.target.value)}
-                              placeholder="Mensagem..."
-                              className="min-h-10 text-xs resize-none"
-                              data-testid={`msg-${selectedJobForMessages}-${dia}-${idx}`}
-                            />
-                          </div>
-                        ))}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleAddMessage(dia)}
-                          className="w-full gap-1 h-7 text-xs"
-                          data-testid={`btn-add-msg-${dia}`}
-                        >
-                          <Plus className="w-3 h-3" />
-                          Nova
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
+                            </CardContent>
+                          )}
+                        </Card>
+                      );
+                    })}
+                  </div>
 
                   <Button
                     size="sm"
@@ -491,11 +527,12 @@ export default function AdminAutomacaoAdvanced() {
                     data-testid="btn-save-messages"
                   >
                     <Save className="w-3 h-3" />
-                    Salvar Mensagens
+                    Salvar Todas as Mensagens
                   </Button>
                 </TabsContent>
 
-                <TabsContent value="horarios" className="space-y-2 mt-3">
+                {/* TAB: HORÁRIOS */}
+                <TabsContent value="config" className="space-y-2 mt-3">
                   <Card className="border-0 bg-white dark:bg-slate-800/50">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-xs">Horários de Envio</CardTitle>
@@ -506,7 +543,7 @@ export default function AdminAutomacaoAdvanced() {
                     <CardContent className="space-y-2">
                       <div>
                         <label className="text-xs font-semibold block mb-1">Configurados:</label>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-1 min-h-6">
                           {(jobConfig.horarios || []).length > 0 ? (
                             (jobConfig.horarios || []).map((h: string) => (
                               <Badge key={h} variant="default" className="flex items-center gap-1 px-1.5 py-0 text-xs">
@@ -552,6 +589,7 @@ export default function AdminAutomacaoAdvanced() {
                   </Card>
                 </TabsContent>
 
+                {/* TAB: DIAS SEMANA */}
                 <TabsContent value="dias" className="space-y-2 mt-3">
                   <Card className="border-0 bg-white dark:bg-slate-800/50">
                     <CardHeader className="pb-2">
@@ -560,7 +598,7 @@ export default function AdminAutomacaoAdvanced() {
                     <CardContent className="space-y-2">
                       <div>
                         <label className="text-xs font-semibold block mb-1">Selecionados:</label>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-1 min-h-6">
                           {(jobConfig.diasSemana || []).length > 0 ? (
                             (jobConfig.diasSemana || []).map((d: string) => (
                               <Badge key={d} variant="default" className="flex items-center gap-1 px-1.5 py-0 text-xs">
