@@ -149,6 +149,25 @@ export default function TestAutomation() {
     },
   });
 
+  // Test automation checks with current time
+  const [automationChecksResult, setAutomationChecksResult] = useState<any>(null);
+  const automationChecksMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/test/run-automation-checks", {});
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      setAutomationChecksResult(data);
+      toast({ 
+        title: "✅ Automação Checks Executado!", 
+        description: `Tempo: ${data.duration} - Verifique os logs` 
+      });
+    },
+    onError: (error: any) => {
+      toast({ title: "❌ Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
   // Cleanup test data
   const cleanupMutation = useMutation({
     mutationFn: async () => {
@@ -443,6 +462,31 @@ export default function TestAutomation() {
                 <p className="text-slate-500 text-xs ml-2">Sem oportunidades - Status: LEAD_QUENTE</p>
               )}
             </div>
+          </div>
+        )}
+      </Card>
+
+      {/* TEST AUTOMATION CHECKS - RUN NOW */}
+      <Card className="p-6 bg-slate-800 border-emerald-500/20">
+        <h2 className="text-xl font-bold text-white mb-4">⏰ Testar Horários de Automação AGORA</h2>
+        <p className="text-slate-300 mb-4 text-xs">
+          Executa as verificações de automação imediatamente com a hora atual para testar horários comerciais e agendamentos
+        </p>
+        <Button
+          onClick={() => automationChecksMutation.mutate()}
+          disabled={automationChecksMutation.isPending}
+          className="w-full bg-emerald-600 hover:bg-emerald-700 mb-4"
+          data-testid="button-run-automation-checks"
+        >
+          {automationChecksMutation.isPending ? "Executando..." : "⏰ Executar Automação Checks AGORA"}
+        </Button>
+
+        {automationChecksResult && (
+          <div className="p-3 bg-green-500/10 border border-green-500/30 rounded space-y-2">
+            <p className="text-green-300 font-bold">✅ {automationChecksResult.message}</p>
+            <p className="text-slate-300 text-xs">⏱️ Tempo: {automationChecksResult.duration}</p>
+            <p className="text-slate-300 text-xs">🕐 Executado em: {automationChecksResult.horaExecucao}</p>
+            <p className="text-slate-300 text-xs">📝 {automationChecksResult.info}</p>
           </div>
         )}
       </Card>

@@ -3703,6 +3703,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== TEST ENDPOINT - RUN AUTOMATION CHECKS NOW ====================
+  app.post("/api/test/run-automation-checks", async (req, res) => {
+    try {
+      const startTime = Date.now();
+      
+      // Importar funções de automação
+      const { checkPropostaEnviadaTimeouts, checkAguardandoAceiteTimeouts } = await import('./automationService');
+      
+      console.log(`\n🔍 [TEST] EXECUTANDO AUTOMAÇÃO CHECKS MANUALMENTE AGORA...`);
+      console.log(`⏰ Hora atual: ${new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}`);
+      
+      // Executar as funções de check
+      await checkPropostaEnviadaTimeouts();
+      await checkAguardandoAceiteTimeouts();
+      
+      const duration = Date.now() - startTime;
+      
+      res.json({
+        success: true,
+        message: "✅ Automação checks executados manualmente!",
+        duration: `${duration}ms`,
+        checks: {
+          propostas_enviadas: "✅ Executado",
+          aguardando_aceite: "✅ Executado",
+        },
+        info: "Verifique os logs acima para ver o resultado detalhado",
+        horaExecucao: new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }),
+      });
+    } catch (error) {
+      console.error("❌ Error running automation checks:", error);
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
