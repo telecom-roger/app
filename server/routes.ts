@@ -728,7 +728,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // 🚀 TRIGGER: Se moveu para CONTRATO ENVIADO, dispara automação
-      if (opportunity && etapa === "CONTRATO ENVIADO" && oldOpportunity.etapa !== "CONTRATO ENVIADO") {
+      if (opportunity && etapaNormalizada === "CONTRATO ENVIADO" && oldOpportunity.etapa !== "CONTRATO ENVIADO") {
         console.log(`🚀 Disparando automação de Contrato Enviado para ${opportunity.id}`);
         try {
           await db.insert(automationTasks).values({
