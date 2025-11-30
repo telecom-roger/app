@@ -306,41 +306,42 @@
   }
 
   /* Scrollbar estilos para o sidebar */
-  .sidebar [data-radix-scroll-area-viewport] {
-    scrollbar-width: auto;
-    scrollbar-color: hsl(var(--sidebar-foreground) / 0.15) transparent;
+  .sidebar ::-webkit-scrollbar {
+    width: 8px !important;
   }
 
-  .sidebar [data-radix-scroll-area-viewport]::-webkit-scrollbar {
-    width: 8px;
+  .sidebar ::-webkit-scrollbar-track {
+    background: transparent !important;
   }
 
-  .sidebar [data-radix-scroll-area-viewport]::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .sidebar [data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--sidebar-foreground) / 0.15);
+  .sidebar ::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--sidebar-foreground) / 0.15) !important;
     border-radius: 4px;
     border: 2px solid transparent;
     background-clip: padding-box;
   }
 
-  .sidebar [data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb:hover {
-    background-color: hsl(var(--sidebar-foreground) / 0.4);
+  .sidebar ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--sidebar-foreground) / 0.4) !important;
     background-clip: padding-box;
   }
 
   /* Dark mode scrollbar */
-  .dark .sidebar [data-radix-scroll-area-viewport] {
+  .dark .sidebar ::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--sidebar-foreground) / 0.2) !important;
+  }
+
+  .dark .sidebar ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--sidebar-foreground) / 0.45) !important;
+  }
+
+  /* Firefox */
+  .sidebar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--sidebar-foreground) / 0.15) transparent;
+  }
+
+  .dark .sidebar {
     scrollbar-color: hsl(var(--sidebar-foreground) / 0.2) transparent;
-  }
-
-  .dark .sidebar [data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--sidebar-foreground) / 0.2);
-  }
-
-  .dark .sidebar [data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb:hover {
-    background-color: hsl(var(--sidebar-foreground) / 0.45);
   }
 }
