@@ -15,6 +15,9 @@ export default function TestAutomation() {
   const [contratoEnviadoResult, setContratoEnviadoResult] = useState<any>(null);
   const [cleanupResult, setCleanupResult] = useState<any>(null);
   const [autoCreateResult, setAutoCreateResult] = useState<any>(null);
+  const [testManualBlockResult, setTestManualBlockResult] = useState<any>(null);
+  const [testUserAssumeResult, setTestUserAssumeResult] = useState<any>(null);
+  const [testMovementLimitResult, setTestMovementLimitResult] = useState<any>(null);
 
   // Clientes de teste fixos
   const TEST_CLIENTS = [
@@ -194,6 +197,74 @@ export default function TestAutomation() {
         title: "✅ Automação Checks Executado!", 
         description: `Tempo: ${data.duration} - Verifique os logs` 
       });
+    },
+    onError: (error: any) => {
+      toast({ title: "❌ Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Test: IA blocked by manual stage
+  const testManualBlockMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/test/ia-blocked-manual-stage", {
+        clientId,
+        userId,
+        messageText: "Olá, tudo bem?",
+      });
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      setTestManualBlockResult(data);
+      toast({ 
+        title: data.iaAgiu ? "❌ ERRO: IA AGIU!" : "✅ IA Bloqueada Corretamente!", 
+        description: `Etapa: ${data.etapa} - IA ${data.iaAgiu ? "NÃO deveria ter" : "não"} agido` 
+      });
+      refetchTestOpps();
+    },
+    onError: (error: any) => {
+      toast({ title: "❌ Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Test: IA blocked when user assumed (PROPOSTA+)
+  const testUserAssumeMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/test/ia-blocked-user-assumed", {
+        clientId,
+        userId,
+        messageText: "Tudo bem, vamos assinar",
+      });
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      setTestUserAssumeResult(data);
+      toast({ 
+        title: data.iaAgiu ? "❌ ERRO: IA AGIU!" : "✅ IA Bloqueada Corretamente!", 
+        description: `Etapa: ${data.etapa} - IA ${data.iaAgiu ? "NÃO deveria ter" : "não"} agido` 
+      });
+      refetchTestOpps();
+    },
+    onError: (error: any) => {
+      toast({ title: "❌ Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Test: IA only moves within LEAD/CONTATO
+  const testMovementLimitMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/test/ia-movement-limits", {
+        clientId,
+        userId,
+      });
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      setTestMovementLimitResult(data);
+      toast({ 
+        title: data.success ? "✅ Limites Respeitados!" : "❌ ERRO nos Limites!", 
+        description: `Movimento: ${data.from} → ${data.to}` 
+      });
+      refetchTestOpps();
     },
     onError: (error: any) => {
       toast({ title: "❌ Erro", description: error.message, variant: "destructive" });
@@ -567,6 +638,76 @@ export default function TestAutomation() {
             <p className="text-slate-300 text-xs">📝 {automationChecksResult.info}</p>
           </div>
         )}
+      </Card>
+
+      {/* NEW AUTOMATION RULES TESTS */}
+      <Card className="p-6 bg-slate-800 border-red-600/50">
+        <h2 className="text-xl font-bold text-white mb-4">🔒 Testes das Novas Regras de Automação</h2>
+        
+        <div className="space-y-4">
+          {/* Test 1: Manual Stage Block */}
+          <div className="p-4 bg-red-500/10 rounded border border-red-500/30">
+            <p className="text-red-300 font-bold mb-2">🛑 Teste 1: IA Bloqueada por Etapa Manual</p>
+            <p className="text-xs text-slate-300 mb-3">Move opp para PROPOSTA ENVIADA (manual) → Envia mensagem → IA NÃO deve agir</p>
+            <Button
+              onClick={() => testManualBlockMutation.mutate()}
+              disabled={testManualBlockMutation.isPending || !clientId || !userId}
+              className="w-full bg-red-600 hover:bg-red-700"
+              data-testid="button-test-manual-block"
+            >
+              {testManualBlockMutation.isPending ? "Testando..." : "🛑 Testar Bloqueio Manual"}
+            </Button>
+            {testManualBlockResult && (
+              <div className={`mt-3 p-2 rounded text-xs ${testManualBlockResult.iaAgiu ? 'bg-red-600/20 border border-red-600' : 'bg-green-600/20 border border-green-600'}`}>
+                <p className={testManualBlockResult.iaAgiu ? 'text-red-300' : 'text-green-300'}>
+                  {testManualBlockResult.iaAgiu ? '❌ FALHA' : '✅ PASSOU'}: {testManualBlockResult.etapa}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Test 2: User Assumed Block */}
+          <div className="p-4 bg-orange-500/10 rounded border border-orange-500/30">
+            <p className="text-orange-300 font-bold mb-2">🛑 Teste 2: IA Bloqueada Quando Usuário Assume</p>
+            <p className="text-xs text-slate-300 mb-3">Move opp para PROPOSTA (assumido pelo usuário) → Envia mensagem → IA NÃO deve agir</p>
+            <Button
+              onClick={() => testUserAssumeMutation.mutate()}
+              disabled={testUserAssumeMutation.isPending || !clientId || !userId}
+              className="w-full bg-orange-600 hover:bg-orange-700"
+              data-testid="button-test-user-assume"
+            >
+              {testUserAssumeMutation.isPending ? "Testando..." : "🛑 Testar Bloqueio de Usuário"}
+            </Button>
+            {testUserAssumeResult && (
+              <div className={`mt-3 p-2 rounded text-xs ${testUserAssumeResult.iaAgiu ? 'bg-red-600/20 border border-red-600' : 'bg-green-600/20 border border-green-600'}`}>
+                <p className={testUserAssumeResult.iaAgiu ? 'text-red-300' : 'text-green-300'}>
+                  {testUserAssumeResult.iaAgiu ? '❌ FALHA' : '✅ PASSOU'}: {testUserAssumeResult.etapa}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Test 3: Movement Limits */}
+          <div className="p-4 bg-blue-500/10 rounded border border-blue-500/30">
+            <p className="text-blue-300 font-bold mb-2">🎯 Teste 3: Limites de Movimento da IA</p>
+            <p className="text-xs text-slate-300 mb-3">Verifica se IA respeita limites: só move entre LEAD/CONTATO</p>
+            <Button
+              onClick={() => testMovementLimitMutation.mutate()}
+              disabled={testMovementLimitMutation.isPending || !clientId || !userId}
+              className="w-full bg-blue-600 hover:bg-blue-700"
+              data-testid="button-test-movement-limits"
+            >
+              {testMovementLimitMutation.isPending ? "Testando..." : "🎯 Testar Limites de Movimento"}
+            </Button>
+            {testMovementLimitResult && (
+              <div className={`mt-3 p-2 rounded text-xs ${testMovementLimitResult.success ? 'bg-green-600/20 border border-green-600' : 'bg-red-600/20 border border-red-600'}`}>
+                <p className={testMovementLimitResult.success ? 'text-green-300' : 'text-red-300'}>
+                  {testMovementLimitResult.success ? '✅ PASSOU' : '❌ FALHA'}: {testMovementLimitResult.from} → {testMovementLimitResult.to}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
       </Card>
 
       {/* CLEANUP */}

@@ -3621,6 +3621,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ==================== TEST CLEANUP ====================
+  // TEST: IA blocked by manual stage
+  app.post("/api/test/ia-blocked-manual-stage", isAuthenticated, async (req, res) => {
+    try {
+      const { clientId, userId, messageText } = req.body;
+      
+      // 1. Delete existing opps for this client
+      await db.delete(opportunities).where(eq(opportunities.clientId, clientId));
+      
+      // 2. Create opp in PROPOSTA ENVIADA (manual stage)
+      const [opp] = await db.insert(opportunities).values({
+        clientId,
+        titulo: "Teste Manual Stage",
+        etapa: "PROPOSTA ENVIADA",
+        valorEstimado: "5000",
+        responsavelId: userId,
+        ordem: 0,
+      }).returning();
+      
+      // 3. Get or create conversation and send message
+      const conv = await storage.createOrGetConversation(clientId, userId);
+      const msg = await storage.createMessage({
+        conversationId: conv.id,
+        sender: "client",
+        tipo: "texto",
+        conteudo: messageText,
+      });
+      
+      // 4. Check if IA acted (it shouldn't)
+      const oppAfter = await db.query.opportunities.findFirst({
+        where: (o: any) => eq(o.id, opp.id),
+      });
+      
+      res.json({
+        etapa: oppAfter?.etapa,
+        iaAgiu: oppAfter?.etapa !== "PROPOSTA ENVIADA",
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // TEST: IA blocked when user assumed (PROPOSTA+)
+  app.post("/api/test/ia-blocked-user-assumed", isAuthenticated, async (req, res) => {
+    try {
+      const { clientId, userId, messageText } = req.body;
+      
+      // 1. Delete existing opps
+      await db.delete(opportunities).where(eq(opportunities.clientId, clientId));
+      
+      // 2. Create opp in PROPOSTA (user assumed)
+      const [opp] = await db.insert(opportunities).values({
+        clientId,
+        titulo: "Teste User Assumed",
+        etapa: "PROPOSTA",
+        valorEstimado: "5000",
+        responsavelId: userId,
+        ordem: 0,
+      }).returning();
+      
+      // 3. Get or create conversation and send message
+      const conv = await storage.createOrGetConversation(clientId, userId);
+      await storage.createMessage({
+        conversationId: conv.id,
+        sender: "client",
+        tipo: "texto",
+        conteudo: messageText,
+      });
+      
+      // 4. Check if IA acted (it shouldn't)
+      const oppAfter = await db.query.opportunities.findFirst({
+        where: (o: any) => eq(o.id, opp.id),
+      });
+      
+      res.json({
+        etapa: oppAfter?.etapa,
+        iaAgiu: oppAfter?.etapa !== "PROPOSTA",
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // TEST: IA movement limits (only LEAD/CONTATO)
+  app.post("/api/test/ia-movement-limits", isAuthenticated, async (req, res) => {
+    try {
+      const { clientId, userId } = req.body;
+      
+      // 1. Delete existing opps
+      await db.delete(opportunities).where(eq(opportunities.clientId, clientId));
+      
+      // 2. Create opp in LEAD
+      const [opp] = await db.insert(opportunities).values({
+        clientId,
+        titulo: "Teste Movement Limits",
+        etapa: "LEAD",
+        valorEstimado: "5000",
+        responsavelId: userId,
+        ordem: 0,
+      }).returning();
+      
+      // 3. Send "Ok, manda" (should move to CONTATO, not PROPOSTA)
+      const conv = await storage.createOrGetConversation(clientId, userId);
+      await storage.createMessage({
+        conversationId: conv.id,
+        sender: "client",
+        tipo: "texto",
+        conteudo: "Ok, manda",
+      });
+      
+      // 4. Check final stage (should be CONTATO max, not PROPOSTA)
+      const oppAfter = await db.query.opportunities.findFirst({
+        where: (o: any) => eq(o.id, opp.id),
+      });
+      
+      res.json({
+        from: "LEAD",
+        to: oppAfter?.etapa,
+        success: ["LEAD", "CONTATO"].includes(oppAfter?.etapa || ""),
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.post("/api/test/cleanup", async (req, res) => {
     try {
       // Delete all automation messages
