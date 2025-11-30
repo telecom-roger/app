@@ -507,6 +507,21 @@ function OpportunityCard({
 
   const isDragging = draggedCard?.id === oportunidade.id;
 
+  // Função que retorna a cor da bolinha baseado na etapa
+  const getStatusColor = (etapa: string): string => {
+    const etapaUpper = etapa.toUpperCase();
+    // Vermelho
+    if (etapaUpper === "AGUARDANDO ACEITE" || etapaUpper === "PERDIDO") {
+      return "bg-red-500";
+    }
+    // Verde
+    if (etapaUpper === "FECHADO") {
+      return "bg-green-500";
+    }
+    // Amarelo (padrão para LEAD, CONTATO, PROPOSTA, PROPOSTA ENVIADA, AGUARDANDO CONTRATO, CONTRATO ENVIADO)
+    return "bg-yellow-500";
+  };
+
   return (
     <Card
       className={`cursor-move hover-elevate active-elevate-2 transition-all border-0 shadow-sm bg-white dark:bg-slate-900/50 ${
@@ -531,21 +546,24 @@ function OpportunityCard({
             )}
             <h4 className="font-medium leading-snug break-words text-slate-900 dark:text-white">{oportunidade.titulo}</h4>
           </div>
-          <div className="flex gap-1 flex-shrink-0">
-            <button
-              onClick={() => onEdit(oportunidade)}
-              className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              data-testid={`button-edit-${oportunidade.id}`}
-            >
-              <Edit2 className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => onDelete(oportunidade.id)}
-              className="text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-              data-testid={`button-delete-${oportunidade.id}`}
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+          <div className="flex flex-col items-end gap-2 flex-shrink-0">
+            <div className={`h-3 w-3 rounded-full ${getStatusColor(oportunidade.etapa)}`} data-testid={`status-indicator-${oportunidade.id}`} />
+            <div className="flex gap-1">
+              <button
+                onClick={() => onEdit(oportunidade)}
+                className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                data-testid={`button-edit-${oportunidade.id}`}
+              >
+                <Edit2 className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => onDelete(oportunidade.id)}
+                className="text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                data-testid={`button-delete-${oportunidade.id}`}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
 
