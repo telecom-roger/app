@@ -40,18 +40,21 @@ function validateMovement(currentStage: string | undefined, proposedStage: strin
   const allowedStages = AI_MOVEMENT_RULES[currentStage] || [];
   const isAllowed = allowedStages.includes(proposedStage);
   
-  // Se está em FECHADO/PERDIDO e pode mover → Criar novo negócio ao invés de mover
-  const shouldCreateNew = (currentStage === "FECHADO" || currentStage === "PERDIDO") && isAllowed;
+  // ✅ REGRA CRÍTICA: FECHADO/PERDIDO NUNCA SE MOVEM
+  // Apenas criam novo negócio se cliente responder
+  const isFechadoOrPerdido = currentStage === "FECHADO" || currentStage === "PERDIDO";
+  const shouldCreateNew = isFechadoOrPerdido && isAllowed;
+  const canMove = !isFechadoOrPerdido && isAllowed; // FECHADO/PERDIDO: NUNCA movimento
   
-  if (!isAllowed) {
+  if (!canMove && !shouldCreateNew) {
     console.log(`⚠️ Movimento bloqueado: ${currentStage} → ${proposedStage}`);
   }
   
   if (shouldCreateNew) {
-    console.log(`🆕 ${currentStage} → ${proposedStage}: Criar novo negócio ao invés de mover`);
+    console.log(`🆕 ${currentStage} → ${proposedStage}: Criar novo negócio (opp atual CONGELADO em ${currentStage})`);
   }
   
-  return { allowed: isAllowed, shouldCreateNew };
+  return { allowed: canMove, shouldCreateNew };
 }
 
 // Normalizar mensagem: minúsculas + remove acentos

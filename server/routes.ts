@@ -2222,22 +2222,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             console.log(`🤖 [Chat] "${conteudo}" → etapa: ${analysis.etapa}, deveAgir: ${analysis.deveAgir}, deveCriarNovo: ${deveCriarNovo} (opp atual: ${existingOpp?.etapa})`);
 
-            // PRIORIDADE 1: Se deve criar novo negócio → Criar NOVO e NÃO mover o antigo
-            if (existingOpp && deveCriarNovo && analysis.deveAgir) {
+            // ✅ PRIORIDADE 1: CRIAR NOVO NEGÓCIO (FECHADO/PERDIDO)
+            // Ignora deveAgir quando deve criar novo (pois FECHADO/PERDIDO têm deveAgir=false)
+            if (existingOpp && deveCriarNovo) {
               const novaOpp = await storage.createOpportunity({
                 clientId: conversation.clientId,
                 titulo: `${client?.nome} - Novo Ciclo`,
                 etapa: analysis.etapa,
                 userId: user.id,
               });
-              console.log(`🆕 [Chat] NOVO negócio criado em ${analysis.etapa} (antigo permanece em ${existingOpp.etapa})`);
+              console.log(`🆕 [Chat] NOVO negócio criado em ${analysis.etapa} (opp ${existingOpp.etapa} congelada em ${existingOpp.etapa})`);
             }
-            // PRIORIDADE 2: Se NÃO deve criar novo E pode mover → Mover oportunidade existente
+            // ✅ PRIORIDADE 2: MOVER OPORTUNIDADE EXISTENTE
+            // Apenas se pode agir E não é para criar novo
             else if (existingOpp && !deveCriarNovo && existingOpp.etapa !== analysis.etapa && analysis.deveAgir) {
               await db.update(opportunities).set({ etapa: analysis.etapa }).where(eq(opportunities.id, existingOpp.id));
               console.log(`✅ [Chat] Oportunidade movida de ${existingOpp.etapa} para ${analysis.etapa}`);
             } 
-            // PRIORIDADE 3: Criar primeira oportunidade se não existir
+            // ✅ PRIORIDADE 3: CRIAR PRIMEIRA OPORTUNIDADE
             else if (!existingOpp && analysis.etapa !== "AUTOMÁTICA" && analysis.deveAgir) {
               const novaOpp = await storage.createOpportunity({
                 clientId: conversation.clientId,
@@ -2245,7 +2247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 etapa: analysis.etapa,
                 userId: user.id,
               });
-              console.log(`✅ [Chat] Primeira oportunidade criada: ${analysis.etapa}`);
+              console.log(`✅ [Chat] Primeira oportunidade criada em ${analysis.etapa}`);
             }
           } catch (iaError) {
             console.error("⚠️ [Chat] Erro na análise IA:", iaError);
