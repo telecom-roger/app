@@ -192,15 +192,16 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     };
   }
   
-  // 📋 SOLICITAÇÃO DE PROPOSTA → PROPOSTA
+  // 📋 SOLICITAÇÃO DE PROPOSTA → PROPOSTA (VERIFICAR PRIMEIRO!)
   const solicitacaoProposta = [
-    "me envia a proposta", "envia a proposta", "envia proposta", "manda proposta",
-    "me manda a proposta", "quero ver a proposta", "mostra a proposta",
-    "me mostra a proposta", "qual e a proposta", "qual é a proposta"
+    "me envia proposta", "envia proposta", "manda proposta",
+    "me envia a proposta", "envia a proposta", "manda a proposta",
+    "quero ver a proposta", "mostra a proposta", "me mostra a proposta"
   ];
-  if (solicitacaoProposta.some(palavra => msg.includes(palavra))) {
+  if (solicitacaoProposta.some(palavra => msg.toLowerCase().includes(palavra.toLowerCase()))) {
     const proposedStage = "PROPOSTA";
     const isAllowed = validateMovement(etapaAtual, proposedStage);
+    console.log(`📋 [LOCAL] Detectado: solicitação de proposta → PROPOSTA`);
     return {
       sentimento: "positivo",
       confianca: 95,
@@ -273,7 +274,7 @@ export async function analyzeClientMessage(
 ): Promise<MessageAnalysis> {
   try {
     // Usar OpenAI para análise de sentimento (a IA entende melhor variações, acentos, erros)
-    const useLocalMode = true; // 🧪 TESTE LOCAL - Verificar fallback
+    const useLocalMode = false; // ✅ OPENAI - Com prompt melhorado
     
     if (useLocalMode) {
       return analyzeLocalTest(mensagem, clienteInfo?.etapaAtual);
