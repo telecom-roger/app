@@ -148,14 +148,6 @@ export default function Chat() {
   const [businessValue, setBusinessValue] = useState<string>("");
   const [selectedStage, setSelectedStage] = useState<string>("");
   const [creatingOpportunity, setCreatingOpportunity] = useState(false);
-  const [closedConversations, setClosedConversations] = useState<Set<string>>(() => {
-    try {
-      const stored = localStorage.getItem("closedConversations");
-      return new Set(stored ? JSON.parse(stored) : []);
-    } catch {
-      return new Set();
-    }
-  });
 
   // Persist closed conversations to localStorage
   useEffect(() => {
@@ -1110,30 +1102,19 @@ export default function Chat() {
               <button
                 onClick={() => {
                   if (contextMenuConvId) {
-                    apiRequest("PATCH", `/api/chat/conversations/${contextMenuConvId}/hide`, { oculta: true })
-                      .then(() => {
-                        if (selectedConversationId === contextMenuConvId) {
-                          setSelectedConversationId(null);
-                        }
-                        refetchConversations();
-                        toast({
-                          title: "Conversa oculta",
-                          description: "Reabrirá automaticamente quando o cliente chamar",
-                        });
-                      })
-                      .catch(err => {
-                        console.error("Erro ao ocultar conversa:", err);
-                        toast({
-                          title: "Erro",
-                          description: "Não foi possível ocultar a conversa",
-                          variant: "destructive",
-                        });
-                      });
+                    setClosedConversations(prev => new Set([...prev, contextMenuConvId]));
+                    if (selectedConversationId === contextMenuConvId) {
+                      setSelectedConversationId(null);
+                    }
                   }
                   setContextMenuOpen(false);
+                  toast({
+                    title: "Conversa oculta",
+                    description: "Conversa reabrirá automaticamente quando o cliente chamar",
+                  });
                 }}
                 className="w-full text-left px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-slate-900 dark:text-white"
-                data-testid="button-hide-conversation"
+                data-testid="button-close-conversation"
               >
                 Ocultar conversa
               </button>
