@@ -11,6 +11,9 @@ import {
   Settings,
   Zap,
   Briefcase,
+  Tag,
+  Lightbulb,
+  Layout,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -89,6 +92,16 @@ const agendamentoItems = [
 
 const configItems = [
   {
+    title: "Etiquetas",
+    url: "/etiquetas",
+    icon: Tag,
+  },
+  {
+    title: "Mensagens Rápidas",
+    url: "/mensagens-rapidas",
+    icon: Lightbulb,
+  },
+  {
     title: "Modelos de Mensagens",
     url: "/modelos-mensagens",
     icon: Mail,
@@ -110,6 +123,11 @@ const adminItems = [
     title: "Usuários",
     url: "/admin/usuarios",
     icon: Users,
+  },
+  {
+    title: "Templates",
+    url: "/admin/templates",
+    icon: Layout,
   },
   {
     title: "Automação",
