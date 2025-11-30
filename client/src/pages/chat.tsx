@@ -1241,6 +1241,12 @@ export default function Chat() {
                             </span>
                           )}
                         </div>
+                        
+                        {msg.origem === "automation" && (
+                          <p className="text-xs mt-1 opacity-60 italic">
+                            Enviado por IA
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))

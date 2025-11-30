@@ -386,6 +386,7 @@ export const messages = pgTable("messages", {
   nomeArquivo: text("nome_arquivo"),
   tamanho: integer("tamanho"), // em bytes
   mimeType: text("mime_type"),
+  origem: varchar("origem", { length: 50 }), // "automation", "whatsapp", "manual", null
   lido: boolean("lido").default(false),
   deletado: boolean("deletado").default(false), // Soft delete for "removed for all"
   createdAt: timestamp("created_at").defaultNow(),

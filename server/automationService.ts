@@ -635,6 +635,7 @@ async function executeAguardandoAceiteReminder(task: any) {
     conversationId: conversation.id,
     sender: "user",  // ✅ Mostrar como mensagem enviada no chat
     tipo: "texto",
+    origem: "automation",  // ✅ Marcar como mensagem de IA/automação
     conteudo: mensagem,
     createdAt: new Date(),
   });
