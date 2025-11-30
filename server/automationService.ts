@@ -465,10 +465,10 @@ async function executeContratoEnviadoMessage(task: any) {
   // 1️⃣ REGISTRAR MENSAGEM NO CHAT PRIMEIRO
   await db.insert(messages).values({
     conversationId: conversation.id,
-    sender: "bot",
-    tipo: "text",
+    sender: "user",  // ✅ Mostrar como mensagem enviada no chat
+    tipo: "texto",   // ✅ Corrigido: "texto" não "text"
     conteudo: mensagem,
-    origem: "automation",
+    origem: "automation",  // ✅ Marcar como mensagem de IA/automação
     createdAt: new Date(),
   });
 
