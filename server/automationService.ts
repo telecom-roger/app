@@ -819,6 +819,29 @@ async function executeAguardandoAceiteReminder(task: any) {
   
   const lembreteNum = task.dados?.lembrete || 1;
   
+  // ⏰ ANTI-SPAM: Verificar se já enviou ESTE lembrete nas últimas 3 horas
+  const tresHorasAtras = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  const lembreteRecente = await db
+    .select()
+    .from(interactions)
+    .where(
+      and(
+        eq(interactions.clientId, opportunity.clientId),
+        eq(interactions.tipo, "aguardando_aceite_reminder"),
+        gte(interactions.createdAt, tresHorasAtras)
+      )
+    )
+    .orderBy(desc(interactions.createdAt))
+    .limit(1);
+  
+  if (lembreteRecente.length > 0) {
+    const ultimoLembrete = (lembreteRecente[0].meta as any)?.lembreteNum || 1;
+    if (ultimoLembrete >= lembreteNum) {
+      console.log(`⏳ [ANTI-SPAM] Lembrete ${lembreteNum} já enviado recentemente para ${client.nome}. Pulando...`);
+      return;
+    }
+  }
+  
   console.log(`💬 Enviando lembrete ${lembreteNum}/3 de Aguardando Aceite para ${client.nome}`);
   
   // 🔥 LER MENSAGENS DO BANCO (automation_configs)
@@ -1020,6 +1043,25 @@ export async function checkAguardandoAceiteTimeouts() {
       
       // Se não tem tarefa agendada NENHUMA
       if (!lastTask || lastTask.length === 0) {
+        // ⏰ ANTI-SPAM: Verificar se já enviou mensagem de aceite nas últimas 3 horas
+        const tresHorasAtras = new Date(Date.now() - 3 * 60 * 60 * 1000);
+        const mensagensRecentes = await db
+          .select()
+          .from(interactions)
+          .where(
+            and(
+              eq(interactions.clientId, opp.clientId),
+              eq(interactions.tipo, "aguardando_aceite_reminder"),
+              gte(interactions.createdAt, tresHorasAtras)
+            )
+          )
+          .limit(1);
+        
+        if (mensagensRecentes.length > 0) {
+          console.log(`⏳ [ANTI-SPAM] Já enviou lembrete de aceite recente para ${opp.id}. Aguardando...`);
+          continue;
+        }
+        
         console.log(`✅ Agendando 1º lembrete para oportunidade ${opp.id}`);
         const nextTime = new Date(Date.now() + 2 * 1000); // 2 seg para teste
         
