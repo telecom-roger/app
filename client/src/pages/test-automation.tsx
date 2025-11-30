@@ -21,9 +21,9 @@ export default function TestAutomation() {
 
   // Clientes de teste fixos
   const TEST_CLIENTS = [
-    { id: "766bf501-48d4-4d3f-ae71-d4093fa5df49", nome: "FLAVIO MOREIRA DE MORAES" },
-    { id: "a5bbd859-684c-44c2-aaa1-cb6a6300d364", nome: "SABRINA MOBILON" },
-    { id: "8c7fc213-d34c-4a50-ae94-f4109ba0f96f", nome: "ROGER VIVO" },
+    { id: "766bf501-48d4-4d3f-ae71-d4093fa5df49", nome: "FLAVIO MOREIRA DE MORAES", telefone: "(19) 99999-9999" },
+    { id: "a5bbd859-684c-44c2-aaa1-cb6a6300d364", nome: "SABRINA MOBILON", telefone: "(19) 97116-2546" },
+    { id: "8c7fc213-d34c-4a50-ae94-f4109ba0f96f", nome: "ROGER VIVO", telefone: "(19) 99947-7404" },
   ];
 
   // Get clients and users list
@@ -307,6 +307,25 @@ export default function TestAutomation() {
         <p className="text-slate-300">Simule respostas de clientes e veja a IA criar oportunidades automaticamente</p>
       </div>
 
+      {/* QUICK TEST BUTTONS */}
+      <Card className="p-4 bg-gradient-to-r from-cyan-900/30 to-blue-900/30 border-cyan-500/50">
+        <p className="text-xs text-slate-400 mb-3 font-bold">⚡ Atalhos Rápidos - Selecione um contato:</p>
+        <div className="flex flex-wrap gap-2">
+          {TEST_CLIENTS.map((client: any) => (
+            <Button
+              key={client.id}
+              onClick={() => setClientId(client.id)}
+              variant={clientId === client.id ? "default" : "outline"}
+              size="sm"
+              className="text-xs"
+              data-testid={`button-quick-client-${client.nome.toLowerCase().replace(/\s+/g, '-')}`}
+            >
+              {client.nome} {client.telefone && `📱 ${client.telefone}`}
+            </Button>
+          ))}
+        </div>
+      </Card>
+
       {/* SELEÇÃO RÁPIDA - Cliente e Vendedor */}
       {!loadingTestData && (testData.clients.length > 0 || testData.users.length > 0) && (
         <Card className="p-4 bg-purple-900/30 border-purple-500/50">
@@ -314,8 +333,11 @@ export default function TestAutomation() {
             <div>
               <p className="text-xs text-slate-400 mb-1">👤 Cliente Selecionado:</p>
               <p className="text-lg font-bold text-purple-300">
-                {testData.clients.find((c: any) => c.id === clientId)?.nome || "Carregando..."}
+                {testData.clients.find((c: any) => c.id === clientId)?.nome || TEST_CLIENTS.find((c: any) => c.id === clientId)?.nome || "Carregando..."}
               </p>
+              {TEST_CLIENTS.find((c: any) => c.id === clientId)?.telefone && (
+                <p className="text-xs text-slate-400 mt-1">📱 {TEST_CLIENTS.find((c: any) => c.id === clientId)?.telefone}</p>
+              )}
             </div>
             <div className="hidden sm:block w-px h-12 bg-slate-600"></div>
             <div>
