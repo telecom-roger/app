@@ -4198,51 +4198,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== TEST ENDPOINT - TEST CHATGPT API ====================
-  app.post("/api/test/ia-analysis", async (req, res) => {
-    try {
-      const startTime = Date.now();
-      const { mensagem = "ok, manda", etapaAtual } = req.body;
-      
-      console.log(`\n🧪 [TEST IA] Iniciando teste da API ChatGPT...`);
-      console.log(`📝 Mensagem: "${mensagem}"`);
-      console.log(`📍 Etapa atual: ${etapaAtual || "Sem oportunidade (novo)"}`);
-      
-      const { analyzeClientMessage } = await import('./aiService');
-      
-      const analysis = await analyzeClientMessage(mensagem, {
-        nome: "Cliente Teste",
-        etapaAtual,
-      });
-      
-      const duration = Date.now() - startTime;
-      
-      console.log(`✅ [TEST IA] Resposta recebida com sucesso!`);
-      console.log(`   - Sentimento: ${analysis.sentimento}`);
-      console.log(`   - Etapa: ${analysis.etapa}`);
-      console.log(`   - Movimento permitido: ${analysis.permitidoEmProducao}`);
-      console.log(`   - Deve agir: ${analysis.deveAgir}`);
-      console.log(`   - Tempo: ${duration}ms`);
-      
-      res.json({
-        success: true,
-        message: "✅ API ChatGPT respondendo normalmente!",
-        analysis,
-        tempoResposta: `${duration}ms`,
-        statusAPI: "🟢 ONLINE",
-        timestamp: new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }),
-      });
-    } catch (error: any) {
-      console.error("❌ [TEST IA] Erro ao chamar API ChatGPT:", error);
-      res.status(500).json({
-        success: false,
-        error: "Erro ao chamar API ChatGPT",
-        detalhes: error.message,
-        statusAPI: "🔴 OFFLINE",
-        timestamp: new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }),
-      });
-    }
-  });
 
 
   const httpServer = createServer(app);

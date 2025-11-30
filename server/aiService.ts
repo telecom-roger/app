@@ -8,12 +8,11 @@ export interface MessageAnalysis {
   sentimento: "positivo" | "negativo" | "neutro" | "fornecedor";
   confianca: number;
   motivo: string;
-  etapa: "CONTATO" | "PROPOSTA" | "AUTOMÁTICA" | "PERDIDO" | "LEAD"; // Etapas automáticas em MAIÚSCULA
-  deveAgir: boolean; // true = mover/criar, false = manter etapa atual sem mover
-  ehRecusaParcial: boolean; // true = recusa parcial/alteração, alerta atendente
-  ehMensagemAutomatica: boolean; // true = mensagem automática do sistema (deve ir para AUTOMÁTICA)
+  etapa: "CONTATO" | "PROPOSTA" | "AUTOMÁTICA" | "PERDIDO" | "LEAD";
+  deveAgir: boolean; // true = movimento permitido, false = bloqueado
+  ehRecusaParcial: boolean;
+  ehMensagemAutomatica: boolean;
   sugestao: string;
-  permitidoEmProducao?: boolean; // true = movimento permitido pelas regras de IA, false = bloqueado
 }
 
 // 🎯 REGRAS DE MOVIMENTO IA POR ETAPA
@@ -40,7 +39,7 @@ function validateMovement(currentStage: string | undefined, proposedStage: strin
   const isAllowed = allowedStages.includes(proposedStage);
   
   if (!isAllowed) {
-    console.log(`🚫 MOVIMENTO BLOQUEADO: ${currentStage} → ${proposedStage} (não permitido pelas regras)`);
+    console.log(`⚠️ Movimento bloqueado: ${currentStage} → ${proposedStage}`);
   }
   
   return isAllowed;
@@ -91,10 +90,9 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
       confianca: 100,
       motivo: "Mensagem automática do sistema - cliente aguardando retorno",
       etapa: proposedStage,
-      deveAgir: isAllowed, // true = move para AUTOMÁTICA
+      deveAgir: isAllowed,
       ehRecusaParcial: false,
       ehMensagemAutomatica: true,
-      permitidoEmProducao: isAllowed,
       sugestao: "Aguardando retorno automático do sistema",
     };
   }
@@ -131,18 +129,15 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
   ];
   
   if (recusaParcialPalavrasChave.some(palavra => msg.includes(palavra))) {
-    const proposedStage = "CONTATO";
-    const isAllowed = validateMovement(etapaAtual, proposedStage);
     return {
       sentimento: "neutro",
       confianca: 70,
       motivo: "Recusa parcial ou indecisão - cliente quer modificar, não rejeitar",
-      etapa: proposedStage,
+      etapa: "CONTATO",
       deveAgir: false,
       ehRecusaParcial: msg.includes("cancelar") || msg.includes("reduzir") || msg.includes("remover"),
       ehMensagemAutomatica: false,
-      permitidoEmProducao: isAllowed,
-      sugestao: "⚠️ Cliente deseja ajustes - negociar modificações",
+      sugestao: "Cliente deseja ajustes - negociar modificações",
     };
   }
   
@@ -171,10 +166,9 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
       confianca: 95,
       motivo: "Recusa total detectada - cliente rejeita tudo",
       etapa: proposedStage,
-      deveAgir: isAllowed, // true = move para PERDIDO
+      deveAgir: isAllowed,
       ehRecusaParcial: false,
       ehMensagemAutomatica: false,
-      permitidoEmProducao: isAllowed,
       sugestao: "Arquivar oportunidade",
     };
   }
@@ -215,7 +209,6 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
       deveAgir: isAllowed,
       ehRecusaParcial: false,
       ehMensagemAutomatica: false,
-      permitidoEmProducao: isAllowed,
       sugestao: "Enviar proposta",
     };
   }
@@ -233,7 +226,6 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
       deveAgir: isAllowed,
       ehRecusaParcial: false,
       ehMensagemAutomatica: false,
-      permitidoEmProducao: isAllowed,
       sugestao: "Enviar tabela",
     };
   }
@@ -263,10 +255,7 @@ export async function analyzeClientMessage(
     const useLocalMode = false; // ✅ ATIVAR OPENAI - IA entende tudo!
     
     if (useLocalMode) {
-      console.log(`🧪 [MODO LOCAL] Analisando com regras locais (confiável)`);
-      const analysis = analyzeLocalTest(mensagem, clienteInfo?.etapaAtual);
-      console.log(`🤖 IA (LOCAL): ${analysis.sentimento} (${analysis.confianca}%) → ${analysis.etapa} (permitido=${analysis.permitidoEmProducao})`);
-      return analysis;
+      return analyzeLocalTest(mensagem, clienteInfo?.etapaAtual);
     }
 
     const prompt = `Analise RAPIDAMENTE essa resposta de cliente. Retorne JSON PURO (sem markdown):
@@ -333,29 +322,21 @@ EXEMPLOS:
     const messageContent = (response as any).choices[0].message.content;
     if (!messageContent) throw new Error("Empty response from AI");
 
-    console.log(`📝 [DEBUG] Resposta bruta do OpenAI: ${messageContent}`);
-    
     const analysis = JSON.parse(messageContent) as MessageAnalysis;
-    console.log(`📝 [DEBUG] Etapa ANTES de normalizar: "${analysis.etapa}"`);
     
     // Normalizar etapa para MAIÚSCULA (OpenAI pode retornar em minúscula)
     analysis.etapa = analysis.etapa.toUpperCase() as any;
-    console.log(`📝 [DEBUG] Etapa DEPOIS de normalizar: "${analysis.etapa}"`);
     
-    // ✅ VALIDAR MOVIMENTO BASEADO EM ETAPA ATUAL
+    // Validar movimento baseado em etapa atual
     const isMovementAllowed = validateMovement(clienteInfo?.etapaAtual, analysis.etapa);
-    analysis.permitidoEmProducao = isMovementAllowed;
     
     if (!isMovementAllowed && analysis.deveAgir) {
-      console.log(`⚠️ MOVIMENTO BLOQUEADO: ${clienteInfo?.etapaAtual} → ${analysis.etapa}`);
-      analysis.deveAgir = false; // Bloquear movimento
+      analysis.deveAgir = false;
     }
     
-    console.log(`🤖 IA (OPENAI): ${analysis.sentimento} (${analysis.confianca}%) → ${analysis.etapa} (permitido=${isMovementAllowed})`);
     return analysis;
   } catch (error) {
-    console.error("❌ Erro IA:", error);
-    console.log(`🧪 Caindo para análise local...`);
-    return analyzeLocalTest(mensagem);
+    console.error("Erro ao analisar com OpenAI, usando análise local:", error);
+    return analyzeLocalTest(mensagem, clienteInfo?.etapaAtual);
   }
 }

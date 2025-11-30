@@ -320,22 +320,15 @@ async function processIncomingMessages(sessionId: string, m: any) {
             });
             const existingOpp = existingOpps.find((o) => o.clientId === conversation.clientId);
             
-            console.log(`\n🤖 Iniciando análise com IA...`);
-            console.log(`📍 Etapa atual da oportunidade: ${existingOpp?.etapa || "Sem oportunidade"}`);
-            
             const analysis = await analyzeClientMessage(conteudo, {
               nome: client?.nome,
-              etapaAtual: existingOpp?.etapa, // ✅ PASSAR ETAPA ATUAL PARA VALIDAR REGRAS
+              etapaAtual: existingOpp?.etapa,
             });
 
             if (existingOpp && existingOpp.etapa !== analysis.etapa && analysis.deveAgir) {
-              // Mover oportunidade existente (apenas se permitido)
               await storage.updateOpportunity(existingOpp.id, {
                 etapa: analysis.etapa,
               });
-              console.log(`✅ Oportunidade MOVIDA para: ${analysis.etapa} (${analysis.motivo})`);
-            } else if (existingOpp && !analysis.deveAgir) {
-              console.log(`⚠️ Movimento bloqueado pelas regras de IA: ${existingOpp.etapa} → ${analysis.etapa}`);
             } else if (!existingOpp && analysis.etapa !== "AUTOMÁTICA" && analysis.deveAgir) {
               // Criar nova oportunidade se não existir
               const novaOpp = await storage.createOpportunity({
