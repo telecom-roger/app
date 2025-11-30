@@ -2002,6 +2002,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Toggle conversation hidden status (database + WebSocket broadcast)
+  app.patch("/api/chat/conversations/:conversationId/toggle-hidden", isAuthenticated, async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      const { oculta } = req.body;
+      const user = (req.user as any);
+
+      if (typeof oculta !== 'boolean') {
+        return res.status(400).json({ error: "Campo 'oculta' deve ser boolean" });
+      }
+
+      const updated = await storage.toggleConversationHidden(conversationId, user.id, oculta);
+      
+      if (!updated) {
+        return res.status(403).json({ error: "Conversa não encontrada ou acesso negado" });
+      }
+
+      // Broadcast via WebSocket to all clients
+      const message = {
+        type: "conversation_hidden_toggled",
+        conversationId,
+        oculta,
+        userId: user.id,
+      };
+      
+      // Send to WebSocket connections
+      wsClients.forEach((client) => {
+        try {
+          client.send(JSON.stringify(message));
+        } catch (err) {
+          console.error("Erro ao enviar WebSocket message:", err);
+        }
+      });
+
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error toggling conversation hidden:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/chat/messages/:conversationId", isAuthenticated, async (req, res) => {
     try {
       const { conversationId } = req.params;

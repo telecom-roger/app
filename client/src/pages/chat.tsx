@@ -133,14 +133,6 @@ export default function Chat() {
   const [noteText, setNoteText] = useState("");
   const [noteColor, setNoteColor] = useState("bg-blue-500");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [closedConversations, setClosedConversations] = useState<Set<string>>(() => {
-    try {
-      const stored = localStorage.getItem("closedConversations");
-      return new Set(stored ? JSON.parse(stored) : []);
-    } catch {
-      return new Set();
-    }
-  });
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
   const [contextMenuConvId, setContextMenuConvId] = useState<string | null>(null);
@@ -148,26 +140,6 @@ export default function Chat() {
   const [businessValue, setBusinessValue] = useState<string>("");
   const [selectedStage, setSelectedStage] = useState<string>("");
   const [creatingOpportunity, setCreatingOpportunity] = useState(false);
-
-  // Persist closed conversations to localStorage
-  useEffect(() => {
-    localStorage.setItem("closedConversations", JSON.stringify(Array.from(closedConversations)));
-  }, [closedConversations]);
-
-  // Sync closed conversations between browser tabs
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "closedConversations" && e.newValue) {
-        try {
-          setClosedConversations(new Set(JSON.parse(e.newValue)));
-        } catch (err) {
-          console.error("Erro ao sincronizar conversas fechadas:", err);
-        }
-      }
-    };
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
 
   // Handle clientId from URL parameter
   useEffect(() => {
@@ -192,12 +164,11 @@ export default function Chat() {
       // Create or get conversation for this client
       apiRequest("POST", `/api/chat/start-conversation/${clientId}`, {})
         .then((conversa) => {
-          // Remove from closed conversations
-          setClosedConversations(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(conversa.id);
-            return newSet;
-          });
+          // Mark as not hidden if it was
+          if (conversa.oculta) {
+            apiRequest("PATCH", `/api/chat/conversations/${conversa.id}/toggle-hidden`, { oculta: false })
+              .catch(err => console.error("Erro ao reabrir conversa:", err));
+          }
           
           // Get current conversations from cache
           const currentConversations = queryClient.getQueryData<Conversation[]>(["/api/chat/conversations"]) || [];
@@ -332,14 +303,14 @@ export default function Chat() {
         if (data.type === "new_message") {
           console.log("📬 Nova mensagem recebida em tempo real:", data);
           
-          // Se a conversa estava fechada, reabre automaticamente quando recebe mensagem
-          if (data.conversationId && closedConversations.has(data.conversationId)) {
-            console.log("🔄 Reabrindo conversa fechada:", data.conversationId);
-            setClosedConversations(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(data.conversationId);
-              return newSet;
-            });
+          // Se a conversa estava oculta, reabre automaticamente quando recebe mensagem
+          if (data.conversationId) {
+            const conv = conversations.find(c => c.id === data.conversationId);
+            if (conv?.oculta) {
+              console.log("🔄 Reabrindo conversa oculta automaticamente:", data.conversationId);
+              apiRequest("PATCH", `/api/chat/conversations/${data.conversationId}/toggle-hidden`, { oculta: false })
+                .catch(err => console.error("Erro ao reabrir conversa:", err));
+            }
           }
           
           refetchConversations();
@@ -391,13 +362,9 @@ export default function Chat() {
       })
     : clients;
 
-  // Filter conversations (backend already sorts by ultimaMensagemEm DESC)
+  // Filter conversations (backend already filters oculta=false and sorts by ultimaMensagemEm DESC)
   const sortedConversations = conversations
     .filter(conv => {
-      // Filter out closed conversations
-      if (closedConversations.has(conv.id)) {
-        return false;
-      }
       // If a tag is selected, only show conversations with that tag
       if (selectedTag && conv.client?.tags) {
         return (conv.client.tags as string[]).includes(selectedTag);
@@ -1102,19 +1069,30 @@ export default function Chat() {
               <button
                 onClick={() => {
                   if (contextMenuConvId) {
-                    setClosedConversations(prev => new Set([...prev, contextMenuConvId]));
-                    if (selectedConversationId === contextMenuConvId) {
-                      setSelectedConversationId(null);
-                    }
+                    apiRequest("PATCH", `/api/chat/conversations/${contextMenuConvId}/toggle-hidden`, { oculta: true })
+                      .then(() => {
+                        if (selectedConversationId === contextMenuConvId) {
+                          setSelectedConversationId(null);
+                        }
+                        refetchConversations();
+                        toast({
+                          title: "Conversa oculta",
+                          description: "Reabrirá automaticamente quando o cliente chamar",
+                        });
+                      })
+                      .catch(err => {
+                        console.error("Erro ao ocultar conversa:", err);
+                        toast({
+                          title: "Erro",
+                          description: "Não foi possível ocultar a conversa",
+                          variant: "destructive",
+                        });
+                      });
                   }
                   setContextMenuOpen(false);
-                  toast({
-                    title: "Conversa oculta",
-                    description: "Conversa reabrirá automaticamente quando o cliente chamar",
-                  });
                 }}
                 className="w-full text-left px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-slate-900 dark:text-white"
-                data-testid="button-close-conversation"
+                data-testid="button-hide-conversation"
               >
                 Ocultar conversa
               </button>

@@ -647,10 +647,32 @@ export async function createOrGetConversation(clientId: string, userId: string):
   
   const [created] = await db
     .insert(conversations)
-    .values({ clientId, userId, canal: "whatsapp", ativa: true })
+    .values({ clientId, userId, canal: "whatsapp", ativa: true, oculta: false })
     .returning();
   console.log("✨ Nova conversa criada:", created.id);
   return created;
+}
+
+export async function toggleConversationHidden(conversationId: string, userId: string, oculta: boolean): Promise<Conversation | null> {
+  const [existing] = await db
+    .select()
+    .from(conversations)
+    .where(and(eq(conversations.id, conversationId), eq(conversations.userId, userId)))
+    .limit(1);
+  
+  if (!existing) {
+    console.error("❌ Conversa não encontrada ou sem permissão:", conversationId);
+    return null;
+  }
+
+  const [updated] = await db
+    .update(conversations)
+    .set({ oculta })
+    .where(eq(conversations.id, conversationId))
+    .returning();
+
+  console.log(`🔐 Conversa ${oculta ? 'oculta' : 'reabrida'}: ${conversationId}`);
+  return updated;
 }
 
 export async function getConversations(userId: string): Promise<any[]> {
@@ -662,6 +684,7 @@ export async function getConversations(userId: string): Promise<any[]> {
       canal: conversations.canal,
       assunto: conversations.assunto,
       ativa: conversations.ativa,
+      oculta: conversations.oculta,
       ultimaMensagem: conversations.ultimaMensagem,
       ultimaMensagemEm: conversations.ultimaMensagemEm,
       createdAt: conversations.createdAt,
@@ -675,7 +698,7 @@ export async function getConversations(userId: string): Promise<any[]> {
     })
     .from(conversations)
     .leftJoin(clients, eq(conversations.clientId, clients.id))
-    .where(eq(conversations.userId, userId))
+    .where(and(eq(conversations.userId, userId), eq(conversations.oculta, false)))
     .orderBy(desc(conversations.ultimaMensagemEm));
   
   // Add unread message counts
