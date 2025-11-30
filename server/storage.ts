@@ -662,7 +662,6 @@ export async function getConversations(userId: string): Promise<any[]> {
       canal: conversations.canal,
       assunto: conversations.assunto,
       ativa: conversations.ativa,
-      oculta: conversations.oculta,
       ultimaMensagem: conversations.ultimaMensagem,
       ultimaMensagemEm: conversations.ultimaMensagemEm,
       createdAt: conversations.createdAt,
@@ -676,7 +675,7 @@ export async function getConversations(userId: string): Promise<any[]> {
     })
     .from(conversations)
     .leftJoin(clients, eq(conversations.clientId, clients.id))
-    .where(and(eq(conversations.userId, userId), eq(conversations.oculta, false)))
+    .where(eq(conversations.userId, userId))
     .orderBy(desc(conversations.ultimaMensagemEm));
   
   // Add unread message counts

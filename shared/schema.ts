@@ -359,7 +359,6 @@ export const conversations = pgTable("conversations", {
   canal: varchar("canal", { length: 20 }).notNull().default("whatsapp"),
   assunto: text("assunto"),
   ativa: boolean("ativa").default(true),
-  oculta: boolean("oculta").default(false),
   ultimaMensagem: text("ultima_mensagem"),
   ultimaMensagemEm: timestamp("ultima_mensagem_em"),
   createdAt: timestamp("created_at").defaultNow(),
