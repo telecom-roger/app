@@ -416,6 +416,11 @@ async function executeContractReminder(task: any) {
     createdAt: new Date(),
   });
 
+  // ✅ ATUALIZAR ultimaMensagemEm para a conversa ir para o topo da fila
+  await db.update(conversations).set({
+    ultimaMensagemEm: new Date(),
+  }).where(eq(conversations.id, conversation.id));
+
   // 2️⃣ REGISTRAR NA TIMELINE DO CLIENTE (como histórico)
   await db.insert(interactions).values({
     clientId: opportunity.clientId,
@@ -549,6 +554,11 @@ async function executeContratoEnviadoMessage(task: any) {
     origem: "automation",  // ✅ Marcar como mensagem de IA/automação
     createdAt: new Date(),
   });
+
+  // ✅ ATUALIZAR ultimaMensagemEm para a conversa ir para o topo da fila
+  await db.update(conversations).set({
+    ultimaMensagemEm: new Date(),
+  }).where(eq(conversations.id, conversation.id));
 
   // 2️⃣ REGISTRAR NA TIMELINE DO CLIENTE (como histórico)
   await db.insert(interactions).values({
@@ -861,6 +871,11 @@ async function executeAguardandoAceiteReminder(task: any) {
     conteudo: mensagem,
     createdAt: new Date(),
   });
+
+  // ✅ ATUALIZAR ultimaMensagemEm para a conversa ir para o topo da fila
+  await db.update(conversations).set({
+    ultimaMensagemEm: new Date(),
+  }).where(eq(conversations.id, conversation.id));
 
   // 📋 REGISTRAR NA TIMELINE DO CLIENTE
   const titulos = {
