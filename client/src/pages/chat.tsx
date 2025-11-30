@@ -1008,6 +1008,7 @@ export default function Chat() {
 
                     const handleContextMenu = (e: React.MouseEvent) => {
                       e.preventDefault();
+                      console.log("🖱️ Context menu acionado para conversa:", conv.id);
                       setContextMenuOpen(true);
                       setContextMenuPos({ x: e.clientX, y: e.clientY });
                       setContextMenuConvId(conv.id);
