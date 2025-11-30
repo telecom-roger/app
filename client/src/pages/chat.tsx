@@ -332,6 +332,17 @@ export default function Chat() {
         const data = JSON.parse(event.data);
         if (data.type === "new_message") {
           console.log("📬 Nova mensagem recebida em tempo real:", data);
+          
+          // Se a conversa está fechada, reabre automaticamente quando recebe mensagem
+          if (data.conversationId && closedConversations.has(data.conversationId)) {
+            console.log("🔄 Reabrindo conversa fechada:", data.conversationId);
+            setClosedConversations(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(data.conversationId);
+              return newSet;
+            });
+          }
+          
           refetchConversations();
           // Se está na conversa que recebeu a mensagem, refetch mensagens também
           if (selectedConversationId === data.conversationId) {
