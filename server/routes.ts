@@ -13,9 +13,14 @@ import { checkPropostaEnviadaTimeouts } from "./automationService";
 import { analyzeClientMessage } from "./aiService";
 
 // ======================== CONSTANTES DE ETAPAS (AUTOMAÇÃO) ========================
-// ⚠️ A IA NUNCA pode tocar em etapas manuais
-const ETAPAS_AUTOMATICAS = ["LEAD", "CONTATO", "PROPOSTA", "FORNECEDOR", "PERDIDO"];
+// ⚠️ REGRAS CRÍTICAS:
+// 1. IA controla 5 etapas automáticas
+// 2. Usuário controla 5 etapas manuais (IA NUNCA toca)
+// 3. Após PROPOSTA: usuário assume, IA PARA DE AGIR
+const ETAPAS_IA_CONTROLA = ["LEAD", "CONTATO"]; // IA só move entre essas
+const ETAPAS_USUARIO_ASSUME = ["PROPOSTA", "FORNECEDOR", "PERDIDO"]; // Após essas, IA para
 const ETAPAS_MANUAIS = ["PROPOSTA ENVIADA", "AGUARDANDO CONTRATO", "CONTRATO ENVIADO", "AGUARDANDO ACEITE", "FECHADO"];
+const ETAPAS_AUTOMATICAS = [...ETAPAS_IA_CONTROLA, ...ETAPAS_USUARIO_ASSUME];
 const TODAS_ETAPAS = [...ETAPAS_AUTOMATICAS, ...ETAPAS_MANUAIS];
 
 // Track campaigns in progress
@@ -2141,13 +2146,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
               orderBy: (o: any) => desc(o.createdAt),
             });
 
-            // 🛑 BLOQUEIO CRÍTICO: Se etapa MANUAL → IA NÃO ANALISA
+            // 🛑 BLOQUEIO 1: Se etapa MANUAL → IA NÃO ANALISA
             if (existingOpp && ETAPAS_MANUAIS.includes(existingOpp.etapa)) {
               console.log(`🛑 IA BLOQUEADA: Oportunidade em etapa MANUAL (${existingOpp.etapa}) - Nenhuma ação automática`);
-            } else {
-              // ✅ Analisar mensagem (oportunidade está em etapa automática ou não existe)
+            }
+            // 🛑 BLOQUEIO 2: Se usuário já assumiu (PROPOSTA ou além) → IA PARA COMPLETAMENTE
+            else if (existingOpp && ETAPAS_USUARIO_ASSUME.includes(existingOpp.etapa)) {
+              console.log(`🛑 IA BLOQUEADA: Usuário já conduzindo (${existingOpp.etapa}) - Nenhuma ação automática`);
+            }
+            else {
+              // ✅ Analisar mensagem (oportunidade em LEAD/CONTATO ou não existe)
               const analysis = await analyzeClientMessage(conteudo, { nome: client.nome });
-              const etapa = (analysis.etapa || "contato").toUpperCase();
+              const etapa = (analysis.etapa || "CONTATO").toUpperCase();
               console.log(`🤖 IA (CHAT): ${analysis.sentimento} (${analysis.confianca}%) → ${etapa}`);
 
               // 🛑 Validar: análise retornou etapa VÁLIDA?
@@ -2169,12 +2179,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   await storage.recalculateClientStatus(conv.clientId);
                 }
               } else if (existingOpp && existingOpp.etapa !== etapa) {
-                // Validar movimento: só permite avanço, nunca retrocesso
-                const currentIndex = ETAPAS_AUTOMATICAS.indexOf(existingOpp.etapa);
-                const newIndex = ETAPAS_AUTOMATICAS.indexOf(etapa);
+                // Validar movimento: só permite avanço, nunca retrocesso, nunca para etapas de usuário
+                const currentIndex = ETAPAS_IA_CONTROLA.indexOf(existingOpp.etapa);
+                const newIndex = ETAPAS_IA_CONTROLA.indexOf(etapa);
                 
+                // IA só move DENTRO de ETAPAS_IA_CONTROLA (LEAD → CONTATO)
                 if (currentIndex >= 0 && newIndex > currentIndex) {
-                  // Movimento válido (avanço) - mover
+                  // Movimento válido (avanço em etapas IA)
                   await db.update(opportunities).set({ 
                     etapa: etapa,
                     titulo: `${client.nome} - ${analysis.motivo}`,
@@ -2186,19 +2197,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 } else if (newIndex === currentIndex) {
                   console.log(`ℹ️ OPP JÁ EM ${etapa} - Sem movimento`);
                 } else {
-                  console.log(`🛑 MOVIMENTO INVÁLIDO: ${existingOpp.etapa} → ${etapa} (retrocesso não permitido)`);
+                  console.log(`🛑 MOVIMENTO INVÁLIDO: ${existingOpp.etapa} → ${etapa}`);
                 }
               } else if (!existingOpp) {
-                // Criar nova oportunidade
+                // Criar nova oportunidade na etapa detectada
+                // Mas sempre criar em CONTATO (primeira etapa IA controla)
+                const etapaParaCriar = ETAPAS_IA_CONTROLA.includes(etapa) ? etapa : "CONTATO";
                 const [newOpp] = await db.insert(opportunities).values({
                   clientId: conv.clientId,
                   titulo: `${client.nome} - ${analysis.motivo}`,
-                  etapa: etapa,
+                  etapa: etapaParaCriar,
                   valorEstimado: "5000",
                   responsavelId: user.id || conv.userId,
                   ordem: 0,
                 }).returning();
-                console.log(`✅ OPP CRIADA (CHAT): ${etapa}`);
+                console.log(`✅ OPP CRIADA (CHAT): ${etapaParaCriar}`);
                 await storage.recalculateClientStatus(conv.clientId);
               }
             }
