@@ -253,7 +253,25 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     "aprovado",
     "fechado",
     "quero",
-    "manda"
+    "manda",
+    // 👍 EMOJIS POSITIVOS
+    "👍",
+    "✅",
+    "👌",
+    "🤝",
+    "💪",
+    "🙏",
+    "😊",
+    "😃",
+    "🔥",
+    "💯",
+    "✔",
+    "☑",
+    "👏",
+    "🎉",
+    "❤",
+    "💚",
+    "💙"
   ];
   
   // 🔥 APROVAÇÕES GENÉRICAS - (lista vazia, todas vão para PROPOSTA agora)
