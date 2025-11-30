@@ -116,6 +116,8 @@ export default function Chat() {
   // State separado para armazenar a conversa selecionada diretamente
   // (evita que o polling sobrescreva conversas novas sem mensagens)
   const [selectedConversationData, setSelectedConversationData] = useState<Conversation | null>(null);
+  // Rastrear quantidade anterior de mensagens para detectar novas
+  const [previousMessageCount, setPreviousMessageCount] = useState(0);
   
   // Get current authenticated user
   const { data: currentUser } = useQuery<User>({
@@ -350,6 +352,40 @@ export default function Chat() {
       }
     };
   }, [selectedConversationId, refetchConversations, refetchMessages, refetchOpportunities]);
+
+  // Request notification permission on component mount
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  // Mostrar notificação ao receber nova mensagem
+  useEffect(() => {
+    if (messages.length > previousMessageCount && messages.length > 0) {
+      const newMessage = messages[messages.length - 1];
+      
+      // Só mostra notificação se a mensagem é do cliente (não do usuário)
+      if (newMessage.sender === "client") {
+        const clientName = selectedConversation?.client?.nome || "Novo contato";
+        const messagePreview = newMessage.conteudo.substring(0, 50) + 
+          (newMessage.conteudo.length > 50 ? "..." : "");
+        
+        // Mostra notificação se a janela não está em foco OU se há múltiplas mensagens
+        if (!document.hasFocus() || messages.length > previousMessageCount + 1) {
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(`Nova mensagem de ${clientName}`, {
+              body: messagePreview,
+              icon: "/icon.png",
+              tag: `message-${newMessage.conversationId}`,
+            });
+          }
+        }
+      }
+      
+      setPreviousMessageCount(messages.length);
+    }
+  }, [messages, previousMessageCount, selectedConversation]);
 
   // Scroll to bottom when messages change or conversation is selected
   useEffect(() => {
