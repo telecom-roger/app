@@ -8,7 +8,7 @@ import { promisify } from "util";
 import * as storage from "./storage";
 import { db } from "./db";
 import { or, ilike, eq } from "drizzle-orm";
-import { clients as clientsTable } from "@shared/schema";
+import { clients as clientsTable, conversations } from "@shared/schema";
 import { analyzeClientMessage } from "./aiService";
 
 const execAsync = promisify(exec);
@@ -295,6 +295,16 @@ async function processIncomingMessages(sessionId: string, m: any) {
         }
 
         console.log(`[RECEBIMENTO] Conversa encontrada/criada: ${conversation.id}`);
+
+        // 🔓 SE CONVERSA ESTAVA FECHADA, REABRIR AUTOMATICAMENTE
+        if (!conversation.ativa) {
+          console.log(`🔓 Reabrindo conversa fechada: ${conversation.id}`);
+          await db
+            .update(conversations)
+            .set({ ativa: true })
+            .where(eq(conversations.id, conversation.id));
+          conversation.ativa = true;
+        }
         
         await storage.createMessage({
           conversationId: conversation.id,
