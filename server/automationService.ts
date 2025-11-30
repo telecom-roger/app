@@ -572,6 +572,7 @@ async function executeContratoEnviadoMessage(task: any) {
   });
   
   // 3️⃣ ENVIAR VIA WHATSAPP AUTOMATICAMENTE (IGUAL AO ENDPOINT POST)
+  let whatsappEnviado = false;
   try {
     // Pega a sessão do usuário (importante: por userId!)
     const [session] = await db
@@ -580,14 +581,18 @@ async function executeContratoEnviadoMessage(task: any) {
       .where(and(eq(whatsappSessions.userId, task.userId), eq(whatsappSessions.status, "conectada")))
       .limit(1);
 
-
     if (session) {
       // Usa client.celular (não telefone_2!)
       if (client && client.celular) {
         const isAlive = whatsappService.isSessionAlive(session.sessionId);
         if (isAlive) {
-          // Formata o telefone para WhatsApp
-          let telefone = client.celular.replace(/\D/g, "");
+          // Formata o telefone para WhatsApp (normalização completa)
+          let telefone = client.celular.replace(/\D/g, "").trim();
+          // Remove 55 duplicado se existir
+          if (telefone.startsWith("5555")) {
+            telefone = telefone.substring(2);
+          }
+          // Adiciona 55 se não tiver
           if (!telefone.startsWith("55")) {
             telefone = "55" + telefone;
           }
@@ -596,10 +601,12 @@ async function executeContratoEnviadoMessage(task: any) {
             console.log(`📱 Enviando contrato via WhatsApp para ${telefone}...`);
             await whatsappService.sendMessage(session.sessionId, telefone, mensagem);
             console.log(`✅ Contrato enviado via WhatsApp com sucesso para ${client.nome}`);
+            whatsappEnviado = true;
           } catch (error) {
             console.error(`❌ Erro ao enviar mensagem via WhatsApp:`, error);
-            throw error;
           }
+        } else {
+          console.warn(`⚠️ Sessão WhatsApp não está viva (isAlive=false). Mensagem só no chat.`);
         }
       } else {
         console.warn(`⚠️ Cliente sem celular. Mensagem só no chat.`);
@@ -612,9 +619,9 @@ async function executeContratoEnviadoMessage(task: any) {
   }
   
   // 🚀 BROADCAST VIA WEBSOCKET
-  wsClients.forEach((client) => {
+  wsClients.forEach((wsClient) => {
     try {
-      client.send(JSON.stringify({
+      wsClient.send(JSON.stringify({
         type: "new_message",
         conversationId: conversation.id,
         message: {
@@ -633,7 +640,11 @@ async function executeContratoEnviadoMessage(task: any) {
     }
   });
   
-  console.log(`✅ Mensagem de contrato enviada no chat e WhatsApp para ${client.nome}`);
+  if (whatsappEnviado) {
+    console.log(`✅ Mensagem de contrato enviada no chat E WhatsApp para ${client.nome}`);
+  } else {
+    console.log(`✅ Mensagem de contrato salva apenas no chat para ${client.nome} (WhatsApp offline)`);
+  }
 }
 
 // ======================== VERIFICAR PROPOSTAS ENVIADAS - Lógica de 2h timeout + 3 dias + horários comerciais ========================
