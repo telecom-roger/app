@@ -1106,7 +1106,7 @@ export default function Chat() {
                       key={conv.id}
                       onClick={() => handleSelectConversation(conv.id)}
                       onContextMenu={handleContextMenu}
-                      className={`w-full text-left p-3 rounded-lg transition-colors mb-1 hover:bg-purple-50 dark:hover:bg-[#F0F1F2] border-b border-slate-200 dark:border-slate-700 ${
+                      className={`w-full text-left p-3 rounded-lg transition-colors mb-1 hover:bg-purple-50 dark:hover:bg-chat-hover border-b border-slate-200 dark:border-slate-700 ${
                         selectedConversationId === conv.id
                           ? "bg-purple-50 dark:bg-purple-950/30 text-foreground"
                           : "text-foreground"
@@ -1116,7 +1116,7 @@ export default function Chat() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                           <Avatar className="h-8 w-8 flex-shrink-0" data-testid={`avatar-${conv.id}`}>
-                            <AvatarFallback className="bg-slate-300 dark:bg-[#F0F1F2] text-slate-700 dark:text-[#1F1F1F] text-xs font-bold">
+                            <AvatarFallback className="bg-slate-300 dark:bg-chat-avatar text-slate-700 dark:text-[#1F1F1F] text-xs font-bold">
                               {initials}
                             </AvatarFallback>
                           </Avatar>

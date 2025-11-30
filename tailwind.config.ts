@@ -88,6 +88,8 @@ export default {
           busy: "rgb(239 68 68)",
           offline: "rgb(156 163 175)",
         },
+        "chat-hover": "#F0F1F2",
+        "chat-avatar": "#F0F1F2",
       },
       fontFamily: {
         sans: ["var(--font-sans)"],
