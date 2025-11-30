@@ -994,8 +994,7 @@ export default function Chat() {
                     Nenhuma conversa ainda
                   </p>
                 ) : (
-                  <>
-                    {sortedConversations.map((conv: Conversation) => {
+                  sortedConversations.map((conv: Conversation) => {
                     const getInitials = (name: string) => {
                       return name
                         .split(" ")
@@ -1083,64 +1082,7 @@ export default function Chat() {
                       </div>
                     </button>
                     );
-                  })}
-
-                    {/* Closed Conversations Section */}
-                    {closedConversations.size > 0 && (
-                      <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                        <button
-                          onClick={() => setShowClosedConversations(!showClosedConversations)}
-                          className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center justify-between"
-                          data-testid="button-toggle-closed-conversations"
-                        >
-                          <span>Conversas Fechadas ({closedConversations.size})</span>
-                          <span>{showClosedConversations ? "▼" : "▶"}</span>
-                        </button>
-                        {showClosedConversations && (
-                          <div className="mt-2">
-                            {conversations
-                              .filter(conv => closedConversations.has(conv.id))
-                              .map((conv: Conversation) => {
-                                const getInitials = (name: string) => {
-                                  return name
-                                    .split(" ")
-                                    .slice(0, 2)
-                                    .map(word => word[0])
-                                    .join("")
-                                    .toUpperCase();
-                                };
-                                const clientName = conv.client?.nome || "Contato desconhecido";
-                                const initials = getInitials(clientName);
-
-                                return (
-                                  <button
-                                    key={conv.id}
-                                    onClick={() => handleSelectConversation(conv.id)}
-                                    className="w-full text-left p-3 rounded-lg transition-colors mb-1 hover:bg-slate-200 dark:hover:bg-slate-700 border-b border-slate-200 dark:border-slate-700 opacity-70 hover:opacity-100"
-                                    data-testid={`button-closed-conversation-${conv.id}`}
-                                  >
-                                    <div className="flex items-start justify-between gap-2">
-                                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                                        <Avatar className="h-8 w-8 flex-shrink-0">
-                                          <AvatarFallback className="bg-slate-300 dark:bg-slate-600 text-slate-700 dark:text-slate-300 text-xs font-bold">
-                                            {initials}
-                                          </AvatarFallback>
-                                        </Avatar>
-                                        <p className="text-sm font-medium truncate text-slate-600 dark:text-slate-400">
-                                          {clientName.length > 30
-                                            ? clientName.substring(0, 30) + "..."
-                                            : clientName}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </button>
-                                );
-                              })}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </>
+                  })
                 )}
               </>
             )}
@@ -1172,14 +1114,14 @@ export default function Chat() {
                   }
                   setContextMenuOpen(false);
                   toast({
-                    title: "Conversa fechada",
-                    description: "A conversa foi fechada, mas continua no banco de dados",
+                    title: "Conversa oculta",
+                    description: "Conversa reabrirá automaticamente quando o cliente chamar",
                   });
                 }}
                 className="w-full text-left px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-slate-900 dark:text-white"
                 data-testid="button-close-conversation"
               >
-                Fechar conversa
+                Ocultar conversa
               </button>
             </div>
           </>
