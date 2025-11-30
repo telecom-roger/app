@@ -365,21 +365,24 @@ async function processIncomingMessages(sessionId: string, m: any) {
             console.log(`📊 [VERIFICAÇÃO POSITIVA] Sentimento: ${analysis.sentimento}, Intenção: ${analysis.intenção}`);
             console.log(`   Condição (positivo || aprovacao): ${analysis.sentimento === "positivo" || analysis.intenção === "aprovacao_envio"}`);
             if ((analysis.sentimento === "positivo" || analysis.intenção === "aprovacao_envio") && analysis.etapa !== "AUTOMÁTICA") {
-              console.log(`✅ [ENCONTRADA RESPOSTA POSITIVA] Etapa: ${analysis.etapa}`);
+              // ✅ USAR ETAPA ATUAL DA OPORTUNIDADE (não a detectada pela IA)
+              // Isso garante que cliente em CONTATO receba msg de CONTATO, mesmo se IA classificar como PROPOSTA
+              const etapaParaMensagem = existingOpp?.etapa || analysis.etapa;
+              console.log(`✅ [ENCONTRADA RESPOSTA POSITIVA] Etapa atual: ${etapaParaMensagem} (IA detectou: ${analysis.etapa})`);
               try {
                 // Buscar config de automação para pegar a mensagem apropriada
                 const [config] = await db.select().from(automationConfigs).where(eq(automationConfigs.jobType, "ia_resposta_positiva")).limit(1);
-                console.log(`📋 [CONFIG AUTOMAÇÃO] Encontrado: ${!!config}, Etapa: ${analysis.etapa}`);
+                console.log(`📋 [CONFIG AUTOMAÇÃO] Encontrado: ${!!config}, Etapa: ${etapaParaMensagem}`);
                 
                 let mensagemAutomatica = "";
-                if (analysis.etapa === "CONTATO" && config?.mensagemContatoPositivo) {
+                if (etapaParaMensagem === "CONTATO" && config?.mensagemContatoPositivo) {
                   mensagemAutomatica = config.mensagemContatoPositivo;
                   console.log(`💬 [MENSAGEM CONTATO] Usando: ${mensagemAutomatica.substring(0, 50)}...`);
-                } else if (analysis.etapa === "PROPOSTA" && config?.mensagemPropostaPositivo) {
+                } else if (etapaParaMensagem === "PROPOSTA" && config?.mensagemPropostaPositivo) {
                   mensagemAutomatica = config.mensagemPropostaPositivo;
                   console.log(`💬 [MENSAGEM PROPOSTA] Usando: ${mensagemAutomatica.substring(0, 50)}...`);
                 } else {
-                  console.log(`❌ [SEM MENSAGEM] Etapa: ${analysis.etapa}, Config: ${!!config?.mensagemContatoPositivo} (contato), ${!!config?.mensagemPropostaPositivo} (proposta)`);
+                  console.log(`❌ [SEM MENSAGEM] Etapa: ${etapaParaMensagem}, Config: ${!!config?.mensagemContatoPositivo} (contato), ${!!config?.mensagemPropostaPositivo} (proposta)`);
                 }
                 
                 if (mensagemAutomatica) {
