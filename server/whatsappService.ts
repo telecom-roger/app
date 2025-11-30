@@ -418,7 +418,7 @@ async function processIncomingMessages(sessionId: string, m: any) {
                     });
                     
                     // 📱 ENVIAR VIA WHATSAPP COM DELAY RANDOMICO (fire-and-forget)
-                    if (isSessionAlive(userId)) {
+                    if (isSessionAlive(sessionId)) {
                       const telefoneFormatado = client?.celular?.replace(/\D/g, '').replace(/^55/, '');
                       if (telefoneFormatado) {
                         // ⏱️ Delay randomico entre 20-40 segundos
@@ -428,8 +428,8 @@ async function processIncomingMessages(sessionId: string, m: any) {
                         // Fire-and-forget: não espera o timeout
                         setTimeout(async () => {
                           try {
-                            if (isSessionAlive(userId)) {
-                              const sock = activeSessions.get(userId);
+                            if (isSessionAlive(sessionId)) {
+                              const sock = activeSessions.get(sessionId);
                               if (sock) {
                                 await sock.sendMessage(`${telefoneFormatado}@c.us`, { text: mensagemAutomatica });
                                 console.log(`✅ Mensagem automática enviada via WhatsApp (após delay): ${telefoneFormatado}`);
