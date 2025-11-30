@@ -32,6 +32,9 @@ const ETAPAS_MANUAIS_BLOQUEADAS = [
 ];
 const TODAS_ETAPAS = ["LEAD", "CONTATO", "PROPOSTA", "AUTOMÁTICA", "PERDIDO", "PROPOSTA ENVIADA", "AGUARDANDO CONTRATO", "CONTRATO ENVIADO", "AGUARDANDO ACEITE", "AGUARDANDO ATENÇÃO", "FECHADO"];
 
+// ✅ WEBSOCKET CLIENTS - Broadcast quando mensagens chegam (cron jobs)
+export let wsClients = new Set<any>();
+
 // Track campaigns in progress
 const campanhasEmProgresso = new Map<string, {
   id: string;

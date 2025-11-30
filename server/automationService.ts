@@ -4,6 +4,7 @@ import { eq, and, lt, isNull, gte, desc, sql } from "drizzle-orm";
 import { automationTasks, followUps, clientScores, opportunities, clients as clientsTable, messages, interactions, conversations, whatsappSessions } from "@shared/schema";
 import { analyzeClientMessage } from "./aiService";
 import * as whatsappService from "./whatsappService";
+import { wsClients } from "./routes";
 
 // ======================== HELPER: Verificar se é dia de semana ========================
 function isWeekday(): boolean {
@@ -460,6 +461,28 @@ async function executeContractReminder(task: any) {
     console.error(`❌ Erro ao enviar WhatsApp:`, error);
   }
   
+  // 🚀 BROADCAST VIA WEBSOCKET
+  wsClients.forEach((client) => {
+    try {
+      client.send(JSON.stringify({
+        type: "new_message",
+        conversationId: conversation.id,
+        message: {
+          id: "automation-" + Date.now(),
+          conversationId: conversation.id,
+          sender: "user",
+          tipo: "texto",
+          conteudo: mensagem,
+          origem: "automation",
+          createdAt: new Date(),
+        },
+        timestamp: new Date(),
+      }));
+    } catch (err) {
+      console.error("❌ Erro ao broadcast WebSocket:", err);
+    }
+  });
+  
   console.log(`✅ Mensagem enviada no chat e registrada na timeline de ${client.nome}`);
 }
 
@@ -577,6 +600,28 @@ async function executeContratoEnviadoMessage(task: any) {
   } catch (error) {
     console.error(`❌ Erro ao enviar WhatsApp:`, error);
   }
+  
+  // 🚀 BROADCAST VIA WEBSOCKET
+  wsClients.forEach((client) => {
+    try {
+      client.send(JSON.stringify({
+        type: "new_message",
+        conversationId: conversation.id,
+        message: {
+          id: "automation-" + Date.now(),
+          conversationId: conversation.id,
+          sender: "user",
+          tipo: "texto",
+          conteudo: mensagem,
+          origem: "automation",
+          createdAt: new Date(),
+        },
+        timestamp: new Date(),
+      }));
+    } catch (err) {
+      console.error("❌ Erro ao broadcast WebSocket:", err);
+    }
+  });
   
   console.log(`✅ Mensagem de contrato enviada no chat e WhatsApp para ${client.nome}`);
 }
@@ -867,6 +912,28 @@ async function executeAguardandoAceiteReminder(task: any) {
   } catch (error) {
     console.error(`❌ Erro ao enviar WhatsApp:`, error);
   }
+  
+  // 🚀 BROADCAST VIA WEBSOCKET
+  wsClients.forEach((client) => {
+    try {
+      client.send(JSON.stringify({
+        type: "new_message",
+        conversationId: conversation.id,
+        message: {
+          id: "automation-" + Date.now(),
+          conversationId: conversation.id,
+          sender: "user",
+          tipo: "texto",
+          conteudo: mensagem,
+          origem: "automation",
+          createdAt: new Date(),
+        },
+        timestamp: new Date(),
+      }));
+    } catch (err) {
+      console.error("❌ Erro ao broadcast WebSocket:", err);
+    }
+  });
   
   console.log(`✅ Lembrete ${lembreteNum}/3 enviado para ${client.nome}`);
   
