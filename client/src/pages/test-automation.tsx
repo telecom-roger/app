@@ -7,26 +7,34 @@ import { apiRequest } from "@/lib/queryClient";
 
 export default function TestAutomation() {
   const { toast } = useToast();
-  const [clientId, setClientId] = useState("");
+  const [clientId, setClientId] = useState("766bf501-48d4-4d3f-ae71-d4093fa5df49"); // FLAVIO MOREIRA DE MORAES
   const [userId, setUserId] = useState("");
   const [message, setMessage] = useState("Ótimo! Gostei da proposta");
   const [contractReminderResult, setContractReminderResult] = useState<any>(null);
   const [contratoEnviadoResult, setContratoEnviadoResult] = useState<any>(null);
   const [cleanupResult, setCleanupResult] = useState<any>(null);
 
+  // Clientes de teste fixos
+  const TEST_CLIENTS = [
+    { id: "766bf501-48d4-4d3f-ae71-d4093fa5df49", nome: "FLAVIO MOREIRA DE MORAES" },
+    { id: "a5bbd859-684c-44c2-aaa1-cb6a6300d364", nome: "SABRINA MOBILON" },
+  ];
+
   // Get clients and users list
   const { data: testData = { clients: [], users: [] }, isLoading: loadingTestData } = useQuery({
     queryKey: ["/api/test/clients-list"],
     queryFn: async () => {
       const response = await fetch("/api/test/clients-list");
-      return response.json();
+      const data = await response.json();
+      // Filtrar apenas os clientes de teste
+      return {
+        ...data,
+        clients: data.clients.filter((c: any) => TEST_CLIENTS.some(tc => tc.id === c.id))
+      };
     },
   });
 
-  // Auto-set first client and user
-  if (testData.clients.length > 0 && !clientId && testData.clients[0]?.id) {
-    setClientId(testData.clients[0].id);
-  }
+  // Auto-set first user
   if (testData.users.length > 0 && !userId && testData.users[0]?.id) {
     setUserId(testData.users[0].id);
   }
