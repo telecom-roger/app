@@ -355,8 +355,19 @@ export default function Chat() {
 
   // Request notification permission on component mount
   useEffect(() => {
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
+    if ("Notification" in window) {
+      console.log("🔔 Status de notificações:", Notification.permission);
+      
+      // Pedir permissão se ainda não foi solicitada
+      if (Notification.permission === "default") {
+        Notification.requestPermission().then(permission => {
+          console.log("🔔 Permissão de notificação respondida:", permission);
+        });
+      } else if (Notification.permission === "denied") {
+        console.log("⚠️ Notificações foram bloqueadas. Verifique as configurações do navegador.");
+      }
+    } else {
+      console.log("⚠️ Notificações não suportadas neste navegador");
     }
   }, []);
 
