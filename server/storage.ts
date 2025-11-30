@@ -355,10 +355,22 @@ export async function createInteraction(data: InsertInteraction): Promise<Intera
   return result;
 }
 
-export async function getTimelineByClientId(clientId: string): Promise<Interaction[]> {
+export async function getTimelineByClientId(clientId: string): Promise<any[]> {
   return await db
-    .select()
+    .select({
+      id: interactions.id,
+      clientId: interactions.clientId,
+      tipo: interactions.tipo,
+      origem: interactions.origem,
+      titulo: interactions.titulo,
+      texto: interactions.texto,
+      meta: interactions.meta,
+      createdBy: interactions.createdBy,
+      createdAt: interactions.createdAt,
+      userName: users.firstName,
+    })
     .from(interactions)
+    .leftJoin(users, eq(interactions.createdBy, users.id))
     .where(eq(interactions.clientId, clientId))
     .orderBy(desc(interactions.createdAt));
 }

@@ -459,17 +459,35 @@ export default function ClienteProfile() {
   );
 }
 
-function TimelineItem({ item }: { item: Interaction }) {
+function TimelineItem({ item }: { item: any }) {
   const iconMap: Record<string, React.ReactNode> = {
     nota: <FileText className="h-5 w-5" />,
     email_enviado: <Mail className="h-5 w-5" />,
     whatsapp_enviado: <MessageSquare className="h-5 w-5" />,
     status_mudou: <Target className="h-5 w-5" />,
+    etapa_mudou: <Target className="h-5 w-5" />,
     campanha: <Mail className="h-5 w-5" />,
   };
 
+  // Format date: "30/11/2025, 03:37"
+  const formatDate = (date: string | Date | null) => {
+    if (!date) return 'Data desconhecida';
+    const d = new Date(date);
+    return d.toLocaleString('pt-BR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  // Get tipo movimento from meta
+  const tipoMovimento = (item.meta as any)?.tipo_movimento || item.origem;
+  const userName = item.userName || 'Sistema';
+
   return (
-    <Card className="hover-elevate bg-card border-border">
+    <Card className="hover-elevate bg-white dark:bg-white border-border">
       <CardContent className="pt-4">
         <div className="flex gap-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary flex-shrink-0">
@@ -478,23 +496,18 @@ function TimelineItem({ item }: { item: Interaction }) {
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <h4 className="font-semibold text-xs" data-testid={`timeline-item-title-${item.id}`}>
+                <h4 className="font-semibold text-xs text-slate-900" data-testid={`timeline-item-title-${item.id}`}>
                   {item.titulo || item.tipo}
                 </h4>
-                <div className="flex items-center gap-1 flex-wrap">
-                  <p className="text-[10px] text-muted-foreground">
-                    {item.createdAt ? new Date(item.createdAt).toLocaleString('pt-BR') : 'Data desconhecida'}
+                <div className="flex items-center gap-1 flex-wrap mt-1">
+                  <p className="text-[10px] text-slate-600">
+                    {formatDate(item.createdAt)} - por {tipoMovimento}
                   </p>
-                  {(item as any).origem === "automation" && (
-                    <span className="text-[10px] text-muted-foreground italic" data-testid={`timeline-ai-${item.id}`}>
-                      enviado por IA
-                    </span>
-                  )}
                 </div>
               </div>
             </div>
             {item.texto && (
-              <p className="text-xs text-muted-foreground mt-2 leading-relaxed break-words">
+              <p className="text-xs text-slate-600 mt-2 leading-relaxed break-words">
                 {item.texto}
               </p>
             )}
