@@ -3595,6 +3595,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== TEST: Auto-create client from phone (SEM WHATSAPP) ====================
+  app.post("/api/test/auto-create-client", isAuthenticated, async (req, res) => {
+    try {
+      const { phone } = req.body;
+      const user = req.user as any;
+
+      if (!phone) {
+        return res.status(400).json({ error: "Telefone é obrigatório" });
+      }
+
+      // Normalize phone
+      let normalizado = phone.replace(/\D/g, "");
+      if (normalizado.startsWith("55")) {
+        normalizado = normalizado.substring(2);
+      }
+
+      console.log(`\n🧪 [TEST] Iniciando auto-create-client para: ${normalizado}`);
+
+      // Search for existing client
+      const [existingClient] = await db
+        .select()
+        .from(clients)
+        .where(or(
+          eq(clients.celular, normalizado),
+          eq(clients.telefone2, normalizado),
+          ilike(clients.celular, `%${normalizado}%`),
+          ilike(clients.telefone2, `%${normalizado}%`)
+        ))
+        .limit(1);
+
+      let clientResult;
+      let isNew = false;
+
+      if (existingClient) {
+        console.log(`✅ Cliente encontrado: ${existingClient.id} (${existingClient.nome})`);
+        clientResult = existingClient;
+      } else {
+        console.log(`🆕 Cliente não encontrado, criando novo...`);
+        
+        // Auto-create new client
+        const novoCliente = await storage.createClient({
+          nome: `Novo contato ${normalizado}`,
+          celular: normalizado,
+          status: "Lead",
+          carteira: "Dominio",
+          createdBy: user.id,
+        });
+
+        console.log(`✅ Novo cliente criado: ${novoCliente.id}`);
+
+        // Create timeline entry
+        await storage.createInteraction({
+          clientId: novoCliente.id,
+          tipo: "nota",
+          origem: "system",
+          titulo: "Contato criado por sistema",
+          texto: `Contato criado automaticamente (via teste) em ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`,
+          createdBy: user.id,
+        });
+
+        console.log(`📍 Timeline entry criada`);
+        clientResult = novoCliente;
+        isNew = true;
+      }
+
+      res.json({
+        success: true,
+        isNew,
+        message: isNew ? "✅ Novo cliente criado!" : "✅ Cliente encontrado!",
+        cliente: {
+          id: clientResult.id,
+          nome: clientResult.nome,
+          telefone: clientResult.celular,
+          status: clientResult.status,
+          criadoEm: clientResult.createdAt,
+        },
+      });
+    } catch (error: any) {
+      console.error("❌ Test auto-create error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ==================== ADMIN: AUTOMATION CONFIGS ====================
   app.get("/api/admin/automation-configs", isAuthenticated, async (req, res) => {
     try {

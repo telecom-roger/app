@@ -10,9 +10,11 @@ export default function TestAutomation() {
   const [clientId, setClientId] = useState("766bf501-48d4-4d3f-ae71-d4093fa5df49"); // FLAVIO MOREIRA DE MORAES
   const [userId, setUserId] = useState("");
   const [message, setMessage] = useState("Ótimo! Gostei da proposta");
+  const [phoneForAutoCreate, setPhoneForAutoCreate] = useState("");
   const [contractReminderResult, setContractReminderResult] = useState<any>(null);
   const [contratoEnviadoResult, setContratoEnviadoResult] = useState<any>(null);
   const [cleanupResult, setCleanupResult] = useState<any>(null);
+  const [autoCreateResult, setAutoCreateResult] = useState<any>(null);
 
   // Clientes de teste fixos
   const TEST_CLIENTS = [
@@ -158,8 +160,29 @@ export default function TestAutomation() {
     },
   });
 
-  // Test automation checks with current time
+  // Test auto-create client from phone (SEM WHATSAPP)
   const [automationChecksResult, setAutomationChecksResult] = useState<any>(null);
+  const autoCreateClientMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/test/auto-create-client", {
+        phone: phoneForAutoCreate,
+      });
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      setAutoCreateResult(data);
+      toast({ 
+        title: data.isNew ? "✅ Novo cliente criado!" : "✅ Cliente encontrado!", 
+        description: `${data.cliente.nome}` 
+      });
+      setPhoneForAutoCreate("");
+    },
+    onError: (error: any) => {
+      toast({ title: "❌ Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Test automation checks with current time
   const automationChecksMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/test/run-automation-checks", {});
@@ -397,10 +420,56 @@ export default function TestAutomation() {
         )}
       </Card>
 
+      {/* AUTO-CREATE CLIENT TEST (SEM WHATSAPP) */}
+      <Card className="p-6 bg-slate-800 border-indigo-500/20">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-white">5️⃣ Teste: Criar Cliente SEM WhatsApp</h2>
+          <span className="text-xs text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded">NOVO!</span>
+        </div>
+
+        <p className="text-slate-300 mb-4 text-xs">
+          Cria um novo cliente simulando o recebimento de uma mensagem (sem enviar WhatsApp de verdade)
+        </p>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Telefone</label>
+            <input
+              type="text"
+              value={phoneForAutoCreate}
+              onChange={(e) => setPhoneForAutoCreate(e.target.value)}
+              placeholder="19999999999 ou +55 19 99999-9999"
+              className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600 text-xs"
+              data-testid="input-phone-autocreate"
+            />
+          </div>
+
+          <Button
+            onClick={() => autoCreateClientMutation.mutate()}
+            disabled={autoCreateClientMutation.isPending || !phoneForAutoCreate}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 mb-4"
+            data-testid="button-auto-create-client"
+          >
+            {autoCreateClientMutation.isPending ? "Criando..." : "🆕 Criar Cliente (Teste)"}
+          </Button>
+
+          {autoCreateResult && (
+            <div className={`p-3 rounded border ${autoCreateResult.isNew ? 'bg-green-500/10 border-green-500/30' : 'bg-blue-500/10 border-blue-500/30'}`}>
+              <p className={`font-bold ${autoCreateResult.isNew ? 'text-green-300' : 'text-blue-300'}`}>
+                {autoCreateResult.message}
+              </p>
+              <p className="text-slate-300 text-xs mt-2">Nome: <span className="text-slate-200">{autoCreateResult.cliente.nome}</span></p>
+              <p className="text-slate-300 text-xs">Telefone: <span className="text-slate-200">{autoCreateResult.cliente.telefone}</span></p>
+              <p className="text-slate-300 text-xs">Criado em: <span className="text-slate-200">{new Date(autoCreateResult.cliente.criadoEm).toLocaleString('pt-BR')}</span></p>
+            </div>
+          )}
+        </div>
+      </Card>
+
       {/* AGUARDANDO ACEITE TEST */}
       <Card className="p-6 bg-slate-800 border-purple-500/20">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-white">5️⃣ Teste Aguardando Aceite</h2>
+          <h2 className="text-xl font-bold text-white">6️⃣ Teste Aguardando Aceite</h2>
           <span className="text-xs text-purple-400 bg-purple-500/10 px-2 py-1 rounded">NOVO!</span>
         </div>
 
@@ -420,7 +489,7 @@ export default function TestAutomation() {
 
       {/* 4º DIA - AUTO-MOVE PERDIDO */}
       <Card className="p-6 bg-slate-800 border-red-500/20">
-        <h2 className="text-xl font-bold text-white mb-4">6️⃣ Teste 4º Dia (Auto-Move PERDIDO)</h2>
+        <h2 className="text-xl font-bold text-white mb-4">7️⃣ Teste 4º Dia (Auto-Move PERDIDO)</h2>
         
         <p className="text-slate-300 mb-4 text-xs">
           Simula que passaram 4 dias sem resposta e o sistema automaticamente move para PERDIDO com timeline
@@ -438,7 +507,7 @@ export default function TestAutomation() {
 
       {/* CLIENT STATUS AUTOMATION TEST */}
       <Card className="p-6 bg-slate-800 border-green-500/20">
-        <h2 className="text-xl font-bold text-white mb-4">7️⃣ Teste Automação de Status do Cliente</h2>
+        <h2 className="text-xl font-bold text-white mb-4">8️⃣ Teste Automação de Status do Cliente</h2>
         
         <p className="text-slate-300 mb-4 text-xs">
           Recalcula automaticamente o status do cliente baseado nas oportunidades dele. O status NUNCA é manual e sempre segue a etapa mais avançada!
