@@ -172,8 +172,9 @@ export default function Chat() {
               .catch(err => console.error("Erro ao reabrir conversa:", err));
           }
           
-          // Get current conversations from cache
-          const currentConversations = queryClient.getQueryData<Conversation[]>(["/api/chat/conversations"]) || [];
+          // Get current conversations from cache (usar a mesma queryKey exata)
+          const queryKey = ["/api/chat/conversations", { showHidden: showHiddenConversations }];
+          const currentConversations = queryClient.getQueryData<Conversation[]>(queryKey) || [];
           
           // Check if conversation already exists in cache
           const existingIndex = currentConversations.findIndex(c => c.id === conversa.id);
@@ -187,7 +188,7 @@ export default function Chat() {
             currentConversations.unshift(conversa);
           }
           
-          queryClient.setQueryData(["/api/chat/conversations"], currentConversations);
+          queryClient.setQueryData(queryKey, currentConversations);
           
           // Now select the conversation
           setSelectedConversationId(conversa.id);
@@ -388,12 +389,29 @@ export default function Chat() {
       return res.json();
     },
     onSuccess: (data: any) => {
+      // Usar a mesma queryKey exata que a query usa
+      const queryKey = ["/api/chat/conversations", { showHidden: showHiddenConversations }];
+      const currentConversations = queryClient.getQueryData<Conversation[]>(queryKey) || [];
+      const existingIndex = currentConversations.findIndex(c => c.id === data.id);
+      
+      if (existingIndex >= 0) {
+        // Atualiza existente
+        currentConversations[existingIndex] = { ...currentConversations[existingIndex], ...data };
+      } else {
+        // Adiciona nova no topo
+        currentConversations.unshift(data);
+      }
+      
+      queryClient.setQueryData(queryKey, [...currentConversations]);
+      
+      // Agora seleciona a conversa (ela já está no cache)
       setSelectedConversationId(data.id);
       setSearchTerm("");
       setShowSearchResults(false);
+      
+      // Refetch em background para garantir dados atualizados
       refetchConversations();
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
-      toast({ title: "Conversa carregada", variant: "default" });
     },
     onError: (error: any) => {
       console.error("❌ Erro ao carregar conversa:", error);

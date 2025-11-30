@@ -2648,7 +2648,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const conv = await storage.createOrGetConversation(client.id, userId);
       console.log(`[CHAT] ✨ Conversa criada/carregada: ${conv.id}`);
-      res.json(conv);
+      
+      // Retornar conversa COM dados do cliente (igual getConversationsByUserId)
+      res.json({
+        ...conv,
+        client: {
+          id: client.id,
+          nome: client.nome,
+          celular: client.celular,
+          tags: client.tags,
+        }
+      });
     } catch (error: any) {
       console.error("Error getting conversation:", error);
       res.status(500).json({ error: "Internal server error" });
