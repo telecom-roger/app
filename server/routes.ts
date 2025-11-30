@@ -3243,7 +3243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await db.insert(automationTasks).values({
         userId,
         clientId,
-        tipo: "contrato_enviado",
+        tipo: "contrato_enviado_message",
         proximaExecucao: new Date(), // Executar AGORA
         dados: { opportunityId: opp.id },
       });
