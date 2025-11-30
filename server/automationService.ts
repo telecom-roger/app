@@ -586,7 +586,7 @@ export async function checkPropostaEnviadaTimeouts() {
           .where(eq(opportunities.id, opp.id));
 
         // 📝 REGISTRAR MUDANÇA NA TIMELINE (Sistema)
-        await (await import("./storage")).recordEtapaChange(
+        await storage.recordEtapaChange(
           opp.id,
           opp.clientId,
           "PROPOSTA ENVIADA",

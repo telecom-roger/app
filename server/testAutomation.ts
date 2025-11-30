@@ -219,8 +219,8 @@ export async function executeKanbanMove(task: any) {
 
     // 📝 REGISTRAR NA TIMELINE (Sistema - teste)
     if (oldOpp) {
-      const storage = await import("./storage");
-      await storage.recordEtapaChange(oppId, oldOpp.clientId, oldOpp.etapa, toStage, "sistema", task.userId);
+      const storageModule = await import("./storage");
+      await storageModule.recordEtapaChange(oppId, oldOpp.clientId, oldOpp.etapa, toStage, "sistema", task.userId);
     }
 
     console.log(`✅ Movido!`);
