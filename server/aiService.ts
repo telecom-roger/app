@@ -8,7 +8,7 @@ export interface MessageAnalysis {
   sentimento: "positivo" | "negativo" | "neutro" | "fornecedor";
   confianca: number;
   motivo: string;
-  etapa: "contato" | "proposta" | "fornecedor" | "perdido"; // Apenas 4 etapas automáticas!
+  etapa: "CONTATO" | "PROPOSTA" | "FORNECEDOR" | "PERDIDO" | "LEAD"; // Etapas automáticas em MAIÚSCULA
   deveAgir: boolean; // true = mover/criar, false = manter etapa atual sem mover
   ehRecusaParcial: boolean; // true = recusa parcial/alteração, alerta atendente
   sugestao: string;
@@ -62,7 +62,7 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
       sentimento: "neutro",
       confianca: 70,
       motivo: "Recusa parcial ou indecisão - cliente quer modificar, não rejeitar",
-      etapa: "contato",
+      etapa: "CONTATO",
       deveAgir: false,
       ehRecusaParcial: msg.includes("cancelar") || msg.includes("reduzir") || msg.includes("remover"),
       sugestao: "⚠️ Cliente deseja ajustes - negociar modificações",
@@ -91,7 +91,7 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
       sentimento: "negativo",
       confianca: 95,
       motivo: "Recusa total detectada - cliente rejeita tudo",
-      etapa: "perdido",
+      etapa: "PERDIDO",
       deveAgir: true, // true = move para PERDIDO
       ehRecusaParcial: false,
       sugestao: "Arquivar oportunidade",
@@ -106,7 +106,7 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
       sentimento: "fornecedor",
       confianca: 90,
       motivo: "Mensagem automática",
-      etapa: "fornecedor",
+      etapa: "FORNECEDOR",
       deveAgir: true,
       ehRecusaParcial: false,
       sugestao: "Aguardando resposta",
@@ -124,7 +124,7 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
       sentimento: "positivo",
       confianca: 95,
       motivo: "Aprovação detectada",
-      etapa: "proposta",
+      etapa: "PROPOSTA",
       deveAgir: true,
       ehRecusaParcial: false,
       sugestao: "Enviar proposta",
@@ -138,7 +138,7 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
       sentimento: "positivo",
       confianca: 85,
       motivo: "Pergunta sobre preço",
-      etapa: "contato",
+      etapa: "CONTATO",
       deveAgir: true,
       ehRecusaParcial: false,
       sugestao: "Enviar tabela",
@@ -150,7 +150,7 @@ function analyzeLocalTest(mensagem: string): MessageAnalysis {
     sentimento: "neutro",
     confianca: 50,
     motivo: "Mensagem inicial",
-    etapa: "contato",
+    etapa: "CONTATO",
     deveAgir: true,
     ehRecusaParcial: false,
     sugestao: "Engajar",
@@ -204,23 +204,23 @@ CLIENTE: ${clienteInfo?.nome || "Desconhecido"}
    ✓ "Deixa comigo" → false
    ✓ "Se eu cancelar quanto pago de multa?" → false (informação, não decisão)
 
-▶️ 4 ETAPAS (escolha 1):
-1. "contato" - Pergunta preço/valor OU mensagem inicial ("oi", "tudo bem?")
-2. "proposta" - APROVAÇÃO: "ok", "sim", "manda", "gostei", "legal", "adorei"
-3. "fornecedor" - Mensagens automáticas: "deixe contato", "breve", "aguarde"
-4. "perdido" - APENAS RECUSA TOTAL (rejeitou tudo)
+▶️ 4 ETAPAS (escolha 1 - SEMPRE EM MAIÚSCULA):
+1. "CONTATO" - Pergunta preço/valor OU mensagem inicial ("oi", "tudo bem?")
+2. "PROPOSTA" - APROVAÇÃO: "ok", "sim", "manda", "gostei", "legal", "adorei"
+3. "FORNECEDOR" - Mensagens automáticas: "deixe contato", "breve", "aguarde"
+4. "PERDIDO" - APENAS RECUSA TOTAL (rejeitou tudo)
 
 ▶️ RETORNE deveAgir + ehRecusaParcial:
 - deveAgir: true = Move para próxima etapa, false = Mantém etapa atual
 - ehRecusaParcial: true = Cliente quer ajustes (alertar atendente), false = Padrão
 
-JSON - ETAPAS EM MINÚSCULA:
-{"sentimento":"positivo","confianca":95,"motivo":"Cliente aprovou","etapa":"proposta","deveAgir":true,"ehRecusaParcial":false,"sugestao":"Enviar proposta"}
+JSON - ETAPAS EM MAIÚSCULA:
+{"sentimento":"positivo","confianca":95,"motivo":"Cliente aprovou","etapa":"PROPOSTA","deveAgir":true,"ehRecusaParcial":false,"sugestao":"Enviar proposta"}
 
 EXEMPLOS:
-✓ "Não quero renovar nada" → etapa:"perdido", deveAgir:true, ehRecusaParcial:false
-✓ "Cancelar algumas linhas" → etapa:"contato", deveAgir:false, ehRecusaParcial:true
-✓ "Ok, manda" → etapa:"proposta", deveAgir:true, ehRecusaParcial:false`;
+✓ "Não quero renovar nada" → etapa:"PERDIDO", deveAgir:true, ehRecusaParcial:false
+✓ "Cancelar algumas linhas" → etapa:"CONTATO", deveAgir:false, ehRecusaParcial:true
+✓ "Ok, manda" → etapa:"PROPOSTA", deveAgir:true, ehRecusaParcial:false`;
 
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
@@ -236,8 +236,8 @@ EXEMPLOS:
     const analysis = JSON.parse(messageContent) as MessageAnalysis;
     console.log(`📝 [DEBUG] Etapa ANTES de normalizar: "${analysis.etapa}"`);
     
-    // Normalizar etapa para minúscula (OpenAI pode retornar em MAIÚSCULA)
-    analysis.etapa = analysis.etapa.toLowerCase() as any;
+    // Normalizar etapa para MAIÚSCULA (OpenAI pode retornar em minúscula)
+    analysis.etapa = analysis.etapa.toUpperCase() as any;
     console.log(`📝 [DEBUG] Etapa DEPOIS de normalizar: "${analysis.etapa}"`);
     console.log(`🤖 IA (OPENAI): ${analysis.sentimento} (${analysis.confianca}%) → ${analysis.etapa}`);
     return analysis;

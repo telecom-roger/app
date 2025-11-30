@@ -12,6 +12,12 @@ import { simulateClientResponse, getAllAutomationTasks, getAllFollowUps, getAllC
 import { checkPropostaEnviadaTimeouts } from "./automationService";
 import { analyzeClientMessage } from "./aiService";
 
+// ======================== CONSTANTES DE ETAPAS (AUTOMAÇÃO) ========================
+// ⚠️ A IA NUNCA pode tocar em etapas manuais
+const ETAPAS_AUTOMATICAS = ["LEAD", "CONTATO", "PROPOSTA", "FORNECEDOR", "PERDIDO"];
+const ETAPAS_MANUAIS = ["PROPOSTA ENVIADA", "AGUARDANDO CONTRATO", "CONTRATO ENVIADO", "AGUARDANDO ACEITE", "FECHADO"];
+const TODAS_ETAPAS = [...ETAPAS_AUTOMATICAS, ...ETAPAS_MANUAIS];
+
 // Track campaigns in progress
 const campanhasEmProgresso = new Map<string, {
   id: string;
@@ -2125,49 +2131,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (conv && conv.clientId) {
           const client = await storage.getClientById(conv.clientId);
           if (client) {
-            const analysis = await analyzeClientMessage(conteudo, { nome: client.nome });
-            console.log(`🤖 IA (CHAT): ${analysis.sentimento} (${analysis.confianca}%) → ${analysis.etapa}`);
+            // Buscar oportunidade existente
+            const existingOpp = await db.query.opportunities.findFirst({
+              where: (o: any) => 
+                and(
+                  eq(o.clientId, conv.clientId),
+                  sql`${o.etapa} NOT IN ('PERDIDO', 'FECHADO')`
+                ),
+              orderBy: (o: any) => desc(o.createdAt),
+            });
 
-            // 3. Criar/mover oportunidade se análise indicar ação
-            if (analysis.etapa) {
-              const etapasFinais = ["PERDIDO", "FECHADO"];
-              let existingOpp = await db.query.opportunities.findFirst({
-                where: (o: any) => 
-                  and(
-                    eq(o.clientId, conv.clientId),
-                    sql`${o.etapa} NOT IN (${sql.raw("'" + etapasFinais.join("','") + "'")})`
-                  ),
-                orderBy: (o: any) => desc(o.createdAt),
-              });
+            // 🛑 BLOQUEIO CRÍTICO: Se etapa MANUAL → IA NÃO ANALISA
+            if (existingOpp && ETAPAS_MANUAIS.includes(existingOpp.etapa)) {
+              console.log(`🛑 IA BLOQUEADA: Oportunidade em etapa MANUAL (${existingOpp.etapa}) - Nenhuma ação automática`);
+            } else {
+              // ✅ Analisar mensagem (oportunidade está em etapa automática ou não existe)
+              const analysis = await analyzeClientMessage(conteudo, { nome: client.nome });
+              const etapa = (analysis.etapa || "contato").toUpperCase();
+              console.log(`🤖 IA (CHAT): ${analysis.sentimento} (${analysis.confianca}%) → ${etapa}`);
 
-              if (existingOpp && existingOpp.etapa !== analysis.etapa) {
-                // Validar movimento
-                const stages = ["LEAD", "CONTATO", "PROPOSTA", "PROPOSTA ENVIADA", "CONTRATO ENVIADO", "AGUARDANDO CONTRATO", "AGUARDANDO ACEITE", "FECHADO", "PERDIDO", "FORNECEDOR"];
-                const currentIndex = stages.indexOf(existingOpp.etapa);
-                const newIndex = stages.indexOf(analysis.etapa);
+              // 🛑 Validar: análise retornou etapa VÁLIDA?
+              if (!ETAPAS_AUTOMATICAS.includes(etapa)) {
+                console.log(`🛑 ETAPA INVÁLIDA PARA IA: ${etapa} - Ignorando movimento`);
+              } else if (analysis.deveAgir === false) {
+                // IA diz "não mover" → criar opp em CONTATO se não existir
+                console.log(`⚠️ IA NÃO MOVE: deveAgir=false (${analysis.motivo})`);
+                if (!existingOpp) {
+                  const [newOpp] = await db.insert(opportunities).values({
+                    clientId: conv.clientId,
+                    titulo: `${client.nome} - ${analysis.motivo}`,
+                    etapa: "CONTATO",
+                    valorEstimado: "5000",
+                    responsavelId: user.id || conv.userId,
+                    ordem: 0,
+                  }).returning();
+                  console.log(`✅ OPP CRIADA (CONTATO): ${analysis.motivo}`);
+                  await storage.recalculateClientStatus(conv.clientId);
+                }
+              } else if (existingOpp && existingOpp.etapa !== etapa) {
+                // Validar movimento: só permite avanço, nunca retrocesso
+                const currentIndex = ETAPAS_AUTOMATICAS.indexOf(existingOpp.etapa);
+                const newIndex = ETAPAS_AUTOMATICAS.indexOf(etapa);
                 
-                if (currentIndex >= 0 && newIndex >= 0 && newIndex >= currentIndex) {
-                  // Movimento válido - mover
+                if (currentIndex >= 0 && newIndex > currentIndex) {
+                  // Movimento válido (avanço) - mover
                   await db.update(opportunities).set({ 
-                    etapa: analysis.etapa,
+                    etapa: etapa,
                     titulo: `${client.nome} - ${analysis.motivo}`,
                     updatedAt: new Date()
                   }).where(eq(opportunities.id, existingOpp.id));
                   
-                  console.log(`✅ OPP MOVIDA (CHAT): ${existingOpp.etapa} → ${analysis.etapa}`);
+                  console.log(`✅ OPP MOVIDA (CHAT): ${existingOpp.etapa} → ${etapa}`);
                   await storage.recalculateClientStatus(conv.clientId);
+                } else if (newIndex === currentIndex) {
+                  console.log(`ℹ️ OPP JÁ EM ${etapa} - Sem movimento`);
+                } else {
+                  console.log(`🛑 MOVIMENTO INVÁLIDO: ${existingOpp.etapa} → ${etapa} (retrocesso não permitido)`);
                 }
               } else if (!existingOpp) {
-                // Criar nova
+                // Criar nova oportunidade
                 const [newOpp] = await db.insert(opportunities).values({
                   clientId: conv.clientId,
                   titulo: `${client.nome} - ${analysis.motivo}`,
-                  etapa: analysis.etapa,
+                  etapa: etapa,
                   valorEstimado: "5000",
                   responsavelId: user.id || conv.userId,
                   ordem: 0,
                 }).returning();
-                console.log(`✅ OPP CRIADA (CHAT): ${analysis.etapa}`);
+                console.log(`✅ OPP CRIADA (CHAT): ${etapa}`);
                 await storage.recalculateClientStatus(conv.clientId);
               }
             }
