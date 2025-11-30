@@ -173,4 +173,44 @@ AGUARDANDO ACEITE, AGUARDANDO ATENÇÃO, FECHADO
 
 ---
 
+---
+
+## 🚀 FASE 12 - MAPEAMENTO ETAPAS → STATUS DO CLIENTE (Nov 30)
+
+### ✅ Regras de Negócio Implementadas:
+
+**Mapeamento Etapa → Status Cliente:**
+- **LEAD** → Lead quente (início da prospecção, 100% manual)
+- **CONTATO** → Engajado (IA + manual, demonstra interesse inicial)
+- **PROPOSTA / PROPOSTA ENVIADA** → Em negociação (IA + manual com lembretes)
+- **AGUARDANDO CONTRATO** → Em fechamento (100% manual)
+- **CONTRATO ENVIADO** → Em fechamento (100% manual)
+- **AGUARDANDO ACEITE** → Em fechamento (manual + lembretes automáticos)
+- **AGUARDANDO ATENÇÃO** → Em fechamento (reciclagem de AGUARDANDO ACEITE)
+- **AUTOMÁTICA** → Engajado (IA - mensagens automáticas)
+- **FECHADO** → Ativo (100% manual - negócio concluído com sucesso)
+- **PERDIDO** → Perdido (IA + manual, apenas se todas opps perdidas)
+
+**Regras de Prioridade:**
+- Status reflete a etapa **mais avançada** da oportunidade
+- Ordem: FECHADO → AGUARDANDO ACEITE → CONTRATO ENVIADO → AGUARDANDO CONTRATO → AGUARDANDO ATENÇÃO → PROPOSTA ENVIADA → PROPOSTA → AUTOMÁTICA → CONTATO → LEAD
+- **FECHADO** sempre prioridade máxima (manual)
+- **PERDIDO** apenas se todas as oportunidades forem PERDIDAS
+- Prioridade garante cliente em estágio mais avançado
+
+**Etapas Protegidas (IA NUNCA mexe):**
+```
+LEAD, PROPOSTA ENVIADA, CONTRATO ENVIADO, AGUARDANDO CONTRATO, AGUARDANDO ACEITE, FECHADO
+```
+
+**Etapas Automáticas (IA pode atuar):**
+```
+CONTATO, PROPOSTA, AUTOMÁTICA, PERDIDO
+```
+
+**Arquivo Atualizado:**
+- ✅ `server/storage.ts` - Função `recalculateClientStatus()` com novo mapeamento
+
+---
+
 **Status Geral:** ✅ SISTEMA 100% CORRETO E TESTADO!

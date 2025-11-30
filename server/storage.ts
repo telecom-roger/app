@@ -1106,8 +1106,10 @@ export async function deleteKanbanStage(id: string): Promise<void> {
 // ==================== CLIENT STATUS AUTOMATION ====================
 /**
  * Calcula o status do cliente baseado nas oportunidades dele
- * Ordem de prioridade (mais avançada → menos): FECHADO, AGUARDANDO ACEITE, CONTRATO ENVIADO, AGUARDANDO CONTRATO, PROPOSTA ENVIADA, PROPOSTA, CONTATO, LEAD
- * PERDIDO não eleva o status
+ * Regra: Status reflete a etapa mais avançada, exceto FECHADO (sempre manual) e PERDIDO (só se todas forem perdidas)
+ * Ordem de prioridade (menor número = mais avançado):
+ * FECHADO → AGUARDANDO ACEITE → CONTRATO ENVIADO → AGUARDANDO CONTRATO → AGUARDANDO ATENÇÃO →
+ * PROPOSTA ENVIADA → PROPOSTA → AUTOMÁTICA → CONTATO → LEAD
  */
 export async function recalculateClientStatus(clientId: string): Promise<string> {
   // Buscar todas as oportunidades do cliente
@@ -1121,13 +1123,13 @@ export async function recalculateClientStatus(clientId: string): Promise<string>
     return "lead_quente";
   }
 
-  // Filtrar oportunidades ativas (não PERDIDAS)
-  const activeOpps = clientOpportunities.filter((opp) => opp.etapa !== "PERDIDO");
-
-  // Se existe pelo menos 1 FECHADO → Ativo
-  if (activeOpps.some((opp) => opp.etapa === "FECHADO")) {
+  // Se existe pelo menos 1 FECHADO → Ativo (100% manual, sempre prioridade máxima)
+  if (clientOpportunities.some((opp) => opp.etapa === "FECHADO")) {
     return "ativo";
   }
+
+  // Filtrar oportunidades ativas (não PERDIDAS)
+  const activeOpps = clientOpportunities.filter((opp) => opp.etapa !== "PERDIDO");
 
   // Se todas são PERDIDAS → Perdido
   if (activeOpps.length === 0) {
@@ -1136,14 +1138,16 @@ export async function recalculateClientStatus(clientId: string): Promise<string>
 
   // Ordem de prioridade (menor número = mais avançado)
   const stagePriority: Record<string, number> = {
-    FECHADO: 0,
-    "AGUARDANDO ACEITE": 1,
-    "CONTRATO ENVIADO": 2,
-    "AGUARDANDO CONTRATO": 3,
-    "PROPOSTA ENVIADA": 4,
-    PROPOSTA: 5,
-    CONTATO: 6,
-    LEAD: 7,
+    FECHADO: 0,                    // Manual - sempre máxima prioridade
+    "AGUARDANDO ACEITE": 1,        // Manual + IA (lembretes)
+    "AGUARDANDO ATENÇÃO": 2,       // Manual - reciclagem de AGUARDANDO ACEITE
+    "CONTRATO ENVIADO": 3,         // Manual
+    "AGUARDANDO CONTRATO": 4,      // Manual
+    "PROPOSTA ENVIADA": 5,         // Manual + IA (lembretes)
+    PROPOSTA: 6,                   // IA + Manual
+    AUTOMÁTICA: 7,                 // IA (mensagens automáticas)
+    CONTATO: 8,                    // IA + Manual
+    LEAD: 9,                       // Manual - início da prospecção
   };
 
   // Encontrar a oportunidade com menor prioridade (mais avançada)
@@ -1158,17 +1162,19 @@ export async function recalculateClientStatus(clientId: string): Promise<string>
     }
   }
 
-  // Mapear etapa → status cliente
+  // Mapear etapa → status cliente conforme regras de negócio
   const stageToStatus: Record<string, string> = {
-    LEAD: "lead_quente",
-    CONTATO: "engajado",
-    PROPOSTA: "em_negociacao",
-    "PROPOSTA ENVIADA": "em_negociacao",
-    "AGUARDANDO CONTRATO": "em_fechamento",
-    "CONTRATO ENVIADO": "em_fechamento",
-    "AGUARDANDO ACEITE": "em_fechamento",
-    FECHADO: "ativo",
-    PERDIDO: "perdido",
+    LEAD: "lead_quente",                      // Manual
+    CONTATO: "engajado",                      // IA + Manual
+    AUTOMÁTICA: "engajado",                   // IA (mensagens automáticas)
+    PROPOSTA: "em_negociacao",                // IA + Manual
+    "PROPOSTA ENVIADA": "em_negociacao",      // Manual + IA (lembretes)
+    "AGUARDANDO CONTRATO": "em_fechamento",   // Manual
+    "CONTRATO ENVIADO": "em_fechamento",      // Manual
+    "AGUARDANDO ACEITE": "em_fechamento",     // Manual + IA (lembretes)
+    "AGUARDANDO ATENÇÃO": "em_fechamento",    // Manual (reciclagem)
+    FECHADO: "ativo",                         // Manual
+    PERDIDO: "perdido",                       // IA + Manual
   };
 
   return stageToStatus[mostAdvancedOpp.etapa] || "ativo";
