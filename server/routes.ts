@@ -3239,14 +3239,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .set({ etapa: "CONTRATO ENVIADO" })
         .where(eq(opportunities.id, opp.id));
 
-      // 4. Registrar na timeline - mensagem randomizada
-      const messages = [
+      // 4. Buscar ou criar conversation do cliente
+      let conversation = await db.query.conversations.findFirst({
+        where: (conv: any) => eq(conv.clientId, clientId),
+      });
+
+      if (!conversation) {
+        const [newConv] = await db.insert(conversations).values({
+          clientId,
+          userId,
+          ultimaMensagemEm: new Date(),
+        }).returning();
+        conversation = newConv;
+      }
+
+      // 5. Registrar mensagem no chat
+      const messages_templates = [
         `Oi!\nSeu contrato já chegou no seu e-mail.\nÉ só abrir o link, colocar a data de nascimento do gestor e seguir as etapas.\n\nVocê vai receber um e-mail com o TOKEN de confirmação.\nInforme o código e pronto — assinatura concluída.\n\nQualquer dúvida estou por aqui!`,
         `Olá!\nO contrato foi enviado para o seu e-mail.\nÉ só clicar no link, inserir a data de nascimento do gestor e avançar.\n\nDepois disso, você vai receber um e-mail com o TOKEN.\nBasta inserir no campo solicitado e finalizar a assinatura.\n\nQualquer dúvida, estou à disposição.`,
       ];
-      const randomIdx = Math.floor(Math.random() * messages.length);
-      const mensagem = messages[randomIdx];
+      const randomIdx = Math.floor(Math.random() * messages_templates.length);
+      const mensagem = messages_templates[randomIdx];
       
+      // Inserir na tabela de mensagens do chat
+      await db.insert(messages).values({
+        conversationId: conversation.id,
+        sender: "bot",
+        tipo: "text",
+        conteudo: mensagem,
+        origem: "automation",
+        createdAt: new Date(),
+      });
+      
+      // 6. Registrar na timeline
       await db.insert(interactions).values({
         clientId,
         tipo: "contrato_enviado",
