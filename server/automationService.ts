@@ -511,6 +511,27 @@ export async function executeContatoMessage(task: any) {
     conversation = newConv;
   }
   
+  // 🔍 VALIDAR: Evitar enviar a mesma mensagem nos últimas 3 horas (anti-spam)
+  const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  const recentMessages = await db
+    .select()
+    .from(messages)
+    .where(
+      and(
+        eq(messages.conversationId, conversation.id),
+        eq(messages.sender, "user"),
+        eq(messages.origem, "automation"),
+        eq(messages.tipo, "contato_message"),
+        gte(messages.createdAt, threeHoursAgo)
+      )
+    )
+    .limit(1);
+
+  if (recentMessages.length > 0) {
+    console.log(`⏸️ Mensagem de contato já foi enviada nos últimas 3 horas para ${client.nome}. Ignorando para evitar spam.`);
+    return;
+  }
+  
   // 🔥 LER MENSAGENS DO BANCO (automation_configs)
   const config = await db.query.automationConfigs.findFirst({
     where: (ac: any) => eq(ac.jobType, "contato_message"),
