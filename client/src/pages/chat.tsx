@@ -155,6 +155,21 @@ export default function Chat() {
     localStorage.setItem("closedConversations", JSON.stringify(Array.from(closedConversations)));
   }, [closedConversations]);
 
+  // Sync closed conversations between browser tabs
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "closedConversations" && e.newValue) {
+        try {
+          setClosedConversations(new Set(JSON.parse(e.newValue)));
+        } catch (err) {
+          console.error("Erro ao sincronizar conversas fechadas:", err);
+        }
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
   // Handle clientId from URL parameter
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
