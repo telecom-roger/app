@@ -398,13 +398,36 @@ async function processIncomingMessages(sessionId: string, m: any) {
                     .limit(1);
                   
                   if (ultimaMsgAutomatica.length === 0) {
+                    console.log(`🚀 [RESPOSTA POSITIVA] Preparando envio automático...`);
+                    
                     // 💬 SALVAR MENSAGEM NO CHAT
-                    await storage.createMessage({
+                    const savedMessage = await storage.createMessage({
                       conversationId: conversation.id,
                       sender: "bot",
                       tipo: "texto",
                       conteudo: mensagemAutomatica,
                     });
+                    console.log(`💬 [CHAT] Mensagem salva: ${savedMessage.id}`);
+                    
+                    // 📡 BROADCAST VIA WEBSOCKET (para aparecer imediatamente no chat)
+                    try {
+                      const { wsClients } = await import("./routes.js");
+                      if (wsClients && wsClients.size > 0) {
+                        const wsPayload = JSON.stringify({
+                          type: "new_message",
+                          conversationId: conversation.id,
+                          message: savedMessage,
+                        });
+                        wsClients.forEach((ws: any) => {
+                          if (ws.readyState === 1) {
+                            ws.send(wsPayload);
+                          }
+                        });
+                        console.log(`📡 [WS] Broadcast enviado para ${wsClients.size} clientes`);
+                      }
+                    } catch (wsErr) {
+                      console.warn(`⚠️ [WS] Erro ao broadcast (ignorado):`, wsErr);
+                    }
                     
                     // 📝 ADICIONAR À TIMELINE
                     await storage.createInteraction({
@@ -416,35 +439,42 @@ async function processIncomingMessages(sessionId: string, m: any) {
                       createdBy: userId,
                       meta: { tipo: "resposta_positiva", etapa: analysis.etapa },
                     });
+                    console.log(`📝 [TIMELINE] Interação criada`);
                     
                     // 📱 ENVIAR VIA WHATSAPP COM DELAY RANDOMICO (fire-and-forget)
-                    if (isSessionAlive(sessionId)) {
-                      const telefoneFormatado = client?.celular?.replace(/\D/g, '').replace(/^55/, '');
-                      if (telefoneFormatado) {
-                        // ⏱️ Delay randomico entre 20-40 segundos
-                        const delayMs = (Math.random() * 20 + 20) * 1000; // 20-40 segundos
-                        console.log(`⏱️ Aguardando ${Math.round(delayMs / 1000)}s antes de enviar para WhatsApp...`);
-                        
-                        // Fire-and-forget: não espera o timeout
-                        setTimeout(async () => {
-                          try {
-                            if (isSessionAlive(sessionId)) {
-                              const sock = activeSessions.get(sessionId);
-                              if (sock) {
-                                await sock.sendMessage(`${telefoneFormatado}@c.us`, { text: mensagemAutomatica });
-                                console.log(`✅ Mensagem automática enviada via WhatsApp (após delay): ${telefoneFormatado}`);
-                              }
-                            } else {
-                              console.warn(`⚠️ Sessão não mais ativa ao tentar enviar mensagem atrasada`);
-                            }
-                          } catch (err) {
-                            console.warn(`⚠️ Erro ao enviar WhatsApp com delay (ignorado):`, err);
-                          }
-                        }, delayMs);
+                    if (client?.celular && isSessionAlive(sessionId)) {
+                      // Formatar telefone (adiciona 55 se não tiver)
+                      let telefone = client.celular.replace(/\D/g, "");
+                      if (!telefone.startsWith("55")) {
+                        telefone = "55" + telefone;
                       }
+                      
+                      // ⏱️ Delay randomico entre 20-40 segundos
+                      const delayMs = (Math.random() * 20 + 20) * 1000;
+                      console.log(`⏱️ [DELAY] Aguardando ${Math.round(delayMs / 1000)}s antes de enviar para WhatsApp (${telefone})...`);
+                      
+                      // Fire-and-forget: não espera o timeout
+                      setTimeout(async () => {
+                        try {
+                          if (isSessionAlive(sessionId)) {
+                            const enviado = await sendMessage(sessionId, telefone, mensagemAutomatica);
+                            if (enviado) {
+                              console.log(`✅ [WHATSAPP] Mensagem automática enviada com sucesso para ${telefone}`);
+                            } else {
+                              console.warn(`⚠️ [WHATSAPP] Falha ao enviar para ${telefone}`);
+                            }
+                          } else {
+                            console.warn(`⚠️ [WHATSAPP] Sessão não mais ativa ao tentar enviar`);
+                          }
+                        } catch (err) {
+                          console.warn(`⚠️ [WHATSAPP] Erro ao enviar (ignorado):`, err);
+                        }
+                      }, delayMs);
+                    } else {
+                      console.warn(`⚠️ [WHATSAPP] Cliente sem celular ou sessão inativa. Mensagem só no chat.`);
                     }
                   } else {
-                    console.log(`⏰ Mensagem não enviada (já foi enviada nos últimos 3h)`);
+                    console.log(`⏰ [ANTI-SPAM] Mensagem não enviada (já foi enviada nos últimos 3h)`);
                   }
                 }
               } catch (err) {
