@@ -345,7 +345,7 @@ async function processIncomingMessages(sessionId: string, m: any) {
                 clientId: conversation.clientId,
                 tipo: "oportunidade_criada",
                 origem: "automation",
-                titulo: `Oportunidade criada: ${client?.nome}`,
+                titulo: `Oportunidade de Negócio - ${analysis.etapa}`,
                 texto: `Etapa: ${analysis.etapa} | Motivo: ${analysis.motivo}`,
                 createdBy: userId,
                 meta: { etapa: analysis.etapa, motivo: analysis.motivo, tipo_movimento: "automática" },
