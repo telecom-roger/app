@@ -2204,51 +2204,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
           try {
             const [client] = await db.select().from(clients).where(eq(clients.id, conversation.clientId)).limit(1);
             
-            // Buscar oportunidade existente
-            const [existingOpp] = await db
-              .select()
-              .from(opportunities)
-              .where(eq(opportunities.clientId, conversation.clientId))
-              .orderBy(desc(opportunities.createdAt))
-              .limit(1);
+            // ✅ BUSCAR OPORTUNIDADE ABERTA DO CLIENTE DESTE VENDEDOR (excluindo FECHADO/PERDIDO)
+            const openOpp = await storage.getOpenOpportunityForClient(conversation.clientId, user.id);
 
             const analysis = await analyzeClientMessage(conteudo, {
               nome: client?.nome,
-              etapaAtual: existingOpp?.etapa,
+              etapaAtual: openOpp?.etapa,
             });
 
-            // ✅ GARANTIR: deveCriarNovoNegocio sempre é calculado corretamente
-            // Se está em FECHADO/PERDIDO e análise permite movimento → SEMPRE criar novo
-            const estáEmFechadoOuPerdido = existingOpp && (existingOpp.etapa === "FECHADO" || existingOpp.etapa === "PERDIDO");
-            const deveCriarNovo = analysis.deveCriarNovoNegocio === true || estáEmFechadoOuPerdido;
-            
-            console.log(`🤖 [Chat] "${conteudo}" → etapa: ${analysis.etapa}, deveAgir: ${analysis.deveAgir}, deveCriarNovo: ${deveCriarNovo} (opp atual: ${existingOpp?.etapa})`);
+            console.log(`🤖 [Chat] "${conteudo}" → etapa: ${analysis.etapa}, deveAgir: ${analysis.deveAgir}, openOpp: ${openOpp?.etapa || "NENHUMA"}`);
 
-            // ✅ PRIORIDADE 1: CRIAR NOVO NEGÓCIO (FECHADO/PERDIDO ou deveCriarNovo=true)
-            if (existingOpp && deveCriarNovo && analysis.etapa && analysis.etapa !== "") {
-              const novaOpp = await storage.createOpportunity({
-                clientId: conversation.clientId,
-                titulo: `${client?.nome} - Novo Ciclo`,
-                etapa: analysis.etapa,
-                userId: user.id,
-              });
-              console.log(`🆕 [Chat] NOVO negócio criado em ${analysis.etapa} (${existingOpp.etapa} congelada)`);
-            }
-            // ✅ PRIORIDADE 2: MOVER OPORTUNIDADE EXISTENTE
-            // Apenas se pode agir, NÃO está em FECHADO/PERDIDO, E etapa é diferente
-            else if (existingOpp && !estáEmFechadoOuPerdido && existingOpp.etapa !== analysis.etapa && analysis.deveAgir) {
-              await db.update(opportunities).set({ etapa: analysis.etapa }).where(eq(opportunities.id, existingOpp.id));
-              console.log(`✅ [Chat] Oportunidade movida de ${existingOpp.etapa} para ${analysis.etapa}`);
-            } 
-            // ✅ PRIORIDADE 3: CRIAR PRIMEIRA OPORTUNIDADE (nenhuma existe ainda)
-            else if (!existingOpp && analysis.etapa && analysis.etapa !== "AUTOMÁTICA" && analysis.deveAgir) {
-              const novaOpp = await storage.createOpportunity({
-                clientId: conversation.clientId,
-                titulo: `${client?.nome} - Chat`,
-                etapa: analysis.etapa,
-                userId: user.id,
-              });
-              console.log(`✅ [Chat] Primeira oportunidade criada em ${analysis.etapa}`);
+            // ✅ REGRA SIMPLIFICADA:
+            // - Se tem oportunidade ABERTA → ATUALIZA essa
+            // - Se NÃO tem oportunidade aberta → CRIA nova
+            
+            if (openOpp) {
+              // ✅ TEM NEGÓCIO ABERTO → ATUALIZAR (se etapa válida, diferente e pode agir)
+              const etapaValida = analysis.etapa && analysis.etapa !== "" && analysis.etapa !== "AUTOMÁTICA";
+              if (etapaValida && openOpp.etapa !== analysis.etapa && analysis.deveAgir) {
+                await db.update(opportunities).set({ etapa: analysis.etapa }).where(eq(opportunities.id, openOpp.id));
+                console.log(`✅ [Chat] Oportunidade ATUALIZADA de ${openOpp.etapa} para ${analysis.etapa}`);
+              } else {
+                console.log(`ℹ️ [Chat] Oportunidade mantida em ${openOpp.etapa} (etapaValida=${etapaValida}, deveAgir=${analysis.deveAgir})`);
+              }
+            } else {
+              // ✅ NÃO TEM NEGÓCIO ABERTO → CRIAR NOVO (apenas se IA decidiu agir)
+              if (analysis.deveAgir && analysis.etapa && analysis.etapa !== "AUTOMÁTICA" && analysis.etapa !== "") {
+                const novaOpp = await storage.createOpportunity({
+                  clientId: conversation.clientId,
+                  titulo: `${client?.nome} - Novo Negócio`,
+                  etapa: analysis.etapa,
+                  userId: user.id,
+                });
+                console.log(`🆕 [Chat] NOVO negócio CRIADO em ${analysis.etapa}`);
+              } else {
+                console.log(`ℹ️ [Chat] Nenhum negócio criado (deveAgir=${analysis.deveAgir}, etapa=${analysis.etapa})`);
+              }
             }
           } catch (iaError) {
             console.error("⚠️ [Chat] Erro na análise IA:", iaError);

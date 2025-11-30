@@ -319,8 +319,8 @@ async function processIncomingMessages(sessionId: string, m: any) {
           try {
             const client = await storage.getClientById(conversation.clientId);
             
-            // ✅ BUSCAR OPORTUNIDADE ABERTA DO CLIENTE (excluindo FECHADO/PERDIDO)
-            const openOpp = await storage.getOpenOpportunityForClient(conversation.clientId);
+            // ✅ BUSCAR OPORTUNIDADE ABERTA DO CLIENTE DESTE VENDEDOR (excluindo FECHADO/PERDIDO)
+            const openOpp = await storage.getOpenOpportunityForClient(conversation.clientId, userId);
             
             const analysis = await analyzeClientMessage(conteudo, {
               nome: client?.nome,
@@ -337,18 +337,19 @@ async function processIncomingMessages(sessionId: string, m: any) {
             // - Se NÃO tem oportunidade aberta → CRIA nova
             
             if (openOpp) {
-              // ✅ TEM NEGÓCIO ABERTO → ATUALIZAR (se etapa diferente e pode agir)
-              if (openOpp.etapa !== analysis.etapa && analysis.deveAgir) {
+              // ✅ TEM NEGÓCIO ABERTO → ATUALIZAR (se etapa válida, diferente e pode agir)
+              const etapaValida = analysis.etapa && analysis.etapa !== "" && analysis.etapa !== "AUTOMÁTICA";
+              if (etapaValida && openOpp.etapa !== analysis.etapa && analysis.deveAgir) {
                 await storage.updateOpportunity(openOpp.id, {
                   etapa: analysis.etapa,
                 });
                 console.log(`✅ Oportunidade ATUALIZADA de ${openOpp.etapa} para ${analysis.etapa}`);
               } else {
-                console.log(`ℹ️ Oportunidade mantida em ${openOpp.etapa} (mesma etapa ou IA não agiu)`);
+                console.log(`ℹ️ Oportunidade mantida em ${openOpp.etapa} (etapaValida=${etapaValida}, deveAgir=${analysis.deveAgir})`);
               }
             } else {
-              // ✅ NÃO TEM NEGÓCIO ABERTO → CRIAR NOVO
-              if (analysis.etapa && analysis.etapa !== "AUTOMÁTICA" && analysis.etapa !== "") {
+              // ✅ NÃO TEM NEGÓCIO ABERTO → CRIAR NOVO (apenas se IA decidiu agir)
+              if (analysis.deveAgir && analysis.etapa && analysis.etapa !== "AUTOMÁTICA" && analysis.etapa !== "") {
                 const novaOpp = await storage.createOpportunity({
                   clientId: conversation.clientId,
                   titulo: `${client?.nome} - Novo Negócio`,
@@ -367,6 +368,8 @@ async function processIncomingMessages(sessionId: string, m: any) {
                   createdBy: userId,
                   meta: { etapa: analysis.etapa, motivo: analysis.motivo, tipo_movimento: "automática" },
                 });
+              } else {
+                console.log(`ℹ️ Nenhum negócio criado (deveAgir=${analysis.deveAgir}, etapa=${analysis.etapa})`);
               }
             }
 
@@ -376,7 +379,7 @@ async function processIncomingMessages(sessionId: string, m: any) {
             if ((analysis.sentimento === "positivo" || analysis.intenção === "aprovacao_envio") && analysis.etapa !== "AUTOMÁTICA") {
               // ✅ USAR ETAPA ATUAL DA OPORTUNIDADE (não a detectada pela IA)
               // Isso garante que cliente em CONTATO receba msg de CONTATO, mesmo se IA classificar como PROPOSTA
-              const etapaParaMensagem = existingOpp?.etapa || analysis.etapa;
+              const etapaParaMensagem = openOpp?.etapa || analysis.etapa;
               console.log(`✅ [ENCONTRADA RESPOSTA POSITIVA] Etapa atual: ${etapaParaMensagem} (IA detectou: ${analysis.etapa})`);
               try {
                 // Buscar config de automação para pegar a mensagem apropriada
