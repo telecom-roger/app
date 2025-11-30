@@ -285,18 +285,18 @@ async function executeKanbanMove(task: any) {
 
     console.log(`✅ Oportunidade movida para ${toStage}!`);
 
-    // 🚀 TRIGGER: Se moveu para CONTATO (por IA), dispara automação de mensagem
-    if (toStage === "CONTATO") {
-      console.log(`🚀 Disparando automação de Contato Message para ${oppId}`);
+    // 🚀 TRIGGER: Se moveu para CONTATO ou PROPOSTA (por IA), dispara automação de mensagem
+    if (toStage === "CONTATO" || toStage === "PROPOSTA") {
+      console.log(`🚀 Disparando automação de Contato Message para ${oppId} (etapa: ${toStage})`);
       try {
         await db.insert(automationTasks).values({
           userId: task.userId,
           clientId: task.clientId,
           tipo: "contato_message",
           proximaExecucao: new Date(),
-          dados: { opportunityId: oppId },
+          dados: { opportunityId: oppId, etapa: toStage },
         });
-        console.log(`✅ Task de Contato Message criada`);
+        console.log(`✅ Task de Contato Message criada para ${toStage}`);
       } catch (error) {
         console.error(`❌ Erro ao disparar contato_message:`, error);
       }
@@ -483,7 +483,7 @@ async function executeContractReminder(task: any) {
   console.log(`✅ Mensagem enviada no chat e registrada na timeline de ${client.nome}`);
 }
 
-// ======================== CONTATO MESSAGE - Envio automático quando opportunity muda para CONTATO ========================
+// ======================== CONTATO MESSAGE - Envio automático quando opportunity muda para CONTATO ou PROPOSTA ========================
 async function executeContatoMessage(task: any) {
   console.log(`💬 Contato Message para ${task.clientId}`);
   
@@ -511,6 +511,27 @@ async function executeContatoMessage(task: any) {
       ultimaMensagemEm: new Date(),
     }).returning();
     conversation = newConv;
+  }
+  
+  // 🔍 VERIFICAR SE JÁ ENVIOU NOS ÚLTIMAS 3 HORAS (evitar duplicação)
+  const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  const lastMessage = await db
+    .select()
+    .from(messages)
+    .where(
+      and(
+        eq(messages.conversationId, conversation.id),
+        eq(messages.sender, "user"),
+        eq(messages.origem, "automation"),
+        gte(messages.createdAt, threeHoursAgo)
+      )
+    )
+    .orderBy((m: any) => desc(m.createdAt))
+    .limit(1);
+
+  if (lastMessage && lastMessage.length > 0) {
+    console.log(`⏸️ Mensagem de contato já foi enviada nos últimas 3 horas. Ignorando...`);
+    return;
   }
   
   // 🔥 LER MENSAGEM DO BANCO (automation_configs)
