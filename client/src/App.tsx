@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationBell } from "@/components/notification-bell";
 import { ChatNotificationBell } from "@/components/chat-notification-bell";
+import { LogoutButton } from "@/components/logout-button";
 import { AppSidebar } from "@/components/app-sidebar";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -119,6 +120,7 @@ function AppContent() {
               <ChatNotificationBell />
               <NotificationBell />
               <ThemeToggle />
+              <LogoutButton />
             </div>
           </header>
           <main className="flex-1 overflow-auto">
