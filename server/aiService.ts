@@ -131,14 +131,17 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
   ];
   
   if (recusaParcialPalavrasChave.some(palavra => msg.includes(palavra))) {
+    const proposedStage = "CONTATO";
+    const isAllowed = validateMovement(etapaAtual, proposedStage);
     return {
       sentimento: "neutro",
       confianca: 70,
       motivo: "Recusa parcial ou indecisão - cliente quer modificar, não rejeitar",
-      etapa: "CONTATO",
+      etapa: proposedStage,
       deveAgir: false,
       ehRecusaParcial: msg.includes("cancelar") || msg.includes("reduzir") || msg.includes("remover"),
       ehMensagemAutomatica: false,
+      permitidoEmProducao: isAllowed,
       sugestao: "⚠️ Cliente deseja ajustes - negociar modificações",
     };
   }
@@ -180,14 +183,17 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
   // 📲 AUTOMÁTICA
   const automatica = ["deixe seu contato", "breve", "aguarde", "em breve", "entro em contato"];
   if (automatica.some(palavra => msg.includes(palavra))) {
+    const proposedStage = "AUTOMÁTICA";
+    const isAllowed = validateMovement(etapaAtual, proposedStage);
     return {
       sentimento: "fornecedor",
       confianca: 90,
       motivo: "Mensagem automática",
-      etapa: "AUTOMÁTICA",
-      deveAgir: true,
+      etapa: proposedStage,
+      deveAgir: isAllowed,
       ehRecusaParcial: false,
       ehMensagemAutomatica: true,
+      permitidoEmProducao: isAllowed,
       sugestao: "Aguardando resposta",
     };
   }
@@ -199,14 +205,17 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     "bora", "vamo", "blz", "show", "massa", "incrivel", "top", "amei"
   ];
   if (aprovacao.some(palavra => msg.includes(palavra))) {
+    const proposedStage = "PROPOSTA";
+    const isAllowed = validateMovement(etapaAtual, proposedStage);
     return {
       sentimento: "positivo",
       confianca: 95,
       motivo: "Aprovação detectada",
-      etapa: "PROPOSTA",
-      deveAgir: true,
+      etapa: proposedStage,
+      deveAgir: isAllowed,
       ehRecusaParcial: false,
       ehMensagemAutomatica: false,
+      permitidoEmProducao: isAllowed,
       sugestao: "Enviar proposta",
     };
   }
@@ -214,14 +223,17 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
   // ❓ INFORMAÇÃO → CONTATO
   const precoKeywords = ["preco", "quanto", "valor", "custa"];
   if (precoKeywords.some(palavra => msg.includes(palavra))) {
+    const proposedStage = "CONTATO";
+    const isAllowed = validateMovement(etapaAtual, proposedStage);
     return {
       sentimento: "positivo",
       confianca: 85,
       motivo: "Pergunta sobre preço",
-      etapa: "CONTATO",
-      deveAgir: true,
+      etapa: proposedStage,
+      deveAgir: isAllowed,
       ehRecusaParcial: false,
       ehMensagemAutomatica: false,
+      permitidoEmProducao: isAllowed,
       sugestao: "Enviar tabela",
     };
   }
