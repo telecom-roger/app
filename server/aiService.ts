@@ -224,8 +224,6 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
   
   const aprovacaoPalavras = [
     "ok",
-    "okay",
-    "okkk",
     "sim",
     "pode mandar",
     "manda",
@@ -234,15 +232,7 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     "quero saber",
     "me envia",
     "aprova",
-    "aprovado",
-    "blz",
-    "beleza",
-    // Emojis de confirmação
-    "👍",
-    "👌",
-    "🙏",
-    "✌️",
-    "🤝"
+    "aprovado"
   ];
   
   const isSolicitacaoProposta = solicitacaoProposta.some(palavra => msg.includes(palavra));

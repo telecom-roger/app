@@ -704,22 +704,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userAgent: req.get("user-agent"),
       });
 
-      // 🚀 TRIGGER: Se moveu para CONTATO, dispara automação de mensagem
-      if (opportunity && etapaNormalizada === "CONTATO" && oldOpportunity.etapa !== "CONTATO") {
-        console.log(`🚀 Disparando automação de Contato Message para ${opportunity.id}`);
-        try {
-          await db.insert(automationTasks).values({
-            userId: (req.user as any).id,
-            clientId: opportunity.clientId,
-            tipo: "contato_message",
-            proximaExecucao: new Date(),
-            dados: { opportunityId: opportunity.id },
-          });
-        } catch (error) {
-          console.error(`❌ Erro ao disparar automação de Contato Message:`, error);
-        }
-      }
-
       // 🚀 TRIGGER: Se moveu para AGUARDANDO ACEITE, dispara automação de lembretes
       if (opportunity && etapaNormalizada === "AGUARDANDO ACEITE" && oldOpportunity.etapa !== "AGUARDANDO ACEITE") {
         console.log(`🚀 Disparando automação de Aguardando Aceite para ${opportunity.id}`);
@@ -816,22 +800,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ipAddress: req.ip,
         userAgent: req.get("user-agent"),
       });
-
-      // 🚀 TRIGGER: Se moveu para CONTATO, dispara automação de mensagem
-      if (opportunity && validatedData.etapa === "CONTATO" && oldOpportunity.etapa !== "CONTATO") {
-        console.log(`🚀 Disparando automação de Contato Message para ${opportunity.id}`);
-        try {
-          await db.insert(automationTasks).values({
-            userId: (req.user as any).id,
-            clientId: opportunity.clientId,
-            tipo: "contato_message",
-            proximaExecucao: new Date(),
-            dados: { opportunityId: opportunity.id },
-          });
-        } catch (error) {
-          console.error(`❌ Erro ao disparar automação de Contato Message:`, error);
-        }
-      }
 
       res.json(opportunity);
     } catch (error: any) {
@@ -4199,18 +4167,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("❌ Error updating automation config:", error);
-      res.status(500).json({ error: String(error) });
-    }
-  });
-
-  // ==================== TEST ENDPOINT - CONVERSATION REOPEN ====================
-  app.post("/api/test/conversation-reopen", async (req, res) => {
-    try {
-      const { testConversationReopen } = await import('./testAutomation');
-      const result = await testConversationReopen();
-      res.json(result);
-    } catch (error) {
-      console.error(`❌ Erro no teste:`, error);
       res.status(500).json({ error: String(error) });
     }
   });
