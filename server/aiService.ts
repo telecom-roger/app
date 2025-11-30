@@ -274,7 +274,7 @@ export async function analyzeClientMessage(
 ): Promise<MessageAnalysis> {
   try {
     // Usar análise local confiável (keywords) ao invés de OpenAI por agora
-    const useLocalMode = true; // ✅ LOCAL - 100% confiável, sem timeout
+    const useLocalMode = false; // 🤖 OPENAI - Ativado para teste com IA real
     
     if (useLocalMode) {
       return analyzeLocalTest(mensagem, clienteInfo?.etapaAtual);
