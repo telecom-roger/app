@@ -2277,14 +2277,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Helper endpoint to get/create conversation by phone
+  // Helper endpoint to get/create conversation by phone or name
   app.post("/api/chat/conversation-by-phone", isAuthenticated, async (req, res) => {
     try {
       const userId = (req.user as any).id;
       const { phone } = req.body;
       
       if (!phone) {
-        return res.status(400).json({ error: "Phone number required" });
+        return res.status(400).json({ error: "Phone number or name required" });
       }
       
       let normalizado = phone.replace(/\D/g, "");
@@ -2292,12 +2292,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         normalizado = normalizado.substring(2);
       }
       
+      // Buscar por telefone ou por nome
       let [client] = await db
         .select()
         .from(clients)
         .where(or(
           ilike(clients.celular, `%${normalizado}%`),
-          ilike(clients.telefone2, `%${normalizado}%`)
+          ilike(clients.telefone2, `%${normalizado}%`),
+          ilike(clients.nome, `%${phone}%`) // Buscar também por nome
         ))
         .limit(1);
       
