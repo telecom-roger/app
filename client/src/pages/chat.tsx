@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle, Download, Plus, Info, User, Zap } from "lucide-react";
+import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle, Download, Plus, Info, User, Zap, Eye, EyeOff } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -136,6 +136,8 @@ export default function Chat() {
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
   const [contextMenuConvId, setContextMenuConvId] = useState<string | null>(null);
+  const [contextMenuConvOculta, setContextMenuConvOculta] = useState(false);
+  const [showHiddenConversations, setShowHiddenConversations] = useState(false);
   const [showClientInfo, setShowClientInfo] = useState(false);
   const [businessValue, setBusinessValue] = useState<string>("");
   const [selectedStage, setSelectedStage] = useState<string>("");
@@ -222,7 +224,12 @@ export default function Chat() {
 
   // Fetch all conversations for current user
   const { data: conversations = [], isLoading: conversationsLoading, refetch: refetchConversations } = useQuery<Conversation[]>({
-    queryKey: ["/api/chat/conversations"],
+    queryKey: ["/api/chat/conversations", { showHidden: showHiddenConversations }],
+    queryFn: async () => {
+      const res = await fetch(`/api/chat/conversations?showHidden=${showHiddenConversations}`);
+      if (!res.ok) throw new Error("Failed to fetch conversations");
+      return res.json();
+    },
     refetchInterval: 500, // Poll a cada 500ms para atualização rápida
     staleTime: 0, // Força sempre buscar dados frescos do backend
     gcTime: 5000, // Cache por 5 segundos apenas
@@ -834,7 +841,19 @@ export default function Chat() {
         {/* Tag Filter Section */}
         {!showSearchResults && allTags.length > 0 && (
           <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 space-y-2">
-            <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">FILTRAR POR ETIQUETA</p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">FILTRAR POR ETIQUETA</p>
+              <Button
+                variant={showHiddenConversations ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setShowHiddenConversations(!showHiddenConversations)}
+                data-testid="button-toggle-hidden-conversations"
+                className="h-6 px-2 text-xs gap-1"
+              >
+                {showHiddenConversations ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                {showHiddenConversations ? "Ocultas" : "Ocultas"}
+              </Button>
+            </div>
             <div className="flex flex-wrap gap-1">
               <Button
                 variant={selectedTag === null ? "default" : "outline"}
@@ -957,10 +976,11 @@ export default function Chat() {
 
                     const handleContextMenu = (e: React.MouseEvent) => {
                       e.preventDefault();
-                      console.log("🖱️ Context menu acionado para conversa:", conv.id);
+                      console.log("🖱️ Context menu acionado para conversa:", conv.id, "oculta:", conv.oculta);
                       setContextMenuOpen(true);
                       setContextMenuPos({ x: e.clientX, y: e.clientY });
                       setContextMenuConvId(conv.id);
+                      setContextMenuConvOculta(conv.oculta ?? false);
                     };
 
                     return (
@@ -1001,6 +1021,9 @@ export default function Chat() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 whitespace-nowrap">
+                          {conv.oculta && (
+                            <EyeOff className="h-3 w-3 text-slate-400" title="Conversa oculta" />
+                          )}
                           {(conv.unreadCount ?? 0) > 0 && conv.unreadCount && (
                             <span className="bg-primary text-white text-xs font-bold rounded-full min-w-[24px] h-6 flex items-center justify-center">
                               {conv.unreadCount > 99 ? "99+" : conv.unreadCount}
@@ -1048,7 +1071,7 @@ export default function Chat() {
               onContextMenu={(e) => e.preventDefault()}
             />
             <div
-              className="fixed z-50 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg py-1"
+              className="fixed z-50 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg py-1 min-w-[160px]"
               style={{
                 left: `${contextMenuPos.x}px`,
                 top: `${contextMenuPos.y}px`,
@@ -1057,32 +1080,45 @@ export default function Chat() {
               <button
                 onClick={() => {
                   if (contextMenuConvId) {
-                    apiRequest("PATCH", `/api/chat/conversations/${contextMenuConvId}/toggle-hidden`, { oculta: true })
+                    const newOculta = !contextMenuConvOculta;
+                    apiRequest("PATCH", `/api/chat/conversations/${contextMenuConvId}/toggle-hidden`, { oculta: newOculta })
                       .then(() => {
-                        if (selectedConversationId === contextMenuConvId) {
+                        if (newOculta && selectedConversationId === contextMenuConvId) {
                           setSelectedConversationId(null);
                         }
                         refetchConversations();
                         toast({
-                          title: "Conversa oculta",
-                          description: "Reabrirá automaticamente quando o cliente chamar",
+                          title: newOculta ? "Conversa oculta" : "Conversa reaberta",
+                          description: newOculta 
+                            ? "Reabrirá automaticamente quando o cliente chamar" 
+                            : "A conversa está visível novamente",
                         });
                       })
                       .catch(err => {
-                        console.error("Erro ao ocultar conversa:", err);
+                        console.error("Erro ao alterar visibilidade:", err);
                         toast({
                           title: "Erro",
-                          description: "Não foi possível ocultar a conversa",
+                          description: "Não foi possível alterar a conversa",
                           variant: "destructive",
                         });
                       });
                   }
                   setContextMenuOpen(false);
                 }}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-slate-900 dark:text-white"
-                data-testid="button-hide-conversation"
+                className="w-full text-left px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-slate-900 dark:text-white flex items-center gap-2"
+                data-testid="button-toggle-hide-conversation"
               >
-                Ocultar conversa
+                {contextMenuConvOculta ? (
+                  <>
+                    <Eye className="h-4 w-4" />
+                    Reabrir conversa
+                  </>
+                ) : (
+                  <>
+                    <EyeOff className="h-4 w-4" />
+                    Ocultar conversa
+                  </>
+                )}
               </button>
             </div>
           </>

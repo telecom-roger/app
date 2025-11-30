@@ -675,8 +675,13 @@ export async function toggleConversationHidden(conversationId: string, userId: s
   return updated;
 }
 
-export async function getConversations(userId: string): Promise<any[]> {
+export async function getConversations(userId: string, showHidden: boolean = false): Promise<any[]> {
   // ✅ Get conversations with messages, ordered by latest message
+  // Por padrão, filtra conversas ocultas (showHidden=false)
+  const whereCondition = showHidden 
+    ? eq(conversations.userId, userId)
+    : and(eq(conversations.userId, userId), eq(conversations.oculta, false));
+    
   const conversationsData = await db
     .select({
       id: conversations.id,
@@ -699,7 +704,7 @@ export async function getConversations(userId: string): Promise<any[]> {
     })
     .from(conversations)
     .leftJoin(clients, eq(conversations.clientId, clients.id))
-    .where(eq(conversations.userId, userId))
+    .where(whereCondition)
     .orderBy(desc(conversations.ultimaMensagemEm));
 
   // Filter to only show conversations with messages and add unread counts

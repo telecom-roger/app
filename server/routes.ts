@@ -1997,7 +1997,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/chat/conversations", isAuthenticated, async (req, res) => {
     try {
       const user = (req.user as any);
-      const conversas = await storage.getConversations(user.id);
+      // Parâmetro para mostrar conversas ocultas (default: false)
+      const showHidden = req.query.showHidden === 'true';
+      const conversas = await storage.getConversations(user.id, showHidden);
       res.json(conversas);
     } catch (error: any) {
       console.error("Error fetching conversations:", error);
