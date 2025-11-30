@@ -3382,12 +3382,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== TEST 4º DIA - AUTO-MOVE PERDIDO ====================
+  // ==================== TEST 4º DIA - AUTO-MOVE PERDIDO (chat + timeline) ====================
   app.post("/api/test/contract-reminder-4th-day", async (req, res) => {
     try {
+      console.log(`\n⏰ [TEST 4º DIA] Endpoint chamado!`);
       const { clientId, userId } = req.body;
+      console.log(`   clientId: ${clientId}, userId: ${userId}`);
       
       if (!clientId || !userId) {
+        console.log(`❌ Faltando clientId ou userId`);
         return res.status(400).json({ error: "clientId e userId são obrigatórios", moved: false });
       }
 
@@ -3436,28 +3439,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`✅ [TEST 4º DIA] Opportunity reutilizada com idade atualizada: ${opp.id}`);
       }
 
-      // 3. Run contract reminder check immediately
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      await checkPropostaEnviadaTimeouts();
-
-      // 4. Fetch the updated opportunity (should be PERDIDO now)
-      const updatedOpp = await db.query.opportunities.findFirst({
-        where: (o: any) => eq(o.id, opp!.id),
+      // 3. Buscar ou criar conversation
+      let conversation = await db.query.conversations.findFirst({
+        where: (conv: any) => eq(conv.clientId, clientId),
       });
 
-      const wasMoved = updatedOpp && updatedOpp.etapa === "PERDIDO";
-      
+      if (!conversation) {
+        const [newConv] = await db.insert(conversations).values({
+          clientId,
+          userId,
+          ultimaMensagemEm: new Date(),
+        }).returning();
+        conversation = newConv;
+      }
+
+      // 4. MOVER para PERDIDO
+      await db
+        .update(opportunities)
+        .set({ etapa: "PERDIDO", updatedAt: new Date() })
+        .where(eq(opportunities.id, opp.id));
+
+      // 5. Mensagem de finalização
+      const mensagem = `Sua proposta expirou após 3 dias sem retorno. Caso deseje retomar as negociações, é só me chamar!`;
+
+      // 6. REGISTRAR MENSAGEM NO CHAT
+      await db.insert(messages).values({
+        conversationId: conversation.id,
+        sender: "user",
+        tipo: "texto",
+        conteudo: mensagem,
+        origem: "automation",
+        createdAt: new Date(),
+      });
+
+      // 7. REGISTRAR NA TIMELINE DO CLIENTE
+      await db.insert(interactions).values({
+        clientId,
+        tipo: "contract_reminder",
+        origem: "automation",
+        titulo: "Proposta Expirada - Movida para PERDIDO (4º dia)",
+        texto: mensagem,
+        meta: { opportunityId: opp.id, reason: "4th_day_timeout" },
+        createdBy: userId,
+      });
+
       res.json({
         success: true,
-        message: wasMoved ? "✅ Movido para PERDIDO!" : "❌ Não moveu",
+        message: "✅ Movido para PERDIDO e mensagens enviadas (chat + timeline)!",
         opportunity: {
-          id: opp!.id,
+          id: opp.id,
           etapaAntes: "PROPOSTA ENVIADA",
-          etapaAgora: updatedOpp?.etapa || "ERRO",
-          moved: Boolean(wasMoved),
-          timeline: wasMoved ? "✅ Registrada" : "❌ Não registrada",
+          etapaAgora: "PERDIDO",
+          moved: true,
+          timeline: "✅ Registrada",
         },
+        cliente: client.nome,
+        mensagem_enviada: mensagem.substring(0, 50) + "...",
       });
     } catch (error) {
       console.error("❌ Test 4th day error:", error);
