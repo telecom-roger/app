@@ -3,7 +3,7 @@ import { db } from "./db";
 import { eq, and, lt, isNull, gte, desc, sql } from "drizzle-orm";
 import { automationTasks, followUps, clientScores, opportunities, clients as clientsTable, messages, interactions, conversations, whatsappSessions } from "@shared/schema";
 import { analyzeClientMessage } from "./aiService";
-import { sendMessage as sendWhatsAppMessage } from "./whatsappService";
+import * as whatsappService from "./whatsappService";
 
 // ======================== HELPER: Verificar se é dia de semana ========================
 function isWeekday(): boolean {
@@ -447,7 +447,7 @@ async function executeContractReminder(task: any) {
           }
           
           console.log(`📱 Enviando mensagem via WhatsApp para ${telefone}...`);
-          await sendWhatsAppMessage(session.sessionId, telefone, mensagem);
+          await whatsappService.sendMessage(session.sessionId, telefone, mensagem);
           console.log(`✅ Mensagem WhatsApp enviada com sucesso para ${client.nome}`);
         }
       } else {
@@ -561,7 +561,7 @@ async function executeContratoEnviadoMessage(task: any) {
           
           try {
             console.log(`📱 Enviando contrato via WhatsApp para ${telefone}...`);
-            await sendWhatsAppMessage(session.sessionId, telefone, mensagem);
+            await whatsappService.sendMessage(session.sessionId, telefone, mensagem);
             console.log(`✅ Contrato enviado via WhatsApp com sucesso para ${client.nome}`);
           } catch (error) {
             console.error(`❌ Erro ao enviar mensagem via WhatsApp:`, error);
@@ -855,7 +855,7 @@ async function executeAguardandoAceiteReminder(task: any) {
           }
           
           console.log(`📱 Enviando lembrete ${lembreteNum} via WhatsApp para ${telefone}...`);
-          await sendWhatsAppMessage(session.sessionId, telefone, mensagem);
+          await whatsappService.sendMessage(session.sessionId, telefone, mensagem);
           console.log(`✅ Lembrete ${lembreteNum}/3 enviado via WhatsApp com sucesso para ${client.nome}`);
         }
       } else {
