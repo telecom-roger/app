@@ -56,8 +56,16 @@ export default function AdminAutomacaoAdvanced() {
 
   useEffect(() => {
     if (config?.mensagensTemplates) {
-      setEditingMsgs(config.mensagensTemplates);
-    } else if (config) {
+      // Carrega mensagens do formato salvo no banco (chaves numéricas como strings)
+      const msgs: Record<number, string[]> = {};
+      Object.entries(config.mensagensTemplates || {}).forEach(([key, value]: any) => {
+        const dayNum = parseInt(key);
+        if (!isNaN(dayNum)) {
+          msgs[dayNum] = Array.isArray(value) ? value : [];
+        }
+      });
+      setEditingMsgs(msgs);
+    } else {
       setEditingMsgs({});
     }
   }, [config]);
@@ -69,8 +77,12 @@ export default function AdminAutomacaoAdvanced() {
         ...data,
       });
     },
-    onSuccess: () => {
-      refetch();
+    onSuccess: (data) => {
+      console.log("Salvo com sucesso:", data);
+      // Invalida a query e force refresh
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/automation-configs/${selectedJob}`] });
+      // Espera um pouco e faz refetch
+      setTimeout(() => refetch(), 100);
       toast({
         title: "✅ Salvo com sucesso",
         description: "Configurações atualizadas",
@@ -98,14 +110,19 @@ export default function AdminAutomacaoAdvanced() {
   }
 
   const handleAddMessage = (dia: number) => {
+    console.log("➕ Adicionando mensagem ao dia", dia);
     const current = editingMsgs[dia] || [];
-    setEditingMsgs({
+    console.log("Estado atual:", current);
+    const newMsgs = {
       ...editingMsgs,
       [dia]: [...current, ""],
-    });
+    };
+    console.log("Novo estado:", newMsgs);
+    setEditingMsgs(newMsgs);
   };
 
   const handleRemoveMessage = (dia: number, idx: number) => {
+    console.log("❌ Removendo mensagem", idx, "do dia", dia);
     const current = editingMsgs[dia] || [];
     setEditingMsgs({
       ...editingMsgs,
@@ -114,6 +131,7 @@ export default function AdminAutomacaoAdvanced() {
   };
 
   const handleUpdateMessage = (dia: number, idx: number, texto: string) => {
+    console.log("✏️ Atualizando mensagem", idx, "do dia", dia, "com:", texto.substring(0, 50));
     const current = editingMsgs[dia] || [];
     const updated = [...current];
     updated[idx] = texto;
@@ -150,6 +168,8 @@ export default function AdminAutomacaoAdvanced() {
   };
 
   const handleSaveMessages = () => {
+    console.log("💾 Salvando mensagens:", editingMsgs);
+    console.log("Tamanho de editingMsgs:", Object.keys(editingMsgs).length);
     saveMutation.mutate({
       mensagensTemplates: editingMsgs,
     });
