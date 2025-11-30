@@ -273,6 +273,7 @@ export default function Chat() {
   // Fetch all opportunities
   const { data: allOpportunities = [], refetch: refetchOpportunities } = useQuery<any[]>({
     queryKey: ["/api/opportunities"],
+    refetchInterval: 2000, // Refetch a cada 2 segundos quando recebe mensagem (IA cria oportunidade)
   });
 
   // Filter opportunities for current client
