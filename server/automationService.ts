@@ -576,7 +576,12 @@ export async function executeContatoMessage(task: any) {
     createdBy: task.userId,
   });
   
-  // 3️⃣ ENVIAR VIA WHATSAPP AUTOMATICAMENTE (IGUAL AO ENDPOINT POST)
+  // 🎲 DELAY RANDOMIZADO (20-40s para não parecer robô)
+  const delayMs = Math.random() * 20000 + 20000; // 20-40 segundos
+  console.log(`⏳ Aguardando ${(delayMs / 1000).toFixed(1)}s antes de enviar via WhatsApp...`);
+  await new Promise(resolve => setTimeout(resolve, delayMs));
+  
+  // 3️⃣ ENVIAR VIA WHATSAPP AUTOMATICAMENTE (APÓS DELAY)
   try {
     // Pega a sessão do usuário (importante: por userId!)
     const [session] = await db
