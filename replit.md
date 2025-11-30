@@ -145,22 +145,25 @@ AGUARDANDO CONTRATO, AGUARDANDO ACEITE, FECHADO
 
 ---
 
-## 🚀 FASE 11 - CORREÇÃO: RESPEITAR BLOQUEIO DE ETAPAS EM MENSAGENS AUTOMÁTICAS (Nov 30)
+## 🚀 FASE 11 - CORREÇÃO: RESPEITAR BLOQUEIO DE ETAPAS + RENOMEAR FORNECEDOR → AUTOMÁTICA (Nov 30)
 
-### ✅ Correção Crítica:
+### ✅ Correções Implementadas:
 
-**BUG FIXADO:**
+**BUG 1 - BLOQUEIO DE ETAPAS:**
 - Mensagens automáticas estavam movendo oportunidades mesmo em etapas bloqueadas
-- Isso violava a regra fundamental: "IA NUNCA mexe em etapas bloqueadas"
+- ✅ FIXADO: Se mensagem automática EM ETAPA BLOQUEADA → **NÃO FAZ NADA**
+- ✅ Se mensagem automática EM ETAPA NÃO-BLOQUEADA → Move para AUTOMÁTICA
+- ✅ Se mensagem automática SEM OPP → Cria em AUTOMÁTICA
 
-**REGRA AGORA 100% CORRIGIDA:**
-- Se mensagem automática detectada EM ETAPA BLOQUEADA → **NÃO FAZ NADA** (bloqueio total)
-- Se mensagem automática EM ETAPA NÃO-BLOQUEADA → Move para AUTOMÁTICA
-- Se mensagem automática SEM OPP → Cria em AUTOMÁTICA
+**BUG 2 - COLUNA KANBAN ANTIGA:**
+- Base de dados tinha coluna "FORNECEDOR" em vez de "AUTOMÁTICA"
+- ✅ FIXADO: Atualizado kanban_stages no banco: FORNECEDOR → AUTOMÁTICA
+- ✅ Oportunidades agora aparecem na coluna correta
 
 **Arquivos Atualizados:**
-- ✅ `server/testAutomation.ts` - Adicionou bloqueio em linhas 443-486
-- ✅ `server/routes.ts` - Adicionou bloqueio em linhas 2166-2194
+- ✅ `server/testAutomation.ts` - Bloqueio em linhas 443-486
+- ✅ `server/routes.ts` - Bloqueio em linhas 2166-2194
+- ✅ Database: kanban_stages.titulo = 'AUTOMÁTICA' (antes era 'FORNECEDOR')
 
 **Etapas Protegidas (IA NUNCA MEXE):**
 ```
