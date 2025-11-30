@@ -3277,6 +3277,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== EXPORT CLIENTS ====================
+  app.get("/api/admin/export-clients", isAuthenticated, requireAdmin, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const result = await storage.getClients({
+        userId: user.dbUser.id,
+        limit: 100000,
+        isAdmin: true
+      });
+      
+      const clientsList = result.clientes || [];
+      
+      // Formata dados para export
+      const exportData = clientsList.map((client: any) => ({
+        ID: client.id,
+        Nome: client.nome,
+        CNPJ: client.cnpj,
+        Email: client.email,
+        Celular: client.celular,
+        "Telefone 2": client.telefone_2,
+        Segmento: client.segmento,
+        Status: client.status,
+        "Tipo Cliente": client.tipoCliente,
+        Carteira: client.carteira,
+        Cidade: client.cidade,
+        UF: client.uf,
+        "Contato Principal": client.contatoPrincipal,
+        "Data de Criação": client.createdAt ? new Date(client.createdAt).toLocaleDateString('pt-BR') : '',
+        Tags: Array.isArray(client.tags) ? client.tags.join(', ') : '',
+      }));
+      
+      res.json(exportData);
+    } catch (error) {
+      console.error('Erro ao exportar clientes:', error);
+      res.status(500).json({ error: "Failed to export clients" });
+    }
+  });
+
   // ==================== CAMPAIGN SENDINGS ROUTES ====================
   app.post("/api/campaigns/record-sending", isAuthenticated, async (req, res) => {
     try {

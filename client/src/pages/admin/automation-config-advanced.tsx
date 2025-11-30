@@ -12,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
-import { Plus, X, Clock, CheckCircle, Zap, Save, MessageSquare, Calendar, Settings, ChevronDown } from "lucide-react";
+import { Plus, X, Clock, CheckCircle, Zap, Save, MessageSquare, Calendar, Settings, ChevronDown, Download } from "lucide-react";
+import Papa from "papaparse";
 
 const ALL_JOBS = [
   {
@@ -166,6 +167,38 @@ export default function AdminAutomacaoAdvanced() {
     );
   }
 
+  const handleExportClients = async () => {
+    try {
+      const response = await fetch("/api/admin/export-clients");
+      if (!response.ok) throw new Error("Erro ao exportar");
+      const data = await response.json();
+      
+      const csv = Papa.unparse(data);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute("href", url);
+      link.setAttribute("download", `clientes_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = "hidden";
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "✅ Exportado",
+        description: `${data.length} clientes baixados com sucesso`,
+      });
+    } catch (error) {
+      toast({
+        title: "❌ Erro",
+        description: "Falha ao exportar clientes",
+        variant: "destructive",
+      });
+    }
+  };
+
   const toggleJobStatus = (jobType: string, currentStatus: boolean) => {
     updateConfigMutation.mutate({
       jobType,
@@ -264,18 +297,29 @@ export default function AdminAutomacaoAdvanced() {
       {/* Header */}
       <div className="px-6 py-8 md:py-12">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-blue-500/10 rounded-xl">
-              <Zap className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-blue-500/10 rounded-xl">
+                <Zap className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent">
+                  Automação Avançada
+                </h1>
+                <p className="text-slate-600 dark:text-slate-400 mt-2 text-sm">
+                  Configure jobs, mensagens, horários e dias de execução
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent">
-                Automação Avançada
-              </h1>
-              <p className="text-slate-600 dark:text-slate-400 mt-2 text-sm">
-                Configure jobs, mensagens, horários e dias de execução
-              </p>
-            </div>
+            <Button
+              size="sm"
+              onClick={handleExportClients}
+              className="gap-2 h-10 whitespace-nowrap"
+              data-testid="btn-export-clients"
+            >
+              <Download className="w-4 h-4" />
+              Exportar Clientes
+            </Button>
           </div>
         </div>
       </div>
