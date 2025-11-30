@@ -4203,6 +4203,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== TEST ENDPOINT - CONVERSATION REOPEN ====================
+  app.post("/api/test/conversation-reopen", async (req, res) => {
+    try {
+      const { testConversationReopen } = await import('./testAutomation');
+      const result = await testConversationReopen();
+      res.json(result);
+    } catch (error) {
+      console.error(`❌ Erro no teste:`, error);
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
   // ==================== TEST ENDPOINT - RUN AUTOMATION CHECKS NOW ====================
   app.post("/api/test/run-automation-checks", async (req, res) => {
     try {

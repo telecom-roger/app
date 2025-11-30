@@ -295,15 +295,19 @@ async function processIncomingMessages(sessionId: string, m: any) {
         }
 
         console.log(`[RECEBIMENTO] Conversa encontrada/criada: ${conversation.id}`);
+        console.log(`[RECEBIMENTO] Estado da conversa: ativa=${conversation.ativa} (type: ${typeof conversation.ativa})`);
 
         // 🔓 SE CONVERSA ESTAVA FECHADA, REABRIR AUTOMATICAMENTE
-        if (!conversation.ativa) {
-          console.log(`🔓 Reabrindo conversa fechada: ${conversation.id}`);
+        if (conversation.ativa === false || conversation.ativa === null || conversation.ativa === undefined) {
+          console.log(`🔓 REATIVANDO conversa fechada/inativa: ${conversation.id} (era: ${conversation.ativa})`);
           await db
             .update(conversations)
             .set({ ativa: true })
             .where(eq(conversations.id, conversation.id));
+          console.log(`✅ Conversa REATIVADA com sucesso`);
           conversation.ativa = true;
+        } else {
+          console.log(`✅ Conversa já ativa, nenhuma ação necessária`);
         }
         
         await storage.createMessage({
