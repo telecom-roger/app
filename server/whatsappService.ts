@@ -330,6 +330,10 @@ async function processIncomingMessages(sessionId: string, m: any) {
               nome: client?.nome,
               etapaAtual: existingOpp?.etapa,
             });
+            
+            console.log(`🔍 [DEBUG ANÁLISE] Mensagem: "${conteudo}"`);
+            console.log(`   Sentimento: ${analysis.sentimento}, Intenção: ${analysis.intenção}, Etapa: ${analysis.etapa}`);
+            console.log(`   DeveAgir: ${analysis.deveAgir}, Confiança: ${analysis.confianca}`);
 
             if (existingOpp && existingOpp.etapa !== analysis.etapa && analysis.deveAgir) {
               await storage.updateOpportunity(existingOpp.id, {
@@ -358,16 +362,24 @@ async function processIncomingMessages(sessionId: string, m: any) {
             }
 
             // ✅ ENVIAR MENSAGEM DE INTERESSE AUTOMÁTICA (se resposta positiva)
+            console.log(`📊 [VERIFICAÇÃO POSITIVA] Sentimento: ${analysis.sentimento}, Intenção: ${analysis.intenção}`);
+            console.log(`   Condição (positivo || aprovacao): ${analysis.sentimento === "positivo" || analysis.intenção === "aprovacao_envio"}`);
             if ((analysis.sentimento === "positivo" || analysis.intenção === "aprovacao_envio") && analysis.etapa !== "AUTOMÁTICA") {
+              console.log(`✅ [ENCONTRADA RESPOSTA POSITIVA] Etapa: ${analysis.etapa}`);
               try {
                 // Buscar config de automação para pegar a mensagem apropriada
                 const [config] = await db.select().from(automationConfigs).where(eq(automationConfigs.jobType, "ia_resposta_positiva")).limit(1);
+                console.log(`📋 [CONFIG AUTOMAÇÃO] Encontrado: ${!!config}, Etapa: ${analysis.etapa}`);
                 
                 let mensagemAutomatica = "";
                 if (analysis.etapa === "CONTATO" && config?.mensagemContatoPositivo) {
                   mensagemAutomatica = config.mensagemContatoPositivo;
+                  console.log(`💬 [MENSAGEM CONTATO] Usando: ${mensagemAutomatica.substring(0, 50)}...`);
                 } else if (analysis.etapa === "PROPOSTA" && config?.mensagemPropostaPositivo) {
                   mensagemAutomatica = config.mensagemPropostaPositivo;
+                  console.log(`💬 [MENSAGEM PROPOSTA] Usando: ${mensagemAutomatica.substring(0, 50)}...`);
+                } else {
+                  console.log(`❌ [SEM MENSAGEM] Etapa: ${analysis.etapa}, Config: ${!!config?.mensagemContatoPositivo} (contato), ${!!config?.mensagemPropostaPositivo} (proposta)`);
                 }
                 
                 if (mensagemAutomatica) {
