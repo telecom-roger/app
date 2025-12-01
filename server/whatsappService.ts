@@ -942,7 +942,7 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
           texto: conteudo,
           meta: { 
             campaignId: campaign.id, 
-            templateId: template.id, 
+            templateId: campaign.templateId, // ✅ CORRIGIDO: usar campaign.templateId ou null para broadcasts
             enviado: mensagemEnviada,
             origem_disparo: 'agendamento',
             status: mensagemEnviada ? 'enviado' : 'erro'
@@ -961,7 +961,7 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
             erroMensagem: mensagemEnviada ? undefined : 'Falha ao enviar mensagem',
             origemDisparo: 'agendamento',
             mensagemUsada: conteudo,
-            modeloId: template.id,
+            modeloId: campaign.templateId || null, // ✅ CORRIGIDO: usar campaign.templateId ou null
           });
         } catch (err) {
           console.warn(`⚠️ Erro ao registrar envio em campaign_sendings:`, err);

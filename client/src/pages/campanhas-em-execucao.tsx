@@ -45,7 +45,7 @@ export default function CampanhasEmExecucao() {
       const data = await res.json();
       return Array.isArray(data) ? data.filter((c: any) => ['enviando', 'pausada'].includes(c.status)) : [];
     },
-    refetchInterval: 2000,
+    refetchInterval: 1000, // ✅ Aumentado para 1s para atualizar em tempo real
     enabled: isAuthenticated,
   });
 
