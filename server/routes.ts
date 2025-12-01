@@ -1929,33 +1929,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`✅ Campanha ${campaign.id} atualizada com ${clientIds.length} clientes e conteúdo`);
       }
       
-      // ✅ Registrar envios em campaignSendings com origem e mensagem
-      let registrados = 0;
-      for (const cliente of clientes) {
-        const telefone = cliente.celular || cliente.telefone2;
-        if (telefone) {
-          try {
-            await db.insert(campaignSendings).values({
-              userId: user.id,
-              campaignId: campaign.id,
-              campaignName: campanhaNome,
-              clientId: cliente.id,
-              status: "pendente",
-              origemDisparo,
-              mensagemUsada: mensagem,
-              modeloId: null,
-            });
-            registrados++;
-          } catch (err) {
-            console.error(`Erro ao registrar envio para cliente ${cliente.id}:`, err);
-          }
-        }
-      }
-
       res.json({ 
         success: true,
         campanhaId: campaign.id,
-        registrados,
         total: clientes.length,
         agendadaPara: agendadaPara.toISOString(),
         mensagem: `Campanha de ${origemDisparo} agendada para envio imediato`,
