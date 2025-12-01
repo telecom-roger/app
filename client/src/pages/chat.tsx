@@ -1373,7 +1373,7 @@ export default function Chat() {
                         className={`max-w-xs px-3 py-2 rounded-lg shadow-sm ${
                           msg.sender === "user"
                             ? "bg-blue-100 dark:bg-blue-950 text-slate-900 dark:text-blue-100 shadow-blue-100/20"
-                            : "bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600"
+                            : "bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600"
                         }`}
                       >
                         {msg.tipo === "texto" && (
