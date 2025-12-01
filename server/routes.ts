@@ -950,8 +950,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/campaigns", isAuthenticated, async (req, res) => {
     try {
+      // ✅ Calcular totalRecipients a partir de filtros.clientIds
+      const clientIds = (req.body.filtros?.clientIds as string[]) || [];
+      
       const validatedData = insertCampaignSchema.parse({
         ...req.body,
+        totalRecipients: clientIds.length || 0,
         createdBy: (req.user as any).id,
       });
       const campaign = await storage.createCampaign(validatedData);
