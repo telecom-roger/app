@@ -247,22 +247,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Endpoint para listar clientes com WhatsApp (MUST be before :id route)
+  // ✅ OTIMIZADO: Paginação + Filtros server-side
   app.get("/api/clients/whatsapp-list", isAuthenticated, async (req, res) => {
     try {
       const user = req.user as any;
-      const { tipos, carteiras, cidades } = req.query;
+      const { 
+        tipos, carteiras, cidades, 
+        search, status, sendStatus: sendStatusFilter,
+        page = "1", limit = "50" 
+      } = req.query;
+      
+      const pageNum = Math.max(1, parseInt(page as string) || 1);
+      const limitNum = Math.min(100, Math.max(10, parseInt(limit as string) || 50));
+      const offset = (pageNum - 1) * limitNum;
       
       // Parse query params
       const tiposArray = typeof tipos === 'string' ? tipos.split(',').filter(Boolean) : [];
       const carteirasArray = typeof carteiras === 'string' ? carteiras.split(',').filter(Boolean) : [];
       const cidadesArray = typeof cidades === 'string' ? cidades.split(',').filter(Boolean) : [];
+      const searchTerm = typeof search === 'string' ? search.trim() : '';
+      const statusFilter = typeof status === 'string' && status !== 'todos' ? status : '';
       
       // Build where conditions
-      let conditions = [
+      let conditions: any[] = [
         user.role === 'admin' ? undefined : or(
           eq(clients.createdBy, user.id),
           sql`${clients.id} IN (SELECT ${clientSharing.clientId} FROM ${clientSharing} WHERE ${clientSharing.sharedWithUserId} = ${user.id})`
-        )
+        ),
+        sql`${clients.celular} IS NOT NULL AND ${clients.celular} != ''`
       ].filter(Boolean);
       
       // Apply filters if provided
@@ -275,9 +287,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (cidadesArray.length > 0) {
         conditions.push(inArray(clients.cidade, cidadesArray));
       }
+      if (statusFilter) {
+        conditions.push(ilike(clients.status, statusFilter));
+      }
+      // ✅ Search por nome ou telefone (server-side)
+      if (searchTerm && searchTerm.length >= 2) {
+        conditions.push(or(
+          ilike(clients.nome, `%${searchTerm}%`),
+          ilike(clients.celular, `%${searchTerm}%`)
+        ));
+      }
       
       const whereCondition = conditions.length > 0 ? and(...conditions) : undefined;
       
+      // ✅ Buscar total para paginação (count query otimizada)
+      const [{ count: totalCount }] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(clients)
+        .where(whereCondition);
+      
+      // ✅ Buscar clientes paginados
       const allClients = await db
         .select({
           id: clients.id,
@@ -285,35 +314,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
           telefone: clients.celular,
           telefone2: clients.telefone2,
           email: clients.email,
-          cnpj: clients.cnpj,
           status: clients.status,
           tagNames: clients.tags,
-          createdAt: clients.createdAt,
           carteira: clients.carteira,
           tipo: clients.tipoCliente,
-          cidade: clients.cidade,
         })
         .from(clients)
-        .where(whereCondition);
+        .where(whereCondition)
+        .orderBy(clients.nome)
+        .limit(limitNum)
+        .offset(offset);
 
-      // Fetch all available tags
+      // Fetch all available tags (cacheable)
       const allTags = await db.select().from(tags);
       
-      // Fetch most recent campaign sending for each client
+      // ✅ Buscar sendings apenas para os clientes da página atual (otimizado)
+      const clientIds = allClients.map(c => c.id);
       let recentSendings: any[] = [];
-      try {
-        recentSendings = await db
-          .select({
-            clientId: campaignSendings.clientId,
-            status: campaignSendings.status,
-            dataSending: campaignSendings.dataSending,
-          })
-          .from(campaignSendings)
-          .where(eq(campaignSendings.userId, user.id))
-          .orderBy(sql`${campaignSendings.dataSending} DESC`);
-      } catch (err) {
-        console.warn("Warning: could not fetch campaign sendings:", err);
-        recentSendings = [];
+      if (clientIds.length > 0) {
+        try {
+          recentSendings = await db
+            .select({
+              clientId: campaignSendings.clientId,
+              status: campaignSendings.status,
+              dataSending: campaignSendings.dataSending,
+            })
+            .from(campaignSendings)
+            .where(and(
+              eq(campaignSendings.userId, user.id),
+              inArray(campaignSendings.clientId, clientIds)
+            ))
+            .orderBy(sql`${campaignSendings.dataSending} DESC`);
+        } catch (err) {
+          console.warn("Warning: could not fetch campaign sendings:", err);
+        }
       }
 
       // Create map of most recent sending per client
@@ -324,16 +358,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const clientsWithPhones = allClients.filter((c) => c.telefone && c.telefone.trim());
-      const result = clientsWithPhones.map((client) => {
-        // Convert tag names to tag objects with id, nome, cor
+      let result = allClients.map((client) => {
         const clientTags = (client.tagNames || []).map((tagName: string) => {
           const tag = allTags.find(t => t.nome === tagName);
           return tag ? { id: tag.id, nome: tag.nome, cor: tag.cor } : null;
         }).filter(Boolean);
 
         const sendingHistory = clientSendingMap.get(client.id);
-        const sendStatus = sendingHistory?.status === "enviado" ? "enviado" : sendingHistory?.status === "erro" ? "erro" : "nao_enviado";
+        const sendStatusValue = sendingHistory?.status === "enviado" ? "enviado" : sendingHistory?.status === "erro" ? "erro" : "nao_enviado";
 
         return {
           id: client.id,
@@ -342,20 +374,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           telefone2: client.telefone2,
           celular: client.telefone,
           email: client.email,
-          cnpj: client.cnpj,
           status: client.status,
           carteira: client.carteira,
           tipo: client.tipo,
-          cidade: client.cidade,
           tags: clientTags,
-          createdAt: client.createdAt,
-          sendStatus: sendStatus,
+          sendStatus: sendStatusValue,
           lastSendDate: sendingHistory?.dataSending ? new Date(sendingHistory.dataSending).toLocaleDateString("pt-BR") : undefined,
-          ultimaCampanha: undefined,
         };
       });
+      
+      // ✅ Filtrar por sendStatus no servidor se especificado
+      if (sendStatusFilter && typeof sendStatusFilter === 'string') {
+        const sendStatusArray = sendStatusFilter.split(',').filter(Boolean);
+        if (sendStatusArray.length > 0) {
+          result = result.filter(c => sendStatusArray.includes(c.sendStatus));
+        }
+      }
 
-      res.json(result);
+      res.json({
+        data: result,
+        total: totalCount,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(totalCount / limitNum),
+      });
     } catch (error: any) {
       console.error("Error fetching WhatsApp client list:", error);
       res.status(500).json({ error: "Internal server error" });
