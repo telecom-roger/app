@@ -1369,39 +1369,47 @@ export default function Chat() {
                       } group`}
                       data-testid={`message-${msg.id}`}
                     >
-                      {msg.sender === "user" && (
+                      {msg.sender === "user" && msg.tipo !== "deletada" && (
                         <button
                           onClick={() => {
                             apiRequest("DELETE", `/api/chat/messages/${msg.id}`)
                               .then(() => {
                                 refetchMessages();
                                 toast({
-                                  title: "Mensagem deletada",
-                                  description: "Deletada para você e para o cliente"
+                                  title: "Mensagem apagada",
+                                  description: "Apagada para você e para o cliente"
                                 });
                               })
                               .catch(err => {
                                 console.error("Erro ao deletar:", err);
                                 toast({
                                   title: "Erro",
-                                  description: "Não foi possível deletar a mensagem",
+                                  description: "Não foi possível apagar a mensagem",
                                   variant: "destructive"
                                 });
                               });
                           }}
                           className="invisible group-hover:visible mr-2 text-red-500 hover:text-red-700 transition-colors"
                           data-testid={`button-delete-message-${msg.id}`}
+                          title="Apagar para todos"
                         >
                           <X className="h-4 w-4" />
                         </button>
                       )}
                       <div
                         className={`max-w-xs px-3 py-2 rounded-lg shadow-sm ${
-                          msg.sender === "user"
+                          msg.tipo === "deletada"
+                            ? "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 italic"
+                            : msg.sender === "user"
                             ? "bg-blue-100 dark:bg-blue-950 text-slate-900 dark:text-blue-100 shadow-blue-100/20"
                             : "bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600"
                         }`}
                       >
+                        {msg.tipo === "deletada" && (
+                          <p className="text-sm break-words italic opacity-70">
+                            {msg.conteudo}
+                          </p>
+                        )}
                         {msg.tipo === "texto" && (
                           <p className="text-sm break-words">
                             {renderTextWithLinks(msg.conteudo)}

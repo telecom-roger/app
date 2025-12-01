@@ -2561,7 +2561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete message
+  // Delete message for everyone (WhatsApp + DB)
   app.delete("/api/chat/messages/:messageId", isAuthenticated, async (req, res) => {
     try {
       const { messageId } = req.params;
@@ -2589,10 +2589,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Acesso negado" });
       }
 
-      // Deletar a mensagem
-      await db.delete(messages).where(eq(messages.id, messageId));
+      // Tentar deletar no WhatsApp se houver messageId
+      if (msg.whatsappMessageId && conversation.clientId) {
+        try {
+          // Buscar telefone do cliente
+          const cliente = await storage.getClient(conversation.clientId);
+          const telefone = cliente?.celular || cliente?.telefone2;
+          
+          if (telefone) {
+            // Buscar sessão WhatsApp ativa do usuário
+            const [session] = await db
+              .select()
+              .from(whatsappSessions)
+              .where(and(
+                eq(whatsappSessions.userId, user.id),
+                eq(whatsappSessions.status, "conectada")
+              ))
+              .limit(1);
+
+            if (session) {
+              const deleted = await whatsappService.deleteMessageForEveryone(
+                session.sessionId,
+                telefone,
+                msg.whatsappMessageId
+              );
+              if (deleted) {
+                console.log(`✅ Mensagem deletada no WhatsApp para ${telefone}`);
+              } else {
+                console.warn(`⚠️ Não foi possível deletar no WhatsApp, mas será removida do sistema`);
+              }
+            }
+          }
+        } catch (whatsappError) {
+          console.warn("⚠️ Erro ao deletar no WhatsApp:", whatsappError);
+        }
+      }
+
+      // Marcar mensagem como deletada (ao invés de remover)
+      await db.update(messages)
+        .set({ 
+          conteudo: "🚫 Mensagem apagada",
+          tipo: "deletada",
+          arquivo: null,
+          nomeArquivo: null
+        })
+        .where(eq(messages.id, messageId));
       
-      console.log(`✅ Mensagem ${messageId} deletada para todos`);
+      console.log(`✅ Mensagem ${messageId} marcada como deletada para todos`);
       res.json({ success: true });
     } catch (error: any) {
       console.error("Error deleting message:", error);

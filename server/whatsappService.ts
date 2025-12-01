@@ -737,6 +737,38 @@ export async function sendMessage(sessionId: string, telefone: string, mensagem:
   }
 }
 
+export async function deleteMessageForEveryone(sessionId: string, telefone: string, whatsappMessageId: string): Promise<boolean> {
+  try {
+    const sock = activeSessions.get(sessionId);
+    if (!sock) {
+      console.error(`❌ Sessão ${sessionId} não encontrada para deletar mensagem`);
+      return false;
+    }
+
+    let jid = telefone.replace(/\D/g, "");
+    if (!jid.startsWith("55")) {
+      jid = "55" + jid;
+    }
+    jid = jid + "@s.whatsapp.net";
+
+    console.log(`🗑️ Deletando mensagem ${whatsappMessageId} para ${jid}...`);
+    
+    await sock.sendMessage(jid, { 
+      delete: {
+        remoteJid: jid,
+        fromMe: true,
+        id: whatsappMessageId
+      }
+    });
+    
+    console.log(`✅ Mensagem ${whatsappMessageId} deletada para todos!`);
+    return true;
+  } catch (error) {
+    console.error(`❌ Erro ao deletar mensagem ${whatsappMessageId}:`, error);
+    return false;
+  }
+}
+
 export async function sendImage(sessionId: string, telefone: string, imageBase64: string, caption?: string): Promise<SendMessageResult> {
   try {
     const sock = activeSessions.get(sessionId);
