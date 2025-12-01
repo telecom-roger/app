@@ -545,20 +545,29 @@ async function processIncomingMessages(sessionId: string, m: any) {
 // Processa updates de status de entrega (ticks do WhatsApp)
 async function processMessageStatusUpdate(sessionId: string, updates: any) {
   try {
+    console.log(`🔔 [STATUS] Recebido ${updates?.length || 0} updates para ${sessionId}`);
+    
     for (const update of updates) {
       const messageId = update.key?.id;
+      const status = update.update?.status;
+      
+      console.log(`📋 [STATUS] Update: messageId=${messageId}, status=${status}, full:`, JSON.stringify(update));
+      
       if (!messageId) continue;
       
       // Mapeia status do Baileys para nosso sistema
       // status: 0 = erro, 1 = pendente, 2 = enviado (servidor), 3 = entregue, 4 = lido
       let statusEntrega: 'enviado' | 'entregue' | 'lido' | null = null;
       
-      if (update.update?.status === 3) {
+      if (status === 3) {
         statusEntrega = 'entregue';
         console.log(`📬 [STATUS] Mensagem ${messageId} ENTREGUE (2 ticks)`);
-      } else if (update.update?.status === 4) {
+      } else if (status === 4) {
         statusEntrega = 'lido';
         console.log(`👁️ [STATUS] Mensagem ${messageId} LIDA (2 ticks azuis)`);
+      } else if (status === 2) {
+        statusEntrega = 'enviado';
+        console.log(`📤 [STATUS] Mensagem ${messageId} ENVIADA (1 tick)`);
       }
       
       if (statusEntrega) {
@@ -570,8 +579,7 @@ async function processMessageStatusUpdate(sessionId: string, updates: any) {
           
           console.log(`✅ [STATUS] Atualizado para ${statusEntrega}: ${messageId}`);
         } catch (err) {
-          // Pode não encontrar se for mensagem recebida (não enviada por nós)
-          // Isso é esperado e normal
+          console.log(`⚠️ [STATUS] Não encontrou mensagem ${messageId} no banco (normal para msgs recebidas)`);
         }
       }
     }
