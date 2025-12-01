@@ -679,19 +679,19 @@ export default function CampanhasWhatsApp() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Header Section */}
-      <div className="px-6 py-8 md:py-12">
+      <div className="px-3 sm:px-6 py-4 sm:py-8 md:py-12">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-3 bg-green-500/10 rounded-xl">
-                  <MessageSquare className="h-6 w-6 text-green-600 dark:text-green-400" />
+          <div className="flex items-start justify-between gap-3 sm:gap-4">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                <div className="p-2 sm:p-3 bg-green-500/10 rounded-xl flex-shrink-0">
+                  <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400" />
                 </div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent">
+                <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent truncate">
                   Campanhas WhatsApp
                 </h1>
               </div>
-              <p className="text-slate-600 dark:text-slate-400 mt-2">
+              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-2">
                 Envie mensagens em massa personalizadas via WhatsApp
               </p>
             </div>
@@ -700,43 +700,43 @@ export default function CampanhasWhatsApp() {
       </div>
 
       {/* Main Content */}
-      <div className="px-6 pb-12">
-        <div className="max-w-7xl mx-auto space-y-6">
+      <div className="px-3 sm:px-6 pb-6 sm:pb-12">
+        <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
           {/* Stats Cards */}
           {contatosProcessados > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="p-6 border-0 shadow-sm bg-white dark:bg-slate-800/50">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+              <Card className="p-4 sm:p-6 border-0 shadow-sm bg-white dark:bg-slate-800/50">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Contatos Carregados</p>
-                    <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">{contatosProcessados}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">Contatos Carregados</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-2">{contatosProcessados}</p>
                   </div>
-                  <div className="p-3 bg-blue-500/10 rounded-lg">
-                    <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  <div className="p-2 sm:p-3 bg-blue-500/10 rounded-lg flex-shrink-0">
+                    <Users className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
                   </div>
                 </div>
               </Card>
 
-              <Card className="p-6 border-0 shadow-sm bg-white dark:bg-slate-800/50">
+              <Card className="p-4 sm:p-6 border-0 shadow-sm bg-white dark:bg-slate-800/50">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Enviadas</p>
-                    <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">{sucessos}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">Enviadas</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">{sucessos}</p>
                   </div>
-                  <div className="p-3 bg-emerald-500/10 rounded-lg">
-                    <CheckCircle className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                  <div className="p-2 sm:p-3 bg-emerald-500/10 rounded-lg flex-shrink-0">
+                    <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600 dark:text-emerald-400" />
                   </div>
                 </div>
               </Card>
 
-              <Card className="p-6 border-0 shadow-sm bg-white dark:bg-slate-800/50">
+              <Card className="p-4 sm:p-6 border-0 shadow-sm bg-white dark:bg-slate-800/50">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Erros</p>
-                    <p className="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{erros}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">Erros</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{erros}</p>
                   </div>
-                  <div className="p-3 bg-red-500/10 rounded-lg">
-                    <AlertCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
+                  <div className="p-2 sm:p-3 bg-red-500/10 rounded-lg flex-shrink-0">
+                    <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600 dark:text-red-400" />
                   </div>
                 </div>
               </Card>
@@ -745,7 +745,7 @@ export default function CampanhasWhatsApp() {
 
           {/* Tabs */}
           <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50 overflow-hidden">
-            <Tabs value={tabAtivo} onValueChange={setTabAtivo} className="space-y-4 p-6">
+            <Tabs value={tabAtivo} onValueChange={setTabAtivo} className="space-y-4 p-3 sm:p-6">
               <TabsList className="grid grid-cols-4 bg-slate-100 dark:bg-slate-900">
                 <TabsTrigger value="mensagens" className="text-slate-700 dark:text-slate-300">Mensagens</TabsTrigger>
                 <TabsTrigger value="configuracao" className="text-slate-700 dark:text-slate-300">Configuração</TabsTrigger>
@@ -814,13 +814,13 @@ export default function CampanhasWhatsApp() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
                   {/* Left Section: Contatos + Preview */}
-                  <div className="space-y-6">
+                  <div className="space-y-4 sm:space-y-6">
                     {/* Input Card */}
                     <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
-                      <CardHeader className="pb-4">
-                        <div className="flex items-center justify-between">
+                      <CardHeader className="pb-3 sm:pb-4">
+                        <div className="flex items-center justify-between gap-2">
                           <div>
                             <CardTitle className="text-lg text-slate-900 dark:text-white">Contatos</CardTitle>
                             <CardDescription className="mt-1 text-slate-600 dark:text-slate-400">Cole seus dados ou importe da base</CardDescription>
@@ -832,12 +832,12 @@ export default function CampanhasWhatsApp() {
                           )}
                         </div>
                       </CardHeader>
-                      <CardContent className="space-y-4">
+                      <CardContent className="space-y-3 sm:space-y-4">
                         <Textarea
-                          placeholder="Cole aqui (Tab para separar colunas, Enter para linhas)..."
+                          placeholder="Cole aqui..."
                           value={textoPlanilha}
                           onChange={(e) => setTextoPlanilha(e.target.value)}
-                          className="font-mono text-sm h-56 resize-none border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"
+                          className="font-mono text-xs sm:text-sm h-40 sm:h-56 resize-none border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"
                           data-testid="textarea-contatos"
                         />
                         <div className="grid grid-cols-2 gap-2">
@@ -925,13 +925,13 @@ export default function CampanhasWhatsApp() {
                   </div>
 
                   {/* Right Section: Template Editor */}
-                  <div className="space-y-6">
+                  <div className="space-y-4 sm:space-y-6">
                     <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
-                      <CardHeader className="pb-4">
-                        <CardTitle className="text-lg text-slate-900 dark:text-white">Mensagem</CardTitle>
-                        <CardDescription className="mt-1 text-slate-600 dark:text-slate-400">Use {"{variável}"} para personalizar</CardDescription>
+                      <CardHeader className="pb-3 sm:pb-4">
+                        <CardTitle className="text-base sm:text-lg text-slate-900 dark:text-white">Mensagem</CardTitle>
+                        <CardDescription className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-400">Use {"{variável}"} para personalizar</CardDescription>
                       </CardHeader>
-                      <CardContent className="space-y-5">
+                      <CardContent className="space-y-3 sm:space-y-5">
                         {/* Template Selector */}
                         <div className="space-y-2">
                           <Label htmlFor="template-select" className="text-sm font-semibold text-slate-900 dark:text-white">Usar Modelo</Label>
@@ -977,10 +977,10 @@ export default function CampanhasWhatsApp() {
                         {/* Template Textarea */}
                         <div className="space-y-2">
                           <Textarea
-                            placeholder="Olá {empresa}! Temos uma promoção especial para você..."
+                            placeholder="Olá {empresa}!..."
                             value={template}
                             onChange={(e) => setTemplate(e.target.value)}
-                            className="flex-1 font-mono text-sm h-48 resize-none border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"
+                            className="flex-1 font-mono text-xs sm:text-sm h-36 sm:h-48 resize-none border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"
                             data-testid="textarea-template"
                           />
                         </div>
@@ -1007,10 +1007,10 @@ export default function CampanhasWhatsApp() {
                 </div>
 
                 {/* Status Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
                   {/* Status Summary */}
                   <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
-                    <CardHeader>
+                    <CardHeader className="pb-3">
                       <CardTitle className="text-sm text-slate-900 dark:text-white">Resumo</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
