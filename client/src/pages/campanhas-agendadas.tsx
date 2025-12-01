@@ -496,6 +496,30 @@ export default function CampanhasAgendadas() {
               <Form {...form}>
                 <form
                   onSubmit={form.handleSubmit((data) => {
+                    if (!data.nome || data.nome.trim() === "") {
+                      toast({
+                        title: "Erro",
+                        description: "Preencha o nome da campanha",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    if (!data.templateId) {
+                      toast({
+                        title: "Erro",
+                        description: "Selecione um modelo de mensagem",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    if (!data.agendadaPara) {
+                      toast({
+                        title: "Erro",
+                        description: "Selecione a data e hora de envio",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
                     if (clientesSelecionados.size === 0) {
                       toast({
                         title: "Erro",
