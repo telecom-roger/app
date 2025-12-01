@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -10,6 +10,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface SelectableFieldProps {
   value: string | null | undefined;
@@ -31,7 +37,18 @@ export function SelectableField({
   "data-testid": testId,
 }: SelectableFieldProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isTruncated, setIsTruncated] = useState(false);
+  const valueRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Detectar se valor é truncado
+  useEffect(() => {
+    if (valueRef.current) {
+      setIsTruncated(
+        valueRef.current.scrollWidth > valueRef.current.clientWidth
+      );
+    }
+  }, [value]);
 
   const { data: options = [] } = useQuery<string[]>({
     queryKey: [endpoint],
@@ -72,7 +89,7 @@ export function SelectableField({
     ...options,
   ];
 
-  return (
+  const content = (
     <div
       className="cursor-pointer hover:bg-muted/50 p-1.5 rounded transition-colors min-w-0"
       data-testid={testId || `field-${field}`}
@@ -93,4 +110,23 @@ export function SelectableField({
       {isLoading && <Loader2 className="h-4 w-4 animate-spin mt-1" />}
     </div>
   );
+
+  if (isTruncated && value) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div ref={valueRef} className="truncate">
+              {content}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="max-w-xs break-words">
+            {value}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  return content;
 }

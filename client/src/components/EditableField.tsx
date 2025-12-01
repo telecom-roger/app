@@ -1,8 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Loader2 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface EditableFieldProps {
   value: string | null | undefined;
@@ -22,12 +28,23 @@ export function EditableField({
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState(value || "");
   const [isLoading, setIsLoading] = useState(false);
+  const textRef = useRef<HTMLParagraphElement>(null);
+  const [isTruncated, setIsTruncated] = useState(false);
   const { toast } = useToast();
 
   // Sincronizar quando o valor prop muda
   useEffect(() => {
     setInputValue(value || "");
   }, [value]);
+
+  // Detectar se o texto foi truncado (line-clamp)
+  useEffect(() => {
+    if (textRef.current) {
+      setIsTruncated(
+        textRef.current.scrollHeight > textRef.current.clientHeight
+      );
+    }
+  }, [inputValue]);
 
   const handleSave = async () => {
     if (inputValue === (value || "")) {
@@ -87,16 +104,42 @@ export function EditableField({
     );
   }
 
-  return (
+  const displayText = inputValue || "-";
+  const content = (
     <div
       onClick={() => setIsEditing(true)}
       className="cursor-pointer hover:bg-muted/50 p-1.5 rounded transition-colors min-w-0"
       data-testid={`field-${field}`}
     >
       <p className="text-xs text-muted-foreground truncate">{label}</p>
-      <p className="font-medium text-sm break-words line-clamp-2">
-        {inputValue || <span className="text-muted-foreground">-</span>}
+      <p
+        ref={textRef}
+        className="font-medium text-sm break-words line-clamp-2"
+      >
+        {inputValue && (
+          <span>{inputValue}</span>
+        )}
+        {!inputValue && (
+          <span className="text-muted-foreground">-</span>
+        )}
       </p>
     </div>
   );
+
+  if (isTruncated && inputValue) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {content}
+          </TooltipTrigger>
+          <TooltipContent side="right" className="max-w-xs break-words">
+            {inputValue}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  return content;
 }
