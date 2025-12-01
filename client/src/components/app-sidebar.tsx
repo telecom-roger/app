@@ -185,7 +185,7 @@ export function AppSidebar() {
                     asChild
                     isActive={location === item.url}
                     data-testid={`link-${item.title.toLowerCase()}`}
-                    className="hover:bg-muted/50 data-[active=true]:bg-muted/50"
+                    className="hover:bg-muted/50 data-[active=true]:bg-muted/50 text-foreground hover:text-foreground data-[active=true]:text-foreground"
                   >
                     <Link href={item.url}>
                       <item.icon className="h-4 w-4" />
@@ -208,7 +208,7 @@ export function AppSidebar() {
                     asChild
                     isActive={location === item.url}
                     data-testid={`link-${item.title.toLowerCase()}`}
-                    className="hover:bg-muted/50 data-[active=true]:bg-muted/50"
+                    className="hover:bg-muted/50 data-[active=true]:bg-muted/50 text-foreground hover:text-foreground data-[active=true]:text-foreground"
                   >
                     <Link href={item.url}>
                       <item.icon className="h-4 w-4" />
@@ -231,7 +231,7 @@ export function AppSidebar() {
                     asChild
                     isActive={location === item.url}
                     data-testid={`link-${item.title.toLowerCase()}`}
-                    className="hover:bg-muted/50 data-[active=true]:bg-muted/50"
+                    className="hover:bg-muted/50 data-[active=true]:bg-muted/50 text-foreground hover:text-foreground data-[active=true]:text-foreground"
                   >
                     <Link href={item.url}>
                       <item.icon className="h-4 w-4" />
@@ -254,7 +254,7 @@ export function AppSidebar() {
                     asChild
                     isActive={location === item.url}
                     data-testid={`link-${item.title.toLowerCase()}`}
-                    className="hover:bg-muted/50 data-[active=true]:bg-muted/50"
+                    className="hover:bg-muted/50 data-[active=true]:bg-muted/50 text-foreground hover:text-foreground data-[active=true]:text-foreground"
                   >
                     <Link href={item.url}>
                       <item.icon className="h-4 w-4" />
@@ -278,7 +278,7 @@ export function AppSidebar() {
                       asChild
                       isActive={location === item.url}
                       data-testid={`link-admin-${item.title.toLowerCase()}`}
-                      className="hover:bg-muted/50 data-[active=true]:bg-muted/50"
+                      className="hover:bg-muted/50 data-[active=true]:bg-muted/50 text-foreground hover:text-foreground data-[active=true]:text-foreground"
                     >
                       <Link href={item.url}>
                         <item.icon className="h-4 w-4" />
