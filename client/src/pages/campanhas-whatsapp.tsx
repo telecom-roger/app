@@ -180,12 +180,32 @@ export default function CampanhasWhatsApp() {
     },
   });
 
-  // Fetch clients with campaign history (only after filters initiated)
+  // Fetch clients with campaign history (only after filters initiated) - NOW WITH FILTER PARAMS
   const { data: clientesDisponiveis = [], isLoading: carregandoClientes, refetch: refetchClientes } = useQuery<ClientForImport[]>({
-    queryKey: ["/api/clients/whatsapp-list"],
+    queryKey: [
+      "/api/clients/whatsapp-list",
+      Array.from(selectedTiposFilter).sort().join(","),
+      Array.from(selectedCarteirasFilter).sort().join(","),
+      Array.from(selectedCidadesFilter).sort().join(","),
+    ],
+    queryFn: async () => {
+      // Build query params with filters
+      const params = new URLSearchParams();
+      if (selectedTiposFilter.size > 0) {
+        params.append('tipos', Array.from(selectedTiposFilter).join(','));
+      }
+      if (selectedCarteirasFilter.size > 0) {
+        params.append('carteiras', Array.from(selectedCarteirasFilter).join(','));
+      }
+      if (selectedCidadesFilter.size > 0) {
+        params.append('cidades', Array.from(selectedCidadesFilter).join(','));
+      }
+      const res = await fetch(`/api/clients/whatsapp-list?${params.toString()}`);
+      if (!res.ok) throw new Error("Failed to fetch clients");
+      return res.json();
+    },
     enabled: isAuthenticated && mostrarSeletorBD && filtersInitiated,
-    refetchInterval: filtersInitiated && mostrarSeletorBD ? 1000 : false, // Refetch every 1s when filters are active
-    staleTime: 0, // Always consider data stale to enable constant refetch
+    staleTime: 0, // Always fresh to get all matching clients
   });
 
   // Fetch available tags
@@ -255,17 +275,14 @@ export default function CampanhasWhatsApp() {
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
-  // Filter clients by search, status, tag, tipo, carteira, cidade, sendStatus
+  // Filter clients by search, status, tag, sendStatus (tipo, carteira, cidade now filtered on backend)
   const clientesFiltrados = clientesDisponiveis.filter((c) => {
     const searchMatch = c.nome.toLowerCase().includes(searchClientes.toLowerCase()) ||
       (c.celular || "").includes(searchClientes);
     const statusMatch = filtroStatus === "todos" || c.status?.toLowerCase() === filtroStatus.toLowerCase();
     const tagMatch = selectedTag === null || (c.tags && c.tags.some(t => t.nome === selectedTag));
-    const tipoMatch = selectedTiposFilter.size === 0 || (c.tipo && selectedTiposFilter.has(c.tipo));
-    const carteiraMatch = selectedCarteirasFilter.size === 0 || (c.carteira && selectedCarteirasFilter.has(c.carteira));
-    const cidadeMatch = selectedCidadesFilter.size === 0 || (c.cidade && selectedCidadesFilter.has(c.cidade));
     const sendStatusMatch = selectedSendStatusFilter.size === 0 || (c.sendStatus && selectedSendStatusFilter.has(c.sendStatus));
-    return searchMatch && statusMatch && tagMatch && tipoMatch && carteiraMatch && cidadeMatch && sendStatusMatch;
+    return searchMatch && statusMatch && tagMatch && sendStatusMatch;
   });
 
   // Parse CSV when text changes

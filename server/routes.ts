@@ -250,10 +250,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/clients/whatsapp-list", isAuthenticated, async (req, res) => {
     try {
       const user = req.user as any;
-      const whereCondition = user.role === 'admin' ? undefined : or(
-        eq(clients.createdBy, user.id),
-        sql`${clients.id} IN (SELECT ${clientSharing.clientId} FROM ${clientSharing} WHERE ${clientSharing.sharedWithUserId} = ${user.id})`
-      );
+      const { tipos, carteiras, cidades } = req.query;
+      
+      // Parse query params
+      const tiposArray = typeof tipos === 'string' ? tipos.split(',').filter(Boolean) : [];
+      const carteirasArray = typeof carteiras === 'string' ? carteiras.split(',').filter(Boolean) : [];
+      const cidadesArray = typeof cidades === 'string' ? cidades.split(',').filter(Boolean) : [];
+      
+      // Build where conditions
+      let conditions = [
+        user.role === 'admin' ? undefined : or(
+          eq(clients.createdBy, user.id),
+          sql`${clients.id} IN (SELECT ${clientSharing.clientId} FROM ${clientSharing} WHERE ${clientSharing.sharedWithUserId} = ${user.id})`
+        )
+      ].filter(Boolean);
+      
+      // Apply filters if provided
+      if (tiposArray.length > 0) {
+        conditions.push(inArray(clients.tipoCliente, tiposArray));
+      }
+      if (carteirasArray.length > 0) {
+        conditions.push(inArray(clients.carteira, carteirasArray));
+      }
+      if (cidadesArray.length > 0) {
+        conditions.push(inArray(clients.cidade, cidadesArray));
+      }
+      
+      const whereCondition = conditions.length > 0 ? and(...conditions) : undefined;
       
       const allClients = await db
         .select({
@@ -271,8 +294,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           cidade: clients.cidade,
         })
         .from(clients)
-        .where(whereCondition)
-        .limit(10000);
+        .where(whereCondition);
 
       // Fetch all available tags
       const allTags = await db.select().from(tags);
