@@ -69,10 +69,19 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
-      retry: false,
+      retry: (failureCount, error: any) => {
+        // Retry on 401 (session not ready) with exponential backoff
+        const is401 = error?.message?.includes("401");
+        if (is401 && failureCount < 3) {
+          return true;
+        }
+        return false;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
     },
     mutations: {
       retry: false,
     },
   },
 });
+
