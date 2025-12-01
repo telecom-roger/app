@@ -1192,11 +1192,13 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
     }
 
     // Atualiza status para "concluida" com estatísticas
+    // ✅ Preservar totalRecipients original (importante para taxa de sucesso)
     await db.update(campaigns)
       .set({ 
         status: 'concluida',
         totalEnviados: enviados,
         totalErros: erros,
+        totalRecipients: campaign.totalRecipients || recipientClients.length,
       })
       .where(eq(campaigns.id, campaign.id));
 
