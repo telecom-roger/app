@@ -238,15 +238,7 @@ export default function Dashboard() {
           </div>
 
           {/* KPI Cards - Campanhas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
-            <StatCard
-              title="Campanhas Hoje"
-              value={campaignStats?.campanhasCompletadasHoje}
-              icon={<Zap className="h-6 w-6" />}
-              isLoading={campaignStatsLoading}
-              bgColor="bg-purple-500/10"
-              iconColor="text-purple-600 dark:text-purple-400"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-2 md:gap-4">
             <StatCard
               title="Msgs Hoje"
               value={campaignStats?.mensagensEnviadasHoje}
@@ -264,12 +256,36 @@ export default function Dashboard() {
               iconColor="text-emerald-600 dark:text-emerald-400"
             />
             <StatCard
-              title="Taxa de Falha"
-              value={`${campaignStats?.taxaFalha}%`}
+              title="Enviado"
+              value={campaignStats?.totalEnviados}
+              icon={<ArrowUpRight className="h-6 w-6" />}
+              isLoading={campaignStatsLoading}
+              bgColor="bg-green-500/10"
+              iconColor="text-green-600 dark:text-green-400"
+            />
+            <StatCard
+              title="Falhas"
+              value={campaignStats?.totalErros}
               icon={<AlertCircle className="h-6 w-6" />}
               isLoading={campaignStatsLoading}
               bgColor="bg-red-500/10"
               iconColor="text-red-600 dark:text-red-400"
+            />
+            <StatCard
+              title="Campanhas Hoje"
+              value={campaignStats?.campanhasCompletadasHoje}
+              icon={<Zap className="h-6 w-6" />}
+              isLoading={campaignStatsLoading}
+              bgColor="bg-purple-500/10"
+              iconColor="text-purple-600 dark:text-purple-400"
+            />
+            <StatCard
+              title="Taxa de Falha"
+              value={`${campaignStats?.taxaFalha}%`}
+              icon={<AlertCircle className="h-6 w-6" />}
+              isLoading={campaignStatsLoading}
+              bgColor="bg-amber-500/10"
+              iconColor="text-amber-600 dark:text-amber-400"
             />
           </div>
 
