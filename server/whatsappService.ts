@@ -658,6 +658,19 @@ export async function sendMessage(sessionId: string, telefone: string, mensagem:
     if (!jid.startsWith("55")) {
       jid = "55" + jid;
     }
+    
+    // ✅ VERIFICAR SE O NÚMERO EXISTE NO WHATSAPP ANTES DE ENVIAR
+    try {
+      const [exists] = await sock.onWhatsApp(jid);
+      if (!exists || !exists.exists) {
+        console.error(`❌ Número ${jid} NÃO existe no WhatsApp!`);
+        return false;
+      }
+      console.log(`✅ Número ${jid} verificado - existe no WhatsApp`);
+    } catch (checkErr) {
+      console.warn(`⚠️ Não foi possível verificar se ${jid} existe, tentando enviar mesmo assim...`);
+    }
+    
     jid = jid + "@s.whatsapp.net";
 
     console.log(`📤 Enviando mensagem para ${jid}...`);
