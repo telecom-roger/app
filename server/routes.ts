@@ -1842,7 +1842,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Verify session ownership - only owner can use
-      const session = await storage.getWhatsappSessionById(sessionId);
+      const session = await storage.getWhatsappSessionBySessionId(sessionId);
       if (!session) {
         return res.status(404).json({ error: "Sessão não encontrada" });
       }
@@ -1882,7 +1882,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Verify session ownership - only owner can use
-      const session = await storage.getWhatsappSessionById(sessionId);
+      const session = await storage.getWhatsappSessionBySessionId(sessionId);
       if (!session) {
         return res.status(404).json({ error: "Sessão não encontrada" });
       }
