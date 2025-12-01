@@ -1066,6 +1066,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: clients.email,
           status: campaignSendings.status,
           erroMensagem: campaignSendings.erroMensagem,
+          dataSending: campaignSendings.dataSending,
         })
         .from(clients)
         .leftJoin(
@@ -1078,8 +1079,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(inArray(clients.id, clientIds))
         .limit(10000);
 
+      // ✅ Remover duplicatas: pegar apenas o registro mais recente de cada cliente
+      const uniqueClientMap = new Map<string, typeof allClients[0]>();
+      for (const record of allClients) {
+        const existing = uniqueClientMap.get(record.id);
+        if (!existing || (record.dataSending && (!existing.dataSending || record.dataSending > existing.dataSending))) {
+          uniqueClientMap.set(record.id, record);
+        }
+      }
+
       // Mapear para formato esperado pelo frontend
-      const result = allClients.map(c => ({
+      const result = Array.from(uniqueClientMap.values()).map(c => ({
         id: c.id,
         nome: c.nome,
         telefone: c.telefone,
