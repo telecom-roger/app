@@ -453,8 +453,12 @@ async function executeContractReminder(task: any) {
           }
           
           console.log(`📱 Enviando mensagem via WhatsApp para ${telefone}...`);
-          await whatsappService.sendMessage(session.sessionId, telefone, mensagem);
-          console.log(`✅ Mensagem WhatsApp enviada com sucesso para ${client.nome}`);
+          const result = await whatsappService.sendMessage(session.sessionId, telefone, mensagem);
+          if (result.success) {
+            console.log(`✅ Mensagem WhatsApp enviada com sucesso para ${client.nome}`);
+          } else {
+            console.warn(`⚠️ Falha ao enviar WhatsApp para ${client.nome}`);
+          }
         }
       } else {
         console.warn(`⚠️ Cliente sem celular. Mensagem só no chat.`);
@@ -599,9 +603,13 @@ async function executeContratoEnviadoMessage(task: any) {
           
           try {
             console.log(`📱 Enviando contrato via WhatsApp para ${telefone}...`);
-            await whatsappService.sendMessage(session.sessionId, telefone, mensagem);
-            console.log(`✅ Contrato enviado via WhatsApp com sucesso para ${client.nome}`);
-            whatsappEnviado = true;
+            const result = await whatsappService.sendMessage(session.sessionId, telefone, mensagem);
+            if (result.success) {
+              console.log(`✅ Contrato enviado via WhatsApp com sucesso para ${client.nome}`);
+              whatsappEnviado = true;
+            } else {
+              console.warn(`⚠️ Falha ao enviar contrato via WhatsApp para ${client.nome}`);
+            }
           } catch (error) {
             console.error(`❌ Erro ao enviar mensagem via WhatsApp:`, error);
           }
@@ -949,8 +957,12 @@ async function executeAguardandoAceiteReminder(task: any) {
           }
           
           console.log(`📱 Enviando lembrete ${lembreteNum} via WhatsApp para ${telefone}...`);
-          await whatsappService.sendMessage(session.sessionId, telefone, mensagem);
-          console.log(`✅ Lembrete ${lembreteNum}/3 enviado via WhatsApp com sucesso para ${client.nome}`);
+          const result = await whatsappService.sendMessage(session.sessionId, telefone, mensagem);
+          if (result.success) {
+            console.log(`✅ Lembrete ${lembreteNum}/3 enviado via WhatsApp com sucesso para ${client.nome}`);
+          } else {
+            console.warn(`⚠️ Falha ao enviar lembrete via WhatsApp para ${client.nome}`);
+          }
         }
       } else {
         console.warn(`⚠️ Cliente sem celular. Mensagem só no chat.`);

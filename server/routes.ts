@@ -2037,7 +2037,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 break;
               }
 
-              await whatsappService.sendMessage(sessaoConectada.sessionId, telefone, mensagem);
+              const result = await whatsappService.sendMessage(sessaoConectada.sessionId, telefone, mensagem);
+              if (!result.success) {
+                console.warn(`⚠️ Falha ao enviar para ${telefone}`);
+                erros++;
+                continue;
+              }
               enviadas++;
               
               // Update client status to "enviado"
@@ -2220,7 +2225,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send the message
       try {
-        await whatsappService.sendMessage(sessaoConectada.sessionId, telefone, mensagem);
+        const result = await whatsappService.sendMessage(sessaoConectada.sessionId, telefone, mensagem);
+        
+        if (!result.success) {
+          return res.status(500).json({ error: "Falha ao enviar mensagem via WhatsApp" });
+        }
         
         // Update client status to "Enviado" if clientId is provided
         if (clientId) {
@@ -2493,23 +2502,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   telefone = "55" + telefone;
                 }
 
-                // Envia a mensagem
+                // Envia a mensagem e captura o messageId
+                let sendResult: { success: boolean; messageId?: string } = { success: false };
+                
                 if (tipo === "texto") {
-                  await whatsappService.sendMessage(session.sessionId, telefone, conteudo);
-                  console.log(`✅ Mensagem enviada para WhatsApp: ${telefone}`);
+                  sendResult = await whatsappService.sendMessage(session.sessionId, telefone, conteudo);
+                  if (sendResult.success) {
+                    console.log(`✅ Mensagem enviada para WhatsApp: ${telefone} (msgId: ${sendResult.messageId})`);
+                  }
                 } else if (tipo === "imagem" && arquivo) {
-                  await whatsappService.sendImage(session.sessionId, telefone, arquivo, conteudo);
-                  console.log(`✅ Imagem enviada para WhatsApp: ${telefone}`);
+                  sendResult = await whatsappService.sendImage(session.sessionId, telefone, arquivo, conteudo);
+                  if (sendResult.success) console.log(`✅ Imagem enviada para WhatsApp: ${telefone} (msgId: ${sendResult.messageId})`);
                 } else if (tipo === "audio" && arquivo) {
-                  await whatsappService.sendAudio(session.sessionId, telefone, arquivo);
-                  console.log(`✅ Áudio enviado para WhatsApp: ${telefone}`);
+                  sendResult = await whatsappService.sendAudio(session.sessionId, telefone, arquivo);
+                  if (sendResult.success) console.log(`✅ Áudio enviado para WhatsApp: ${telefone} (msgId: ${sendResult.messageId})`);
                 } else if (tipo === "documento" && arquivo) {
-                  await whatsappService.sendDocument(session.sessionId, telefone, arquivo, nomeArquivo);
-                  console.log(`✅ Documento enviado para WhatsApp: ${telefone}`);
+                  sendResult = await whatsappService.sendDocument(session.sessionId, telefone, arquivo, nomeArquivo);
+                  if (sendResult.success) console.log(`✅ Documento enviado para WhatsApp: ${telefone} (msgId: ${sendResult.messageId})`);
+                }
+                
+                // Atualiza a mensagem com o whatsappMessageId e statusEntrega
+                if (sendResult.success && sendResult.messageId) {
+                  try {
+                    await db.update(messages)
+                      .set({ 
+                        whatsappMessageId: sendResult.messageId,
+                        statusEntrega: 'enviado'
+                      })
+                      .where(eq(messages.id, mensagem.id));
+                    console.log(`✅ Mensagem ${mensagem.id} atualizada com msgId ${sendResult.messageId}`);
+                  } catch (err) {
+                    console.warn("Erro ao atualizar mensagem com msgId:", err);
+                  }
                 }
                 
                 // Update client status to "Enviado"
-                if (conversation.clientId) {
+                if (sendResult.success && conversation.clientId) {
                   try {
                     await storage.updateClient(conversation.clientId, { status: "Enviado" });
                     console.log(`✅ Status do cliente ${conversation.clientId} atualizado para "Enviado"`);

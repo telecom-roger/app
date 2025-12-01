@@ -476,8 +476,8 @@ async function processIncomingMessages(sessionId: string, m: any) {
                       setTimeout(async () => {
                         try {
                           if (isSessionAlive(sessionId)) {
-                            const enviado = await sendMessage(sessionId, telefone, mensagemAutomatica);
-                            if (enviado) {
+                            const result = await sendMessage(sessionId, telefone, mensagemAutomatica);
+                            if (result.success) {
                               console.log(`✅ [WHATSAPP] Mensagem automática enviada com sucesso para ${telefone}`);
                             } else {
                               console.warn(`⚠️ [WHATSAPP] Falha ao enviar para ${telefone}`);
@@ -522,6 +522,44 @@ async function processIncomingMessages(sessionId: string, m: any) {
   }
 }
 
+// Processa updates de status de entrega (ticks do WhatsApp)
+async function processMessageStatusUpdate(sessionId: string, updates: any) {
+  try {
+    for (const update of updates) {
+      const messageId = update.key?.id;
+      if (!messageId) continue;
+      
+      // Mapeia status do Baileys para nosso sistema
+      // status: 0 = erro, 1 = pendente, 2 = enviado (servidor), 3 = entregue, 4 = lido
+      let statusEntrega: 'enviado' | 'entregue' | 'lido' | null = null;
+      
+      if (update.update?.status === 3) {
+        statusEntrega = 'entregue';
+        console.log(`📬 [STATUS] Mensagem ${messageId} ENTREGUE (2 ticks)`);
+      } else if (update.update?.status === 4) {
+        statusEntrega = 'lido';
+        console.log(`👁️ [STATUS] Mensagem ${messageId} LIDA (2 ticks azuis)`);
+      }
+      
+      if (statusEntrega) {
+        try {
+          // Atualiza o status no banco de dados
+          const result = await db.update(messages)
+            .set({ statusEntrega })
+            .where(eq(messages.whatsappMessageId, messageId));
+          
+          console.log(`✅ [STATUS] Atualizado para ${statusEntrega}: ${messageId}`);
+        } catch (err) {
+          // Pode não encontrar se for mensagem recebida (não enviada por nós)
+          // Isso é esperado e normal
+        }
+      }
+    }
+  } catch (error) {
+    console.error(`❌ [STATUS] Erro ao processar update:`, error);
+  }
+}
+
 async function handleIncomingMessages(sessionId: string, sock: any) {
   // Reset listener flag for this socket (important on reconnect)
   sessionListeners.delete(sessionId);
@@ -529,11 +567,13 @@ async function handleIncomingMessages(sessionId: string, sock: any) {
   sessionListeners.set(sessionId, true);
   console.log(`\n🎯🎯🎯 LISTENER REGISTRADO E ATIVADO PARA: ${sessionId} 🎯🎯🎯\n`);
 
-  // Only listen to new messages (upsert), NOT status updates (update)
-  // messages.update is for delivery status, NOT for incoming messages
+  // Listener para novas mensagens recebidas
   sock.ev.on("messages.upsert", (m: any) => processIncomingMessages(sessionId, m));
   
-  console.log(`[LISTENER] Aguardando mensagens para ${sessionId}...`);
+  // Listener para status de entrega (ticks do WhatsApp)
+  sock.ev.on("messages.update", (updates: any[]) => processMessageStatusUpdate(sessionId, updates));
+  
+  console.log(`[LISTENER] Aguardando mensagens e status updates para ${sessionId}...`);
 }
 
 export async function initializeWhatsAppSession(sessionId: string, userId?: string): Promise<void> {
@@ -646,12 +686,18 @@ export function getActiveSession(sessionId: string): any {
   return activeSessions.get(sessionId) || null;
 }
 
-export async function sendMessage(sessionId: string, telefone: string, mensagem: string): Promise<boolean> {
+// Tipo de retorno para envio de mensagem
+export type SendMessageResult = {
+  success: boolean;
+  messageId?: string;
+};
+
+export async function sendMessage(sessionId: string, telefone: string, mensagem: string): Promise<SendMessageResult> {
   try {
     const sock = activeSessions.get(sessionId);
     if (!sock) {
       console.error(`❌ Sessão ${sessionId} não encontrada para enviar mensagem`);
-      return false;
+      return { success: false };
     }
 
     let jid = telefone.replace(/\D/g, "");
@@ -664,7 +710,7 @@ export async function sendMessage(sessionId: string, telefone: string, mensagem:
       const [exists] = await sock.onWhatsApp(jid);
       if (!exists || !exists.exists) {
         console.error(`❌ Número ${jid} NÃO existe no WhatsApp!`);
-        return false;
+        return { success: false };
       }
       console.log(`✅ Número ${jid} verificado - existe no WhatsApp`);
     } catch (checkErr) {
@@ -680,23 +726,23 @@ export async function sendMessage(sessionId: string, telefone: string, mensagem:
     // ✅ VALIDAÇÃO RIGOROSA: Verificar se realmente foi enviado
     if (!result || !result.key || !result.key.id) {
       console.error(`❌ Falha ao enviar para ${jid}: Resposta inválida ou sem ID. Retorno:`, result);
-      return false;
+      return { success: false };
     }
     
     console.log(`✅ Mensagem enviada com sucesso para ${jid}. Message ID: ${result.key.id}`);
-    return true;
+    return { success: true, messageId: result.key.id };
   } catch (error) {
     console.error(`❌ Erro ao enviar mensagem para ${telefone}:`, error);
-    return false;
+    return { success: false };
   }
 }
 
-export async function sendImage(sessionId: string, telefone: string, imageBase64: string, caption?: string): Promise<boolean> {
+export async function sendImage(sessionId: string, telefone: string, imageBase64: string, caption?: string): Promise<SendMessageResult> {
   try {
     const sock = activeSessions.get(sessionId);
     if (!sock) {
       console.error(`❌ Sessão ${sessionId} não encontrada para enviar imagem`);
-      return false;
+      return { success: false };
     }
 
     let jid = telefone.replace(/\D/g, "");
@@ -709,7 +755,7 @@ export async function sendImage(sessionId: string, telefone: string, imageBase64
       const [exists] = await sock.onWhatsApp(jid);
       if (!exists || !exists.exists) {
         console.error(`❌ Número ${jid} NÃO existe no WhatsApp!`);
-        return false;
+        return { success: false };
       }
     } catch (checkErr) {
       console.warn(`⚠️ Não foi possível verificar se ${jid} existe, tentando enviar mesmo assim...`);
@@ -728,14 +774,14 @@ export async function sendImage(sessionId: string, telefone: string, imageBase64
     // ✅ VALIDAÇÃO RIGOROSA
     if (!result || !result.key || !result.key.id) {
       console.error(`❌ Falha ao enviar imagem para ${jid}: Resposta inválida. Retorno:`, result);
-      return false;
+      return { success: false };
     }
     
     console.log(`✅ Imagem enviada com sucesso para ${jid}. Message ID: ${result.key.id}`);
-    return true;
+    return { success: true, messageId: result.key.id };
   } catch (error) {
     console.error(`❌ Erro ao enviar imagem para ${telefone}:`, error);
-    return false;
+    return { success: false };
   }
 }
 
@@ -782,12 +828,12 @@ async function convertWebMToM4A(webmBase64: string): Promise<Buffer | null> {
   }
 }
 
-export async function sendAudio(sessionId: string, telefone: string, audioBase64: string): Promise<boolean> {
+export async function sendAudio(sessionId: string, telefone: string, audioBase64: string): Promise<SendMessageResult> {
   try {
     const sock = activeSessions.get(sessionId);
     if (!sock) {
       console.error(`❌ Sessão ${sessionId} não encontrada para enviar áudio`);
-      return false;
+      return { success: false };
     }
 
     let jid = telefone.replace(/\D/g, "");
@@ -800,7 +846,7 @@ export async function sendAudio(sessionId: string, telefone: string, audioBase64
       const [exists] = await sock.onWhatsApp(jid);
       if (!exists || !exists.exists) {
         console.error(`❌ Número ${jid} NÃO existe no WhatsApp!`);
-        return false;
+        return { success: false };
       }
     } catch (checkErr) {
       console.warn(`⚠️ Não foi possível verificar se ${jid} existe, tentando enviar mesmo assim...`);
@@ -828,23 +874,23 @@ export async function sendAudio(sessionId: string, telefone: string, audioBase64
     // ✅ VALIDAÇÃO RIGOROSA
     if (!result || !result.key || !result.key.id) {
       console.error(`❌ Falha ao enviar áudio para ${jid}: Resposta inválida. Retorno:`, result);
-      return false;
+      return { success: false };
     }
     
     console.log(`✅ Áudio enviado com sucesso para ${jid}. Message ID: ${result.key.id}`);
-    return true;
+    return { success: true, messageId: result.key.id };
   } catch (error) {
     console.error(`❌ Erro ao enviar áudio para ${telefone}:`, error);
-    return false;
+    return { success: false };
   }
 }
 
-export async function sendDocument(sessionId: string, telefone: string, docBase64: string, filename: string): Promise<boolean> {
+export async function sendDocument(sessionId: string, telefone: string, docBase64: string, filename: string): Promise<SendMessageResult> {
   try {
     const sock = activeSessions.get(sessionId);
     if (!sock) {
       console.error(`❌ Sessão ${sessionId} não encontrada para enviar documento`);
-      return false;
+      return { success: false };
     }
 
     let jid = telefone.replace(/\D/g, "");
@@ -857,7 +903,7 @@ export async function sendDocument(sessionId: string, telefone: string, docBase6
       const [exists] = await sock.onWhatsApp(jid);
       if (!exists || !exists.exists) {
         console.error(`❌ Número ${jid} NÃO existe no WhatsApp!`);
-        return false;
+        return { success: false };
       }
     } catch (checkErr) {
       console.warn(`⚠️ Não foi possível verificar se ${jid} existe, tentando enviar mesmo assim...`);
@@ -879,14 +925,14 @@ export async function sendDocument(sessionId: string, telefone: string, docBase6
     // ✅ VALIDAÇÃO RIGOROSA
     if (!result || !result.key || !result.key.id) {
       console.error(`❌ Falha ao enviar documento para ${jid}: Resposta inválida. Retorno:`, result);
-      return false;
+      return { success: false };
     }
     
     console.log(`✅ Documento enviado com sucesso para ${jid} (${mimeType}). Message ID: ${result.key.id}`);
-    return true;
+    return { success: true, messageId: result.key.id };
   } catch (error) {
     console.error(`❌ Erro ao enviar documento para ${telefone}:`, error);
-    return false;
+    return { success: false };
   }
 }
 
@@ -969,7 +1015,8 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
         // Tenta enviar via WhatsApp se houver sessão ativa
         let mensagemEnviada = false;
         if (sessionId && isSessionAlive(sessionId)) {
-          mensagemEnviada = await sendMessage(sessionId, client.celular || client.telefone2, conteudo);
+          const result = await sendMessage(sessionId, client.celular || client.telefone2, conteudo);
+          mensagemEnviada = result.success;
         }
         
         // ✅ CONTAGEM IMEDIATA: Incrementa enviados/erros LOGO APÓS o envio

@@ -391,10 +391,14 @@ export const messages = pgTable("messages", {
   origem: varchar("origem", { length: 50 }), // "automation", "whatsapp", "manual", null
   lido: boolean("lido").default(false),
   deletado: boolean("deletado").default(false), // Soft delete for "removed for all"
+  // ✅ Campos para status de entrega do WhatsApp (ticks)
+  statusEntrega: varchar("status_entrega", { length: 20 }).default("enviado"), // enviado, entregue, lido
+  whatsappMessageId: varchar("whatsapp_message_id", { length: 100 }), // ID da mensagem no WhatsApp para rastrear status
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
   index("idx_messages_conversation").on(table.conversationId),
   index("idx_messages_sender").on(table.sender),
+  index("idx_messages_whatsapp_id").on(table.whatsappMessageId),
 ]);
 
 export type Message = typeof messages.$inferSelect;
