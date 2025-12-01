@@ -970,6 +970,21 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
         enviados++;
         console.log(`✅ Enviado para ${client.nome}`);
 
+        // ✅ ATUALIZAR EM TEMPO REAL: A cada 5 mensagens, atualiza a campanha
+        if (enviados % 5 === 0 || index === recipientClients.length - 1) {
+          try {
+            await db.update(campaigns)
+              .set({ 
+                totalEnviados: enviados,
+                totalErros: erros,
+              })
+              .where(eq(campaigns.id, campaign.id));
+            console.log(`📊 [PROGRESSO] ${enviados} enviados / ${erros} erros (${index + 1}/${recipientClients.length})`);
+          } catch (err) {
+            console.warn(`⚠️ Erro ao atualizar progresso:`, err);
+          }
+        }
+
         // Delay entre mensagens: 21s + 10-60s aleatório (total 31-81s)
         if (index < recipientClients.length - 1) {
           const rangeExtra = (tempoRandomMax - tempoRandomMin) * 1000; // 50000ms
@@ -981,6 +996,21 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
       } catch (error) {
         console.error(`❌ Erro ao enviar para ${client.nome}:`, error);
         erros++;
+
+        // ✅ ATUALIZAR ERROS EM TEMPO REAL: A cada 5 erros
+        if (erros % 5 === 0) {
+          try {
+            await db.update(campaigns)
+              .set({ 
+                totalEnviados: enviados,
+                totalErros: erros,
+              })
+              .where(eq(campaigns.id, campaign.id));
+            console.log(`📊 [PROGRESSO] ${enviados} enviados / ${erros} erros (${index + 1}/${recipientClients.length})`);
+          } catch (err) {
+            console.warn(`⚠️ Erro ao atualizar progresso:`, err);
+          }
+        }
 
         // Mesmo com erro, aplica o delay
         if (index < recipientClients.length - 1) {
