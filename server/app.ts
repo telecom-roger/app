@@ -30,24 +30,18 @@ declare module 'http' {
 }
 
 // ⚡ ULTRA-FAST HEALTH CHECK - responds immediately before any middleware
+// Must respond INSTANTLY without any conditional logic
 app.get("/health", (req, res) => {
   res.status(200).json({ ok: true });
 });
 
-// Root route for health checks - responds immediately, then passes to static/catch-all for actual content
-app.head("/", (req, res) => {
+app.head("/health", (req, res) => {
   res.status(200).end();
 });
 
-// Health check probe response before passing to static middleware
-app.get("/", (req, res, next) => {
-  // Quick response for load balancer health checks
-  if (req.header("user-agent")?.includes("kube-probe") || req.header("x-health-check")) {
-    res.status(200).json({ ok: true });
-  } else {
-    // Pass through to static/Vite middleware to serve index.html
-    next();
-  }
+// HEAD "/" for rapid deployment health checks
+app.head("/", (req, res) => {
+  res.status(200).end();
 });
 
 // Server ready state for health checks
@@ -105,10 +99,6 @@ export default async function runApp(
     throw err;
   });
 
-  // importantly run the final setup after setting up all the other routes so
-  // the catch-all route doesn't interfere with the other routes
-  await setup(app, server);
-
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.
@@ -122,19 +112,29 @@ export default async function runApp(
     log(`serving on port ${port}`);
     
     // CRITICAL: Mark server as ready for health checks IMMEDIATELY
-    // This must happen BEFORE any async operations
+    // This must happen BEFORE any other operations
     markServerReady();
     
-    // Start automation cron jobs AFTER server is listening (fire-and-forget, non-blocking)
-    // Use process.nextTick() instead of setImmediate for faster execution
+    // Setup static file serving AFTER server is listening (non-blocking)
+    // This must run after health check is ready, so deployment probes pass immediately
     process.nextTick(() => {
+      try {
+        void setup(app, server);
+      } catch (err) {
+        console.error("❌ Erro ao setup static files:", err);
+      }
+    });
+    
+    // Start automation cron jobs AFTER server is listening (fire-and-forget, non-blocking)
+    // Use setTimeout to ensure it runs after setup
+    setTimeout(() => {
       try {
         startAutomationCron();
         log("🤖 Automation Cron Jobs iniciados!");
       } catch (err) {
         console.error("❌ Erro ao iniciar cron jobs:", err);
       }
-    });
+    }, 50);
     
     // Bootstrap WhatsApp sessions in COMPLETELY async context
     // Fire-and-forget: do NOT await, do NOT block
@@ -148,6 +148,6 @@ export default async function runApp(
       } catch (err) {
         console.error("❌ Erro ao iniciar bootstrap WhatsApp:", err);
       }
-    }, 100); // Small delay to ensure health check is ready first
+    }, 100);
   });
 }
