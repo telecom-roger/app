@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -23,6 +23,11 @@ export function EditableField({
   const [inputValue, setInputValue] = useState(value || "");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  // Sincronizar quando o valor prop muda
+  useEffect(() => {
+    setInputValue(value || "");
+  }, [value]);
 
   const handleSave = async () => {
     if (inputValue === (value || "")) {
