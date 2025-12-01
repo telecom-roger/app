@@ -36,13 +36,13 @@ interface Message {
 const DeliveryStatusTicks = ({ status }: { status?: "enviado" | "entregue" | "lido" }) => {
   if (status === "lido") {
     // Dois ticks azuis escuros - mensagem lida
-    return <span className="text-xs text-blue-600">✓✓</span>;
+    return <span className="text-xs font-bold text-blue-600">✓✓</span>;
   } else if (status === "entregue") {
     // Dois ticks cinza - mensagem entregue
-    return <span className="text-xs opacity-70">✓✓</span>;
+    return <span className="text-xs font-bold opacity-70">✓✓</span>;
   } else {
     // Um tick - mensagem enviada (ou sem status)
-    return <span className="text-xs opacity-70">✓</span>;
+    return <span className="text-xs font-bold opacity-70">✓</span>;
   }
 };
 
