@@ -923,32 +923,56 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
           mensagemEnviada = await sendMessage(sessionId, client.celular || client.telefone2, conteudo);
         }
         
+        // ✅ CONTAGEM IMEDIATA: Incrementa enviados/erros LOGO APÓS o envio
+        if (mensagemEnviada) {
+          enviados++;
+          console.log(`✅ [${index + 1}/${recipientClients.length}] Enviado para ${client.nome}`);
+        } else {
+          erros++;
+          console.log(`❌ [${index + 1}/${recipientClients.length}] Falha ao enviar para ${client.nome}`);
+        }
+        
+        // ✅ ATUALIZAR EM TEMPO REAL: A cada mensagem processada
+        try {
+          await db.update(campaigns)
+            .set({ 
+              totalEnviados: enviados,
+              totalErros: erros,
+            })
+            .where(eq(campaigns.id, campaign.id));
+        } catch (err) {
+          console.warn(`⚠️ Erro ao atualizar progresso:`, err);
+        }
+        
         // Update client status to "Enviado" if message was sent successfully
         if (mensagemEnviada) {
           try {
             await storage.updateClient(client.id, { status: "Enviado" });
-            console.log(`✅ Status do cliente ${client.id} atualizado para "Enviado"`);
           } catch (err) {
             console.warn("Erro ao atualizar status do cliente:", err);
           }
         }
         
-        // Registra interação
-        await storage.createInteraction({
-          clientId: client.id,
-          tipo: 'whatsapp_enviado',
-          origem: 'system',
-          titulo: `Campanha agendada: ${campaign.nome}`,
-          texto: conteudo,
-          meta: { 
-            campaignId: campaign.id, 
-            templateId: campaign.templateId, // ✅ CORRIGIDO: usar campaign.templateId ou null para broadcasts
-            enviado: mensagemEnviada,
-            origem_disparo: 'agendamento',
-            status: mensagemEnviada ? 'enviado' : 'erro'
-          },
-          createdBy: campaign.createdBy,
-        });
+        // Registra interação (não falha se der erro)
+        try {
+          await storage.createInteraction({
+            clientId: client.id,
+            tipo: 'whatsapp_enviado',
+            origem: 'system',
+            titulo: `Campanha agendada: ${campaign.nome}`,
+            texto: conteudo,
+            meta: { 
+              campaignId: campaign.id, 
+              templateId: campaign.templateId,
+              enviado: mensagemEnviada,
+              origem_disparo: 'agendamento',
+              status: mensagemEnviada ? 'enviado' : 'erro'
+            },
+            createdBy: campaign.createdBy,
+          });
+        } catch (err) {
+          console.warn(`⚠️ Erro ao registrar interação:`, err);
+        }
 
         // Registra em campaign_sendings
         try {
@@ -961,28 +985,10 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
             erroMensagem: mensagemEnviada ? undefined : 'Falha ao enviar mensagem',
             origemDisparo: 'agendamento',
             mensagemUsada: conteudo,
-            modeloId: campaign.templateId || null, // ✅ CORRIGIDO: usar campaign.templateId ou null
+            modeloId: campaign.templateId || null,
           });
         } catch (err) {
           console.warn(`⚠️ Erro ao registrar envio em campaign_sendings:`, err);
-        }
-
-        enviados++;
-        console.log(`✅ Enviado para ${client.nome}`);
-
-        // ✅ ATUALIZAR EM TEMPO REAL: A cada 5 mensagens, atualiza a campanha
-        if (enviados % 5 === 0 || index === recipientClients.length - 1) {
-          try {
-            await db.update(campaigns)
-              .set({ 
-                totalEnviados: enviados,
-                totalErros: erros,
-              })
-              .where(eq(campaigns.id, campaign.id));
-            console.log(`📊 [PROGRESSO] ${enviados} enviados / ${erros} erros (${index + 1}/${recipientClients.length})`);
-          } catch (err) {
-            console.warn(`⚠️ Erro ao atualizar progresso:`, err);
-          }
         }
 
         // Delay entre mensagens: 21s + 10-60s aleatório (total 31-81s)
