@@ -1597,8 +1597,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mensagensEnviadasHoje: (sentToday[0]?.total as number) || 0,
         mensagensEnviadasMes: (sentThisMonth[0]?.total as number) || 0,
         taxaFalha: failureRate,
-        totalEnviados,
-        totalErros,
+        totalEnviados: totalSent,
+        totalErros: totalErrors,
       });
     } catch (error: any) {
       console.error("Error fetching campaign stats:", error);
