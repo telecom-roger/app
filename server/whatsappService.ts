@@ -907,9 +907,32 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
           origem: 'system',
           titulo: `Campanha agendada: ${campaign.nome}`,
           texto: conteudo,
-          meta: { campaignId: campaign.id, templateId: template.id, enviado: mensagemEnviada },
+          meta: { 
+            campaignId: campaign.id, 
+            templateId: template.id, 
+            enviado: mensagemEnviada,
+            origem_disparo: 'agendamento',
+            status: mensagemEnviada ? 'enviado' : 'erro'
+          },
           createdBy: campaign.createdBy,
         });
+
+        // Registra em campaign_sendings
+        try {
+          await storage.recordCampaignSending({
+            userId: campaign.createdBy,
+            campaignId: campaign.id,
+            campaignName: campaign.nome,
+            clientId: client.id,
+            status: mensagemEnviada ? 'enviado' : 'erro',
+            erroMensagem: mensagemEnviada ? undefined : 'Falha ao enviar mensagem',
+            origemDisparo: 'agendamento',
+            mensagemUsada: conteudo,
+            modeloId: template.id,
+          });
+        } catch (err) {
+          console.warn(`⚠️ Erro ao registrar envio em campaign_sendings:`, err);
+        }
 
         enviados++;
         console.log(`✅ Enviado para ${client.nome}`);
