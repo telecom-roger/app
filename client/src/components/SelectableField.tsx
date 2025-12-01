@@ -74,10 +74,10 @@ export function SelectableField({
 
   return (
     <div
-      className="cursor-pointer hover:bg-muted/50 p-1.5 rounded transition-colors"
+      className="cursor-pointer hover:bg-muted/50 p-1.5 rounded transition-colors min-w-0"
       data-testid={testId || `field-${field}`}
     >
-      <p className="text-xs text-muted-foreground mb-2">{label}</p>
+      <p className="text-xs text-muted-foreground mb-2 truncate">{label}</p>
       <Select value={value || ""} onValueChange={handleSave} disabled={isLoading}>
         <SelectTrigger className="h-8 text-sm">
           <SelectValue placeholder="Selecione uma carteira..." />

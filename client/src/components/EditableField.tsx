@@ -90,11 +90,11 @@ export function EditableField({
   return (
     <div
       onClick={() => setIsEditing(true)}
-      className="cursor-pointer hover:bg-muted/50 p-1.5 rounded transition-colors"
+      className="cursor-pointer hover:bg-muted/50 p-1.5 rounded transition-colors min-w-0"
       data-testid={`field-${field}`}
     >
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="font-medium text-sm break-words">
+      <p className="text-xs text-muted-foreground truncate">{label}</p>
+      <p className="font-medium text-sm break-words line-clamp-2">
         {inputValue || <span className="text-muted-foreground">-</span>}
       </p>
     </div>
