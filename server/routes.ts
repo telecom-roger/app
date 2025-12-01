@@ -5008,7 +5008,8 @@ export async function bootstrapWhatsAppSessions() {
   console.log(`\n🚀 [BOOT] Carregando sessões WhatsApp em background...`);
   try {
     const allSessions = await storage.getAllWhatsappSessions();
-    const connectedSessions = allSessions.filter((s: any) => s.status === "connected");
+    // ✅ Corrigido: buscar por "conectada" (português) - era "connected" (inglês)
+    const connectedSessions = allSessions.filter((s: any) => s.status === "conectada");
     
     if (connectedSessions.length > 0) {
       console.log(`📱 [BOOT] Encontradas ${connectedSessions.length} sessões conectadas. Reinicializando...`);

@@ -363,7 +363,9 @@ export default function CampanhasWhatsApp() {
 
   // Import selected clients from database
   const importarSelecionadosDoBD = () => {
-    const contatosFromDB: ContactEntry[] = Array.from(clientesSelecionados)
+    // ✅ Remover duplicatas mantendo Set de IDs
+    const idsUnicos = new Set(clientesSelecionados);
+    const contatosFromDB: ContactEntry[] = Array.from(idsUnicos)
       .map((clientId) => {
         const cliente = clientesDisponiveis.find((c) => c.id === clientId);
         return {

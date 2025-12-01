@@ -645,6 +645,17 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
         qrCodes.delete(sessionId);
         reconnectAttempts.delete(sessionId);
         
+        // ✅ PERSISTIR STATUS NO BANCO DE DADOS IMEDIATAMENTE
+        try {
+          const dbSession = await storage.getWhatsappSessionBySessionId(sessionId);
+          if (dbSession) {
+            await storage.updateWhatsappSession(dbSession.id, { status: "conectada" });
+            console.log(`✅ Status persistido no banco: ${sessionId} → conectada`);
+          }
+        } catch (err) {
+          console.error(`⚠️ Erro ao persistir status no banco:`, err);
+        }
+        
         startKeepAlive(sessionId, sock);
         
         if (storedUserId) {
@@ -661,6 +672,17 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
         stopKeepAlive(sessionId);
         activeSessions.delete(sessionId);
         sessionListeners.delete(sessionId);
+        
+        // ✅ PERSISTIR STATUS DESCONECTADA NO BANCO
+        try {
+          const dbSession = await storage.getWhatsappSessionBySessionId(sessionId);
+          if (dbSession) {
+            await storage.updateWhatsappSession(dbSession.id, { status: "desconectada" });
+            console.log(`⚠️ Status persistido no banco: ${sessionId} → desconectada`);
+          }
+        } catch (err) {
+          console.error(`⚠️ Erro ao persistir status desconectada:`, err);
+        }
 
         if (
           statusCode === DisconnectReason.loggedOut ||
