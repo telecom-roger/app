@@ -1772,7 +1772,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/whatsapp/broadcast/send", isAuthenticated, async (req, res) => {
     try {
-      const { sessionId, mensagem, filtros } = req.body;
+      const user = (req.user as any);
+      const { 
+        sessionId, 
+        mensagem, 
+        filtros,
+        // ✅ Novos parâmetros para unificação com agendamentos
+        campanhaNome = "Envio Imediato",
+        origemDisparo = "envio_imediato",
+        dataAgendada,
+        tempoFixoSegundos = 21,
+        tempoAleatorioMin = 10,
+        tempoAleatorioMax = 60,
+      } = req.body;
       
       if (!sessionId || !mensagem) {
         return res.status(400).json({ error: "sessionId e mensagem são obrigatórios" });
@@ -1784,36 +1796,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Sessão não encontrada" });
       }
 
-      if (session.userId !== (req.user as any).id) {
+      if (session.userId !== user.id) {
         return res.status(403).json({ error: "Não autorizado - essa sessão não é sua" });
       }
 
-      // Verify session is connected
-      const isAlive = await whatsappService.isSessionAlive(session.sessionId);
-      if (!isAlive) {
-        return res.status(400).json({ error: "Sessão WhatsApp não está conectada" });
-      }
+      // ✅ Converter "NOW" para data atual (segundos à frente)
+      let agendadaPara = new Date(dataAgendada || new Date());
+      agendadaPara.setSeconds(agendadaPara.getSeconds() + 3); // 3 segundos de delay
+      
+      // ✅ Criar campanha agendada (unificada) ao invés de enviar direto
+      const [campaign] = await db.insert(campaignsTable).values({
+        nome: campanhaNome,
+        tipo: "whatsapp",
+        status: "agendada",
+        filtros: filtros || {},
+        agendadaPara,
+        tempoFixoSegundos,
+        tempoAleatorioMin,
+        tempoAleatorioMax,
+        createdBy: user.id,
+      }).returning();
 
-      // Get clients to send to
+      console.log(`✅ BROADCAST UNIFICADO: Campanha ${campaign.id} agendada para ${agendadaPara.toISOString()} (origem: ${origemDisparo})`);
+
+      // Get clients to send to (for response info)
       const clientes = await storage.getClientsForBroadcast(filtros);
       
-      // Queue messages for sending (async, non-blocking)
-      let enfileiradas = 0;
+      // ✅ Registrar envios em campaignSendings com origem e mensagem
+      let registrados = 0;
       for (const cliente of clientes) {
         const telefone = cliente.celular || cliente.telefone2;
         if (telefone) {
-          // Queue message asynchronously (don't wait)
-          whatsappService.sendMessage(session.sessionId, telefone, mensagem).catch(err => {
-            console.error(`Erro ao enviar para ${telefone}:`, err);
-          });
-          enfileiradas++;
+          try {
+            await db.insert(campaignSendings).values({
+              userId: user.id,
+              campaignId: campaign.id,
+              campaignName: campanhaNome,
+              clientId: cliente.id,
+              status: "pendente",
+              origemDisparo,
+              mensagemUsada: mensagem,
+              modeloId: null,
+            });
+            registrados++;
+          } catch (err) {
+            console.error(`Erro ao registrar envio para cliente ${cliente.id}:`, err);
+          }
         }
       }
 
       res.json({ 
-        success: true, 
-        enfileiradas,
-        total: clientes.length 
+        success: true,
+        campanhaId: campaign.id,
+        registrados,
+        total: clientes.length,
+        agendadaPara: agendadaPara.toISOString(),
+        mensagem: `Campanha de ${origemDisparo} agendada para envio imediato`,
       });
     } catch (error: any) {
       console.error("Error sending broadcast:", error);

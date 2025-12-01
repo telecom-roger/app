@@ -143,6 +143,13 @@ export default function WhatsAppBroadcast() {
         sessionId: data.sessionId,
         mensagem: data.mensagem,
         filtros: data.filtros,
+        // ✅ Unificação: Envio imediato como agendamento para "agora"
+        campanhaNome: "Envio Imediato",
+        origemDisparo: "envio_imediato",
+        dataAgendada: new Date().toISOString(),
+        tempoFixoSegundos: 21,
+        tempoAleatorioMin: 10,
+        tempoAleatorioMax: 60,
       });
       return await response.json();
     },

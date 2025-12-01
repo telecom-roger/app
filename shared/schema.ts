@@ -545,6 +545,10 @@ export const campaignSendings = pgTable("campaign_sendings", {
   status: varchar("status", { length: 20 }).notNull().default("enviado"), // enviado, erro, etc
   erroMensagem: text("erro_mensagem"), // Error details if failed
   dataSending: timestamp("data_sending").defaultNow(),
+  // ✅ Novos campos para unificação de envios imediatos com agendamentos
+  origemDisparo: varchar("origem_disparo", { length: 30 }).default("agendamento"), // agendamento, envio_imediato
+  mensagemUsada: text("mensagem_usada"), // Texto final enviado após merge de variáveis
+  modeloId: varchar("modelo_id").references(() => templates.id, { onDelete: "set null" }), // Template usado
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
   index("idx_campaign_sendings_user").on(table.userId),
@@ -552,12 +556,17 @@ export const campaignSendings = pgTable("campaign_sendings", {
   index("idx_campaign_sendings_client").on(table.clientId),
   index("idx_campaign_sendings_date").on(table.dataSending),
   index("idx_campaign_sendings_user_client").on(table.userId, table.clientId),
+  index("idx_campaign_sendings_origem").on(table.origemDisparo),
 ]);
 
 export const insertCampaignSendingSchema = createInsertSchema(campaignSendings).omit({
   id: true,
   createdAt: true,
   dataSending: true,
+}).extend({
+  origemDisparo: z.enum(["agendamento", "envio_imediato"]).default("agendamento"),
+  mensagemUsada: z.string().optional(),
+  modeloId: z.string().optional().nullable(),
 });
 
 export type CampaignSending = typeof campaignSendings.$inferSelect;
