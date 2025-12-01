@@ -844,11 +844,11 @@ export default function CampanhasWhatsApp() {
                           <Button
                             variant="default"
                             onClick={() => setMostrarSeletorBD(true)}
-                            className="w-full bg-green-600 hover:bg-green-700 text-white"
+                            className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold h-10"
                             data-testid="button-importar-db"
                           >
-                            <Download className="h-4 w-4 mr-2" />
-                            Base de Dados
+                            <Download className="h-4 w-4 mr-1.5" />
+                            Importar
                           </Button>
                           {contatos.length > 0 && (
                             <Button
@@ -858,10 +858,10 @@ export default function CampanhasWhatsApp() {
                                 setTextoPlanilha("");
                                 setVariaveisDisponiveis([]);
                               }}
-                              className="w-full text-slate-700 dark:text-slate-200"
+                              className="w-full text-slate-700 dark:text-slate-200 font-semibold h-10 border-slate-300 dark:border-slate-600"
                               data-testid="button-limpar-contatos"
                             >
-                              <Trash2 className="h-4 w-4 mr-2" />
+                              <Trash2 className="h-4 w-4 mr-1.5" />
                               Limpar
                             </Button>
                           )}
@@ -1090,32 +1090,33 @@ export default function CampanhasWhatsApp() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex justify-between items-center gap-4">
-                  <div className="flex gap-4 items-center">
-                    <div className="text-sm text-slate-700 dark:text-slate-300">
+                <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4">
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center flex-1">
+                    <div className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium">
                       {contatosProcessados > 0 ? (
                         <>
-                          <strong>{contatosProcessados}</strong> contato
-                          {contatosProcessados !== 1 ? "s" : ""} prontos para envio
+                          <span className="text-green-600 dark:text-green-400 font-bold">{contatosProcessados}</span>
+                          {" contato"}
+                          {contatosProcessados !== 1 ? "s" : ""}{" prontos"}
                         </>
                       ) : (
-                        "Cole seus contatos para começar"
+                        <span className="text-slate-500">Cole seus contatos para começar</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 pl-4 border-l border-slate-200 dark:border-slate-700">
-                      <Label className="text-sm font-medium cursor-pointer flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <div className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-0 border-l-2 border-l-slate-200 dark:border-l-slate-700 sm:border-l sm:border-l-slate-200">
+                      <Label className="text-xs sm:text-sm font-medium cursor-pointer flex items-center gap-2 text-slate-700 dark:text-slate-300">
                         <input
                           type="checkbox"
                           checked={modoBackground}
                           onChange={(e) => setModoBackground(e.target.checked)}
                           disabled={enviando}
-                          className="h-4 w-4 rounded border-slate-300 dark:border-slate-600"
+                          className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 cursor-pointer"
                         />
-                        Enviar em Background
+                        <span className="whitespace-nowrap">Background</span>
                       </Label>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-1 sm:flex-initial">
                     {enviando && !modoBackground && (
                       <Button
                         onClick={() => {
@@ -1124,9 +1125,10 @@ export default function CampanhasWhatsApp() {
                         variant="destructive"
                         size="lg"
                         data-testid="button-cancelar-envio"
+                        className="flex-1 sm:flex-initial h-10 sm:h-11 text-sm sm:text-base font-semibold"
                       >
                         <X className="h-4 w-4 mr-2" />
-                        Cancelar Envio
+                        Cancelar
                       </Button>
                     )}
                     <Button
@@ -1149,11 +1151,13 @@ export default function CampanhasWhatsApp() {
                         !whatsappConnected
                       }
                       size="lg"
-                      className="bg-green-600 hover:bg-green-700 text-white"
+                      className="flex-1 h-10 sm:h-11 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-semibold text-sm sm:text-base"
                       data-testid="button-enviar-campanha"
                     >
                       <Send className="h-4 w-4 mr-2" />
-                      {!whatsappConnected ? "WhatsApp Desconectado" : enviando ? "Enviando..." : "Enviar Campanha"}
+                      <span className="whitespace-nowrap">
+                        {!whatsappConnected ? "Desconectado" : enviando ? "Enviando..." : "Enviar"}
+                      </span>
                     </Button>
                   </div>
                 </div>
