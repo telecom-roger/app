@@ -478,31 +478,31 @@ export default function CampanhasWhatsApp() {
     }
 
     if (modoBackground) {
-      // ===== BACKGROUND MODE =====
+      // ===== BACKGROUND MODE (using unified endpoint) =====
       setEnviando(true);
       setConfirmarEnvio(false);
 
       try {
-        // Enviar para backend de forma assíncrona (fire-and-forget)
-        fetch("/api/whatsapp/enviar-campanha-background", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contatos: contatos.map((c) => ({
-              id: c.id || "",
-              celular: c.celular || c.numeroTelefone || c.telefone || c.whatsapp || "",
-              razao_social: c.razao_social || c.empresa || "N/A",
-            })),
-            template,
-            tempoDelay,
-          }),
-        }).catch((err) => console.error("Erro ao enviar campanha:", err));
+        // Enviar para novo endpoint unificado (background, fire-and-forget)
+        const clientIds = contatos.map((c) => c.id || "").filter(Boolean);
+        
+        await apiRequest("POST", "/api/whatsapp/broadcast/send", {
+          tipoDisparo: "imediato",
+          tipo: "whatsapp",
+          clientIds,
+          conteudo: template,
+          tempoDelay,
+        });
 
         // Show notification and allow navigation
         toast({
           title: "Campanha iniciada!",
           description: `${contatos.length} mensagens serão enviadas em background. Você pode continuar navegando!`,
         });
+
+        // Atualizar UI em tempo real
+        queryClient.invalidateQueries({ queryKey: ['/api/campaigns'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/campaigns/scheduled'] });
 
         // Clear form and go back
         setContatos([]);
