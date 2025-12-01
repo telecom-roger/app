@@ -829,17 +829,26 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
       .set({ status: 'enviando' })
       .where(eq(campaigns.id, campaign.id));
 
-    const template = await storage.getTemplateById(campaign.templateId);
-    if (!template) {
-      console.error(`❌ Template ${campaign.templateId} não encontrado`);
-      return;
-    }
-
     const clientIds = campaign.filtros?.clientIds || [];
     if (clientIds.length === 0) {
       console.warn(`⚠️ Nenhum cliente selecionado para campanha ${campaign.id}`);
       return;
     }
+
+    // ✅ Pega conteúdo: broadcasts têm conteúdo direto em filtros, templates vêm da tabela
+    let conteudoBase = campaign.filtros?.conteudo;
+    
+    if (!conteudoBase) {
+      // É um template campaign - procura template
+      const template = await storage.getTemplateById(campaign.templateId);
+      if (!template) {
+        console.error(`❌ Template ${campaign.templateId} não encontrado`);
+        return;
+      }
+      conteudoBase = template.conteudo;
+    }
+    
+    console.log(`📝 Usando conteúdo: ${conteudoBase?.substring(0, 50)}...`);
 
     // Pega os clientes a enviar
     const recipientClients = clients.filter((c: any) => clientIds.includes(c.id));
@@ -860,7 +869,7 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
       const client = recipientClients[index];
       try {
         // Substitui variáveis no template (suporta {variavel} e {{variavel}})
-        let conteudo = template.conteudo;
+        let conteudo = conteudoBase;
         
         // Com duas chaves {{variavel}}
         conteudo = conteudo.replace(/{{razao_social}}/g, client.nome || '');
