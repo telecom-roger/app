@@ -1116,17 +1116,18 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
         
         // Registra interação (não falha se der erro)
         try {
+          const origemDisparo = campaign.filtros?.origem === 'envio_imediato' ? 'envio_imediato' : 'agendamento';
           await storage.createInteraction({
             clientId: client.id,
             tipo: 'whatsapp_enviado',
             origem: 'system',
-            titulo: `Campanha agendada: ${campaign.nome}`,
+            titulo: `Campanha ${origemDisparo === 'envio_imediato' ? 'imediata' : 'agendada'}: ${campaign.nome}`,
             texto: conteudo,
             meta: { 
               campaignId: campaign.id, 
               templateId: campaign.templateId,
               enviado: mensagemEnviada,
-              origem_disparo: 'agendamento',
+              origem_disparo: origemDisparo,
               status: mensagemEnviada ? 'enviado' : 'erro'
             },
             createdBy: campaign.createdBy,
@@ -1137,6 +1138,7 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
 
         // Registra em campaign_sendings
         try {
+          const origemDisparo = campaign.filtros?.origem === 'envio_imediato' ? 'envio_imediato' : 'agendamento';
           await storage.recordCampaignSending({
             userId: campaign.createdBy,
             campaignId: campaign.id,
@@ -1144,7 +1146,7 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
             clientId: client.id,
             status: mensagemEnviada ? 'enviado' : 'erro',
             erroMensagem: mensagemEnviada ? undefined : 'Falha ao enviar mensagem',
-            origemDisparo: 'agendamento',
+            origemDisparo: origemDisparo,
             mensagemUsada: conteudo,
             modeloId: campaign.templateId || null,
           });
