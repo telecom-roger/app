@@ -2232,6 +2232,8 @@ export default function Chat() {
                     title: "Encaminhamento concluído",
                     description: `${successCount} ${successCount === 1 ? "mensagem enviada" : "mensagens enviadas"} com sucesso${errorCount > 0 ? `, ${errorCount} com erro` : ""}`,
                   });
+                  setSelectedMessageIds(new Set());
+                  setSelectMode(false);
                 } else {
                   toast({
                     title: "Erro",
