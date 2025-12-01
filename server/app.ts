@@ -34,6 +34,22 @@ app.get("/health", (req, res) => {
   res.status(200).json({ ok: true });
 });
 
+// Root route for health checks - responds immediately, then passes to static/catch-all for actual content
+app.head("/", (req, res) => {
+  res.status(200).end();
+});
+
+// Health check probe response before passing to static middleware
+app.get("/", (req, res, next) => {
+  // Quick response for load balancer health checks
+  if (req.header("user-agent")?.includes("kube-probe") || req.header("x-health-check")) {
+    res.status(200).json({ ok: true });
+  } else {
+    // Pass through to static/Vite middleware to serve index.html
+    next();
+  }
+});
+
 // Server ready state for health checks
 let serverReady = false;
 export function markServerReady() { serverReady = true; }
