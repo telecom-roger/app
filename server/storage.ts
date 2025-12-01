@@ -790,6 +790,8 @@ export async function getMessages(conversationId: string, limit: number = 50): P
       deletado: messages.deletado,
       createdAt: messages.createdAt,
       origem: messages.origem,  // ✅ Adicionado para retornar o campo "Enviado por IA"
+      statusEntrega: messages.statusEntrega,  // ✅ Status de entrega (enviado, entregue, lido)
+      whatsappMessageId: messages.whatsappMessageId,  // ✅ ID da mensagem no WhatsApp
     })
     .from(messages)
     .where(eq(messages.conversationId, conversationId))
