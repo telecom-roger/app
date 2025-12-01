@@ -266,6 +266,31 @@ export default function ClienteProfile() {
 
         {/* CENTER - Timeline/Chat Feed */}
         <div className="flex-1 border-r flex flex-col min-w-0">
+          {/* Client Info - Mobile Only (XL hidden) */}
+          <div className="xl:hidden border-b px-3 sm:px-6 py-3 sm:py-4 bg-white dark:bg-slate-900 flex-shrink-0 space-y-3">
+            {!clienteLoading && cliente && (
+              <>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground">STATUS</p>
+                    <Badge className={`mt-1 ${STATUS_COLORS[cliente.status] || 'bg-slate-200 text-slate-800'}`}>
+                      {cliente.status.toUpperCase()}
+                    </Badge>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-semibold text-muted-foreground">TELEFONE</p>
+                    <p className="text-xs mt-1 font-medium">{cliente.celular || '-'}</p>
+                  </div>
+                </div>
+                <Separator />
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground">EMAIL</p>
+                  <p className="text-xs mt-1 font-medium truncate">{cliente.email || '-'}</p>
+                </div>
+              </>
+            )}
+          </div>
+
           {/* Timeline Header */}
           <div className="border-b px-3 sm:px-6 py-2 sm:py-4 bg-white dark:bg-slate-900 flex-shrink-0">
             <h3 className="font-semibold text-xs sm:text-sm">Histórico de Interações</h3>
