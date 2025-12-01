@@ -40,6 +40,7 @@ app.head("/health", (req, res) => {
 });
 
 // HEAD "/" for rapid deployment health checks
+// Replit uses HEAD requests for health probes - responds instantly before any middleware
 app.head("/", (req, res) => {
   res.status(200).end();
 });
