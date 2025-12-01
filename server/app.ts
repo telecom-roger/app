@@ -111,16 +111,33 @@ export default async function runApp(
   }, () => {
     log(`serving on port ${port}`);
     
-    // Mark server as ready for health checks
+    // CRITICAL: Mark server as ready for health checks IMMEDIATELY
+    // This must happen BEFORE any async operations
     markServerReady();
     
-    // Start automation cron jobs AFTER server is listening (non-blocking)
-    setImmediate(async () => {
-      startAutomationCron();
-      log("🤖 Automation Cron Jobs iniciados!");
-      
-      // Bootstrap WhatsApp sessions in background (non-blocking)
-      await bootstrapWhatsAppSessions();
+    // Start automation cron jobs AFTER server is listening (fire-and-forget, non-blocking)
+    // Use process.nextTick() instead of setImmediate for faster execution
+    process.nextTick(() => {
+      try {
+        startAutomationCron();
+        log("🤖 Automation Cron Jobs iniciados!");
+      } catch (err) {
+        console.error("❌ Erro ao iniciar cron jobs:", err);
+      }
     });
+    
+    // Bootstrap WhatsApp sessions in COMPLETELY async context
+    // Fire-and-forget: do NOT await, do NOT block
+    // Failures are caught and logged but do not affect server health
+    setTimeout(() => {
+      try {
+        // Call without await - let it run completely async
+        void bootstrapWhatsAppSessions().catch(err => {
+          console.error("❌ Erro ao bootstrap WhatsApp sessions:", err);
+        });
+      } catch (err) {
+        console.error("❌ Erro ao iniciar bootstrap WhatsApp:", err);
+      }
+    }, 100); // Small delay to ensure health check is ready first
   });
 }
