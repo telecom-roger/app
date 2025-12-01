@@ -491,14 +491,19 @@ export default function CampanhasWhatsApp() {
           throw new Error("WhatsApp não conectado. Conecte uma sessão primeiro.");
         }
 
-        // Get client IDs and create filtros
+        // Get client IDs and create filtros com TODOS os filtros aplicados
         const clientIds = contatos.map((c) => c.id || "").filter(Boolean);
         
         // Enviar para novo endpoint unificado com parâmetros corretos
         await apiRequest("POST", "/api/whatsapp/broadcast/send", {
           sessionId: sessao.sessionId,
           mensagem: template,
-          filtros: { clientIds }, // Filtro contendo os IDs dos clientes
+          filtros: { 
+            clientIds,
+            tipos: selectedTiposFilter.size > 0 ? Array.from(selectedTiposFilter) : undefined,
+            carteiras: selectedCarteirasFilter.size > 0 ? Array.from(selectedCarteirasFilter) : undefined,
+            cidades: selectedCidadesFilter.size > 0 ? Array.from(selectedCidadesFilter) : undefined,
+          },
           campanhaNome: nomeCampanha || "Envio Imediato",
           origemDisparo: "envio_imediato",
           tempoFixoSegundos: tempoDelay,

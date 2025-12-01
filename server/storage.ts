@@ -625,7 +625,16 @@ export async function getBroadcastStats(filtros?: { status?: string; carteira?: 
   };
 }
 
-export async function getClientsForBroadcast(filtros?: { status?: string; carteira?: string; userId?: string; isAdmin?: boolean; clientIds?: string[] }) {
+export async function getClientsForBroadcast(filtros?: { 
+  status?: string; 
+  carteira?: string; 
+  userId?: string; 
+  isAdmin?: boolean; 
+  clientIds?: string[];
+  tipos?: string[];
+  carteiras?: string[];
+  cidades?: string[];
+}) {
   let conditions = [];
   
   // Se há clientIds específicos, usa apenas eles
@@ -648,6 +657,17 @@ export async function getClientsForBroadcast(filtros?: { status?: string; cartei
   }
   if (filtros?.carteira && filtros.carteira !== "") {
     conditions.push(ilike(clients.carteira, `%${filtros.carteira}%`));
+  }
+  
+  // ✅ Filtros adicionais do frontend
+  if (filtros?.tipos && filtros.tipos.length > 0) {
+    conditions.push(inArray(clients.tipoCliente, filtros.tipos));
+  }
+  if (filtros?.carteiras && filtros.carteiras.length > 0) {
+    conditions.push(inArray(clients.carteira, filtros.carteiras));
+  }
+  if (filtros?.cidades && filtros.cidades.length > 0) {
+    conditions.push(inArray(clients.cidade, filtros.cidades));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
