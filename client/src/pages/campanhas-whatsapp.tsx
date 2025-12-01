@@ -483,15 +483,27 @@ export default function CampanhasWhatsApp() {
       setConfirmarEnvio(false);
 
       try {
-        // Enviar para novo endpoint unificado (background, fire-and-forget)
+        // Get active session
+        const sessaoRes = await fetch("/api/whatsapp/status");
+        const sessao = await sessaoRes.json();
+        
+        if (!sessao?.sessionId) {
+          throw new Error("WhatsApp não conectado. Conecte uma sessão primeiro.");
+        }
+
+        // Get client IDs and create filtros
         const clientIds = contatos.map((c) => c.id || "").filter(Boolean);
         
+        // Enviar para novo endpoint unificado com parâmetros corretos
         await apiRequest("POST", "/api/whatsapp/broadcast/send", {
-          tipoDisparo: "imediato",
-          tipo: "whatsapp",
-          clientIds,
-          conteudo: template,
-          tempoDelay,
+          sessionId: sessao.sessionId,
+          mensagem: template,
+          filtros: { clientIds }, // Filtro contendo os IDs dos clientes
+          campanhaNome: nomeCampanha || "Envio Imediato",
+          origemDisparo: "envio_imediato",
+          tempoFixoSegundos: tempoDelay,
+          tempoAleatorioMin: tempoRandomMin,
+          tempoAleatorioMax: tempoRandomMax,
         });
 
         // Show notification and allow navigation
