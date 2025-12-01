@@ -38,6 +38,10 @@ export function SelectableField({
   });
 
   const handleSave = async (newValue: string) => {
+    if (newValue === (value || "")) {
+      return;
+    }
+
     try {
       setIsLoading(true);
       await apiRequest("PATCH", `/api/clients/${clientId}`, {

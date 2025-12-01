@@ -25,6 +25,11 @@ export function EditableField({
   const { toast } = useToast();
 
   const handleSave = async () => {
+    if (inputValue === (value || "")) {
+      setIsEditing(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       await apiRequest("PATCH", `/api/clients/${clientId}`, {
