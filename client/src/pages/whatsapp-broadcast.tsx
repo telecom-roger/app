@@ -91,12 +91,12 @@ export default function WhatsAppBroadcast() {
   });
 
   // Load sessions
-  const { data: sessions, isLoading: loadingSessions } = useQuery({
+  const { data: sessions = [], isLoading: loadingSessions } = useQuery<any[]>({
     queryKey: ["/api/whatsapp/sessions"],
     enabled: isAuthenticated,
   });
 
-  const connectedSessions = sessions?.filter((s: any) => s.status === "conectada") || [];
+  const connectedSessions = sessions.filter((s: any) => s.status === "conectada");
 
   // Calculate broadcast stats when form changes
   useEffect(() => {

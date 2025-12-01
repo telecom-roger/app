@@ -3450,6 +3450,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         clientId,
         status,
         erroMensagem,
+        origemDisparo: "agendamento",
+        mensagemUsada: undefined,
+        modeloId: null,
       });
       
       res.json(sending);

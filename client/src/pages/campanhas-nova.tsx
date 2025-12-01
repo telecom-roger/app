@@ -112,7 +112,7 @@ export default function CampanhaNova() {
   };
 
   const tipoAtual = form.watch("tipo");
-  const templateSelecionado = templates?.find(t => t.id === form.watch("templateId"));
+  const templateSelecionado = (templates as any[])?.find((t: any) => t.id === form.watch("templateId"));
 
   return (
     <div className="p-6 space-y-6 max-w-4xl">
@@ -216,9 +216,9 @@ export default function CampanhaNova() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {templates
-                                ?.filter(t => t.tipo === tipoAtual)
-                                .map(template => (
+                              {(templates as any[])
+                                ?.filter((t: any) => t.tipo === tipoAtual)
+                                .map((template: any) => (
                                   <SelectItem key={template.id} value={template.id}>
                                     {template.nome}
                                   </SelectItem>
@@ -312,7 +312,7 @@ export default function CampanhaNova() {
                     <div>
                       <label className="text-sm font-medium">Variáveis disponíveis</label>
                       <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded mt-2 text-sm">
-                        {templateSelecionado.variaveis.map(v => (
+                        {templateSelecionado.variaveis.map((v: any) => (
                           <code key={v} className="block text-blue-600 dark:text-blue-400">
                             {`{{${v}}}`}
                           </code>
