@@ -1917,6 +1917,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get clients to send to (for response info)
       const clientes = await storage.getClientsForBroadcast(filtros);
       
+      // ✅ CRÍTICO: Adicionar clientIds ao filtros para que o cron job execute corretamente
+      const clientIds = clientes.map(c => c.id);
+      if (clientIds.length > 0) {
+        await db.update(campaignsTable)
+          .set({ 
+            filtros: { ...filtros, clientIds },
+            totalRecipients: clientIds.length 
+          })
+          .where(eq(campaignsTable.id, campaign.id));
+        console.log(`✅ Campanha ${campaign.id} atualizada com ${clientIds.length} clientes`);
+      }
+      
       // ✅ Registrar envios em campaignSendings com origem e mensagem
       let registrados = 0;
       for (const cliente of clientes) {
