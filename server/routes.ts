@@ -1050,13 +1050,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Nome, templateId e agendadaPara são obrigatórios" });
       }
 
+      // ✅ Salvar origemDisparo nos filtros para exibição correta no histórico
       const validatedData = insertCampaignSchema.parse({
         nome,
         tipo: "whatsapp",
         templateId,
         status: "agendada",
         agendadaPara: new Date(agendadaPara),
-        filtros: filtros || {},
+        filtros: { ...(filtros || {}), origemDisparo: "agendamento" },
         totalRecipients: totalRecipients || 0,
         createdBy: (req.user as any).id,
       });
@@ -1970,12 +1971,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       agendadaPara.setSeconds(agendadaPara.getSeconds() + 3); // 3 segundos de delay
       
       // ✅ Criar campanha com schema validado (consistente com /api/campaigns/schedule)
+      // ✅ Salvar origemDisparo nos filtros para exibição no histórico
       const validatedData = insertCampaignSchema.parse({
         nome: campanhaNome,
         tipo: "whatsapp",
         templateId: null, // Broadcasts não usam templates - só mensagem direta
         status: "agendada",
-        filtros: filtros || {},
+        filtros: { ...(filtros || {}), origemDisparo },
         totalRecipients: 0,
         agendadaPara,
         tempoFixoSegundos,

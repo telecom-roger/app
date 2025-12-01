@@ -34,7 +34,11 @@ type CampaignDetail = {
   totalRecipients: number;
   totalEnviados: number;
   totalErros: number;
-  filtros?: any;
+  filtros?: {
+    origemDisparo?: string;
+    clientIds?: string[];
+    [key: string]: any;
+  };
 };
 
 export default function CampanhasHistorico() {
@@ -261,7 +265,7 @@ export default function CampanhasHistorico() {
                           <TableCell className="font-medium text-slate-900 dark:text-white">{campaign.nome}</TableCell>
                           <TableCell className="text-sm">
                             <Badge variant="outline" className="text-xs">
-                              {campaign.filtros?.origem === 'envio_imediato' ? '⚡ Imediato' : '📅 Agendado'}
+                              {campaign.filtros?.origemDisparo === 'envio_imediato' ? '⚡ Imediato' : '📅 Agendado'}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-sm text-slate-600 dark:text-slate-400">
