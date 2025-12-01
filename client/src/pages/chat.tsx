@@ -1409,7 +1409,7 @@ export default function Chat() {
                                       });
                                     });
                                 }}
-                                className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 focus:bg-slate-100 dark:focus:bg-slate-700"
+                                className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 focus:bg-slate-100 dark:focus:bg-slate-700 hover:text-inherit focus:text-inherit"
                                 data-testid={`button-delete-message-${msg.id}`}
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
