@@ -2561,6 +2561,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete message
+  app.delete("/api/chat/messages/:messageId", isAuthenticated, async (req, res) => {
+    try {
+      const { messageId } = req.params;
+      const user = (req.user as any);
+
+      // Buscar a mensagem
+      const [msg] = await db
+        .select()
+        .from(messages)
+        .where(eq(messages.id, messageId))
+        .limit(1);
+
+      if (!msg) {
+        return res.status(404).json({ error: "Mensagem não encontrada" });
+      }
+
+      // Buscar a conversa
+      const [conversation] = await db
+        .select()
+        .from(conversations)
+        .where(eq(conversations.id, msg.conversationId))
+        .limit(1);
+
+      if (!conversation || conversation.userId !== user.id) {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+
+      // Deletar a mensagem
+      await db.delete(messages).where(eq(messages.id, messageId));
+      
+      console.log(`✅ Mensagem ${messageId} deletada para todos`);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting message:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Mark messages as read
   app.patch("/api/chat/messages/:conversationId/mark-read", isAuthenticated, async (req, res) => {
     try {

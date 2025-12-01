@@ -1366,9 +1366,35 @@ export default function Chat() {
                         msg.sender === "user"
                           ? "justify-end"
                           : "justify-start"
-                      }`}
+                      } group`}
                       data-testid={`message-${msg.id}`}
                     >
+                      {msg.sender === "user" && (
+                        <button
+                          onClick={() => {
+                            apiRequest("DELETE", `/api/chat/messages/${msg.id}`)
+                              .then(() => {
+                                refetchMessages();
+                                toast({
+                                  title: "Mensagem deletada",
+                                  description: "Deletada para você e para o cliente"
+                                });
+                              })
+                              .catch(err => {
+                                console.error("Erro ao deletar:", err);
+                                toast({
+                                  title: "Erro",
+                                  description: "Não foi possível deletar a mensagem",
+                                  variant: "destructive"
+                                });
+                              });
+                          }}
+                          className="invisible group-hover:visible mr-2 text-red-500 hover:text-red-700 transition-colors"
+                          data-testid={`button-delete-message-${msg.id}`}
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
                       <div
                         className={`max-w-xs px-3 py-2 rounded-lg shadow-sm ${
                           msg.sender === "user"
