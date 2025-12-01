@@ -177,9 +177,13 @@ export default function Chat() {
   const messageSearchResultsRef = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const [showForwardModal, setShowForwardModal] = useState(false);
   const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
+  const [forwardingMessages, setForwardingMessages] = useState<Message[]>([]); // Múltiplas mensagens
+  const [selectedRecipients, setSelectedRecipients] = useState<Array<{ clientId?: string; phone: string; name: string }>>([]);
   const [forwardSearchTerm, setForwardSearchTerm] = useState("");
   const [forwardCustomNumber, setForwardCustomNumber] = useState("");
   const [isForwarding, setIsForwarding] = useState(false);
+  const [selectMode, setSelectMode] = useState(false); // Modo de seleção múltipla
+  const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set());
 
   // Handle clientId from URL parameter
   useEffect(() => {
@@ -1375,6 +1379,20 @@ export default function Chat() {
               >
                 <User className="h-5 w-5" />
               </Button>
+              <Button 
+                size="icon" 
+                variant={selectMode ? "default" : "ghost"}
+                onClick={() => {
+                  setSelectMode(!selectMode);
+                  if (selectMode) {
+                    setSelectedMessageIds(new Set());
+                  }
+                }}
+                data-testid="button-select-mode"
+                title={selectMode ? "Cancelar seleção" : "Selecionar mensagens"}
+              >
+                {selectMode ? <X className="h-5 w-5" /> : <Forward className="h-5 w-5" />}
+              </Button>
               <Popover open={showQuickReplies} onOpenChange={setShowQuickReplies}>
                 <PopoverTrigger asChild>
                   <Button 
@@ -1433,13 +1451,37 @@ export default function Chat() {
                       ref={(el) => {
                         if (el) messageSearchResultsRef.current[msg.id] = el;
                       }}
-                      className={`flex ${
+                      className={`flex items-start gap-2 ${
                         msg.sender === "user"
                           ? "justify-end"
                           : "justify-start"
-                      } group ${messageSearchTerm && normalizeText(msg.conteudo).includes(normalizeText(messageSearchTerm)) ? "bg-blue-200 dark:bg-blue-900 px-2 py-1 rounded-lg" : ""}`}
+                      } group ${messageSearchTerm && normalizeText(msg.conteudo).includes(normalizeText(messageSearchTerm)) ? "bg-blue-200 dark:bg-blue-900 px-2 py-1 rounded-lg" : ""} ${selectedMessageIds.has(msg.id) ? "bg-blue-100 dark:bg-blue-900/50 rounded-lg" : ""}`}
                       data-testid={`message-${msg.id}`}
+                      onClick={selectMode ? () => {
+                        setSelectedMessageIds(prev => {
+                          const next = new Set(prev);
+                          if (next.has(msg.id)) {
+                            next.delete(msg.id);
+                          } else {
+                            next.add(msg.id);
+                          }
+                          return next;
+                        });
+                      } : undefined}
                     >
+                      {selectMode && (
+                        <div className={`flex-shrink-0 mt-2 ${msg.sender === "user" ? "order-last ml-1" : "order-first mr-1"}`}>
+                          <div 
+                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center cursor-pointer transition-colors ${
+                              selectedMessageIds.has(msg.id) 
+                                ? "bg-blue-500 border-blue-500 text-white" 
+                                : "border-slate-300 dark:border-slate-600"
+                            }`}
+                          >
+                            {selectedMessageIds.has(msg.id) && <span className="text-xs">✓</span>}
+                          </div>
+                        </div>
+                      )}
                       <div
                         className={`relative max-w-xs px-3 py-2 rounded-lg shadow-sm ${
                           msg.tipo === "deletada"
@@ -1811,6 +1853,42 @@ export default function Chat() {
         </DialogContent>
       </Dialog>
 
+            {/* Selection Action Bar */}
+            {selectMode && selectedMessageIds.size > 0 && (
+              <div className="p-3 border-t border-slate-200 dark:border-slate-700 bg-blue-50 dark:bg-blue-900/30 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                    {selectedMessageIds.size} {selectedMessageIds.size === 1 ? "mensagem selecionada" : "mensagens selecionadas"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSelectedMessageIds(new Set())}
+                    data-testid="button-clear-selection"
+                  >
+                    Limpar
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      const selectedMsgs = messages.filter(m => selectedMessageIds.has(m.id));
+                      setForwardingMessages(selectedMsgs);
+                      setForwardingMessage(null);
+                      setSelectedRecipients([]);
+                      setShowForwardModal(true);
+                    }}
+                    data-testid="button-forward-selected"
+                    className="gap-1.5"
+                  >
+                    <Forward className="h-4 w-4" />
+                    Encaminhar
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Input */}
             <div className="flex flex-col gap-3">
               {pastedImage && (
@@ -1957,24 +2035,71 @@ export default function Chat() {
         setShowForwardModal(open);
         if (!open) {
           setForwardingMessage(null);
+          setForwardingMessages([]);
+          setSelectedRecipients([]);
           setForwardSearchTerm("");
           setForwardCustomNumber("");
+          setSelectMode(false);
+          setSelectedMessageIds(new Set());
         }
       }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Forward className="h-5 w-5" />
-              Encaminhar Mensagem
+              {forwardingMessages.length > 0 
+                ? `Encaminhar ${forwardingMessages.length} ${forwardingMessages.length === 1 ? "mensagem" : "mensagens"}`
+                : "Encaminhar Mensagem"
+              }
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            {forwardingMessage && (
+          <div className="space-y-4 overflow-y-auto flex-1">
+            {forwardingMessage && !forwardingMessages.length && (
               <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Mensagem a encaminhar:</p>
                 <p className="text-sm text-slate-900 dark:text-white line-clamp-3">
                   {forwardingMessage.tipo === "texto" ? forwardingMessage.conteudo : `[${forwardingMessage.tipo}]`}
                 </p>
+              </div>
+            )}
+            
+            {forwardingMessages.length > 0 && (
+              <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 max-h-32 overflow-y-auto">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                  {forwardingMessages.length} {forwardingMessages.length === 1 ? "mensagem selecionada" : "mensagens selecionadas"}:
+                </p>
+                <div className="space-y-1">
+                  {forwardingMessages.map((m, idx) => (
+                    <p key={m.id} className="text-xs text-slate-900 dark:text-white line-clamp-1">
+                      {idx + 1}. {m.tipo === "texto" ? m.conteudo : `[${m.tipo}]`}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedRecipients.length > 0 && (
+              <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="text-xs text-blue-700 dark:text-blue-300 mb-2 font-medium">
+                  Destinatários selecionados ({selectedRecipients.length}):
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {selectedRecipients.map((r) => (
+                    <span 
+                      key={r.phone} 
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 text-xs rounded-full"
+                    >
+                      {r.name || r.phone}
+                      <button
+                        onClick={() => setSelectedRecipients(prev => prev.filter(p => p.phone !== r.phone))}
+                        className="hover:text-red-500 transition-colors"
+                        data-testid={`button-remove-recipient-${r.phone}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -1989,57 +2114,36 @@ export default function Chat() {
                 data-testid="input-forward-search"
               />
               {forwardSearchTerm && clients.filter((c: Client) => 
-                normalizeText(c.nome).includes(normalizeText(forwardSearchTerm)) ||
-                c.celular?.includes(forwardSearchTerm)
+                (normalizeText(c.nome).includes(normalizeText(forwardSearchTerm)) ||
+                c.celular?.includes(forwardSearchTerm)) &&
+                !selectedRecipients.some(r => r.phone === c.celular)
               ).length > 0 && (
                 <div className="max-h-40 overflow-y-auto space-y-1 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
                   {clients.filter((c: Client) => 
-                    normalizeText(c.nome).includes(normalizeText(forwardSearchTerm)) ||
-                    c.celular?.includes(forwardSearchTerm)
+                    (normalizeText(c.nome).includes(normalizeText(forwardSearchTerm)) ||
+                    c.celular?.includes(forwardSearchTerm)) &&
+                    !selectedRecipients.some(r => r.phone === c.celular)
                   ).slice(0, 10).map((client: Client) => (
                     <button
                       key={client.id}
-                      onClick={async () => {
-                        if (!forwardingMessage || !client.celular) return;
-                        setIsForwarding(true);
-                        try {
-                          await apiRequest("POST", "/api/chat/forward-message", {
-                            messageId: forwardingMessage.id,
-                            targetClientId: client.id,
-                            targetPhone: client.celular,
-                            messageContent: forwardingMessage.conteudo,
-                            messageType: forwardingMessage.tipo,
-                            arquivo: forwardingMessage.arquivo,
-                            nomeArquivo: forwardingMessage.nomeArquivo,
-                            mimeType: forwardingMessage.mimeType,
-                          });
-                          toast({
-                            title: "Mensagem encaminhada",
-                            description: `Enviada para ${client.nome}`,
-                          });
-                          refetchConversations();
-                          refetchClients();
-                          setShowForwardModal(false);
-                        } catch (err) {
-                          console.error("Erro ao encaminhar:", err);
-                          toast({
-                            title: "Erro",
-                            description: "Não foi possível encaminhar a mensagem",
-                            variant: "destructive",
-                          });
-                        } finally {
-                          setIsForwarding(false);
-                        }
+                      onClick={() => {
+                        if (!client.celular) return;
+                        setSelectedRecipients(prev => [...prev, { 
+                          clientId: client.id, 
+                          phone: client.celular!, 
+                          name: client.nome 
+                        }]);
+                        setForwardSearchTerm("");
                       }}
-                      disabled={isForwarding || !client.celular}
+                      disabled={!client.celular}
                       className="w-full text-left p-2 rounded text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center justify-between"
-                      data-testid={`button-forward-to-${client.id}`}
+                      data-testid={`button-add-recipient-${client.id}`}
                     >
                       <div>
                         <p className="font-medium text-slate-900 dark:text-white">{client.nome}</p>
                         <p className="text-xs text-slate-500">{client.celular || "Sem celular"}</p>
                       </div>
-                      {isForwarding && <Loader2 className="h-4 w-4 animate-spin" />}
+                      <Plus className="h-4 w-4 text-blue-500" />
                     </button>
                   ))}
                 </div>
@@ -2048,7 +2152,7 @@ export default function Chat() {
 
             <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
               <label className="text-sm font-medium text-slate-900 dark:text-white">
-                Ou digite um número
+                Ou adicione um número
               </label>
               <div className="flex gap-2 mt-2">
                 <Input
@@ -2059,47 +2163,104 @@ export default function Chat() {
                   className="flex-1"
                 />
                 <Button
-                  onClick={async () => {
-                    if (!forwardingMessage || !forwardCustomNumber) return;
-                    setIsForwarding(true);
-                    try {
-                      await apiRequest("POST", "/api/chat/forward-message", {
-                        messageId: forwardingMessage.id,
-                        targetPhone: forwardCustomNumber,
-                        messageContent: forwardingMessage.conteudo,
-                        messageType: forwardingMessage.tipo,
-                        arquivo: forwardingMessage.arquivo,
-                        nomeArquivo: forwardingMessage.nomeArquivo,
-                        mimeType: forwardingMessage.mimeType,
-                      });
-                      toast({
-                        title: "Mensagem encaminhada",
-                        description: `Enviada para ${forwardCustomNumber}`,
-                      });
-                      refetchConversations();
-                      refetchClients();
-                      setShowForwardModal(false);
-                    } catch (err) {
-                      console.error("Erro ao encaminhar:", err);
-                      toast({
-                        title: "Erro",
-                        description: "Não foi possível encaminhar a mensagem",
-                        variant: "destructive",
-                      });
-                    } finally {
-                      setIsForwarding(false);
+                  size="icon"
+                  variant="outline"
+                  onClick={() => {
+                    if (forwardCustomNumber && forwardCustomNumber.length >= 10) {
+                      if (!selectedRecipients.some(r => r.phone === forwardCustomNumber)) {
+                        setSelectedRecipients(prev => [...prev, { 
+                          phone: forwardCustomNumber, 
+                          name: "" 
+                        }]);
+                      }
+                      setForwardCustomNumber("");
                     }
                   }}
-                  disabled={isForwarding || !forwardCustomNumber || forwardCustomNumber.length < 10}
-                  data-testid="button-forward-to-custom"
+                  disabled={!forwardCustomNumber || forwardCustomNumber.length < 10 || selectedRecipients.some(r => r.phone === forwardCustomNumber)}
+                  data-testid="button-add-custom-number"
                 >
-                  {isForwarding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  <Plus className="h-4 w-4" />
                 </Button>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 Digite o número completo com DDI+DDD (ex: 5511999999999)
               </p>
             </div>
+          </div>
+
+          <div className="border-t border-slate-200 dark:border-slate-700 pt-4 flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowForwardModal(false)}
+              data-testid="button-cancel-forward"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={async () => {
+                if (selectedRecipients.length === 0) return;
+                const messagesToForward = forwardingMessages.length > 0 ? forwardingMessages : (forwardingMessage ? [forwardingMessage] : []);
+                if (messagesToForward.length === 0) return;
+                
+                setIsForwarding(true);
+                let successCount = 0;
+                let errorCount = 0;
+                
+                for (const recipient of selectedRecipients) {
+                  for (const msg of messagesToForward) {
+                    try {
+                      await apiRequest("POST", "/api/chat/forward-message", {
+                        messageId: msg.id,
+                        targetClientId: recipient.clientId,
+                        targetPhone: recipient.phone,
+                        messageContent: msg.conteudo,
+                        messageType: msg.tipo,
+                        arquivo: msg.arquivo,
+                        nomeArquivo: msg.nomeArquivo,
+                        mimeType: msg.mimeType,
+                      });
+                      successCount++;
+                    } catch (err) {
+                      console.error(`Erro ao encaminhar para ${recipient.phone}:`, err);
+                      errorCount++;
+                    }
+                  }
+                }
+                
+                if (successCount > 0) {
+                  toast({
+                    title: "Encaminhamento concluído",
+                    description: `${successCount} ${successCount === 1 ? "mensagem enviada" : "mensagens enviadas"} com sucesso${errorCount > 0 ? `, ${errorCount} com erro` : ""}`,
+                  });
+                } else {
+                  toast({
+                    title: "Erro",
+                    description: "Não foi possível encaminhar as mensagens",
+                    variant: "destructive",
+                  });
+                }
+                
+                refetchConversations();
+                refetchClients();
+                setShowForwardModal(false);
+                setIsForwarding(false);
+              }}
+              disabled={isForwarding || selectedRecipients.length === 0 || (forwardingMessages.length === 0 && !forwardingMessage)}
+              data-testid="button-confirm-forward"
+              className="gap-1.5"
+            >
+              {isForwarding ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  Enviar para {selectedRecipients.length} {selectedRecipients.length === 1 ? "contato" : "contatos"}
+                </>
+              )}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
