@@ -477,6 +477,8 @@ function TimelineItem({ item }: { item: any }) {
   const tipoMovimento = (item.meta as any)?.tipo_movimento || item.origem;
   const userName = item.userName || 'Sistema';
   const isAutomation = tipoMovimento === 'automática' || item.origem === 'system' || item.origem === 'automation';
+  const metaData = item.meta as any;
+  const origem = metaData?.origem_disparo || metaData?.origem;
 
   return (
     <div className="flex gap-3 sm:gap-4">
@@ -484,9 +486,16 @@ function TimelineItem({ item }: { item: any }) {
         {iconMap[item.tipo] || <FileText className="h-5 w-5" />}
       </div>
       <div className="flex-1 min-w-0">
-        <h4 className="font-semibold text-sm" data-testid={`timeline-item-title-${item.id}`}>
-          {item.titulo || item.tipo}
-        </h4>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h4 className="font-semibold text-sm" data-testid={`timeline-item-title-${item.id}`}>
+            {item.titulo || item.tipo}
+          </h4>
+          {origem && (
+            <Badge variant="outline" className="text-xs">
+              {origem === 'envio_imediato' ? '⚡ Imediato' : '📅 Agendado'}
+            </Badge>
+          )}
+        </div>
         <p className="text-xs text-muted-foreground mt-1">
           {formatDate(item.createdAt)} - {isAutomation ? (
             <span className="italic">por IA</span>
@@ -498,6 +507,13 @@ function TimelineItem({ item }: { item: any }) {
           <p className="text-sm text-muted-foreground mt-2 leading-relaxed break-words">
             {item.texto}
           </p>
+        )}
+        {metaData?.status && (
+          <div className="mt-2">
+            <Badge className={`text-xs ${metaData.status === 'enviado' ? 'bg-green-500' : metaData.status === 'erro' ? 'bg-red-500' : 'bg-yellow-500'}`}>
+              {metaData.status === 'enviado' ? '✅ Enviado' : metaData.status === 'erro' ? '❌ Erro' : '⏳ Pendente'}
+            </Badge>
+          </div>
         )}
       </div>
     </div>

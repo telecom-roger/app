@@ -1537,6 +1537,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== CAMPAIGN STATS ====================
+  app.get("/api/stats/campaigns", isAuthenticated, async (req, res) => {
+    try {
+      const user = (req.user as any);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+      // Campanhas concluídas hoje
+      const completedToday = await db
+        .select({ count: sql`count(*)` })
+        .from(campaignsTable)
+        .where(
+          and(
+            eq(campaignsTable.createdBy, user.id),
+            eq(campaignsTable.status, "concluida"),
+            sql`DATE(${campaignsTable.updatedAt}) = DATE(${new Date().toISOString()})`
+          )
+        );
+
+      // Total enviado hoje
+      const sentToday = await db
+        .select({ total: sql`COALESCE(SUM(${campaignsTable.totalEnviados}), 0)` })
+        .from(campaignsTable)
+        .where(
+          and(
+            eq(campaignsTable.createdBy, user.id),
+            sql`DATE(${campaignsTable.updatedAt}) = DATE(${new Date().toISOString()})`
+          )
+        );
+
+      // Total enviado no mês
+      const sentThisMonth = await db
+        .select({ total: sql`COALESCE(SUM(${campaignsTable.totalEnviados}), 0)` })
+        .from(campaignsTable)
+        .where(
+          and(
+            eq(campaignsTable.createdBy, user.id),
+            sql`DATE(${campaignsTable.updatedAt}) >= ${monthStart.toISOString()}`
+          )
+        );
+
+      // Taxa de falha
+      const failureStats = await db
+        .select({
+          totalEnviados: sql`COALESCE(SUM(${campaignsTable.totalEnviados}), 0)`,
+          totalErros: sql`COALESCE(SUM(${campaignsTable.totalErros}), 0)`,
+        })
+        .from(campaignsTable)
+        .where(eq(campaignsTable.createdBy, user.id));
+
+      const totalSent = (failureStats[0]?.totalEnviados as number) || 0;
+      const totalErrors = (failureStats[0]?.totalErros as number) || 0;
+      const failureRate = totalSent > 0 ? Math.round((totalErrors / totalSent) * 100) : 0;
+
+      res.json({
+        campanhasCompletadasHoje: (completedToday[0]?.count as number) || 0,
+        mensagensEnviadasHoje: (sentToday[0]?.total as number) || 0,
+        mensagensEnviadasMes: (sentThisMonth[0]?.total as number) || 0,
+        taxaFalha: failureRate,
+        totalEnviados,
+        totalErros,
+      });
+    } catch (error: any) {
+      console.error("Error fetching campaign stats:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // ==================== WHATSAPP ROUTES ====================
   app.get("/api/whatsapp/sessions", isAuthenticated, async (req, res) => {
     try {

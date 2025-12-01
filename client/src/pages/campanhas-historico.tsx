@@ -226,6 +226,7 @@ export default function CampanhasHistorico() {
                 <TableHeader className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Campanha</TableHead>
+                    <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Origem</TableHead>
                     <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Data/Hora</TableHead>
                     <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Quantidade</TableHead>
                     <TableHead className="text-slate-900 dark:text-slate-100 font-semibold text-xs uppercase tracking-wider">Status</TableHead>
@@ -258,6 +259,11 @@ export default function CampanhasHistorico() {
                           data-testid={`campaign-history-row-${campaign.id}`}
                         >
                           <TableCell className="font-medium text-slate-900 dark:text-white">{campaign.nome}</TableCell>
+                          <TableCell className="text-sm">
+                            <Badge variant="outline" className="text-xs">
+                              {campaign.filtros?.origem === 'envio_imediato' ? '⚡ Imediato' : '📅 Agendado'}
+                            </Badge>
+                          </TableCell>
                           <TableCell className="text-sm text-slate-600 dark:text-slate-400">
                             {campaign.agendadaPara 
                               ? format(new Date(campaign.agendadaPara), "dd/MM/yyyy HH:mm", { locale: ptBR })

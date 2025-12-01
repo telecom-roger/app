@@ -99,6 +99,12 @@ export default function Dashboard() {
     enabled: isAuthenticated,
   });
 
+  const { data: campaignStats, isLoading: campaignStatsLoading } = useQuery<any>({
+    queryKey: ["/api/stats/campaigns"],
+    enabled: isAuthenticated,
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+
   if (authLoading || !isAuthenticated) {
     return <DashboardSkeleton />;
   }
@@ -193,7 +199,7 @@ export default function Dashboard() {
       {/* Main Content */}
       <div className="px-3 md:px-6 pb-8 md:pb-12">
         <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
-          {/* KPI Cards */}
+          {/* KPI Cards - Clientes */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
             <StatCard
               title="Total de Clientes"
@@ -227,6 +233,42 @@ export default function Dashboard() {
               isLoading={statsLoading}
               bgColor="bg-purple-500/10"
               iconColor="text-purple-600 dark:text-purple-400"
+            />
+          </div>
+
+          {/* KPI Cards - Campanhas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
+            <StatCard
+              title="Campanhas Hoje"
+              value={campaignStats?.campanhasCompletadasHoje}
+              icon={<Zap className="h-6 w-6" />}
+              isLoading={campaignStatsLoading}
+              bgColor="bg-purple-500/10"
+              iconColor="text-purple-600 dark:text-purple-400"
+            />
+            <StatCard
+              title="Msgs Hoje"
+              value={campaignStats?.mensagensEnviadasHoje}
+              icon={<Mail className="h-6 w-6" />}
+              isLoading={campaignStatsLoading}
+              bgColor="bg-blue-500/10"
+              iconColor="text-blue-600 dark:text-blue-400"
+            />
+            <StatCard
+              title="Msgs Mês"
+              value={campaignStats?.mensagensEnviadasMes}
+              icon={<TrendingUp className="h-6 w-6" />}
+              isLoading={campaignStatsLoading}
+              bgColor="bg-emerald-500/10"
+              iconColor="text-emerald-600 dark:text-emerald-400"
+            />
+            <StatCard
+              title="Taxa de Falha"
+              value={`${campaignStats?.taxaFalha}%`}
+              icon={<AlertCircle className="h-6 w-6" />}
+              isLoading={campaignStatsLoading}
+              bgColor="bg-red-500/10"
+              iconColor="text-red-600 dark:text-red-400"
             />
           </div>
 
