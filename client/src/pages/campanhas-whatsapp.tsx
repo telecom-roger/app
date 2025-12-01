@@ -655,6 +655,10 @@ export default function CampanhasWhatsApp() {
           title: "Sucesso",
           description: "Campanha concluída",
         });
+        
+        // Atualizar UI em tempo real
+        queryClient.invalidateQueries({ queryKey: ['/api/campaigns'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/campaigns/scheduled'] });
       } catch (error: any) {
         toast({
           title: "Erro",
