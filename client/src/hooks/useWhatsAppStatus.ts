@@ -8,7 +8,9 @@ export function useWhatsAppStatus() {
       if (!res.ok) throw new Error("Failed to check WhatsApp status");
       return res.json();
     },
-    refetchInterval: 5000, // Atualiza a cada 5 segundos
+    refetchInterval: 2000, // Atualiza a cada 2 segundos para status em tempo real
+    staleTime: 0, // Sem cache, sempre busca dados frescos
+    gcTime: 1000, // Garbage collection após 1 segundo
   });
 
   return {
