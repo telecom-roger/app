@@ -79,34 +79,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // ==================== BOOTSTRAP: RELOAD WHATSAPP SESSIONS ====================
-  // Carrega todas as sessões conectadas ao iniciar a app
-  console.log(`\n🚀 [BOOT] Carregando sessões WhatsApp...`);
-  try {
-    const allSessions = await storage.getAllWhatsappSessions();
-    const connectedSessions = allSessions.filter((s: any) => s.status === "connected");
-    
-    if (connectedSessions.length > 0) {
-      console.log(`📱 [BOOT] Encontradas ${connectedSessions.length} sessões conectadas. Reinicializando...`);
-      
-      for (const session of connectedSessions) {
-        if (session.sessionId && session.userId) {
-          try {
-            console.log(`🔄 [BOOT] Reinicializando sessão ${session.sessionId} do usuário ${session.userId}`);
-            // Reinicializa a sessão com seu userId para ativar os listeners
-            await whatsappService.initializeWhatsAppSession(session.sessionId, session.userId);
-            console.log(`✅ [BOOT] Sessão ${session.sessionId} recarregada com sucesso`);
-          } catch (err) {
-            console.error(`❌ [BOOT] Erro ao recarregar sessão ${session.sessionId}:`, err);
-          }
-        }
-      }
-      console.log(`✅ [BOOT] Bootstrap de sessões WhatsApp concluído!`);
-    } else {
-      console.log(`ℹ️ [BOOT] Nenhuma sessão conectada encontrada`);
-    }
-  } catch (err) {
-    console.error(`⚠️ [BOOT] Erro ao carregar sessões:`, err);
-  }
+  // MOVED TO BACKGROUND - Called after server starts listening
+  // See bootstrapWhatsAppSessions() function below
 
   // ==================== SCHEDULER: CAMPANHAS AGENDADAS ====================
   // Executa a cada 1 minuto
@@ -4539,5 +4513,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
   return httpServer;
+}
+
+export async function bootstrapWhatsAppSessions() {
+  console.log(`\n🚀 [BOOT] Carregando sessões WhatsApp em background...`);
+  try {
+    const allSessions = await storage.getAllWhatsappSessions();
+    const connectedSessions = allSessions.filter((s: any) => s.status === "connected");
+    
+    if (connectedSessions.length > 0) {
+      console.log(`📱 [BOOT] Encontradas ${connectedSessions.length} sessões conectadas. Reinicializando...`);
+      
+      for (const session of connectedSessions) {
+        if (session.sessionId && session.userId) {
+          try {
+            console.log(`🔄 [BOOT] Reinicializando sessão ${session.sessionId} do usuário ${session.userId}`);
+            await whatsappService.initializeWhatsAppSession(session.sessionId, session.userId);
+            console.log(`✅ [BOOT] Sessão ${session.sessionId} recarregada com sucesso`);
+          } catch (err) {
+            console.error(`❌ [BOOT] Erro ao recarregar sessão ${session.sessionId}:`, err);
+          }
+        }
+      }
+      console.log(`✅ [BOOT] Bootstrap de sessões WhatsApp concluído!`);
+    } else {
+      console.log(`ℹ️ [BOOT] Nenhuma sessão conectada encontrada`);
+    }
+  } catch (err) {
+    console.error(`⚠️ [BOOT] Erro ao carregar sessões:`, err);
+  }
 }
 

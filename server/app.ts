@@ -7,7 +7,7 @@ import express, {
   NextFunction,
 } from "express";
 
-import { registerRoutes } from "./routes";
+import { registerRoutes, bootstrapWhatsAppSessions } from "./routes";
 import { startAutomationCron } from "./automationService";
 
 export function log(message: string, source = "express") {
@@ -34,14 +34,14 @@ app.get("/health", (req, res) => {
   res.status(200).json({ ok: true });
 });
 
-// ⚡ HEALTH CHECK on root endpoint for deployment
-app.get("/", (req, res, next) => {
-  // If it's a health check request, respond immediately
-  if (req.header('user-agent')?.includes('health') || req.query.health) {
-    return res.status(200).json({ ok: true });
-  }
-  // Otherwise, pass to next middleware (static file serving)
-  next();
+// ⚡ HEALTH CHECK on root endpoint for deployment - ALWAYS responds 200 immediately
+// This is the FASTEST possible endpoint and must NOT call next()
+let serverReady = false;
+export function markServerReady() { serverReady = true; }
+
+app.get("/", (req, res) => {
+  // Respond immediately with 200 OK - no next() call, no further processing
+  res.status(200).json({ ok: true, ready: serverReady });
 });
 
 app.use(express.json({
@@ -111,10 +111,16 @@ export default async function runApp(
   }, () => {
     log(`serving on port ${port}`);
     
+    // Mark server as ready for health checks
+    markServerReady();
+    
     // Start automation cron jobs AFTER server is listening (non-blocking)
-    setImmediate(() => {
+    setImmediate(async () => {
       startAutomationCron();
       log("🤖 Automation Cron Jobs iniciados!");
+      
+      // Bootstrap WhatsApp sessions in background (non-blocking)
+      await bootstrapWhatsAppSessions();
     });
   });
 }
