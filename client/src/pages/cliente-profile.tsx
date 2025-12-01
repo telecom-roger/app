@@ -106,244 +106,321 @@ export default function ClienteProfile() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background dark:bg-slate-950">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Header */}
-      <div className="border-b px-4 py-3 flex items-center justify-between bg-white dark:bg-slate-900">
-        <div className="flex items-center gap-3 min-w-0">
-          <Button variant="ghost" size="sm" asChild data-testid="button-back" className="h-8 w-8">
+      <div className="border-b px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between bg-white dark:bg-slate-900">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <Button variant="ghost" size="sm" asChild data-testid="button-back" className="h-8 w-8 sm:h-9 sm:w-9">
             <Link href="/clientes">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h2 className="font-semibold text-lg truncate">{cliente?.nome || "Cliente"}</h2>
+          <h2 className="font-semibold text-sm sm:text-lg truncate">{cliente?.nome || "Cliente"}</h2>
         </div>
-        <Button size="icon" variant="ghost" data-testid="button-options" className="h-8 w-8">
+        <Button size="icon" variant="ghost" data-testid="button-options" className="h-8 w-8 sm:h-9 sm:w-9">
           <MoreVertical className="h-4 w-4" />
         </Button>
       </div>
 
-      {/* Main Content - Single Column Responsive */}
-      <ScrollArea className="flex-1 overflow-hidden">
-        <div className="max-w-4xl mx-auto w-full p-4">
-          {clienteLoading ? (
-            <ProfileSkeleton />
-          ) : cliente ? (
-            <div className="space-y-4">
-              {/* Client Card */}
-              <Card className="bg-white dark:bg-slate-900">
-                <CardContent className="pt-6">
-                  <div className="flex items-start gap-4">
-                    <Avatar className="h-16 w-16 flex-shrink-0">
-                      <AvatarFallback className="bg-primary text-primary-foreground text-lg">
-                        {cliente.nome?.[0]?.toUpperCase() || "?"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-lg" data-testid="text-cliente-nome">
-                        {cliente.nome}
-                      </h3>
-                      {cliente.status && (
-                        <div className="mt-2" data-testid="badge-status">
-                          <Badge className={STATUS_COLORS[cliente.status] || 'bg-slate-200 text-slate-800'}>
-                            {cliente.status.toUpperCase()}
-                          </Badge>
-                        </div>
-                      )}
-                    </div>
+      {/* Main Layout - Responsive Grid (Sidebar + Content) */}
+      <div className="flex flex-1 overflow-hidden gap-0">
+        {/* LEFT SIDEBAR - Profile & Actions (Hidden on Mobile) */}
+        <div className="hidden lg:flex lg:w-80 border-r bg-white dark:bg-slate-900 overflow-y-auto flex-col">
+          <ScrollArea className="h-full">
+            <div className="p-4 sm:p-6 space-y-6">
+              {/* Client Header Card */}
+              {clienteLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-12 w-12 rounded-full" />
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <Avatar className="h-12 w-12">
+                    <AvatarFallback className="bg-primary text-primary-foreground">
+                      {cliente?.nome?.[0]?.toUpperCase() || "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="font-semibold text-sm" data-testid="text-cliente-nome">
+                      {cliente?.nome}
+                    </h3>
+                    {cliente?.status && (
+                      <div className="mt-2" data-testid="badge-status">
+                        <Badge 
+                          className={`text-xs ${STATUS_COLORS[cliente.status] || 'bg-slate-200 text-slate-800'}`}
+                        >
+                          {cliente.status.toUpperCase()}
+                        </Badge>
+                      </div>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              )}
+
+              <Separator />
 
               {/* Quick Actions */}
-              <Card className="bg-white dark:bg-slate-900">
-                <CardHeader>
-                  <CardTitle className="text-base">Ações Rápidas</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button 
-                      variant="default" 
-                      size="sm"
-                      className="justify-start"
-                      onClick={() => navigate(`/chat?clientId=${id}`)}
-                      data-testid="button-enviar-whatsapp"
-                    >
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      WhatsApp
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="justify-start"
-                      data-testid="button-enviar-email"
-                    >
-                      <Mail className="h-4 w-4 mr-2" />
-                      Email
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="justify-start"
-                      onClick={() => navigate(`/clientes/editar/${id}`)}
-                      data-testid="button-edit-cliente"
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Editar
-                    </Button>
-                    {cliente && <CreateOpportunityPopover client={cliente} />}
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground px-2">AÇÕES RÁPIDAS</p>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start text-sm h-9"
+                  onClick={() => navigate(`/chat?clientId=${id}`)}
+                  data-testid="button-enviar-whatsapp"
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Enviar WhatsApp
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start text-sm h-9"
+                  data-testid="button-enviar-email"
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Enviar Email
+                </Button>
+                {cliente && <CreateOpportunityPopover client={cliente} />}
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start text-sm h-9"
+                  onClick={() => navigate(`/clientes/editar/${id}`)}
+                  data-testid="button-edit-cliente"
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar Cliente
+                </Button>
+              </div>
+
+              <Separator />
 
               {/* Contact Information */}
-              <Card className="bg-white dark:bg-slate-900">
-                <CardHeader>
-                  <CardTitle className="text-base">Informações de Contato</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+              <div className="space-y-4">
+                <p className="text-xs font-semibold text-muted-foreground px-2">INFORMAÇÕES DE CONTATO</p>
+                <div className="space-y-3">
                   <div>
-                    <p className="text-xs font-semibold text-muted-foreground mb-1">TELEFONE</p>
-                    <p className="text-sm font-medium">{cliente.celular || '-'}</p>
+                    <p className="text-xs text-muted-foreground mb-1">Telefone</p>
+                    <p className="text-sm font-medium break-all">{cliente?.celular || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-muted-foreground mb-1">EMAIL</p>
-                    <p className="text-sm font-medium break-all">{cliente.email || '-'}</p>
+                    <p className="text-xs text-muted-foreground mb-1">Email</p>
+                    <p className="text-sm font-medium break-all">{cliente?.email || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-muted-foreground mb-1">CARTEIRA</p>
-                    <p className="text-sm font-medium">{cliente.carteira || '-'}</p>
+                    <p className="text-xs text-muted-foreground mb-1">Carteira</p>
+                    <p className="text-sm font-medium">{cliente?.carteira || '-'}</p>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
+
+              <Separator />
 
               {/* Address Information */}
-              <Card className="bg-white dark:bg-slate-900">
-                <CardHeader>
-                  <CardTitle className="text-base">Endereço</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+              <div className="space-y-4">
+                <p className="text-xs font-semibold text-muted-foreground px-2">ENDEREÇO</p>
+                <div className="space-y-3">
                   <div>
-                    <p className="text-xs font-semibold text-muted-foreground mb-1">ENDEREÇO</p>
-                    <p className="text-sm font-medium">{cliente.endereco || '-'}</p>
+                    <p className="text-xs text-muted-foreground mb-1">Rua</p>
+                    <p className="text-sm font-medium">{cliente?.endereco || '-'}</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <p className="text-xs font-semibold text-muted-foreground mb-1">NÚMERO</p>
-                      <p className="text-sm font-medium">{cliente.numero || '-'}</p>
+                      <p className="text-xs text-muted-foreground mb-1">Número</p>
+                      <p className="text-sm font-medium">{cliente?.numero || '-'}</p>
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-muted-foreground mb-1">CIDADE</p>
-                      <p className="text-sm font-medium">{cliente.cidade || '-'}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground mb-1">UF</p>
-                      <p className="text-sm font-medium">{cliente.uf || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground mb-1">CEP</p>
-                      <p className="text-sm font-medium">{cliente.cep || '-'}</p>
+                      <p className="text-xs text-muted-foreground mb-1">CEP</p>
+                      <p className="text-sm font-medium">{cliente?.cep || '-'}</p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Cidade</p>
+                      <p className="text-sm font-medium">{cliente?.cidade || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">UF</p>
+                      <p className="text-sm font-medium">{cliente?.uf || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
 
               {/* Additional Information */}
-              <Card className="bg-white dark:bg-slate-900">
-                <CardHeader>
-                  <CardTitle className="text-base">Dados Adicionais</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+              <div className="space-y-4">
+                <p className="text-xs font-semibold text-muted-foreground px-2">DADOS ADICIONAIS</p>
+                <div className="space-y-3">
                   <div>
-                    <p className="text-xs font-semibold text-muted-foreground mb-1">CPF/CNPJ</p>
-                    <p className="text-sm font-medium">{cliente.cnpj || '-'}</p>
+                    <p className="text-xs text-muted-foreground mb-1">CPF/CNPJ</p>
+                    <p className="text-sm font-medium">{cliente?.cnpj || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-muted-foreground mb-1">OBSERVAÇÕES</p>
-                    <p className="text-sm font-medium">{cliente.observacoes || '-'}</p>
+                    <p className="text-xs text-muted-foreground mb-1">Observações</p>
+                    <p className="text-sm font-medium">{cliente?.observacoes || '-'}</p>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
               {/* Tags */}
-              {cliente.tags && cliente.tags.length > 0 && (
-                <Card className="bg-white dark:bg-slate-900">
-                  <CardHeader>
-                    <CardTitle className="text-base">Tags</CardTitle>
-                  </CardHeader>
-                  <CardContent>
+              {cliente?.tags && cliente.tags.length > 0 && (
+                <>
+                  <Separator />
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold text-muted-foreground px-2">TAGS</p>
                     <div className="flex flex-wrap gap-2">
                       {cliente.tags.map((tag, i) => (
-                        <Badge key={i} variant="secondary" className="cursor-pointer hover-elevate">
+                        <Badge key={i} variant="secondary" className="text-xs cursor-pointer hover-elevate">
                           {tag}
                         </Badge>
                       ))}
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </>
               )}
+            </div>
+          </ScrollArea>
+        </div>
 
-              {/* Timeline */}
-              <Card className="bg-white dark:bg-slate-900">
-                <CardHeader>
-                  <CardTitle className="text-base">Histórico de Interações</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {!clienteLoading && cliente && (
-                    <>
-                      <AddClientNote clientId={cliente.id} />
-                      <Separator />
-                    </>
-                  )}
-
-                  {timelineLoading || notesLoading ? (
-                    <div className="space-y-4">
-                      {Array.from({ length: 3 }).map((_, i) => (
-                        <div key={i} className="flex gap-3">
-                          <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
-                          <div className="flex-1 space-y-2">
-                            <Skeleton className="h-4 w-32" />
-                            <Skeleton className="h-16 w-full" />
+        {/* RIGHT CONTENT - Timeline & Feed */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <ScrollArea className="flex-1">
+            <div className="max-w-3xl w-full p-3 sm:p-6 mx-auto">
+              {clienteLoading ? (
+                <ProfileSkeleton />
+              ) : cliente ? (
+                <div className="space-y-4 sm:space-y-6">
+                  {/* Mobile: Client Card (only shown on mobile) */}
+                  <div className="lg:hidden">
+                    <Card className="bg-white dark:bg-slate-800">
+                      <CardContent className="pt-6">
+                        <div className="flex items-start gap-4">
+                          <Avatar className="h-14 w-14 flex-shrink-0">
+                            <AvatarFallback className="bg-primary text-primary-foreground text-base">
+                              {cliente.nome?.[0]?.toUpperCase() || "?"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-base" data-testid="text-cliente-nome-mobile">
+                              {cliente.nome}
+                            </h3>
+                            {cliente.status && (
+                              <div className="mt-2" data-testid="badge-status-mobile">
+                                <Badge className={`text-xs ${STATUS_COLORS[cliente.status] || 'bg-slate-200 text-slate-800'}`}>
+                                  {cliente.status.toUpperCase()}
+                                </Badge>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  ) : clientNotes && clientNotes.length > 0 ? (
-                    <div className="space-y-4">
-                      {clientNotes.map((note) => (
-                        <ClientNoteItem key={note.id} note={note} clientId={id || ""} />
-                      ))}
-                      {timeline && timeline.length > 0 && (
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Mobile: Quick Actions (only shown on mobile) */}
+                  <div className="lg:hidden">
+                    <Card className="bg-white dark:bg-slate-800">
+                      <CardContent className="pt-4">
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button 
+                            variant="default" 
+                            size="sm"
+                            className="justify-center text-xs sm:text-sm h-9 sm:h-10"
+                            onClick={() => navigate(`/chat?clientId=${id}`)}
+                            data-testid="button-enviar-whatsapp-mobile"
+                          >
+                            <MessageSquare className="h-4 w-4 mr-1" />
+                            WhatsApp
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="justify-center text-xs sm:text-sm h-9 sm:h-10"
+                            data-testid="button-enviar-email-mobile"
+                          >
+                            <Mail className="h-4 w-4 mr-1" />
+                            Email
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="justify-center text-xs sm:text-sm h-9 sm:h-10"
+                            onClick={() => navigate(`/clientes/editar/${id}`)}
+                            data-testid="button-edit-cliente-mobile"
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Editar
+                          </Button>
+                          {cliente && <CreateOpportunityPopover client={cliente} />}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Timeline/Feed Card */}
+                  <Card className="bg-white dark:bg-slate-800">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-base sm:text-lg">Histórico de Interações</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {!clienteLoading && cliente && (
                         <>
+                          <AddClientNote clientId={cliente.id} />
                           <Separator />
+                        </>
+                      )}
+
+                      {timelineLoading || notesLoading ? (
+                        <div className="space-y-4">
+                          {Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="flex gap-3">
+                              <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
+                              <div className="flex-1 space-y-2">
+                                <Skeleton className="h-4 w-32" />
+                                <Skeleton className="h-16 w-full" />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : clientNotes && clientNotes.length > 0 ? (
+                        <div className="space-y-4">
+                          {clientNotes.map((note) => (
+                            <ClientNoteItem key={note.id} note={note} clientId={id || ""} />
+                          ))}
+                          {timeline && timeline.length > 0 && (
+                            <>
+                              <Separator />
+                              {timeline.map((item) => (
+                                <TimelineItem key={item.id} item={item} />
+                              ))}
+                            </>
+                          )}
+                        </div>
+                      ) : timeline && timeline.length > 0 ? (
+                        <div className="space-y-4">
                           {timeline.map((item) => (
                             <TimelineItem key={item.id} item={item} />
                           ))}
-                        </>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                          <FileText className="h-12 w-12 text-muted-foreground/30 mb-3" />
+                          <p className="text-sm text-muted-foreground">Nenhuma interação registrada</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            As interações com este cliente aparecerão aqui
+                          </p>
+                        </div>
                       )}
-                    </div>
-                  ) : timeline && timeline.length > 0 ? (
-                    <div className="space-y-4">
-                      {timeline.map((item) => (
-                        <TimelineItem key={item.id} item={item} />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-8 text-center">
-                      <FileText className="h-12 w-12 text-muted-foreground/30 mb-3" />
-                      <p className="text-sm text-muted-foreground">Nenhuma interação registrada</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        As interações com este cliente aparecerão aqui
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : null}
             </div>
-          ) : null}
+          </ScrollArea>
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }
@@ -376,7 +453,7 @@ function TimelineItem({ item }: { item: any }) {
   const isAutomation = tipoMovimento === 'automática' || item.origem === 'system' || item.origem === 'automation';
 
   return (
-    <div className="flex gap-4">
+    <div className="flex gap-3 sm:gap-4">
       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary flex-shrink-0">
         {iconMap[item.tipo] || <FileText className="h-5 w-5" />}
       </div>
@@ -403,11 +480,11 @@ function TimelineItem({ item }: { item: any }) {
 
 function ProfileSkeleton() {
   return (
-    <div className="space-y-4 p-4">
+    <div className="space-y-4 sm:space-y-6">
       <Card>
         <CardContent className="pt-6">
           <div className="flex gap-4">
-            <Skeleton className="h-16 w-16 rounded-full flex-shrink-0" />
+            <Skeleton className="h-14 w-14 rounded-full flex-shrink-0" />
             <div className="flex-1 space-y-2">
               <Skeleton className="h-6 w-32" />
               <Skeleton className="h-4 w-24" />
