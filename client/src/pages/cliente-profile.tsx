@@ -196,72 +196,96 @@ export default function ClienteProfile() {
               <Separator />
 
               {/* Contact Information */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground px-2">INFORMAÇÕES DE CONTATO</p>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Telefone</p>
-                    <p className="text-sm font-medium break-all">{cliente?.celular || '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Email</p>
-                    <p className="text-sm font-medium break-all">{cliente?.email || '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Carteira</p>
-                    <p className="text-sm font-medium">{cliente?.carteira || '-'}</p>
-                  </div>
-                </div>
+                <EditableField
+                  value={cliente?.celular}
+                  field="celular"
+                  clientId={id || ""}
+                  label="Telefone"
+                  data-testid="field-celular"
+                />
+                <EditableField
+                  value={cliente?.email}
+                  field="email"
+                  clientId={id || ""}
+                  label="Email"
+                  data-testid="field-email"
+                />
+                <EditableField
+                  value={cliente?.carteira}
+                  field="carteira"
+                  clientId={id || ""}
+                  label="Carteira"
+                  data-testid="field-carteira"
+                />
               </div>
 
               <Separator />
 
               {/* Address Information */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground px-2">ENDEREÇO</p>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Rua</p>
-                    <p className="text-sm font-medium">{cliente?.endereco || '-'}</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Número</p>
-                      <p className="text-sm font-medium">{cliente?.numero || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">CEP</p>
-                      <p className="text-sm font-medium">{cliente?.cep || '-'}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Cidade</p>
-                      <p className="text-sm font-medium">{cliente?.cidade || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">UF</p>
-                      <p className="text-sm font-medium">{cliente?.uf || '-'}</p>
-                    </div>
-                  </div>
+                <EditableField
+                  value={cliente?.endereco}
+                  field="endereco"
+                  clientId={id || ""}
+                  label="Rua"
+                  data-testid="field-endereco"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <EditableField
+                    value={cliente?.numero}
+                    field="numero"
+                    clientId={id || ""}
+                    label="Número"
+                    data-testid="field-numero"
+                  />
+                  <EditableField
+                    value={cliente?.cep}
+                    field="cep"
+                    clientId={id || ""}
+                    label="CEP"
+                    data-testid="field-cep"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <EditableField
+                    value={cliente?.cidade}
+                    field="cidade"
+                    clientId={id || ""}
+                    label="Cidade"
+                    data-testid="field-cidade"
+                  />
+                  <EditableField
+                    value={cliente?.uf}
+                    field="uf"
+                    clientId={id || ""}
+                    label="UF"
+                    data-testid="field-uf"
+                  />
                 </div>
               </div>
 
               <Separator />
 
               {/* Additional Information */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground px-2">DADOS ADICIONAIS</p>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">CPF/CNPJ</p>
-                    <p className="text-sm font-medium">{cliente?.cnpj || '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Observações</p>
-                    <p className="text-sm font-medium">{cliente?.observacoes || '-'}</p>
-                  </div>
-                </div>
+                <EditableField
+                  value={cliente?.cnpj}
+                  field="cnpj"
+                  clientId={id || ""}
+                  label="CPF/CNPJ"
+                  data-testid="field-cnpj"
+                />
+                <EditableField
+                  value={cliente?.observacoes}
+                  field="observacoes"
+                  clientId={id || ""}
+                  label="Observações"
+                  data-testid="field-observacoes"
+                />
               </div>
 
               {/* Tags */}
