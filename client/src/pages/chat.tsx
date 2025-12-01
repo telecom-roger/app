@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle, Download, Plus, Info, User, Zap, Eye, EyeOff } from "lucide-react";
+import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle, Download, Plus, Info, User, Zap, Eye, EyeOff, ChevronDown, Trash2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { SiWhatsapp } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -1369,35 +1370,8 @@ export default function Chat() {
                       } group`}
                       data-testid={`message-${msg.id}`}
                     >
-                      {msg.sender === "user" && msg.tipo !== "deletada" && (
-                        <button
-                          onClick={() => {
-                            apiRequest("DELETE", `/api/chat/messages/${msg.id}`)
-                              .then(() => {
-                                refetchMessages();
-                                toast({
-                                  title: "Mensagem apagada",
-                                  description: "Apagada para você e para o cliente"
-                                });
-                              })
-                              .catch(err => {
-                                console.error("Erro ao deletar:", err);
-                                toast({
-                                  title: "Erro",
-                                  description: "Não foi possível apagar a mensagem",
-                                  variant: "destructive"
-                                });
-                              });
-                          }}
-                          className="invisible group-hover:visible mr-2 text-red-500 hover:text-red-700 transition-colors"
-                          data-testid={`button-delete-message-${msg.id}`}
-                          title="Apagar para todos"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      )}
                       <div
-                        className={`max-w-xs px-3 py-2 rounded-lg shadow-sm ${
+                        className={`relative max-w-xs px-3 py-2 rounded-lg shadow-sm ${
                           msg.tipo === "deletada"
                             ? "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 italic"
                             : msg.sender === "user"
@@ -1405,6 +1379,45 @@ export default function Chat() {
                             : "bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600"
                         }`}
                       >
+                        {msg.sender === "user" && msg.tipo !== "deletada" && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                className="absolute top-1 right-1 invisible group-hover:visible p-0.5 rounded hover:bg-blue-200 dark:hover:bg-blue-900 transition-colors"
+                                data-testid={`button-message-menu-${msg.id}`}
+                              >
+                                <ChevronDown className="h-3 w-3 text-slate-500" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40">
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  apiRequest("DELETE", `/api/chat/messages/${msg.id}`)
+                                    .then(() => {
+                                      refetchMessages();
+                                      toast({
+                                        title: "Mensagem apagada",
+                                        description: "Apagada para você e para o cliente"
+                                      });
+                                    })
+                                    .catch(err => {
+                                      console.error("Erro ao deletar:", err);
+                                      toast({
+                                        title: "Erro",
+                                        description: "Não foi possível apagar a mensagem",
+                                        variant: "destructive"
+                                      });
+                                    });
+                                }}
+                                className="text-red-600 focus:text-red-600 cursor-pointer"
+                                data-testid={`button-delete-message-${msg.id}`}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Apagar para Todos
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
                         {msg.tipo === "deletada" && (
                           <p className="text-sm break-words italic opacity-70">
                             {msg.conteudo}
