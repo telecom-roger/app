@@ -30,6 +30,7 @@ import {
   Zap,
   Activity,
   DollarSign,
+  AlertCircle,
 } from "lucide-react";
 
 interface DashboardStats {
