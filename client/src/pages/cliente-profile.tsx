@@ -13,13 +13,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   ArrowLeft,
   Mail,
   Phone,
@@ -113,373 +106,244 @@ export default function ClienteProfile() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+    <div className="h-screen flex flex-col bg-background dark:bg-slate-950">
       {/* Header */}
-      <div className="border-b px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between bg-white dark:bg-slate-900">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <Button variant="ghost" size="sm" asChild data-testid="button-back" className="h-8 w-8 sm:h-9 sm:w-9">
+      <div className="border-b px-4 py-3 flex items-center justify-between bg-white dark:bg-slate-900">
+        <div className="flex items-center gap-3 min-w-0">
+          <Button variant="ghost" size="sm" asChild data-testid="button-back" className="h-8 w-8">
             <Link href="/clientes">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h2 className="font-semibold text-sm sm:text-lg truncate">{cliente?.nome || "Cliente"}</h2>
+          <h2 className="font-semibold text-lg truncate">{cliente?.nome || "Cliente"}</h2>
         </div>
-        <div className="flex items-center gap-1">
-          <Button size="icon" variant="ghost" data-testid="button-options" className="h-8 w-8 sm:h-9 sm:w-9">
-            <MoreVertical className="h-4 w-4" />
-          </Button>
-        </div>
+        <Button size="icon" variant="ghost" data-testid="button-options" className="h-8 w-8">
+          <MoreVertical className="h-4 w-4" />
+        </Button>
       </div>
 
-      {/* Main Layout - Responsive Grid */}
-      <div className="flex flex-1 overflow-hidden gap-0">
-        {/* LEFT SIDEBAR - Menu & Actions (Hidden on Mobile) */}
-        <div className="hidden lg:flex lg:w-64 border-r bg-white dark:bg-slate-900 overflow-y-auto flex-col">
-          <ScrollArea className="h-full">
-            <div className="p-4 space-y-6">
-              {/* Client Header Card */}
-              {clienteLoading ? (
-                <div className="space-y-3">
-                  <Skeleton className="h-12 w-12 rounded-full" />
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-3 w-24" />
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <Avatar className="h-12 w-12">
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      {cliente?.nome?.[0]?.toUpperCase() || "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="font-semibold text-sm" data-testid="text-cliente-nome">
-                      {cliente?.nome}
-                    </h3>
-                    {cliente?.status && (
-                      <div className="mt-1" data-testid="badge-status">
-                        <Badge 
-                          variant="outline" 
-                          className={`text-xs ${STATUS_COLORS[cliente.status] || 'bg-slate-200 text-slate-800'}`}
-                        >
-                          {cliente.status.toUpperCase()}
-                        </Badge>
-                      </div>
-                    )}
+      {/* Main Content - Single Column Responsive */}
+      <ScrollArea className="flex-1 overflow-hidden">
+        <div className="max-w-4xl mx-auto w-full p-4">
+          {clienteLoading ? (
+            <ProfileSkeleton />
+          ) : cliente ? (
+            <div className="space-y-4">
+              {/* Client Card */}
+              <Card className="bg-white dark:bg-slate-900">
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-4">
+                    <Avatar className="h-16 w-16 flex-shrink-0">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-lg">
+                        {cliente.nome?.[0]?.toUpperCase() || "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-lg" data-testid="text-cliente-nome">
+                        {cliente.nome}
+                      </h3>
+                      {cliente.status && (
+                        <div className="mt-2" data-testid="badge-status">
+                          <Badge className={STATUS_COLORS[cliente.status] || 'bg-slate-200 text-slate-800'}>
+                            {cliente.status.toUpperCase()}
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
-
-              <Separator />
+                </CardContent>
+              </Card>
 
               {/* Quick Actions */}
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground px-2">AÇÕES RÁPIDAS</p>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start text-sm" 
-                  onClick={() => navigate(`/chat?clientId=${id}`)}
-                  data-testid="button-enviar-whatsapp"
-                >
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Enviar WhatsApp
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start text-sm"
-                  data-testid="button-enviar-email"
-                >
-                  <Mail className="h-4 w-4 mr-2" />
-                  Enviar Email
-                </Button>
-                {cliente && <CreateOpportunityPopover client={cliente} />}
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start text-sm"
-                  data-testid="button-add-nota"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Adicionar Nota
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start text-sm bg-orange-50 dark:bg-orange-950 hover:bg-orange-100 dark:hover:bg-orange-900"
-                  onClick={() => manualFollowUpMutation.mutate()}
-                  disabled={manualFollowUpMutation.isPending}
-                  data-testid="button-aguardando-atencao"
-                >
-                  <CheckCircle className="h-4 w-4 mr-2 text-orange-600 dark:text-orange-400" />
-                  <span className="text-orange-700 dark:text-orange-300">Aguardando Atenção</span>
-                </Button>
-              </div>
+              <Card className="bg-white dark:bg-slate-900">
+                <CardHeader>
+                  <CardTitle className="text-base">Ações Rápidas</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button 
+                      variant="default" 
+                      size="sm"
+                      className="justify-start"
+                      onClick={() => navigate(`/chat?clientId=${id}`)}
+                      data-testid="button-enviar-whatsapp"
+                    >
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      WhatsApp
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="justify-start"
+                      data-testid="button-enviar-email"
+                    >
+                      <Mail className="h-4 w-4 mr-2" />
+                      Email
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="justify-start"
+                      onClick={() => navigate(`/clientes/editar/${id}`)}
+                      data-testid="button-edit-cliente"
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Editar
+                    </Button>
+                    {cliente && <CreateOpportunityPopover client={cliente} />}
+                  </div>
+                </CardContent>
+              </Card>
 
-              <Separator />
+              {/* Contact Information */}
+              <Card className="bg-white dark:bg-slate-900">
+                <CardHeader>
+                  <CardTitle className="text-base">Informações de Contato</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground mb-1">TELEFONE</p>
+                    <p className="text-sm font-medium">{cliente.celular || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground mb-1">EMAIL</p>
+                    <p className="text-sm font-medium break-all">{cliente.email || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground mb-1">CARTEIRA</p>
+                    <p className="text-sm font-medium">{cliente.carteira || '-'}</p>
+                  </div>
+                </CardContent>
+              </Card>
 
-              {/* Management Options */}
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground px-2">GERENCIAR</p>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start text-sm"
-                  onClick={() => navigate(`/clientes/editar/${id}`)}
-                  data-testid="button-edit-cliente"
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Editar Cliente
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start text-sm"
-                  data-testid="button-compartilhar"
-                >
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Compartilhar
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start text-sm"
-                  data-testid="button-configuracoes"
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Configurações
-                </Button>
-              </div>
+              {/* Address Information */}
+              <Card className="bg-white dark:bg-slate-900">
+                <CardHeader>
+                  <CardTitle className="text-base">Endereço</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground mb-1">ENDEREÇO</p>
+                    <p className="text-sm font-medium">{cliente.endereco || '-'}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground mb-1">NÚMERO</p>
+                      <p className="text-sm font-medium">{cliente.numero || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground mb-1">CIDADE</p>
+                      <p className="text-sm font-medium">{cliente.cidade || '-'}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground mb-1">UF</p>
+                      <p className="text-sm font-medium">{cliente.uf || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground mb-1">CEP</p>
+                      <p className="text-sm font-medium">{cliente.cep || '-'}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-              {/* Tags Section */}
-              {cliente?.tags && cliente.tags.length > 0 && (
-                <>
-                  <Separator />
-                  <div className="space-y-2">
-                    <p className="text-xs font-semibold text-muted-foreground px-2">TAGS</p>
+              {/* Additional Information */}
+              <Card className="bg-white dark:bg-slate-900">
+                <CardHeader>
+                  <CardTitle className="text-base">Dados Adicionais</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground mb-1">CPF/CNPJ</p>
+                    <p className="text-sm font-medium">{cliente.cnpj || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground mb-1">OBSERVAÇÕES</p>
+                    <p className="text-sm font-medium">{cliente.observacoes || '-'}</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Tags */}
+              {cliente.tags && cliente.tags.length > 0 && (
+                <Card className="bg-white dark:bg-slate-900">
+                  <CardHeader>
+                    <CardTitle className="text-base">Tags</CardTitle>
+                  </CardHeader>
+                  <CardContent>
                     <div className="flex flex-wrap gap-2">
                       {cliente.tags.map((tag, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs cursor-pointer hover-elevate">
+                        <Badge key={i} variant="secondary" className="cursor-pointer hover-elevate">
                           {tag}
                         </Badge>
                       ))}
                     </div>
-                  </div>
-                </>
+                  </CardContent>
+                </Card>
               )}
-            </div>
-          </ScrollArea>
-        </div>
 
-        {/* CENTER - Timeline/Chat Feed */}
-        <div className="flex-1 border-r flex flex-col min-w-0">
-          {/* Client Info - Mobile Only (XL hidden) */}
-          <div className="xl:hidden border-b px-3 sm:px-6 py-3 sm:py-4 bg-white dark:bg-slate-900 flex-shrink-0 space-y-3">
-            {!clienteLoading && cliente && (
-              <>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground">STATUS</p>
-                    <Badge className={`mt-1 ${STATUS_COLORS[cliente.status] || 'bg-slate-200 text-slate-800'}`}>
-                      {cliente.status.toUpperCase()}
-                    </Badge>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs font-semibold text-muted-foreground">TELEFONE</p>
-                    <p className="text-xs mt-1 font-medium">{cliente.celular || '-'}</p>
-                  </div>
-                </div>
-                <Separator />
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground">EMAIL</p>
-                  <p className="text-xs mt-1 font-medium truncate">{cliente.email || '-'}</p>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Timeline Header */}
-          <div className="border-b px-3 sm:px-6 py-2 sm:py-4 bg-white dark:bg-slate-900 flex-shrink-0">
-            <h3 className="font-semibold text-xs sm:text-sm">Histórico de Interações</h3>
-          </div>
-
-          {/* Timeline Feed */}
-          <ScrollArea className="flex-1">
-            <div className="p-3 sm:p-6 space-y-3 sm:space-y-6">
-              {/* Add Client Note Card */}
-              {!clienteLoading && cliente && (
-                <>
-                  <AddClientNote clientId={cliente.id} />
-                  <Separator className="my-2 sm:my-4" />
-                </>
-              )}
-              {timelineLoading || notesLoading ? (
-                <div className="space-y-3 sm:space-y-4">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="flex gap-3 sm:gap-4">
-                      <Skeleton className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex-shrink-0" />
-                      <div className="flex-1 space-y-2 min-w-0">
-                        <Skeleton className="h-3 w-32 sm:h-4 sm:w-48" />
-                        <Skeleton className="h-12 sm:h-16 w-full" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : clientNotes && clientNotes.length > 0 ? (
-                <div className="space-y-3 sm:space-y-4">
-                  {/* Mostrar client notes primeiro (mais recentes no topo) */}
-                  {clientNotes.map((note) => (
-                    <ClientNoteItem key={note.id} note={note} clientId={id || ""} />
-                  ))}
-                  {/* Depois mostrar timeline items */}
-                  {timeline && timeline.length > 0 && (
+              {/* Timeline */}
+              <Card className="bg-white dark:bg-slate-900">
+                <CardHeader>
+                  <CardTitle className="text-base">Histórico de Interações</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {!clienteLoading && cliente && (
                     <>
-                      <Separator className="my-2 sm:my-4" />
+                      <AddClientNote clientId={cliente.id} />
+                      <Separator />
+                    </>
+                  )}
+
+                  {timelineLoading || notesLoading ? (
+                    <div className="space-y-4">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="flex gap-3">
+                          <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
+                          <div className="flex-1 space-y-2">
+                            <Skeleton className="h-4 w-32" />
+                            <Skeleton className="h-16 w-full" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : clientNotes && clientNotes.length > 0 ? (
+                    <div className="space-y-4">
+                      {clientNotes.map((note) => (
+                        <ClientNoteItem key={note.id} note={note} clientId={id || ""} />
+                      ))}
+                      {timeline && timeline.length > 0 && (
+                        <>
+                          <Separator />
+                          {timeline.map((item) => (
+                            <TimelineItem key={item.id} item={item} />
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  ) : timeline && timeline.length > 0 ? (
+                    <div className="space-y-4">
                       {timeline.map((item) => (
                         <TimelineItem key={item.id} item={item} />
                       ))}
-                    </>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <FileText className="h-12 w-12 text-muted-foreground/30 mb-3" />
+                      <p className="text-sm text-muted-foreground">Nenhuma interação registrada</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        As interações com este cliente aparecerão aqui
+                      </p>
+                    </div>
                   )}
-                </div>
-              ) : timeline && timeline.length > 0 ? (
-                <div className="space-y-3 sm:space-y-4">
-                  {timeline.map((item) => (
-                    <TimelineItem key={item.id} item={item} />
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-8 sm:py-16 text-center">
-                  <FileText className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground/30 mb-2 sm:mb-3" />
-                  <p className="text-xs sm:text-sm text-muted-foreground">Nenhuma interação registrada</p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
-                    As interações com este cliente aparecerão aqui
-                  </p>
-                </div>
-              )}
+                </CardContent>
+              </Card>
             </div>
-          </ScrollArea>
+          ) : null}
         </div>
-
-        {/* RIGHT SIDEBAR - Client Information (Hidden on Mobile & Tablet) */}
-        <div className="hidden xl:flex xl:w-80 bg-white dark:bg-slate-900 border-l overflow-y-auto flex-col">
-          <ScrollArea className="h-full">
-            <div className="p-4 space-y-6">
-              {/* Status Badge */}
-              {!clienteLoading && cliente && (
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold text-muted-foreground">STATUS</p>
-                  <Badge className={`w-full justify-center ${STATUS_COLORS[cliente.status] || 'bg-slate-200 text-slate-800'}`}>
-                    {cliente?.status.toUpperCase()}
-                  </Badge>
-                </div>
-              )}
-
-              <Separator />
-
-              {/* Contact Information */}
-              <div className="space-y-3">
-                <p className="text-xs font-semibold text-muted-foreground">CONTATO</p>
-                {clienteLoading ? (
-                  <>
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-full" />
-                  </>
-                ) : (
-                  <div className="space-y-3">
-                    <EditableField
-                      value={cliente?.email}
-                      field="email"
-                      clientId={id || ""}
-                      label="Email"
-                    />
-                    <EditableField
-                      value={cliente?.celular}
-                      field="celular"
-                      clientId={id || ""}
-                      label="Telefone"
-                    />
-                  </div>
-                )}
-              </div>
-
-              <Separator />
-
-              {/* Business Information */}
-              {!clienteLoading && cliente && (
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold text-muted-foreground">NEGÓCIO</p>
-                  <div className="space-y-2">
-                    <EditableField
-                      value={cliente?.carteira}
-                      field="carteira"
-                      clientId={id || ""}
-                      label="Carteira"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <Separator />
-
-              {/* Address Information */}
-              {!clienteLoading && cliente && (
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold text-muted-foreground">ENDEREÇO</p>
-                  <div className="space-y-2">
-                    <EditableField
-                      value={cliente?.endereco}
-                      field="endereco"
-                      clientId={id || ""}
-                      label="Endereço"
-                    />
-                    <EditableField
-                      value={cliente?.numero}
-                      field="numero"
-                      clientId={id || ""}
-                      label="Número"
-                    />
-                    <EditableField
-                      value={cliente?.cidade}
-                      field="cidade"
-                      clientId={id || ""}
-                      label="Cidade"
-                    />
-                    <EditableField
-                      value={cliente?.uf}
-                      field="uf"
-                      clientId={id || ""}
-                      label="UF"
-                    />
-                    <EditableField
-                      value={cliente?.cep}
-                      field="cep"
-                      clientId={id || ""}
-                      label="CEP"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <Separator />
-
-              {/* Additional Data */}
-              {!clienteLoading && cliente && (
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold text-muted-foreground">DADOS ADICIONAIS</p>
-                  <div className="space-y-2">
-                    <EditableField
-                      value={cliente?.cnpj}
-                      field="cnpj"
-                      clientId={id || ""}
-                      label="CPF/CNPJ"
-                    />
-                    <EditableField
-                      value={cliente?.observacoes}
-                      field="observacoes"
-                      clientId={id || ""}
-                      label="Observações"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-        </div>
-      </div>
+      </ScrollArea>
     </div>
   );
 }
@@ -495,7 +359,6 @@ function TimelineItem({ item }: { item: any }) {
     campanha: <Mail className="h-5 w-5" />,
   };
 
-  // Format date: "30/11/2025, 03:37"
   const formatDate = (date: string | Date | null) => {
     if (!date) return 'Data desconhecida';
     const d = new Date(date);
@@ -508,76 +371,60 @@ function TimelineItem({ item }: { item: any }) {
     });
   };
 
-  // Get tipo movimento from meta
   const tipoMovimento = (item.meta as any)?.tipo_movimento || item.origem;
   const userName = item.userName || 'Sistema';
   const isAutomation = tipoMovimento === 'automática' || item.origem === 'system' || item.origem === 'automation';
 
   return (
-    <Card className="hover-elevate bg-white dark:bg-white border-border">
-      <CardContent className="pt-4">
-        <div className="flex gap-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary flex-shrink-0">
-            {iconMap[item.tipo] || <FileText className="h-5 w-5" />}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h4 className="font-semibold text-xs text-slate-900" data-testid={`timeline-item-title-${item.id}`}>
-                  {item.titulo || item.tipo}
-                </h4>
-                <div className="flex items-center gap-1 flex-wrap mt-1">
-                  <p className="text-[10px] text-slate-600">
-                    {formatDate(item.createdAt)} - {isAutomation ? (
-                      <span className="italic">por IA</span>
-                    ) : (
-                      <>por {userName}</>
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
-            {item.texto && (
-              <p className="text-xs text-slate-600 mt-2 leading-relaxed break-words">
-                {item.texto}
-              </p>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="flex gap-4">
+      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary flex-shrink-0">
+        {iconMap[item.tipo] || <FileText className="h-5 w-5" />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <h4 className="font-semibold text-sm" data-testid={`timeline-item-title-${item.id}`}>
+          {item.titulo || item.tipo}
+        </h4>
+        <p className="text-xs text-muted-foreground mt-1">
+          {formatDate(item.createdAt)} - {isAutomation ? (
+            <span className="italic">por IA</span>
+          ) : (
+            <>por {userName}</>
+          )}
+        </p>
+        {item.texto && (
+          <p className="text-sm text-muted-foreground mt-2 leading-relaxed break-words">
+            {item.texto}
+          </p>
+        )}
+      </div>
+    </div>
   );
 }
 
 function ProfileSkeleton() {
   return (
-    <div className="h-screen flex flex-col">
-      <div className="border-b px-3 sm:px-4 py-2 sm:py-3">
-        <Skeleton className="h-5 sm:h-6 w-24 sm:w-32" />
-      </div>
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar (Hidden on Mobile) */}
-        <div className="hidden lg:flex lg:w-64 border-r p-4 space-y-4 flex-col">
+    <div className="space-y-4 p-4">
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex gap-4">
+            <Skeleton className="h-16 w-16 rounded-full flex-shrink-0" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-5 w-24" />
+        </CardHeader>
+        <CardContent className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-8 w-full" />
           ))}
-        </div>
-        {/* Center */}
-        <div className="flex-1 border-r p-3 sm:p-6 space-y-3 sm:space-y-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="flex gap-3 sm:gap-4">
-              <Skeleton className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex-shrink-0" />
-              <Skeleton className="h-16 sm:h-20 w-full" />
-            </div>
-          ))}
-        </div>
-        {/* Right Sidebar (Hidden on Mobile & Tablet) */}
-        <div className="hidden xl:flex xl:w-80 border-l p-4 space-y-4 flex-col">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-12 w-full" />
-          ))}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
