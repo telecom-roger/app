@@ -186,9 +186,10 @@ export default function Chat() {
       
       // Create or get conversation for this client
       apiRequest("POST", `/api/chat/start-conversation/${clientId}`, {})
-        .then((conversa) => {
+        .then(res => res.json())
+        .then((conversa: Conversation) => {
           // Mark as not hidden if it was
-          if (conversa.oculta) {
+          if ((conversa as any).oculta) {
             apiRequest("PATCH", `/api/chat/conversations/${conversa.id}/toggle-hidden`, { oculta: false })
               .catch(err => console.error("Erro ao reabrir conversa:", err));
           }
@@ -338,7 +339,7 @@ export default function Chat() {
           // Se a conversa estava oculta, reabre automaticamente quando recebe mensagem
           if (data.conversationId) {
             const conv = conversations.find(c => c.id === data.conversationId);
-            if (conv?.oculta) {
+            if ((conv as any)?.oculta) {
               console.log("🔄 Reabrindo conversa oculta automaticamente:", data.conversationId);
               apiRequest("PATCH", `/api/chat/conversations/${data.conversationId}/toggle-hidden`, { oculta: false })
                 .catch(err => console.error("Erro ao reabrir conversa:", err));
@@ -657,7 +658,7 @@ export default function Chat() {
     e.target.value = "";
   };
 
-  const handlePaste = async (e: React.ClipboardEvent<HTMLInputElement>) => {
+  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const items = e.clipboardData?.items;
     if (!items || !selectedConversationId) return;
 
@@ -1110,11 +1111,11 @@ export default function Chat() {
 
                     const handleContextMenu = (e: React.MouseEvent) => {
                       e.preventDefault();
-                      console.log("🖱️ Context menu acionado para conversa:", conv.id, "oculta:", conv.oculta);
+                      console.log("🖱️ Context menu acionado para conversa:", conv.id, "oculta:", (conv as any).oculta);
                       setContextMenuOpen(true);
                       setContextMenuPos({ x: e.clientX, y: e.clientY });
                       setContextMenuConvId(conv.id);
-                      setContextMenuConvOculta(conv.oculta ?? false);
+                      setContextMenuConvOculta((conv as any).oculta ?? false);
                     };
 
                     return (
@@ -1165,8 +1166,8 @@ export default function Chat() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 whitespace-nowrap">
-                          {conv.oculta && (
-                            <EyeOff className="h-3 w-3 text-slate-400" title="Conversa oculta" />
+                          {(conv as any).oculta && (
+                            <EyeOff className="h-3 w-3 text-slate-400" />
                           )}
                           {(conv.unreadCount ?? 0) > 0 && conv.unreadCount && (
                             <span className="bg-primary text-white text-xs font-bold rounded-full min-w-[24px] h-6 flex items-center justify-center">
