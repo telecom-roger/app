@@ -47,6 +47,14 @@ const DeliveryStatusTicks = ({ status }: { status?: "enviado" | "entregue" | "li
   }
 };
 
+// Function to normalize text (remove accents and convert to lowercase)
+const normalizeText = (text: string): string => {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+};
+
 // Function to render text with clickable links
 const renderTextWithLinks = (text: string) => {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -1324,9 +1332,9 @@ export default function Chat() {
                       data-testid="input-message-search"
                       autoFocus
                     />
-                    {messageSearchTerm && messages.filter(m => m.conteudo.toLowerCase().includes(messageSearchTerm.toLowerCase())).length > 0 ? (
+                    {messageSearchTerm && messages.filter(m => normalizeText(m.conteudo).includes(normalizeText(messageSearchTerm))).length > 0 ? (
                       <div className="space-y-2 max-h-60 overflow-y-auto">
-                        {messages.filter(m => m.conteudo.toLowerCase().includes(messageSearchTerm.toLowerCase())).map((result, idx) => (
+                        {messages.filter(m => normalizeText(m.conteudo).includes(normalizeText(messageSearchTerm))).map((result, idx) => (
                           <button
                             key={result.id}
                             onClick={() => {
@@ -1424,7 +1432,7 @@ export default function Chat() {
                         msg.sender === "user"
                           ? "justify-end"
                           : "justify-start"
-                      } group ${messageSearchTerm && msg.conteudo.toLowerCase().includes(messageSearchTerm.toLowerCase()) ? "bg-yellow-100 dark:bg-yellow-900/30 px-2 py-1 rounded-lg" : ""}`}
+                      } group ${messageSearchTerm && normalizeText(msg.conteudo).includes(normalizeText(messageSearchTerm)) ? "bg-blue-200 dark:bg-blue-900 px-2 py-1 rounded-lg" : ""}`}
                       data-testid={`message-${msg.id}`}
                     >
                       <div
