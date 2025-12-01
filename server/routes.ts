@@ -112,7 +112,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.warn(`⚠️ Campanha ${campaign.id} sem proprietário definido`);
               continue;
             }
-            console.log(`🔒 Executando campanha ${campaign.id} do usuário ${ownerId}`);
+            
+            // ✅ CORREÇÃO ATÔMICA: Só atualiza se ainda está "agendada"
+            // WHERE status='agendada' garante que apenas UMA instância executa
+            const [claimed] = await db.update(campaignsTable)
+              .set({ status: 'em_progresso' })
+              .where(and(
+                eq(campaignsTable.id, campaign.id),
+                eq(campaignsTable.status, 'agendada')
+              ))
+              .returning({ id: campaignsTable.id });
+            
+            if (!claimed) {
+              console.log(`⏭️ Campanha ${campaign.id} já está em execução - pulando`);
+              continue;
+            }
+            
+            console.log(`🔒 Executando campanha ${campaign.id} do usuário ${ownerId} [status: em_progresso]`);
             
             // Carrega APENAS clientes do dono da campanha
             const userClients = await storage.getClients({ 
@@ -1105,6 +1121,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // ✅ Buscar status real do envio da tabela campaign_sendings (não do cliente!)
+      // ORDER BY: status='enviado' primeiro, depois por data (mais recente)
       const allClients = await db
         .select({
           id: clients.id,
@@ -1124,13 +1141,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           )
         )
         .where(inArray(clients.id, clientIds))
+        .orderBy(
+          // Priorizar 'enviado' sobre 'erro' usando CASE (enviado = 1, erro = 2)
+          sql`CASE WHEN ${campaignSendings.status} = 'enviado' THEN 1 WHEN ${campaignSendings.status} = 'erro' THEN 2 ELSE 3 END`,
+          desc(campaignSendings.dataSending)
+        )
         .limit(10000);
 
-      // ✅ Remover duplicatas: pegar apenas o registro mais recente de cada cliente
+      // ✅ Deduplicar: Como os registros vêm ordenados (enviado primeiro), basta pegar o primeiro de cada cliente
       const uniqueClientMap = new Map<string, typeof allClients[0]>();
       for (const record of allClients) {
-        const existing = uniqueClientMap.get(record.id);
-        if (!existing || (record.dataSending && (!existing.dataSending || record.dataSending > existing.dataSending))) {
+        if (!uniqueClientMap.has(record.id)) {
           uniqueClientMap.set(record.id, record);
         }
       }
@@ -1994,15 +2015,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clientes = await storage.getClientsForBroadcast(filtros);
       
       // ✅ CRÍTICO: Adicionar clientIds e conteudo ao filtros para que o cron job execute corretamente
+      // ✅ CORRIGIDO: Manter origemDisparo nos filtros (não sobrescrever!)
       const clientIds = clientes.map(c => c.id);
       if (clientIds.length > 0) {
         await db.update(campaignsTable)
           .set({ 
-            filtros: { ...filtros, clientIds, conteudo: mensagem },
+            filtros: { ...(filtros || {}), clientIds, conteudo: mensagem, origemDisparo },
             totalRecipients: clientIds.length 
           })
           .where(eq(campaignsTable.id, campaign.id));
-        console.log(`✅ Campanha ${campaign.id} atualizada com ${clientIds.length} clientes e conteúdo`);
+        console.log(`✅ Campanha ${campaign.id} atualizada com ${clientIds.length} clientes, conteúdo e origem: ${origemDisparo}`);
       }
       
       res.json({ 

@@ -1102,6 +1102,47 @@ export async function shareClientsWithUser(clientIds: string[], sharedWithUserId
 
 // ==================== CAMPAIGN SENDINGS STORAGE ====================
 export async function recordCampaignSending(data: InsertCampaignSending): Promise<CampaignSending> {
+  // ✅ UPSERT: Verificar se já existe registro para este cliente+campanha
+  // Se existir, atualiza apenas se o novo status for "melhor" (enviado > erro)
+  if (data.campaignId && data.clientId) {
+    const existing = await db
+      .select()
+      .from(campaignSendings)
+      .where(and(
+        eq(campaignSendings.campaignId, data.campaignId),
+        eq(campaignSendings.clientId, data.clientId)
+      ))
+      .limit(1);
+    
+    if (existing.length > 0) {
+      const existingRecord = existing[0];
+      // ✅ Regra: Só atualiza se o novo status for "enviado" ou se não há registro de sucesso ainda
+      // Mantém o primeiro "enviado" e não deixa "erro" sobrescrever
+      if (existingRecord.status === 'enviado') {
+        // Já foi enviado com sucesso - não sobrescreve
+        console.log(`📝 [UPSERT] Cliente ${data.clientId} já tem status 'enviado' - mantendo`);
+        return existingRecord;
+      }
+      
+      // Atualiza o registro existente
+      const [updated] = await db
+        .update(campaignSendings)
+        .set({
+          status: data.status,
+          erroMensagem: data.erroMensagem,
+          dataSending: new Date(),
+          origemDisparo: data.origemDisparo,
+          mensagemUsada: data.mensagemUsada,
+        })
+        .where(eq(campaignSendings.id, existingRecord.id))
+        .returning();
+      
+      console.log(`📝 [UPSERT] Atualizado registro existente para cliente ${data.clientId}: ${data.status}`);
+      return updated;
+    }
+  }
+  
+  // Novo registro
   const [result] = await db.insert(campaignSendings).values(data).returning();
   return result;
 }
