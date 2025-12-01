@@ -163,6 +163,10 @@ export default function Chat() {
   const [businessValue, setBusinessValue] = useState<string>("");
   const [selectedStage, setSelectedStage] = useState<string>("");
   const [creatingOpportunity, setCreatingOpportunity] = useState(false);
+  const [messageSearchTerm, setMessageSearchTerm] = useState("");
+  const [showMessageSearch, setShowMessageSearch] = useState(false);
+  const [selectedMessageResultIndex, setSelectedMessageResultIndex] = useState<number | null>(null);
+  const messageSearchResultsRef = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   // Handle clientId from URL parameter
   useEffect(() => {
@@ -1275,9 +1279,9 @@ export default function Chat() {
         {selectedConversation ? (
           <>
             {/* Header */}
-            <div className="flex items-center gap-2 p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 justify-between">
-              <div className="flex items-center gap-2 flex-1">
-                <SiWhatsapp className="h-5 w-5 text-green-500" />
+            <div className="flex items-center gap-2 p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 justify-between flex-wrap">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <SiWhatsapp className="h-5 w-5 text-green-500 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 min-w-0">
                     {selectedConversation.client?.tags?.[0] && (() => {
@@ -1301,6 +1305,55 @@ export default function Chat() {
                   </p>
                 </div>
               </div>
+              <Popover open={showMessageSearch} onOpenChange={setShowMessageSearch}>
+                <PopoverTrigger asChild>
+                  <Button 
+                    size="icon" 
+                    variant="ghost" 
+                    data-testid="button-search-messages"
+                  >
+                    <Search className="h-5 w-5" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-3" align="end">
+                  <div className="space-y-3">
+                    <Input
+                      placeholder="Buscar mensagens..."
+                      value={messageSearchTerm}
+                      onChange={(e) => setMessageSearchTerm(e.target.value)}
+                      data-testid="input-message-search"
+                      autoFocus
+                    />
+                    {messageSearchTerm && messages.filter(m => m.conteudo.toLowerCase().includes(messageSearchTerm.toLowerCase())).length > 0 ? (
+                      <div className="space-y-2 max-h-60 overflow-y-auto">
+                        {messages.filter(m => m.conteudo.toLowerCase().includes(messageSearchTerm.toLowerCase())).map((result, idx) => (
+                          <button
+                            key={result.id}
+                            onClick={() => {
+                              setSelectedMessageResultIndex(idx);
+                              messageSearchResultsRef.current[result.id]?.scrollIntoView({ behavior: "smooth", block: "center" });
+                              setShowMessageSearch(false);
+                            }}
+                            className="w-full text-left p-2 rounded text-sm bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 transition-colors break-words"
+                            data-testid={`button-search-result-${result.id}`}
+                          >
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
+                              {new Date(result.createdAt).toLocaleTimeString("pt-BR")}
+                            </p>
+                            <p className="line-clamp-2 text-slate-900 dark:text-white">
+                              {result.conteudo}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                    ) : messageSearchTerm ? (
+                      <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
+                        Nenhuma mensagem encontrada
+                      </p>
+                    ) : null}
+                  </div>
+                </PopoverContent>
+              </Popover>
               <Button 
                 size="icon" 
                 variant="ghost" 
@@ -1364,11 +1417,14 @@ export default function Chat() {
                   messages.map((msg: Message) => (
                     <div
                       key={msg.id}
+                      ref={(el) => {
+                        if (el) messageSearchResultsRef.current[msg.id] = el;
+                      }}
                       className={`flex ${
                         msg.sender === "user"
                           ? "justify-end"
                           : "justify-start"
-                      } group`}
+                      } group ${messageSearchTerm && msg.conteudo.toLowerCase().includes(messageSearchTerm.toLowerCase()) ? "bg-yellow-100 dark:bg-yellow-900/30 px-2 py-1 rounded-lg" : ""}`}
                       data-testid={`message-${msg.id}`}
                     >
                       <div
