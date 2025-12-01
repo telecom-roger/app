@@ -625,11 +625,15 @@ export async function getBroadcastStats(filtros?: { status?: string; carteira?: 
   };
 }
 
-export async function getClientsForBroadcast(filtros?: { status?: string; carteira?: string; userId?: string; isAdmin?: boolean }) {
+export async function getClientsForBroadcast(filtros?: { status?: string; carteira?: string; userId?: string; isAdmin?: boolean; clientIds?: string[] }) {
   let conditions = [];
   
+  // Se há clientIds específicos, usa apenas eles
+  if (filtros?.clientIds && filtros.clientIds.length > 0) {
+    conditions.push(inArray(clients.id, filtros.clientIds));
+  }
   // Se não é admin, filtra apenas clientes do usuário
-  if (filtros?.userId && !filtros?.isAdmin) {
+  else if (filtros?.userId && !filtros?.isAdmin) {
     conditions.push(
       or(
         eq(clients.createdBy, filtros.userId),

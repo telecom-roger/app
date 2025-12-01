@@ -564,13 +564,23 @@ export default function CampanhasWhatsApp() {
           try {
             const mensagem = substituirVariaveisNoTemplate(template, contato);
             
-            const response = await fetch("/api/whatsapp/enviar-broadcast", {
+            // Get sessionId from session list if available
+            const sessionId = sessionList?.[0]?.id;
+            if (!sessionId) {
+              throw new Error("Nenhuma sessão WhatsApp conectada");
+            }
+            
+            const response = await fetch("/api/whatsapp/broadcast/send", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                telefone,
+                sessionId,
                 mensagem,
-                clientId: contato.id || "",
+                campanhaNome: nomeCampanha || "Envio Imediato",
+                origemDisparo: "envio_imediato",
+                filtros: {
+                  clientIds: [contato.id],
+                },
               }),
             });
 
@@ -589,16 +599,6 @@ export default function CampanhasWhatsApp() {
               // Adicionar cliente à lista de enviados com sucesso
               if (contato.id) {
                 clientesEnviadosComSucesso.push(contato.id);
-                // Registrar envio de campanha
-                await fetch("/api/campaigns/record-sending", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    clientId: contato.id,
-                    campaignName: nomeCampanha || "Campanha WhatsApp",
-                    status: "enviado",
-                  }),
-                }).catch((err) => console.warn("Erro ao registrar envio:", err));
               }
             } else {
               const erro = await response.text();
