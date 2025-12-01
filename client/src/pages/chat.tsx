@@ -250,6 +250,16 @@ export default function Chat() {
     }
   }, [window.location.search]);
 
+  // Reset selection state when conversation changes
+  useEffect(() => {
+    setSelectedMessageIds(new Set());
+    setSelectMode(false);
+    setForwardingMessage(null);
+    setForwardingMessages([]);
+    setSelectedRecipients([]);
+    setShowForwardModal(false);
+  }, [selectedConversationId]);
+
   const { data: quickReplies = [] } = useQuery<QuickReply[]>({
     queryKey: ["/api/quick-replies"],
     refetchInterval: 10000,
