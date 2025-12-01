@@ -29,7 +29,22 @@ interface Message {
   nomeArquivo?: string;
   mimeType?: string;
   origem?: string;  // ✅ "automation" para mensagens enviadas por IA
+  statusEntrega?: "enviado" | "entregue" | "lido";  // Status de entrega WhatsApp
 }
+
+// Componente para exibir os ticks de status de entrega
+const DeliveryStatusTicks = ({ status }: { status?: "enviado" | "entregue" | "lido" }) => {
+  if (status === "lido") {
+    // Dois ticks azuis - mensagem lida
+    return <span className="text-xs text-blue-400">✓✓</span>;
+  } else if (status === "entregue") {
+    // Dois ticks cinza - mensagem entregue
+    return <span className="text-xs opacity-70">✓✓</span>;
+  } else {
+    // Um tick - mensagem enviada (ou sem status)
+    return <span className="text-xs opacity-70">✓</span>;
+  }
+};
 
 // Function to render text with clickable links
 const renderTextWithLinks = (text: string) => {
@@ -1413,9 +1428,7 @@ export default function Chat() {
                             )}
                           </div>
                           {msg.sender === "user" && (
-                            <span className="text-xs opacity-70">
-                              {msg.lido ? "✓✓" : "✓"}
-                            </span>
+                            <DeliveryStatusTicks status={msg.statusEntrega} />
                           )}
                         </div>
                       </div>
