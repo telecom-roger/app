@@ -784,7 +784,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             setTimeout(async () => {
               try {
                 if (whatsappService.isSessionAlive(user.id)) {
-                  const sock = whatsappService.activeSessions?.get(user.id);
+                  const sock = whatsappService.getActiveSession(user.id);
                   if (sock) {
                     const telefoneFormatado = client.celular?.replace(/\D/g, '').replace(/^55/, '');
                     if (telefoneFormatado) {
