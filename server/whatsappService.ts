@@ -703,6 +703,18 @@ export async function sendImage(sessionId: string, telefone: string, imageBase64
     if (!jid.startsWith("55")) {
       jid = "55" + jid;
     }
+    
+    // ✅ VERIFICAR SE O NÚMERO EXISTE NO WHATSAPP ANTES DE ENVIAR
+    try {
+      const [exists] = await sock.onWhatsApp(jid);
+      if (!exists || !exists.exists) {
+        console.error(`❌ Número ${jid} NÃO existe no WhatsApp!`);
+        return false;
+      }
+    } catch (checkErr) {
+      console.warn(`⚠️ Não foi possível verificar se ${jid} existe, tentando enviar mesmo assim...`);
+    }
+    
     jid = jid + "@s.whatsapp.net";
 
     console.log(`📤 Enviando imagem para ${jid}...`);
@@ -782,6 +794,18 @@ export async function sendAudio(sessionId: string, telefone: string, audioBase64
     if (!jid.startsWith("55")) {
       jid = "55" + jid;
     }
+    
+    // ✅ VERIFICAR SE O NÚMERO EXISTE NO WHATSAPP ANTES DE ENVIAR
+    try {
+      const [exists] = await sock.onWhatsApp(jid);
+      if (!exists || !exists.exists) {
+        console.error(`❌ Número ${jid} NÃO existe no WhatsApp!`);
+        return false;
+      }
+    } catch (checkErr) {
+      console.warn(`⚠️ Não foi possível verificar se ${jid} existe, tentando enviar mesmo assim...`);
+    }
+    
     jid = jid + "@s.whatsapp.net";
 
     console.log(`📤 Enviando áudio para ${jid}...`);
@@ -827,6 +851,18 @@ export async function sendDocument(sessionId: string, telefone: string, docBase6
     if (!jid.startsWith("55")) {
       jid = "55" + jid;
     }
+    
+    // ✅ VERIFICAR SE O NÚMERO EXISTE NO WHATSAPP ANTES DE ENVIAR
+    try {
+      const [exists] = await sock.onWhatsApp(jid);
+      if (!exists || !exists.exists) {
+        console.error(`❌ Número ${jid} NÃO existe no WhatsApp!`);
+        return false;
+      }
+    } catch (checkErr) {
+      console.warn(`⚠️ Não foi possível verificar se ${jid} existe, tentando enviar mesmo assim...`);
+    }
+    
     jid = jid + "@s.whatsapp.net";
 
     console.log(`📤 Enviando documento para ${jid}...`);
