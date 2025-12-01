@@ -1102,56 +1102,95 @@ export async function shareClientsWithUser(clientIds: string[], sharedWithUserId
 
 // ==================== CAMPAIGN SENDINGS STORAGE ====================
 export async function recordCampaignSending(data: InsertCampaignSending): Promise<CampaignSending> {
-  // ✅ UPSERT simplificado - guarda a versão de "melhor" status
-  // Prioridade: erro < enviado < entregue < lido
+  // ✅ UPSERT com prioridade - só atualiza se status for >= ao existente
+  // Prioridade: erro(1) < enviado(2) < entregue(3) < lido(4)
   // O índice único (campaignId, clientId) garante não haver duplicatas
   
   const newStatus = data.status || 'erro';
-  
-  // Função auxiliar para calcular prioridade
   const getPriority = (status: string) => {
     const priorities: Record<string, number> = { erro: 1, enviado: 2, entregue: 3, lido: 4 };
     return priorities[status] || 0;
   };
-  
   const newPriority = getPriority(newStatus);
   
+  // ✅ Todas as atualizações condicionadas à mesma regra de prioridade
+  // Se novo status tem prioridade < existente, NÃO atualiza NADA (preserva sucesso)
   const [result] = await db
     .insert(campaignSendings)
     .values(data)
     .onConflictDoUpdate({
       target: [campaignSendings.campaignId, campaignSendings.clientId],
       set: {
-        // Status: mantém o de maior prioridade
-        // Se novo >= existente, atualiza. Caso contrário, mantém.
-        status: sql`(
-          SELECT CASE 
-            WHEN ${newPriority} >= (
-              SELECT CASE status 
-                WHEN 'erro' THEN 1 
-                WHEN 'enviado' THEN 2 
-                WHEN 'entregue' THEN 3 
-                WHEN 'lido' THEN 4 
-                ELSE 0 
-              END 
-              FROM campaign_sendings 
-              WHERE campaign_id = ${data.campaignId} AND client_id = ${data.clientId}
-            ) THEN ${newStatus}
-            ELSE (
-              SELECT status 
-              FROM campaign_sendings 
-              WHERE campaign_id = ${data.campaignId} AND client_id = ${data.clientId}
-            )
+        // Status: só atualiza se novo >= existente
+        status: sql`
+          CASE WHEN ${newPriority} >= (
+            CASE ${campaignSendings.status}
+              WHEN 'erro' THEN 1 
+              WHEN 'enviado' THEN 2 
+              WHEN 'entregue' THEN 3 
+              WHEN 'lido' THEN 4 
+              ELSE 0 
+            END
+          ) THEN ${newStatus}
+          ELSE ${campaignSendings.status}
           END
-        )`,
-        // Só atualiza erroMensagem se status for erro e estiver substituindo
-        erroMensagem: newStatus === 'erro' ? (data.erroMensagem || null) : null,
-        // Sempre atualiza timestamp
-        dataSending: sql`NOW()`,
-        // Preserva origemDisparo existente se não fornecido
-        origemDisparo: data.origemDisparo || sql`${campaignSendings.origemDisparo}`,
-        // Preserva mensagemUsada existente se não fornecido
-        mensagemUsada: data.mensagemUsada || sql`${campaignSendings.mensagemUsada}`,
+        `,
+        // erroMensagem: só atualiza se status avançar
+        erroMensagem: sql`
+          CASE WHEN ${newPriority} >= (
+            CASE ${campaignSendings.status}
+              WHEN 'erro' THEN 1 
+              WHEN 'enviado' THEN 2 
+              WHEN 'entregue' THEN 3 
+              WHEN 'lido' THEN 4 
+              ELSE 0 
+            END
+          ) THEN ${newStatus === 'erro' ? (data.erroMensagem || null) : null}
+          ELSE ${campaignSendings.erroMensagem}
+          END
+        `,
+        // dataSending: só atualiza se status avançar
+        dataSending: sql`
+          CASE WHEN ${newPriority} >= (
+            CASE ${campaignSendings.status}
+              WHEN 'erro' THEN 1 
+              WHEN 'enviado' THEN 2 
+              WHEN 'entregue' THEN 3 
+              WHEN 'lido' THEN 4 
+              ELSE 0 
+            END
+          ) THEN NOW()
+          ELSE ${campaignSendings.dataSending}
+          END
+        `,
+        // origemDisparo: só atualiza se status avançar
+        origemDisparo: sql`
+          CASE WHEN ${newPriority} >= (
+            CASE ${campaignSendings.status}
+              WHEN 'erro' THEN 1 
+              WHEN 'enviado' THEN 2 
+              WHEN 'entregue' THEN 3 
+              WHEN 'lido' THEN 4 
+              ELSE 0 
+            END
+          ) THEN COALESCE(${data.origemDisparo || null}, ${campaignSendings.origemDisparo})
+          ELSE ${campaignSendings.origemDisparo}
+          END
+        `,
+        // mensagemUsada: só atualiza se status avançar
+        mensagemUsada: sql`
+          CASE WHEN ${newPriority} >= (
+            CASE ${campaignSendings.status}
+              WHEN 'erro' THEN 1 
+              WHEN 'enviado' THEN 2 
+              WHEN 'entregue' THEN 3 
+              WHEN 'lido' THEN 4 
+              ELSE 0 
+            END
+          ) THEN COALESCE(${data.mensagemUsada || null}, ${campaignSendings.mensagemUsada})
+          ELSE ${campaignSendings.mensagemUsada}
+          END
+        `,
       },
     })
     .returning();
