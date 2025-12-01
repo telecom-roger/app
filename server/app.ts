@@ -34,15 +34,9 @@ app.get("/health", (req, res) => {
   res.status(200).json({ ok: true });
 });
 
-// ⚡ HEALTH CHECK on root endpoint for deployment - ALWAYS responds 200 immediately
-// This is the FASTEST possible endpoint and must NOT call next()
+// Server ready state for health checks
 let serverReady = false;
 export function markServerReady() { serverReady = true; }
-
-app.get("/", (req, res) => {
-  // Respond immediately with 200 OK - no next() call, no further processing
-  res.status(200).json({ ok: true, ready: serverReady });
-});
 
 app.use(express.json({
   limit: "50mb",
