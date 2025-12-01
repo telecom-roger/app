@@ -2589,12 +2589,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Acesso negado" });
       }
 
+      console.log(`🗑️ [DELETE ENDPOINT] Mensagem encontrada: id=${msg.id}, whatsappMessageId=${msg.whatsappMessageId}, clientId=${conversation.clientId}`);
+      
       // Tentar deletar no WhatsApp se houver messageId
       if (msg.whatsappMessageId && conversation.clientId) {
+        console.log(`🗑️ [DELETE ENDPOINT] Tem whatsappMessageId, buscando cliente...`);
         try {
           // Buscar telefone do cliente
           const cliente = await storage.getClient(conversation.clientId);
           const telefone = cliente?.celular || cliente?.telefone2;
+          
+          console.log(`🗑️ [DELETE ENDPOINT] Cliente: ${cliente?.nome}, telefone: ${telefone}`);
           
           if (telefone) {
             // Buscar sessão WhatsApp ativa do usuário
@@ -2607,6 +2612,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ))
               .limit(1);
 
+            console.log(`🗑️ [DELETE ENDPOINT] Sessão encontrada: ${session?.sessionId || 'NENHUMA'}`);
+
             if (session) {
               const deleted = await whatsappService.deleteMessageForEveryone(
                 session.sessionId,
@@ -2618,11 +2625,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               } else {
                 console.warn(`⚠️ Não foi possível deletar no WhatsApp, mas será removida do sistema`);
               }
+            } else {
+              console.warn(`⚠️ [DELETE ENDPOINT] Nenhuma sessão WhatsApp conectada`);
             }
+          } else {
+            console.warn(`⚠️ [DELETE ENDPOINT] Cliente sem telefone`);
           }
         } catch (whatsappError) {
           console.warn("⚠️ Erro ao deletar no WhatsApp:", whatsappError);
         }
+      } else {
+        console.log(`⚠️ [DELETE ENDPOINT] Sem whatsappMessageId (${msg.whatsappMessageId}) ou clientId (${conversation.clientId})`);
       }
 
       // Marcar mensagem como deletada (ao invés de remover)

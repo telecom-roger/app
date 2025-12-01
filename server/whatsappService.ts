@@ -739,9 +739,11 @@ export async function sendMessage(sessionId: string, telefone: string, mensagem:
 
 export async function deleteMessageForEveryone(sessionId: string, telefone: string, whatsappMessageId: string): Promise<boolean> {
   try {
+    console.log(`🗑️ [DELETE] Iniciando exclusão: sessionId=${sessionId}, telefone=${telefone}, msgId=${whatsappMessageId}`);
+    
     const sock = activeSessions.get(sessionId);
     if (!sock) {
-      console.error(`❌ Sessão ${sessionId} não encontrada para deletar mensagem`);
+      console.error(`❌ [DELETE] Sessão ${sessionId} não encontrada para deletar mensagem`);
       return false;
     }
 
@@ -751,20 +753,23 @@ export async function deleteMessageForEveryone(sessionId: string, telefone: stri
     }
     jid = jid + "@s.whatsapp.net";
 
-    console.log(`🗑️ Deletando mensagem ${whatsappMessageId} para ${jid}...`);
+    console.log(`🗑️ [DELETE] Deletando mensagem ${whatsappMessageId} para ${jid}...`);
     
-    await sock.sendMessage(jid, { 
-      delete: {
-        remoteJid: jid,
-        fromMe: true,
-        id: whatsappMessageId
-      }
-    });
+    // Formato correto: passar o objeto key completo
+    const deleteKey = {
+      remoteJid: jid,
+      fromMe: true,
+      id: whatsappMessageId
+    };
     
-    console.log(`✅ Mensagem ${whatsappMessageId} deletada para todos!`);
+    console.log(`🗑️ [DELETE] Key de exclusão:`, JSON.stringify(deleteKey));
+    
+    await sock.sendMessage(jid, { delete: deleteKey });
+    
+    console.log(`✅ [DELETE] Mensagem ${whatsappMessageId} deletada para todos no WhatsApp!`);
     return true;
   } catch (error) {
-    console.error(`❌ Erro ao deletar mensagem ${whatsappMessageId}:`, error);
+    console.error(`❌ [DELETE] Erro ao deletar mensagem ${whatsappMessageId}:`, error);
     return false;
   }
 }
