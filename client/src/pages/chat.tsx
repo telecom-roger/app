@@ -1154,21 +1154,11 @@ export default function Chat() {
                       key={conv.id}
                       onClick={() => handleSelectConversation(conv.id)}
                       onContextMenu={handleContextMenu}
-                      className={`w-full text-left p-3 rounded-lg transition-colors mb-1 hover:bg-purple-50 border-b border-slate-200 dark:border-slate-700 ${
+                      className={`w-full text-left p-3 rounded-lg transition-colors mb-1 hover:bg-slate-100 dark:hover:bg-slate-800 border-b border-slate-200 dark:border-slate-700 ${
                         selectedConversationId === conv.id
-                          ? "bg-purple-50 dark:bg-purple-950/30 text-foreground"
+                          ? "bg-slate-100 dark:bg-slate-800 text-foreground"
                           : "text-foreground"
                       }`}
-                      onMouseEnter={(e) => {
-                        if (document.documentElement.classList.contains('dark')) {
-                          e.currentTarget.style.backgroundColor = '#F0F1F2';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (document.documentElement.classList.contains('dark')) {
-                          e.currentTarget.style.backgroundColor = '';
-                        }
-                      }}
                       data-testid={`button-conversation-${conv.id}`}
                     >
                       <div className="flex items-start justify-between gap-2">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -181,12 +181,15 @@ export default function CampanhasWhatsApp() {
   });
 
   // Fetch clients with campaign history (only after filters initiated) - NOW WITH FILTER PARAMS
-  const { data: clientesDisponiveis = [], isLoading: carregandoClientes, refetch: refetchClientes } = useQuery<ClientForImport[]>({
+  const { data: clientesDisponiveis = [], isLoading: carregandoClientes } = useQuery<ClientForImport[]>({
     queryKey: [
       "/api/clients/whatsapp-list",
       Array.from(selectedTiposFilter).sort().join(","),
       Array.from(selectedCarteirasFilter).sort().join(","),
       Array.from(selectedCidadesFilter).sort().join(","),
+      Array.from(selectedSendStatusFilter).sort().join(","),
+      selectedTag || "",
+      filtroStatus,
     ],
     queryFn: async () => {
       // Build query params with filters
@@ -205,7 +208,7 @@ export default function CampanhasWhatsApp() {
       return res.json();
     },
     enabled: isAuthenticated && mostrarSeletorBD && filtersInitiated,
-    staleTime: 0, // Always fresh to get all matching clients
+    staleTime: 60000, // Cache for 1 minute to avoid excessive refetches
   });
 
   // Fetch available tags
@@ -249,13 +252,6 @@ export default function CampanhasWhatsApp() {
     }
   }, [searchClientes, filtroStatus, selectedTag, selectedTiposFilter, selectedCarteirasFilter, selectedCidadesFilter, selectedSendStatusFilter, dataEnvioInicio, dataEnvioFim]);
 
-  // Immediately refetch when send status filter changes for real-time updates
-  useEffect(() => {
-    if (mostrarSeletorBD && filtersInitiated && selectedSendStatusFilter.size > 0) {
-      refetchClientes();
-    }
-  }, [selectedSendStatusFilter]);
-
   // Poll for campaigns in progress
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -270,20 +266,22 @@ export default function CampanhasWhatsApp() {
       } catch (err) {
         console.error("Erro ao buscar campanhas:", err);
       }
-    }, 2000); // Poll a cada 2 segundos
+    }, 10000); // Poll a cada 10 segundos (increased from 2s for better performance)
 
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
-  // Filter clients by search, status, tag, sendStatus (tipo, carteira, cidade now filtered on backend)
-  const clientesFiltrados = clientesDisponiveis.filter((c) => {
-    const searchMatch = c.nome.toLowerCase().includes(searchClientes.toLowerCase()) ||
-      (c.celular || "").includes(searchClientes);
-    const statusMatch = filtroStatus === "todos" || c.status?.toLowerCase() === filtroStatus.toLowerCase();
-    const tagMatch = selectedTag === null || (c.tags && c.tags.some(t => t.nome === selectedTag));
-    const sendStatusMatch = selectedSendStatusFilter.size === 0 || (c.sendStatus && selectedSendStatusFilter.has(c.sendStatus));
-    return searchMatch && statusMatch && tagMatch && sendStatusMatch;
-  });
+  // Filter clients by search, status, tag, sendStatus (tipo, carteira, cidade now filtered on backend) - MEMOIZED FOR PERFORMANCE
+  const clientesFiltrados = useMemo(() => {
+    return clientesDisponiveis.filter((c) => {
+      const searchMatch = c.nome.toLowerCase().includes(searchClientes.toLowerCase()) ||
+        (c.celular || "").includes(searchClientes);
+      const statusMatch = filtroStatus === "todos" || c.status?.toLowerCase() === filtroStatus.toLowerCase();
+      const tagMatch = selectedTag === null || (c.tags && c.tags.some(t => t.nome === selectedTag));
+      const sendStatusMatch = selectedSendStatusFilter.size === 0 || (c.sendStatus && selectedSendStatusFilter.has(c.sendStatus));
+      return searchMatch && statusMatch && tagMatch && sendStatusMatch;
+    });
+  }, [clientesDisponiveis, searchClientes, filtroStatus, selectedTag, selectedSendStatusFilter]);
 
   // Parse CSV when text changes
   useEffect(() => {
