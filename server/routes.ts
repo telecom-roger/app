@@ -2660,6 +2660,203 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Forward message to another client or phone number
+  app.post("/api/chat/forward-message", isAuthenticated, async (req, res) => {
+    try {
+      const { 
+        messageId, 
+        targetClientId, 
+        targetPhone, 
+        messageContent, 
+        messageType,
+        arquivo,
+        nomeArquivo,
+        mimeType
+      } = req.body;
+      const user = (req.user as any);
+
+      if (!targetPhone) {
+        return res.status(400).json({ error: "Número de telefone é obrigatório" });
+      }
+
+      if (!messageContent && messageType === "texto") {
+        return res.status(400).json({ error: "Conteúdo da mensagem é obrigatório" });
+      }
+
+      // Normalize phone number
+      let normalizedPhone = targetPhone.replace(/\D/g, '');
+      if (!normalizedPhone.startsWith('55')) {
+        normalizedPhone = '55' + normalizedPhone;
+      }
+
+      console.log(`📤 [FORWARD] Encaminhando mensagem para ${normalizedPhone}`);
+
+      // Check WhatsApp connection
+      const activeSessions = await db.select().from(whatsappSessions).where(eq(whatsappSessions.status, "conectada"));
+      if (activeSessions.length === 0) {
+        return res.status(400).json({ error: "WhatsApp não conectado" });
+      }
+      const session = activeSessions[0];
+
+      // Get or create conversation with target client
+      let targetConversation;
+      let targetClient;
+      
+      if (targetClientId) {
+        // Use existing client
+        targetClient = await storage.getClientById(targetClientId);
+        
+        // Find or create conversation with existing client
+        const existingConv = await db.select().from(conversations)
+          .where(and(
+            eq(conversations.clientId, targetClientId),
+            eq(conversations.userId, user.id)
+          ))
+          .limit(1);
+        
+        if (existingConv.length > 0) {
+          targetConversation = existingConv[0];
+        } else {
+          // Create new conversation
+          const [newConv] = await db.insert(conversations).values({
+            clientId: targetClientId,
+            userId: user.id,
+            canal: "whatsapp",
+            ativa: true,
+            createdAt: new Date(),
+          }).returning();
+          targetConversation = newConv;
+        }
+      } else {
+        // For custom phone numbers, find or create client first
+        const existingClients = await db.select().from(clients)
+          .where(eq(clients.celular, normalizedPhone))
+          .limit(1);
+        
+        if (existingClients.length > 0) {
+          targetClient = existingClients[0];
+        } else {
+          // Create new client for this phone number
+          const [newClient] = await db.insert(clients).values({
+            nome: `Contato ${normalizedPhone}`,
+            celular: normalizedPhone,
+            userId: user.id,
+            status: "lead_quente",
+            createdAt: new Date(),
+          }).returning();
+          targetClient = newClient;
+          console.log(`📝 [FORWARD] Criado novo cliente para ${normalizedPhone}: ${newClient.id}`);
+        }
+        
+        // Find or create conversation
+        const existingConv = await db.select().from(conversations)
+          .where(and(
+            eq(conversations.clientId, targetClient.id),
+            eq(conversations.userId, user.id)
+          ))
+          .limit(1);
+        
+        if (existingConv.length > 0) {
+          targetConversation = existingConv[0];
+        } else {
+          const [newConv] = await db.insert(conversations).values({
+            clientId: targetClient.id,
+            userId: user.id,
+            canal: "whatsapp",
+            ativa: true,
+            createdAt: new Date(),
+          }).returning();
+          targetConversation = newConv;
+          console.log(`📝 [FORWARD] Criada nova conversa para cliente ${targetClient.id}: ${newConv.id}`);
+        }
+      }
+
+      // Create message record first with pending status
+      const forwardedContent = messageType === "texto" 
+        ? `📤 Encaminhada:\n${messageContent}` 
+        : messageContent;
+
+      const messageRecord: any = {
+        conversationId: targetConversation.id,
+        conteudo: forwardedContent,
+        sender: "user",
+        tipo: messageType || "texto",
+        lido: false,
+        createdAt: new Date(),
+        statusEntrega: "pendente",
+        origem: "forward",
+      };
+
+      if (arquivo) {
+        messageRecord.arquivo = arquivo;
+        messageRecord.nomeArquivo = nomeArquivo;
+        messageRecord.mimeType = mimeType;
+      }
+
+      // Always save message (we always have a conversation now)
+      const [savedMessage] = await db.insert(messages).values(messageRecord).returning();
+
+      // Send via WhatsApp
+      let whatsappResult: any;
+      try {
+        if (messageType === "imagem" && arquivo) {
+          whatsappResult = await whatsappService.sendImage(session.sessionId, normalizedPhone, arquivo, forwardedContent || "");
+        } else if (messageType === "audio" && arquivo) {
+          whatsappResult = await whatsappService.sendAudio(session.sessionId, normalizedPhone, arquivo);
+        } else if (messageType === "documento" && arquivo) {
+          whatsappResult = await whatsappService.sendDocument(session.sessionId, normalizedPhone, arquivo, nomeArquivo || "documento");
+        } else {
+          whatsappResult = await whatsappService.sendMessage(session.sessionId, normalizedPhone, forwardedContent);
+        }
+
+        console.log(`✅ [FORWARD] Mensagem encaminhada para ${normalizedPhone}:`, whatsappResult);
+
+        // Update message with WhatsApp ID and delivery status
+        const whatsappMessageId = whatsappResult?.id || whatsappResult?.key?.id;
+        await db.update(messages)
+          .set({ 
+            whatsappMessageId: whatsappMessageId || null,
+            statusEntrega: whatsappResult?.success !== false ? "enviado" : "erro"
+          })
+          .where(eq(messages.id, savedMessage.id));
+
+        // Update conversation last message
+        await db.update(conversations)
+          .set({
+            ultimaMensagem: forwardedContent.substring(0, 100),
+            ultimaMensagemEm: new Date(),
+          })
+          .where(eq(conversations.id, targetConversation.id));
+
+        res.json({ 
+          success: true, 
+          messageId: savedMessage.id,
+          conversationId: targetConversation.id,
+          clientId: targetClient?.id,
+          whatsappId: whatsappMessageId,
+          phone: normalizedPhone
+        });
+
+      } catch (whatsappError: any) {
+        console.error("❌ [FORWARD] Erro ao enviar via WhatsApp:", whatsappError);
+
+        // Update message as failed
+        await db.update(messages)
+          .set({ statusEntrega: "erro" as any })
+          .where(eq(messages.id, savedMessage.id));
+
+        return res.status(500).json({ 
+          error: "Erro ao enviar mensagem via WhatsApp",
+          details: whatsappError.message 
+        });
+      }
+
+    } catch (error: any) {
+      console.error("Error forwarding message:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Mark messages as read
   app.patch("/api/chat/messages/:conversationId/mark-read", isAuthenticated, async (req, res) => {
     try {

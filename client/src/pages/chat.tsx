@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle, Download, Plus, Info, User, Zap, Eye, EyeOff, ChevronDown, Trash2 } from "lucide-react";
+import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle, Download, Plus, Info, User, Zap, Eye, EyeOff, ChevronDown, Trash2, Forward } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { SiWhatsapp } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
@@ -175,6 +175,11 @@ export default function Chat() {
   const [showMessageSearch, setShowMessageSearch] = useState(false);
   const [selectedMessageResultIndex, setSelectedMessageResultIndex] = useState<number | null>(null);
   const messageSearchResultsRef = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const [showForwardModal, setShowForwardModal] = useState(false);
+  const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
+  const [forwardSearchTerm, setForwardSearchTerm] = useState("");
+  const [forwardCustomNumber, setForwardCustomNumber] = useState("");
+  const [isForwarding, setIsForwarding] = useState(false);
 
   // Handle clientId from URL parameter
   useEffect(() => {
@@ -1444,42 +1449,57 @@ export default function Chat() {
                             : "bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600"
                         }`}
                       >
-                        {msg.sender === "user" && msg.tipo !== "deletada" && (
+                        {msg.tipo !== "deletada" && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <button
-                                className="absolute top-1 right-1 invisible group-hover:visible p-0.5 rounded hover:bg-blue-200 dark:hover:bg-blue-900 transition-colors"
+                                className={`absolute top-1 ${msg.sender === "user" ? "right-1" : "left-1"} invisible group-hover:visible p-0.5 rounded hover:bg-blue-200 dark:hover:bg-blue-900 transition-colors`}
                                 data-testid={`button-message-menu-${msg.id}`}
                               >
                                 <ChevronDown className="h-3 w-3 text-slate-500" />
                               </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuContent align={msg.sender === "user" ? "end" : "start"} className="w-44">
                               <DropdownMenuItem
                                 onClick={() => {
-                                  apiRequest("DELETE", `/api/chat/messages/${msg.id}`)
-                                    .then(() => {
-                                      refetchMessages();
-                                      toast({
-                                        title: "Mensagem apagada",
-                                        description: "Apagada para você e para o cliente"
-                                      });
-                                    })
-                                    .catch(err => {
-                                      console.error("Erro ao deletar:", err);
-                                      toast({
-                                        title: "Erro",
-                                        description: "Não foi possível apagar a mensagem",
-                                        variant: "destructive"
-                                      });
-                                    });
+                                  setForwardingMessage(msg);
+                                  setShowForwardModal(true);
+                                  setForwardSearchTerm("");
+                                  setForwardCustomNumber("");
                                 }}
                                 className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 focus:bg-slate-100 dark:focus:bg-slate-700 hover:text-inherit focus:text-inherit"
-                                data-testid={`button-delete-message-${msg.id}`}
+                                data-testid={`button-forward-message-${msg.id}`}
                               >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Apagar para Todos
+                                <Forward className="h-4 w-4 mr-2" />
+                                Encaminhar
                               </DropdownMenuItem>
+                              {msg.sender === "user" && (
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    apiRequest("DELETE", `/api/chat/messages/${msg.id}`)
+                                      .then(() => {
+                                        refetchMessages();
+                                        toast({
+                                          title: "Mensagem apagada",
+                                          description: "Apagada para você e para o cliente"
+                                        });
+                                      })
+                                      .catch(err => {
+                                        console.error("Erro ao deletar:", err);
+                                        toast({
+                                          title: "Erro",
+                                          description: "Não foi possível apagar a mensagem",
+                                          variant: "destructive"
+                                        });
+                                      });
+                                  }}
+                                  className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 focus:bg-slate-100 dark:focus:bg-slate-700 hover:text-inherit focus:text-inherit"
+                                  data-testid={`button-delete-message-${msg.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Apagar para Todos
+                                </DropdownMenuItem>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         )}
@@ -1926,6 +1946,158 @@ export default function Chat() {
           </div>
         )}
       </div>
+
+      {/* Forward Message Modal */}
+      <Dialog open={showForwardModal} onOpenChange={(open) => {
+        setShowForwardModal(open);
+        if (!open) {
+          setForwardingMessage(null);
+          setForwardSearchTerm("");
+          setForwardCustomNumber("");
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Forward className="h-5 w-5" />
+              Encaminhar Mensagem
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {forwardingMessage && (
+              <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Mensagem a encaminhar:</p>
+                <p className="text-sm text-slate-900 dark:text-white line-clamp-3">
+                  {forwardingMessage.tipo === "texto" ? forwardingMessage.conteudo : `[${forwardingMessage.tipo}]`}
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-900 dark:text-white">
+                Buscar cliente
+              </label>
+              <Input
+                placeholder="Digite o nome do cliente..."
+                value={forwardSearchTerm}
+                onChange={(e) => setForwardSearchTerm(e.target.value)}
+                data-testid="input-forward-search"
+              />
+              {forwardSearchTerm && clients.filter((c: Client) => 
+                normalizeText(c.nome).includes(normalizeText(forwardSearchTerm)) ||
+                c.celular?.includes(forwardSearchTerm)
+              ).length > 0 && (
+                <div className="max-h-40 overflow-y-auto space-y-1 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
+                  {clients.filter((c: Client) => 
+                    normalizeText(c.nome).includes(normalizeText(forwardSearchTerm)) ||
+                    c.celular?.includes(forwardSearchTerm)
+                  ).slice(0, 10).map((client: Client) => (
+                    <button
+                      key={client.id}
+                      onClick={async () => {
+                        if (!forwardingMessage || !client.celular) return;
+                        setIsForwarding(true);
+                        try {
+                          await apiRequest("POST", "/api/chat/forward-message", {
+                            messageId: forwardingMessage.id,
+                            targetClientId: client.id,
+                            targetPhone: client.celular,
+                            messageContent: forwardingMessage.conteudo,
+                            messageType: forwardingMessage.tipo,
+                            arquivo: forwardingMessage.arquivo,
+                            nomeArquivo: forwardingMessage.nomeArquivo,
+                            mimeType: forwardingMessage.mimeType,
+                          });
+                          toast({
+                            title: "Mensagem encaminhada",
+                            description: `Enviada para ${client.nome}`,
+                          });
+                          refetchConversations();
+                          refetchClients();
+                          setShowForwardModal(false);
+                        } catch (err) {
+                          console.error("Erro ao encaminhar:", err);
+                          toast({
+                            title: "Erro",
+                            description: "Não foi possível encaminhar a mensagem",
+                            variant: "destructive",
+                          });
+                        } finally {
+                          setIsForwarding(false);
+                        }
+                      }}
+                      disabled={isForwarding || !client.celular}
+                      className="w-full text-left p-2 rounded text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center justify-between"
+                      data-testid={`button-forward-to-${client.id}`}
+                    >
+                      <div>
+                        <p className="font-medium text-slate-900 dark:text-white">{client.nome}</p>
+                        <p className="text-xs text-slate-500">{client.celular || "Sem celular"}</p>
+                      </div>
+                      {isForwarding && <Loader2 className="h-4 w-4 animate-spin" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
+              <label className="text-sm font-medium text-slate-900 dark:text-white">
+                Ou digite um número
+              </label>
+              <div className="flex gap-2 mt-2">
+                <Input
+                  placeholder="Ex: 5511999999999"
+                  value={forwardCustomNumber}
+                  onChange={(e) => setForwardCustomNumber(e.target.value.replace(/\D/g, ''))}
+                  data-testid="input-forward-custom-number"
+                  className="flex-1"
+                />
+                <Button
+                  onClick={async () => {
+                    if (!forwardingMessage || !forwardCustomNumber) return;
+                    setIsForwarding(true);
+                    try {
+                      await apiRequest("POST", "/api/chat/forward-message", {
+                        messageId: forwardingMessage.id,
+                        targetPhone: forwardCustomNumber,
+                        messageContent: forwardingMessage.conteudo,
+                        messageType: forwardingMessage.tipo,
+                        arquivo: forwardingMessage.arquivo,
+                        nomeArquivo: forwardingMessage.nomeArquivo,
+                        mimeType: forwardingMessage.mimeType,
+                      });
+                      toast({
+                        title: "Mensagem encaminhada",
+                        description: `Enviada para ${forwardCustomNumber}`,
+                      });
+                      refetchConversations();
+                      refetchClients();
+                      setShowForwardModal(false);
+                    } catch (err) {
+                      console.error("Erro ao encaminhar:", err);
+                      toast({
+                        title: "Erro",
+                        description: "Não foi possível encaminhar a mensagem",
+                        variant: "destructive",
+                      });
+                    } finally {
+                      setIsForwarding(false);
+                    }
+                  }}
+                  disabled={isForwarding || !forwardCustomNumber || forwardCustomNumber.length < 10}
+                  data-testid="button-forward-to-custom"
+                >
+                  {isForwarding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Digite o número completo com DDI+DDD (ex: 5511999999999)
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
