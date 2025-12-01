@@ -938,11 +938,11 @@ export default function Chat() {
   return (
     <div className="flex h-full bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Left Sidebar - Conversations List */}
-      <div className="w-full md:w-96 lg:w-2/5 flex flex-col border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50">
+      <div className="w-full md:w-80 lg:w-96 flex flex-col border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50">
         {/* Search Input */}
-        <div className="p-4 space-y-3 border-b border-slate-200 dark:border-slate-700">
+        <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 border-b border-slate-200 dark:border-slate-700">
           <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar cliente..."
               value={searchTerm}
@@ -950,7 +950,7 @@ export default function Chat() {
                 setSearchTerm(e.target.value);
                 setShowSearchResults(e.target.value.trim().length > 0);
               }}
-              className="pl-9"
+              className="pl-9 h-9 sm:h-10 text-sm"
               data-testid="input-search-client"
             />
           </div>
@@ -958,18 +958,18 @@ export default function Chat() {
 
         {/* Tag Filter Section */}
         {!showSearchResults && allTags.length > 0 && (
-          <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 space-y-2">
-            <div className="flex items-center justify-between">
+          <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-slate-200 dark:border-slate-700 space-y-2">
+            <div className="flex items-center justify-between gap-2">
               <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">FILTRAR POR ETIQUETA</p>
               <Button
                 variant={showHiddenConversations ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setShowHiddenConversations(!showHiddenConversations)}
                 data-testid="button-toggle-hidden-conversations"
-                className="h-6 px-2 text-xs gap-1"
+                className="h-7 px-2 text-xs gap-1"
               >
                 {showHiddenConversations ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-                {showHiddenConversations ? "Ocultas" : "Ocultas"}
+                <span className="hidden sm:inline">Ocultas</span>
               </Button>
             </div>
             <div className="flex flex-wrap gap-1">
@@ -1333,7 +1333,7 @@ export default function Chat() {
             </div>
 
             {/* Messages */}
-            <ScrollArea className="flex-1 p-4 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950">
+            <ScrollArea className="flex-1 p-3 sm:p-4 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950">
               <div className="space-y-3 flex flex-col">
                 {messagesLoading ? (
                   <div className="flex items-center justify-center h-20">
@@ -1664,7 +1664,7 @@ export default function Chat() {
             {/* Input */}
             <div className="flex flex-col gap-3">
               {pastedImage && (
-                <div className="px-6 pt-4 pb-3 mx-6 flex items-center gap-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
+                <div className="px-3 sm:px-6 pt-4 pb-3 mx-3 sm:mx-6 flex items-center gap-3 sm:gap-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
                   <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue/10 dark:bg-blue/20 flex items-center justify-center">
                     <img src={pastedImage.base64} alt="Preview" className="w-10 h-10 object-cover rounded-full" />
                   </div>
@@ -1696,7 +1696,7 @@ export default function Chat() {
                 </div>
               )}
               {recordedAudio && (
-                <div className="px-6 pt-4 pb-3 mx-6 flex items-center gap-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
+                <div className="px-3 sm:px-6 pt-4 pb-3 mx-3 sm:mx-6 flex items-center gap-3 sm:gap-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
                   <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
                     <Music className="h-5 w-5 text-primary" />
                   </div>
@@ -1727,9 +1727,9 @@ export default function Chat() {
                   </div>
                 </div>
               )}
-              <div className="p-6 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex gap-3 items-end">
+              <div className="p-3 sm:p-6 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex gap-2 sm:gap-3 items-end">
                 <Textarea
-                  placeholder="Digite uma mensagem"
+                  placeholder="Digite..."
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
                   onKeyPress={(e) => {
@@ -1741,7 +1741,7 @@ export default function Chat() {
                   onPaste={handlePaste}
                   disabled={sendMutation.isPending || recordedAudio !== null || pastedImage !== null}
                   data-testid="input-message"
-                  className="resize-none min-h-12 max-h-32 text-base"
+                  className="resize-none min-h-11 sm:min-h-12 max-h-32 text-sm sm:text-base"
                 />
                 <input
                   type="file"
@@ -1756,6 +1756,7 @@ export default function Chat() {
                   onClick={() => document.getElementById("file-upload")?.click()}
                   disabled={sendMutation.isPending || isRecording || recordedAudio !== null}
                   data-testid="button-file-upload"
+                  className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
                 >
                   <Paperclip className="h-4 w-4" />
                 </Button>
@@ -1765,6 +1766,7 @@ export default function Chat() {
                   onClick={isRecording ? handleStopRecording : handleStartRecording}
                   disabled={sendMutation.isPending || recordedAudio !== null}
                   data-testid="button-voice-record"
+                  className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
                 >
                   {isRecording ? (
                     <StopCircle className="h-4 w-4 animate-pulse" />
@@ -1777,6 +1779,7 @@ export default function Chat() {
                   disabled={!messageText.trim() || sendMutation.isPending || recordedAudio !== null}
                   size="icon"
                   data-testid="button-send-message"
+                  className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
                 >
                   {sendMutation.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
