@@ -66,6 +66,10 @@ export function SelectableField({
     }
   };
 
+  const allOptions = Array.from(
+    new Set([...(value ? [value] : []), ...options])
+  ).filter(Boolean);
+
   return (
     <div
       className="cursor-pointer hover:bg-muted/50 p-1.5 rounded transition-colors"
@@ -77,8 +81,8 @@ export function SelectableField({
           <SelectValue placeholder="Selecione..." />
         </SelectTrigger>
         <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option || "empty"} value={option || ""}>
+          {allOptions.map((option) => (
+            <SelectItem key={option} value={option}>
               {option || "Sem carteira"}
             </SelectItem>
           ))}
