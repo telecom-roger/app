@@ -406,15 +406,16 @@ async function executeContractReminder(task: any) {
   const randomIndex = Math.floor(Math.random() * dayMessages.length);
   const mensagem = dayMessages[randomIndex];
   
-  // 1️⃣ REGISTRAR MENSAGEM NO CHAT PRIMEIRO
-  await db.insert(messages).values({
+  // 1️⃣ REGISTRAR MENSAGEM NO CHAT PRIMEIRO (com whatsappMessageId vazio por enquanto)
+  const [insertedMessage] = await db.insert(messages).values({
     conversationId: conversation.id,
     sender: "user",
     tipo: "texto",
     conteudo: mensagem,
     origem: "automation",
+    statusEntrega: "pendente",
     createdAt: new Date(),
-  });
+  }).returning();
 
   // ✅ ATUALIZAR ultimaMensagemEm para a conversa ir para o topo da fila
   await db.update(conversations).set({
@@ -454,10 +455,20 @@ async function executeContractReminder(task: any) {
           
           console.log(`📱 Enviando mensagem via WhatsApp para ${telefone}...`);
           const result = await whatsappService.sendMessage(session.sessionId, telefone, mensagem);
-          if (result.success) {
-            console.log(`✅ Mensagem WhatsApp enviada com sucesso para ${client.nome}`);
+          if (result.success && result.messageId) {
+            console.log(`✅ Mensagem WhatsApp enviada com sucesso para ${client.nome} (ID: ${result.messageId})`);
+            // ✅ ATUALIZAR whatsappMessageId e status para tracking de ticks
+            await db.update(messages)
+              .set({ 
+                whatsappMessageId: result.messageId,
+                statusEntrega: "enviado"
+              })
+              .where(eq(messages.id, insertedMessage.id));
           } else {
             console.warn(`⚠️ Falha ao enviar WhatsApp para ${client.nome}`);
+            await db.update(messages)
+              .set({ statusEntrega: "erro" })
+              .where(eq(messages.id, insertedMessage.id));
           }
         }
       } else {
@@ -468,6 +479,9 @@ async function executeContractReminder(task: any) {
     }
   } catch (error) {
     console.error(`❌ Erro ao enviar WhatsApp:`, error);
+    await db.update(messages)
+      .set({ statusEntrega: "erro" })
+      .where(eq(messages.id, insertedMessage.id));
   }
   
   // 🚀 BROADCAST VIA WEBSOCKET
@@ -477,12 +491,13 @@ async function executeContractReminder(task: any) {
         type: "new_message",
         conversationId: conversation.id,
         message: {
-          id: "automation-" + Date.now(),
+          id: insertedMessage.id,
           conversationId: conversation.id,
           sender: "user",
           tipo: "texto",
           conteudo: mensagem,
           origem: "automation",
+          statusEntrega: "enviado",
           createdAt: new Date(),
         },
         timestamp: new Date(),
@@ -549,15 +564,16 @@ async function executeContratoEnviadoMessage(task: any) {
   const randomIndex = Math.floor(Math.random() * messages_templates.length);
   const mensagem = messages_templates[randomIndex];
   
-  // 1️⃣ REGISTRAR MENSAGEM NO CHAT PRIMEIRO
-  await db.insert(messages).values({
+  // 1️⃣ REGISTRAR MENSAGEM NO CHAT PRIMEIRO (com tracking de status)
+  const [insertedMessage] = await db.insert(messages).values({
     conversationId: conversation.id,
-    sender: "user",  // ✅ Mostrar como mensagem enviada no chat
-    tipo: "texto",   // ✅ Corrigido: "texto" não "text"
+    sender: "user",
+    tipo: "texto",
     conteudo: mensagem,
-    origem: "automation",  // ✅ Marcar como mensagem de IA/automação
+    origem: "automation",
+    statusEntrega: "pendente",
     createdAt: new Date(),
-  });
+  }).returning();
 
   // ✅ ATUALIZAR ultimaMensagemEm para a conversa ir para o topo da fila
   await db.update(conversations).set({
@@ -604,14 +620,27 @@ async function executeContratoEnviadoMessage(task: any) {
           try {
             console.log(`📱 Enviando contrato via WhatsApp para ${telefone}...`);
             const result = await whatsappService.sendMessage(session.sessionId, telefone, mensagem);
-            if (result.success) {
-              console.log(`✅ Contrato enviado via WhatsApp com sucesso para ${client.nome}`);
+            if (result.success && result.messageId) {
+              console.log(`✅ Contrato enviado via WhatsApp com sucesso para ${client.nome} (ID: ${result.messageId})`);
               whatsappEnviado = true;
+              // ✅ ATUALIZAR whatsappMessageId e status para tracking de ticks
+              await db.update(messages)
+                .set({ 
+                  whatsappMessageId: result.messageId,
+                  statusEntrega: "enviado"
+                })
+                .where(eq(messages.id, insertedMessage.id));
             } else {
               console.warn(`⚠️ Falha ao enviar contrato via WhatsApp para ${client.nome}`);
+              await db.update(messages)
+                .set({ statusEntrega: "erro" })
+                .where(eq(messages.id, insertedMessage.id));
             }
           } catch (error) {
             console.error(`❌ Erro ao enviar mensagem via WhatsApp:`, error);
+            await db.update(messages)
+              .set({ statusEntrega: "erro" })
+              .where(eq(messages.id, insertedMessage.id));
           }
         } else {
           console.warn(`⚠️ Sessão WhatsApp não está viva (isAlive=false). Mensagem só no chat.`);
@@ -624,6 +653,9 @@ async function executeContratoEnviadoMessage(task: any) {
     }
   } catch (error) {
     console.error(`❌ Erro ao enviar WhatsApp:`, error);
+    await db.update(messages)
+      .set({ statusEntrega: "erro" })
+      .where(eq(messages.id, insertedMessage.id));
   }
   
   // 🚀 BROADCAST VIA WEBSOCKET
@@ -633,12 +665,13 @@ async function executeContratoEnviadoMessage(task: any) {
         type: "new_message",
         conversationId: conversation.id,
         message: {
-          id: "automation-" + Date.now(),
+          id: insertedMessage.id,
           conversationId: conversation.id,
           sender: "user",
           tipo: "texto",
           conteudo: mensagem,
           origem: "automation",
+          statusEntrega: "enviado",
           createdAt: new Date(),
         },
         timestamp: new Date(),
@@ -905,14 +938,15 @@ async function executeAguardandoAceiteReminder(task: any) {
   }
   
   // Registrar mensagem no banco (salvando como "user" para aparecer no chat como mensagem enviada)
-  await db.insert(messages).values({
+  const [insertedMessage] = await db.insert(messages).values({
     conversationId: conversation.id,
-    sender: "user",  // ✅ Mostrar como mensagem enviada no chat
+    sender: "user",
     tipo: "texto",
-    origem: "automation",  // ✅ Marcar como mensagem de IA/automação
+    origem: "automation",
     conteudo: mensagem,
+    statusEntrega: "pendente",
     createdAt: new Date(),
-  });
+  }).returning();
 
   // ✅ ATUALIZAR ultimaMensagemEm para a conversa ir para o topo da fila
   await db.update(conversations).set({
@@ -958,10 +992,20 @@ async function executeAguardandoAceiteReminder(task: any) {
           
           console.log(`📱 Enviando lembrete ${lembreteNum} via WhatsApp para ${telefone}...`);
           const result = await whatsappService.sendMessage(session.sessionId, telefone, mensagem);
-          if (result.success) {
-            console.log(`✅ Lembrete ${lembreteNum}/3 enviado via WhatsApp com sucesso para ${client.nome}`);
+          if (result.success && result.messageId) {
+            console.log(`✅ Lembrete ${lembreteNum}/3 enviado via WhatsApp com sucesso para ${client.nome} (ID: ${result.messageId})`);
+            // ✅ ATUALIZAR whatsappMessageId e status para tracking de ticks
+            await db.update(messages)
+              .set({ 
+                whatsappMessageId: result.messageId,
+                statusEntrega: "enviado"
+              })
+              .where(eq(messages.id, insertedMessage.id));
           } else {
             console.warn(`⚠️ Falha ao enviar lembrete via WhatsApp para ${client.nome}`);
+            await db.update(messages)
+              .set({ statusEntrega: "erro" })
+              .where(eq(messages.id, insertedMessage.id));
           }
         }
       } else {
@@ -972,21 +1016,25 @@ async function executeAguardandoAceiteReminder(task: any) {
     }
   } catch (error) {
     console.error(`❌ Erro ao enviar WhatsApp:`, error);
+    await db.update(messages)
+      .set({ statusEntrega: "erro" })
+      .where(eq(messages.id, insertedMessage.id));
   }
   
   // 🚀 BROADCAST VIA WEBSOCKET
-  wsClients.forEach((client) => {
+  wsClients.forEach((wsClient) => {
     try {
-      client.send(JSON.stringify({
+      wsClient.send(JSON.stringify({
         type: "new_message",
         conversationId: conversation.id,
         message: {
-          id: "automation-" + Date.now(),
+          id: insertedMessage.id,
           conversationId: conversation.id,
           sender: "user",
           tipo: "texto",
           conteudo: mensagem,
           origem: "automation",
+          statusEntrega: "enviado",
           createdAt: new Date(),
         },
         timestamp: new Date(),

@@ -418,15 +418,16 @@ async function processIncomingMessages(sessionId: string, m: any) {
                   if (ultimaMsgAutomatica.length === 0) {
                     console.log(`🚀 [RESPOSTA POSITIVA] Preparando envio automático...`);
                     
-                    // 💬 SALVAR MENSAGEM NO CHAT (igual aos outros jobs)
-                    const savedMessage = await storage.createMessage({
+                    // 💬 SALVAR MENSAGEM NO CHAT (com status pendente para tracking)
+                    const [savedMessage] = await db.insert(messages).values({
                       conversationId: conversation.id,
-                      sender: "user",           // ✅ "user" para aparecer como enviada
+                      sender: "user",
                       tipo: "texto",
                       conteudo: mensagemAutomatica,
-                      origem: "automation",     // ✅ Marca "- enviado por IA"
-                    });
-                    console.log(`💬 [CHAT] Mensagem salva: ${savedMessage.id}`);
+                      origem: "automation",
+                      statusEntrega: "pendente",
+                    }).returning();
+                    console.log(`💬 [CHAT] Mensagem salva com tracking: ${savedMessage.id}`);
                     
                     // 📡 BROADCAST VIA WEBSOCKET (para aparecer imediatamente no chat)
                     try {
@@ -460,7 +461,7 @@ async function processIncomingMessages(sessionId: string, m: any) {
                     });
                     console.log(`📝 [TIMELINE] Interação criada`);
                     
-                    // 📱 ENVIAR VIA WHATSAPP COM DELAY RANDOMICO (fire-and-forget)
+                    // 📱 ENVIAR VIA WHATSAPP COM DELAY RANDOMICO
                     if (client?.celular && isSessionAlive(sessionId)) {
                       // Formatar telefone (adiciona 55 se não tiver)
                       let telefone = client.celular.replace(/\D/g, "");
@@ -472,21 +473,40 @@ async function processIncomingMessages(sessionId: string, m: any) {
                       const delayMs = (Math.random() * 20 + 20) * 1000;
                       console.log(`⏱️ [DELAY] Aguardando ${Math.round(delayMs / 1000)}s antes de enviar para WhatsApp (${telefone})...`);
                       
-                      // Fire-and-forget: não espera o timeout
+                      // Salvar referência para atualizar status depois
+                      const messageId = savedMessage.id;
+                      
                       setTimeout(async () => {
                         try {
                           if (isSessionAlive(sessionId)) {
                             const result = await sendMessage(sessionId, telefone, mensagemAutomatica);
-                            if (result.success) {
-                              console.log(`✅ [WHATSAPP] Mensagem automática enviada com sucesso para ${telefone}`);
+                            if (result.success && result.messageId) {
+                              console.log(`✅ [WHATSAPP] Mensagem automática enviada com sucesso para ${telefone} (ID: ${result.messageId})`);
+                              // ✅ ATUALIZAR whatsappMessageId e status para tracking de ticks
+                              await db.update(messages)
+                                .set({ 
+                                  whatsappMessageId: result.messageId,
+                                  statusEntrega: "enviado"
+                                })
+                                .where(eq(messages.id, messageId));
+                              console.log(`✅ [TRACKING] Status atualizado para "enviado" com ID: ${result.messageId}`);
                             } else {
                               console.warn(`⚠️ [WHATSAPP] Falha ao enviar para ${telefone}`);
+                              await db.update(messages)
+                                .set({ statusEntrega: "erro" })
+                                .where(eq(messages.id, messageId));
                             }
                           } else {
                             console.warn(`⚠️ [WHATSAPP] Sessão não mais ativa ao tentar enviar`);
+                            await db.update(messages)
+                              .set({ statusEntrega: "erro" })
+                              .where(eq(messages.id, messageId));
                           }
                         } catch (err) {
                           console.warn(`⚠️ [WHATSAPP] Erro ao enviar (ignorado):`, err);
+                          await db.update(messages)
+                            .set({ statusEntrega: "erro" })
+                            .where(eq(messages.id, messageId));
                         }
                       }, delayMs);
                     } else {
