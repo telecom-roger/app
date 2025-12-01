@@ -1873,18 +1873,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let agendadaPara = new Date(dataAgendada || new Date());
       agendadaPara.setSeconds(agendadaPara.getSeconds() + 3); // 3 segundos de delay
       
-      // ✅ Criar campanha agendada (unificada) ao invés de enviar direto
-      const [campaign] = await db.insert(campaignsTable).values({
+      // ✅ Criar campanha com schema validado (consistente com /api/campaigns/schedule)
+      const validatedData = insertCampaignSchema.parse({
         nome: campanhaNome,
         tipo: "whatsapp",
+        templateId: null, // Broadcasts não usam templates - só mensagem direta
         status: "agendada",
         filtros: filtros || {},
+        totalRecipients: 0,
         agendadaPara,
         tempoFixoSegundos,
         tempoAleatorioMin,
         tempoAleatorioMax,
         createdBy: user.id,
-      }).returning();
+      });
+
+      const [campaign] = await db.insert(campaignsTable).values(validatedData).returning();
 
       console.log(`✅ BROADCAST UNIFICADO: Campanha ${campaign.id} agendada para ${agendadaPara.toISOString()} (origem: ${origemDisparo})`);
 
