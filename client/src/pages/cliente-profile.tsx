@@ -30,6 +30,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { EditableField } from "@/components/EditableField";
+import { SelectableField } from "@/components/SelectableField";
 import { AddClientNote } from "@/components/AddClientNote";
 import { ClientNoteItem } from "@/components/ClientNoteItem";
 import { CreateOpportunityPopover } from "@/components/CreateOpportunityPopover";
@@ -212,11 +213,12 @@ export default function ClienteProfile() {
                   label="Email"
                   data-testid="field-email"
                 />
-                <EditableField
+                <SelectableField
                   value={cliente?.carteira}
                   field="carteira"
                   clientId={id || ""}
                   label="Carteira"
+                  endpoint="/api/clients/carteiras"
                   data-testid="field-carteira"
                 />
               </div>
