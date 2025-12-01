@@ -35,8 +35,8 @@ interface Message {
 // Componente para exibir os ticks de status de entrega
 const DeliveryStatusTicks = ({ status }: { status?: "enviado" | "entregue" | "lido" }) => {
   if (status === "lido") {
-    // Dois ticks azuis - mensagem lida
-    return <span className="text-xs text-blue-400">✓✓</span>;
+    // Dois ticks azuis claros - mensagem lida
+    return <span className="text-xs text-blue-300">✓✓</span>;
   } else if (status === "entregue") {
     // Dois ticks cinza - mensagem entregue
     return <span className="text-xs opacity-70">✓✓</span>;
