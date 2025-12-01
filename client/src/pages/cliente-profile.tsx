@@ -115,26 +115,26 @@ export default function ClienteProfile() {
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Header */}
-      <div className="border-b px-4 py-3 flex items-center justify-between bg-white dark:bg-slate-900">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" asChild data-testid="button-back">
+      <div className="border-b px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between bg-white dark:bg-slate-900">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <Button variant="ghost" size="sm" asChild data-testid="button-back" className="h-8 w-8 sm:h-9 sm:w-9">
             <Link href="/clientes">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h2 className="font-semibold text-lg">{cliente?.nome || "Cliente"}</h2>
+          <h2 className="font-semibold text-sm sm:text-lg truncate">{cliente?.nome || "Cliente"}</h2>
         </div>
-        <div className="flex items-center gap-2">
-          <Button size="icon" variant="ghost" data-testid="button-options">
+        <div className="flex items-center gap-1">
+          <Button size="icon" variant="ghost" data-testid="button-options" className="h-8 w-8 sm:h-9 sm:w-9">
             <MoreVertical className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      {/* Main Layout - 3 Columns */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* LEFT SIDEBAR - Menu & Actions */}
-        <div className="w-64 border-r bg-white dark:bg-slate-900 overflow-y-auto">
+      {/* Main Layout - Responsive Grid */}
+      <div className="flex flex-1 overflow-hidden gap-0">
+        {/* LEFT SIDEBAR - Menu & Actions (Hidden on Mobile) */}
+        <div className="hidden lg:flex lg:w-64 border-r bg-white dark:bg-slate-900 overflow-y-auto flex-col">
           <ScrollArea className="h-full">
             <div className="p-4 space-y-6">
               {/* Client Header Card */}
@@ -265,36 +265,36 @@ export default function ClienteProfile() {
         </div>
 
         {/* CENTER - Timeline/Chat Feed */}
-        <div className="flex-1 border-r flex flex-col">
+        <div className="flex-1 border-r flex flex-col min-w-0">
           {/* Timeline Header */}
-          <div className="border-b px-6 py-4 bg-white dark:bg-slate-900">
-            <h3 className="font-semibold text-sm">Histórico de Interações</h3>
+          <div className="border-b px-3 sm:px-6 py-2 sm:py-4 bg-white dark:bg-slate-900 flex-shrink-0">
+            <h3 className="font-semibold text-xs sm:text-sm">Histórico de Interações</h3>
           </div>
 
           {/* Timeline Feed */}
           <ScrollArea className="flex-1">
-            <div className="p-6 space-y-6">
+            <div className="p-3 sm:p-6 space-y-3 sm:space-y-6">
               {/* Add Client Note Card */}
               {!clienteLoading && cliente && (
                 <>
                   <AddClientNote clientId={cliente.id} />
-                  <Separator className="my-4" />
+                  <Separator className="my-2 sm:my-4" />
                 </>
               )}
               {timelineLoading || notesLoading ? (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="flex gap-4">
-                      <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
-                      <div className="flex-1 space-y-2">
-                        <Skeleton className="h-4 w-48" />
-                        <Skeleton className="h-16 w-full" />
+                    <div key={i} className="flex gap-3 sm:gap-4">
+                      <Skeleton className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex-shrink-0" />
+                      <div className="flex-1 space-y-2 min-w-0">
+                        <Skeleton className="h-3 w-32 sm:h-4 sm:w-48" />
+                        <Skeleton className="h-12 sm:h-16 w-full" />
                       </div>
                     </div>
                   ))}
                 </div>
               ) : clientNotes && clientNotes.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {/* Mostrar client notes primeiro (mais recentes no topo) */}
                   {clientNotes.map((note) => (
                     <ClientNoteItem key={note.id} note={note} clientId={id || ""} />
@@ -302,7 +302,7 @@ export default function ClienteProfile() {
                   {/* Depois mostrar timeline items */}
                   {timeline && timeline.length > 0 && (
                     <>
-                      <Separator className="my-4" />
+                      <Separator className="my-2 sm:my-4" />
                       {timeline.map((item) => (
                         <TimelineItem key={item.id} item={item} />
                       ))}
@@ -310,16 +310,16 @@ export default function ClienteProfile() {
                   )}
                 </div>
               ) : timeline && timeline.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {timeline.map((item) => (
                     <TimelineItem key={item.id} item={item} />
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <FileText className="h-12 w-12 text-muted-foreground/30 mb-3" />
-                  <p className="text-sm text-muted-foreground">Nenhuma interação registrada</p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                <div className="flex flex-col items-center justify-center py-8 sm:py-16 text-center">
+                  <FileText className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground/30 mb-2 sm:mb-3" />
+                  <p className="text-xs sm:text-sm text-muted-foreground">Nenhuma interação registrada</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
                     As interações com este cliente aparecerão aqui
                   </p>
                 </div>
@@ -328,8 +328,8 @@ export default function ClienteProfile() {
           </ScrollArea>
         </div>
 
-        {/* RIGHT SIDEBAR - Client Information */}
-        <div className="w-80 bg-white dark:bg-slate-900 border-l overflow-y-auto">
+        {/* RIGHT SIDEBAR - Client Information (Hidden on Mobile & Tablet) */}
+        <div className="hidden xl:flex xl:w-80 bg-white dark:bg-slate-900 border-l overflow-y-auto flex-col">
           <ScrollArea className="h-full">
             <div className="p-4 space-y-6">
               {/* Status Badge */}
@@ -527,27 +527,27 @@ function TimelineItem({ item }: { item: any }) {
 function ProfileSkeleton() {
   return (
     <div className="h-screen flex flex-col">
-      <div className="border-b px-4 py-3">
-        <Skeleton className="h-6 w-32" />
+      <div className="border-b px-3 sm:px-4 py-2 sm:py-3">
+        <Skeleton className="h-5 sm:h-6 w-24 sm:w-32" />
       </div>
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar */}
-        <div className="w-64 border-r p-4 space-y-4">
+        {/* Left Sidebar (Hidden on Mobile) */}
+        <div className="hidden lg:flex lg:w-64 border-r p-4 space-y-4 flex-col">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-8 w-full" />
           ))}
         </div>
         {/* Center */}
-        <div className="flex-1 border-r p-6 space-y-4">
+        <div className="flex-1 border-r p-3 sm:p-6 space-y-3 sm:space-y-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="flex gap-4">
-              <Skeleton className="h-10 w-10 rounded-full" />
-              <Skeleton className="h-20 w-full" />
+            <div key={i} className="flex gap-3 sm:gap-4">
+              <Skeleton className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex-shrink-0" />
+              <Skeleton className="h-16 sm:h-20 w-full" />
             </div>
           ))}
         </div>
-        {/* Right Sidebar */}
-        <div className="w-80 border-l p-4 space-y-4">
+        {/* Right Sidebar (Hidden on Mobile & Tablet) */}
+        <div className="hidden xl:flex xl:w-80 border-l p-4 space-y-4 flex-col">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-12 w-full" />
           ))}
