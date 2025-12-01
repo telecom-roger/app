@@ -1057,20 +1057,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json([]);
       }
 
-      // Fetch all clients that match the clientIds
+      // ✅ Buscar status real do envio da tabela campaign_sendings (não do cliente!)
       const allClients = await db
         .select({
           id: clients.id,
           nome: clients.nome,
           telefone: clients.celular,
           email: clients.email,
-          status: clients.status,
+          status: campaignSendings.status,
+          erroMensagem: campaignSendings.erroMensagem,
         })
         .from(clients)
+        .leftJoin(
+          campaignSendings, 
+          and(
+            eq(campaignSendings.clientId, clients.id),
+            eq(campaignSendings.campaignId, req.params.id)
+          )
+        )
         .where(inArray(clients.id, clientIds))
         .limit(10000);
 
-      res.json(allClients);
+      // Mapear para formato esperado pelo frontend
+      const result = allClients.map(c => ({
+        id: c.id,
+        nome: c.nome,
+        telefone: c.telefone,
+        email: c.email,
+        status: c.status === 'erro' ? 'Erro' : c.status === 'enviado' ? 'Enviado' : 'Pendente',
+        erroMensagem: c.erroMensagem,
+      }));
+
+      res.json(result);
     } catch (error: any) {
       console.error("Error fetching campaign details:", error);
       res.status(500).json({ error: "Internal server error" });
