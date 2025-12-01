@@ -156,7 +156,8 @@ export default function CampanhasWhatsApp() {
   const [selectedCarteirasFilter, setSelectedCarteirasFilter] = useState<Set<string>>(new Set());
   const [selectedCidadesFilter, setSelectedCidadesFilter] = useState<Set<string>>(new Set());
   const [nomeCampanha, setNomeCampanha] = useState("");
-  const [filtersInitiated, setFiltersInitiated] = useState(false);
+  // ✅ Inicia como true para carregar clientes automaticamente ao abrir seletor
+  const [filtersInitiated, setFiltersInitiated] = useState(true);
   const [selectedSendStatusFilter, setSelectedSendStatusFilter] = useState<Set<string>>(new Set());
   const [cancelandoCampanha, setCanceladoCampanha] = useState<string | null>(null);
   
