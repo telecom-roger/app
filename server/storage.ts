@@ -1102,48 +1102,60 @@ export async function shareClientsWithUser(clientIds: string[], sharedWithUserId
 
 // ==================== CAMPAIGN SENDINGS STORAGE ====================
 export async function recordCampaignSending(data: InsertCampaignSending): Promise<CampaignSending> {
-  // ✅ UPSERT: Verificar se já existe registro para este cliente+campanha
-  // Se existir, atualiza apenas se o novo status for "melhor" (enviado > erro)
-  if (data.campaignId && data.clientId) {
-    const existing = await db
-      .select()
-      .from(campaignSendings)
-      .where(and(
-        eq(campaignSendings.campaignId, data.campaignId),
-        eq(campaignSendings.clientId, data.clientId)
-      ))
-      .limit(1);
-    
-    if (existing.length > 0) {
-      const existingRecord = existing[0];
-      // ✅ Regra: Só atualiza se o novo status for "enviado" ou se não há registro de sucesso ainda
-      // Mantém o primeiro "enviado" e não deixa "erro" sobrescrever
-      if (existingRecord.status === 'enviado') {
-        // Já foi enviado com sucesso - não sobrescreve
-        console.log(`📝 [UPSERT] Cliente ${data.clientId} já tem status 'enviado' - mantendo`);
-        return existingRecord;
-      }
-      
-      // Atualiza o registro existente
-      const [updated] = await db
-        .update(campaignSendings)
-        .set({
-          status: data.status,
-          erroMensagem: data.erroMensagem,
-          dataSending: new Date(),
-          origemDisparo: data.origemDisparo,
-          mensagemUsada: data.mensagemUsada,
-        })
-        .where(eq(campaignSendings.id, existingRecord.id))
-        .returning();
-      
-      console.log(`📝 [UPSERT] Atualizado registro existente para cliente ${data.clientId}: ${data.status}`);
-      return updated;
-    }
-  }
+  // ✅ UPSERT simplificado - guarda a versão de "melhor" status
+  // Prioridade: erro < enviado < entregue < lido
+  // O índice único (campaignId, clientId) garante não haver duplicatas
   
-  // Novo registro
-  const [result] = await db.insert(campaignSendings).values(data).returning();
+  const newStatus = data.status || 'erro';
+  
+  // Função auxiliar para calcular prioridade
+  const getPriority = (status: string) => {
+    const priorities: Record<string, number> = { erro: 1, enviado: 2, entregue: 3, lido: 4 };
+    return priorities[status] || 0;
+  };
+  
+  const newPriority = getPriority(newStatus);
+  
+  const [result] = await db
+    .insert(campaignSendings)
+    .values(data)
+    .onConflictDoUpdate({
+      target: [campaignSendings.campaignId, campaignSendings.clientId],
+      set: {
+        // Status: mantém o de maior prioridade
+        // Se novo >= existente, atualiza. Caso contrário, mantém.
+        status: sql`(
+          SELECT CASE 
+            WHEN ${newPriority} >= (
+              SELECT CASE status 
+                WHEN 'erro' THEN 1 
+                WHEN 'enviado' THEN 2 
+                WHEN 'entregue' THEN 3 
+                WHEN 'lido' THEN 4 
+                ELSE 0 
+              END 
+              FROM campaign_sendings 
+              WHERE campaign_id = ${data.campaignId} AND client_id = ${data.clientId}
+            ) THEN ${newStatus}
+            ELSE (
+              SELECT status 
+              FROM campaign_sendings 
+              WHERE campaign_id = ${data.campaignId} AND client_id = ${data.clientId}
+            )
+          END
+        )`,
+        // Só atualiza erroMensagem se status for erro e estiver substituindo
+        erroMensagem: newStatus === 'erro' ? (data.erroMensagem || null) : null,
+        // Sempre atualiza timestamp
+        dataSending: sql`NOW()`,
+        // Preserva origemDisparo existente se não fornecido
+        origemDisparo: data.origemDisparo || sql`${campaignSendings.origemDisparo}`,
+        // Preserva mensagemUsada existente se não fornecido
+        mensagemUsada: data.mensagemUsada || sql`${campaignSendings.mensagemUsada}`,
+      },
+    })
+    .returning();
+  
   return result;
 }
 

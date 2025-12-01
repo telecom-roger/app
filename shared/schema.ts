@@ -9,6 +9,7 @@ import {
   integer,
   boolean,
   unique,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -561,6 +562,8 @@ export const campaignSendings = pgTable("campaign_sendings", {
   index("idx_campaign_sendings_date").on(table.dataSending),
   index("idx_campaign_sendings_user_client").on(table.userId, table.clientId),
   index("idx_campaign_sendings_origem").on(table.origemDisparo),
+  // ✅ ÚNICO: Evita duplicatas de envio para mesmo cliente na mesma campanha
+  uniqueIndex("idx_campaign_sendings_unique_client_campaign").on(table.campaignId, table.clientId),
 ]);
 
 export const insertCampaignSendingSchema = createInsertSchema(campaignSendings).omit({
