@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -8,6 +8,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+
+// Hook para debounce
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  return debouncedValue;
+}
+
+// Tipo para clientes na listagem
+interface ClientForImport {
+  id: string;
+  nome: string;
+  celular: string;
+  email?: string;
+  status?: string;
+  cidade?: string;
+  tipo?: string;
+  carteira?: string;
+  sendStatus?: string;
+  tags?: { id: string; nome: string; cor: string }[];
+}
 import {
   Select,
   SelectContent,
@@ -110,7 +134,17 @@ export default function CampanhasAgendadas() {
   const [selectedCarteirasFilter, setSelectedCarteirasFilter] = useState<Set<string>>(new Set());
   const [selectedCidadesFilter, setSelectedCidadesFilter] = useState<Set<string>>(new Set());
   const [selectedSendStatusFilter, setSelectedSendStatusFilter] = useState<Set<string>>(new Set());
-  const [filtersInitiated, setFiltersInitiated] = useState(false);
+  // ✅ Inicia como true para carregar clientes automaticamente ao abrir seletor
+  const [filtersInitiated, setFiltersInitiated] = useState(true);
+  
+  // ✅ Estados de paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const [allLoadedClientes, setAllLoadedClientes] = useState<ClientForImport[]>([]);
+  const [totalClientes, setTotalClientes] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  
+  // ✅ Debounce do search (300ms)
+  const debouncedSearch = useDebounce(searchClientes, 300);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -171,63 +205,107 @@ export default function CampanhasAgendadas() {
     enabled: isAuthenticated && showClientSelector,
   });
 
-  const { data: clients = [], isLoading: carregandoClientes, refetch: refetchClients } = useQuery<any[]>({
-    queryKey: ["/api/clients/whatsapp-list"],
+  // ✅ Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+    setAllLoadedClientes([]);
+  }, [selectedTiposFilter, selectedCarteirasFilter, selectedCidadesFilter, selectedSendStatusFilter, debouncedSearch, filtroStatus, selectedTag]);
+
+  // ✅ Fetch clients with PAGINATION + SERVER-SIDE FILTERS
+  const { data: clientesResponse, isLoading: carregandoClientes, isFetching } = useQuery<{
+    data: ClientForImport[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }>({
+    queryKey: [
+      "/api/clients/whatsapp-list",
+      currentPage,
+      Array.from(selectedTiposFilter).sort().join(","),
+      Array.from(selectedCarteirasFilter).sort().join(","),
+      Array.from(selectedCidadesFilter).sort().join(","),
+      Array.from(selectedSendStatusFilter).sort().join(","),
+      debouncedSearch,
+      filtroStatus,
+    ],
     queryFn: async () => {
-      const res = await fetch("/api/clients/whatsapp-list");
+      const params = new URLSearchParams();
+      params.append('page', String(currentPage));
+      params.append('limit', '50');
+      if (selectedTiposFilter.size > 0) {
+        params.append('tipos', Array.from(selectedTiposFilter).join(','));
+      }
+      if (selectedCarteirasFilter.size > 0) {
+        params.append('carteiras', Array.from(selectedCarteirasFilter).join(','));
+      }
+      if (selectedCidadesFilter.size > 0) {
+        params.append('cidades', Array.from(selectedCidadesFilter).join(','));
+      }
+      if (selectedSendStatusFilter.size > 0) {
+        params.append('sendStatus', Array.from(selectedSendStatusFilter).join(','));
+      }
+      if (debouncedSearch && debouncedSearch.length >= 2) {
+        params.append('search', debouncedSearch);
+      }
+      if (filtroStatus && filtroStatus !== 'todos') {
+        params.append('status', filtroStatus);
+      }
+      const res = await fetch(`/api/clients/whatsapp-list?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch clients");
-      const data = await res.json();
-      return Array.isArray(data) ? data : [];
+      return res.json();
     },
     enabled: isAuthenticated && showClientSelector && filtersInitiated,
-    refetchInterval: filtersInitiated && showClientSelector ? 1000 : false, // Refetch every 1s when filters are active
-    staleTime: 0, // Always consider data stale to enable constant refetch
+    staleTime: 30000,
   });
 
-  // Detect when filters are initiated
+  // ✅ Accumulate loaded clients for "Load More" pattern
   useEffect(() => {
-    if (
-      searchClientes ||
-      filtroStatus !== "todos" ||
-      selectedTag ||
-      selectedTiposFilter.size > 0 ||
-      selectedCarteirasFilter.size > 0 ||
-      selectedCidadesFilter.size > 0 ||
-      selectedSendStatusFilter.size > 0 ||
-      dataEnvioInicio ||
-      dataEnvioFim
-    ) {
-      setFiltersInitiated(true);
-    }
-  }, [searchClientes, filtroStatus, selectedTag, selectedTiposFilter, selectedCarteirasFilter, selectedCidadesFilter, selectedSendStatusFilter, dataEnvioInicio, dataEnvioFim]);
-
-  // Immediately refetch when send status filter changes for real-time updates
-  useEffect(() => {
-    if (showClientSelector && filtersInitiated && selectedSendStatusFilter.size > 0) {
-      refetchClients();
-    }
-  }, [selectedSendStatusFilter]);
-
-  // Filter clients by all criteria
-  const clientesFiltrados = clients
-    .filter((c) => {
-      const searchMatch = c.nome.toLowerCase().includes(searchClientes.toLowerCase()) ||
-        (c.celular || "").includes(searchClientes);
-      const statusMatch = filtroStatus === "todos" || c.status?.toLowerCase() === filtroStatus.toLowerCase();
-      const tagMatch = selectedTag === null || (c.tags && c.tags.some((t: any) => t.nome === selectedTag));
-      const tipoMatch = selectedTiposFilter.size === 0 || (c.tipo && selectedTiposFilter.has(c.tipo));
-      const carteiraMatch = selectedCarteirasFilter.size === 0 || (c.carteira && selectedCarteirasFilter.has(c.carteira));
-      const cidadeMatch = selectedCidadesFilter.size === 0 || (c.cidade && selectedCidadesFilter.has(c.cidade));
-      const sendStatusMatch = selectedSendStatusFilter.size === 0 || (c.sendStatus && selectedSendStatusFilter.has(c.sendStatus));
-      return searchMatch && statusMatch && tagMatch && tipoMatch && carteiraMatch && cidadeMatch && sendStatusMatch;
-    })
-    .sort((a, b) => {
-      if (orderBy === "recent") {
-        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+    if (clientesResponse?.data) {
+      if (currentPage === 1) {
+        setAllLoadedClientes(clientesResponse.data);
       } else {
-        return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+        setAllLoadedClientes(prev => {
+          const existingIds = new Set(prev.map(c => c.id));
+          const newClients = clientesResponse.data.filter((c: ClientForImport) => !existingIds.has(c.id));
+          return [...prev, ...newClients];
+        });
       }
-    });
+      setTotalClientes(clientesResponse.total);
+      setTotalPages(clientesResponse.totalPages);
+    }
+  }, [clientesResponse, currentPage]);
+
+  // ✅ Compatibilidade: alias para código existente
+  const clientesDisponiveis = allLoadedClientes;
+
+  // ✅ FILTROS AGORA SÃO SERVER-SIDE - clientesDisponiveis já vem filtrado
+  // Apenas filtro por tag local se necessário (tags não estão no server filter ainda)
+  const clientesFiltrados = useMemo(() => {
+    if (!selectedTag) return clientesDisponiveis;
+    return clientesDisponiveis.filter((c: ClientForImport) => c.tags && c.tags.some(t => t.nome === selectedTag));
+  }, [clientesDisponiveis, selectedTag]);
+
+  // Funções de seleção de clientes
+  const selecionarTodos = () => {
+    const todosIds = new Set(clientesFiltrados.map((c) => c.id));
+    setClientesSelecionados(todosIds);
+  };
+
+  const selecionarAleatorios = () => {
+    const quantidade = parseInt(quantidadeAleatoria) || 50;
+    if (quantidade <= 0 || quantidade > clientesFiltrados.length) {
+      toast({
+        title: "Erro",
+        description: `Quantidade deve estar entre 1 e ${clientesFiltrados.length}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    const shuffled = [...clientesFiltrados].sort(() => Math.random() - 0.5);
+    const selected = shuffled.slice(0, quantidade);
+    setClientesSelecionados(new Set(selected.map((c) => c.id)));
+  };
 
 
   // Toggle client selection
@@ -784,18 +862,14 @@ export default function CampanhasAgendadas() {
                       min={1}
                       max={clientesFiltrados.length}
                       value={quantidadeAleatoria}
-                      onChange={(e) => setQuantidadeAleatoria(Math.max(1, parseInt(e.target.value) || 1))}
+                      onChange={(e) => setQuantidadeAleatoria(e.target.value)}
                       className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 h-8 w-14 text-xs"
                       data-testid="input-quantidade-aleatoria-filters"
                     />
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => {
-                        const shuffled = [...clientesFiltrados].sort(() => Math.random() - 0.5);
-                        const selected = shuffled.slice(0, quantidadeAleatoria);
-                        setClientesSelecionados(new Set(selected.map((c) => c.id)));
-                      }}
+                      onClick={selecionarAleatorios}
                       disabled={clientesFiltrados.length === 0}
                       className="h-8 text-xs"
                       data-testid="button-selecionar-aleatorios-filters"
@@ -816,15 +890,18 @@ export default function CampanhasAgendadas() {
                 </div>
               )}
 
-              {/* Info Line: Counter */}
+              {/* Info Line: Counter - ✅ Mostra total do servidor */}
               <div className="text-xs font-medium text-slate-700 dark:text-slate-300 pt-1">
-                <span className="text-blue-600 dark:text-blue-400">{clientesFiltrados.length}</span>
-                {" cliente" + (clientesFiltrados.length !== 1 ? "s" : "")} •
-                {clientesSelecionados.size > 0 && <span className="ml-2"><span className="text-green-600 dark:text-green-400">{clientesSelecionados.size}</span> selecionado{clientesSelecionados.size !== 1 ? "s" : ""}</span>}
+                <span className="text-blue-600 dark:text-blue-400">{totalClientes > 0 ? totalClientes : clientesFiltrados.length}</span>
+                {" cliente" + (totalClientes !== 1 ? "s" : "")} 
+                {allLoadedClientes.length < totalClientes && (
+                  <span className="text-slate-500"> ({allLoadedClientes.length} carregados)</span>
+                )}
+                {clientesSelecionados.size > 0 && <span className="ml-2">• <span className="text-green-600 dark:text-green-400">{clientesSelecionados.size}</span> selecionado{clientesSelecionados.size !== 1 ? "s" : ""}</span>}
               </div>
             </div>
 
-            {/* Clients List - Expanded */}
+            {/* ✅ LISTA DE CLIENTES - Layout Compacto Inline */}
             {!filtersInitiated ? (
               <div className="flex-1 flex items-center justify-center text-slate-600 dark:text-slate-400">
                 <div className="text-center">
@@ -833,7 +910,7 @@ export default function CampanhasAgendadas() {
                   <p className="text-sm">Clique em um filtro acima para carregar clientes</p>
                 </div>
               </div>
-            ) : carregandoClientes ? (
+            ) : carregandoClientes && currentPage === 1 ? (
               <div className="flex-1 flex items-center justify-center text-slate-600 dark:text-slate-400">
                 <div className="text-center">
                   <Loader className="h-8 w-8 animate-spin mx-auto mb-2" />
@@ -842,35 +919,84 @@ export default function CampanhasAgendadas() {
               </div>
             ) : (
               <ScrollArea className="flex-1 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-950">
-                <div className="p-6">
+                <div className="p-3">
                   {clientesFiltrados.length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="space-y-1.5">
                       {clientesFiltrados.map((client) => (
                         <div
                           key={client.id}
-                          className="flex items-start gap-3 p-4 rounded-lg bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800/70 transition-colors border border-slate-100 dark:border-slate-800"
-                          data-testid={`card-cliente-${client.id}`}
+                          onClick={() => toggleClienteSelecionado(client.id)}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer transition-colors border ${
+                            clientesSelecionados.has(client.id) 
+                              ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800' 
+                              : 'bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800/70 border-transparent'
+                          }`}
+                          data-testid={`row-cliente-${client.id}`}
                         >
                           <Checkbox
                             checked={clientesSelecionados.has(client.id)}
                             onCheckedChange={() => toggleClienteSelecionado(client.id)}
+                            onClick={(e) => e.stopPropagation()}
                             data-testid={`checkbox-cliente-${client.id}`}
-                            className="mt-1"
+                            className="flex-shrink-0"
                           />
-                          <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-slate-900 dark:text-white text-base">{client.nome}</div>
-                            <div className="text-sm text-slate-600 dark:text-slate-400 mt-1 space-y-1">
-                              <div>📞 {client.celular}</div>
-                              {client.email && <div>✉️ {client.email}</div>}
-                              {client.status && <div>Status: <span className="font-medium text-slate-700 dark:text-slate-300">{client.status.toUpperCase()}</span></div>}
-                              {client.cidade && <div>📍 {client.cidade}</div>}
-                              {client.tipo && <div>Tipo: <span className="font-medium text-slate-700 dark:text-slate-300">{client.tipo}</span></div>}
-                              {client.carteira && <div>Carteira: <span className="font-medium text-slate-700 dark:text-slate-300">{client.carteira}</span></div>}
-                              {client.sendStatus && <div>Envio: <span className="font-medium text-slate-700 dark:text-slate-300 capitalize">{client.sendStatus === 'nao_enviado' ? 'Não Enviado' : client.sendStatus}</span></div>}
-                            </div>
+                          {/* Nome truncado */}
+                          <div className="flex-1 min-w-0 truncate font-medium text-sm text-slate-900 dark:text-white">
+                            {client.nome}
                           </div>
+                          {/* Telefone */}
+                          <div className="flex-shrink-0 text-xs text-slate-600 dark:text-slate-400 font-mono">
+                            {client.celular}
+                          </div>
+                          {/* Status Badge */}
+                          <Badge variant="outline" className="flex-shrink-0 text-[10px] px-1.5 py-0 h-5 capitalize">
+                            {client.status || 'N/A'}
+                          </Badge>
+                          {/* Carteira Badge */}
+                          {client.carteira && (
+                            <Badge variant="secondary" className="flex-shrink-0 text-[10px] px-1.5 py-0 h-5 max-w-[80px] truncate">
+                              {client.carteira}
+                            </Badge>
+                          )}
+                          {/* Send Status Badge */}
+                          <Badge 
+                            className={`flex-shrink-0 text-[10px] px-1.5 py-0 h-5 ${
+                              client.sendStatus === 'enviado' 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' 
+                                : client.sendStatus === 'erro' 
+                                  ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300' 
+                                  : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                            }`}
+                          >
+                            {client.sendStatus === 'enviado' ? '✓' : client.sendStatus === 'erro' ? '✕' : '○'}
+                          </Badge>
                         </div>
                       ))}
+                      
+                      {/* ✅ Botão Carregar Mais */}
+                      {currentPage < totalPages && (
+                        <div className="pt-3 text-center">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(p => p + 1)}
+                            disabled={isFetching}
+                            className="w-full"
+                            data-testid="button-carregar-mais"
+                          >
+                            {isFetching ? (
+                              <>
+                                <Loader className="h-4 w-4 animate-spin mr-2" />
+                                Carregando...
+                              </>
+                            ) : (
+                              <>
+                                Carregar mais ({allLoadedClientes.length} de {totalClientes})
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="text-center py-16 text-slate-600 dark:text-slate-400">
