@@ -1137,8 +1137,9 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
         }
         
         // Registra interação (não falha se der erro)
+        // ✅ CORRIGIDO: Verificar origemDisparo nos filtros (não "origem")
+        const origemDisparo = (campaign.filtros as any)?.origemDisparo === 'envio_imediato' ? 'envio_imediato' : 'agendamento';
         try {
-          const origemDisparo = campaign.filtros?.origem === 'envio_imediato' ? 'envio_imediato' : 'agendamento';
           await storage.createInteraction({
             clientId: client.id,
             tipo: 'whatsapp_enviado',
@@ -1160,7 +1161,6 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
 
         // Registra em campaign_sendings
         try {
-          const origemDisparo = campaign.filtros?.origem === 'envio_imediato' ? 'envio_imediato' : 'agendamento';
           await storage.recordCampaignSending({
             userId: campaign.createdBy,
             campaignId: campaign.id,
