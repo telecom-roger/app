@@ -2772,13 +2772,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Create message record first with pending status
-      const forwardedContent = messageType === "texto" 
-        ? `📤 Encaminhada:\n${messageContent}` 
-        : messageContent;
-
+      // Don't add prefix to content - use origem: "forward" for internal display
+      // For media, if no content, use a placeholder description
+      const displayContent = messageContent || (messageType === "imagem" ? "[Imagem]" : 
+        messageType === "audio" ? "[Áudio]" : 
+        messageType === "documento" ? `[${nomeArquivo || "Documento"}]` : "");
+      
       const messageRecord: any = {
         conversationId: targetConversation.id,
-        conteudo: forwardedContent,
+        conteudo: displayContent,
         sender: "user",
         tipo: messageType || "texto",
         lido: false,
@@ -2796,23 +2798,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Always save message (we always have a conversation now)
       const [savedMessage] = await db.insert(messages).values(messageRecord).returning();
 
-      // Send via WhatsApp
+      // Send via WhatsApp (send original content without prefix)
       let whatsappResult: any;
       try {
         if (messageType === "imagem" && arquivo) {
-          whatsappResult = await whatsappService.sendImage(session.sessionId, normalizedPhone, arquivo, forwardedContent || "");
+          whatsappResult = await whatsappService.sendImage(session.sessionId, normalizedPhone, arquivo, messageContent || "");
         } else if (messageType === "audio" && arquivo) {
           whatsappResult = await whatsappService.sendAudio(session.sessionId, normalizedPhone, arquivo);
         } else if (messageType === "documento" && arquivo) {
           whatsappResult = await whatsappService.sendDocument(session.sessionId, normalizedPhone, arquivo, nomeArquivo || "documento");
         } else {
-          whatsappResult = await whatsappService.sendMessage(session.sessionId, normalizedPhone, forwardedContent);
+          whatsappResult = await whatsappService.sendMessage(session.sessionId, normalizedPhone, messageContent);
         }
 
         console.log(`✅ [FORWARD] Mensagem encaminhada para ${normalizedPhone}:`, whatsappResult);
 
         // Update message with WhatsApp ID and delivery status
-        const whatsappMessageId = whatsappResult?.id || whatsappResult?.key?.id;
+        // The sendMessage functions return { success: true, messageId: result.key.id }
+        const whatsappMessageId = whatsappResult?.messageId;
+        console.log(`📝 [FORWARD] WhatsApp Message ID capturado:`, whatsappMessageId);
+        
         await db.update(messages)
           .set({ 
             whatsappMessageId: whatsappMessageId || null,
@@ -2823,7 +2828,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Update conversation last message
         await db.update(conversations)
           .set({
-            ultimaMensagem: forwardedContent.substring(0, 100),
+            ultimaMensagem: displayContent?.substring(0, 100) || "[mídia]",
             ultimaMensagemEm: new Date(),
           })
           .where(eq(conversations.id, targetConversation.id));

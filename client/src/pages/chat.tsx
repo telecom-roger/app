@@ -1555,7 +1555,12 @@ export default function Chat() {
                             </p>
                             {msg.origem === "automation" && (
                               <span className="text-xs opacity-60 italic" data-testid={`badge-ai-${msg.id}`}>
-                                enviado por IA
+                                - enviado por IA
+                              </span>
+                            )}
+                            {msg.origem === "forward" && (
+                              <span className="text-xs opacity-60 italic" data-testid={`badge-forward-${msg.id}`}>
+                                - encaminhada
                               </span>
                             )}
                           </div>
