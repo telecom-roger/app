@@ -66,14 +66,11 @@ export function SelectableField({
     }
   };
 
-  // Always include current value in the options
-  const uniqueOptions = new Set([
-    value ?? undefined, // Include current value even if undefined
+  // Always include current value in the options - ensure it appears even if not in the API list
+  const allOptions = [
+    ...(value && !options.includes(value) ? [value] : []),
     ...options,
-  ]);
-  const allOptions = Array.from(uniqueOptions).filter((opt) => opt !== undefined);
-
-  const displayValue = value ?? "";
+  ];
 
   return (
     <div
@@ -81,22 +78,16 @@ export function SelectableField({
       data-testid={testId || `field-${field}`}
     >
       <p className="text-xs text-muted-foreground mb-2">{label}</p>
-      <Select value={displayValue} onValueChange={handleSave} disabled={isLoading}>
+      <Select value={value || ""} onValueChange={handleSave} disabled={isLoading}>
         <SelectTrigger className="h-8 text-sm">
-          <SelectValue placeholder="Selecione..." />
+          <SelectValue placeholder="Selecione uma carteira..." />
         </SelectTrigger>
         <SelectContent>
-          {allOptions.length > 0 ? (
-            allOptions.map((option) => (
-              <SelectItem key={option || "empty"} value={option || ""}>
-                {option || "Sem carteira"}
-              </SelectItem>
-            ))
-          ) : (
-            <SelectItem value="" disabled>
-              Carregando...
+          {allOptions.map((option) => (
+            <SelectItem key={option} value={option}>
+              {option}
             </SelectItem>
-          )}
+          ))}
         </SelectContent>
       </Select>
       {isLoading && <Loader2 className="h-4 w-4 animate-spin mt-1" />}
