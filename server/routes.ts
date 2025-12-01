@@ -2595,8 +2595,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (msg.whatsappMessageId && conversation.clientId) {
         console.log(`🗑️ [DELETE ENDPOINT] Tem whatsappMessageId, buscando cliente...`);
         try {
-          // Buscar telefone do cliente
-          const cliente = await storage.getClient(conversation.clientId);
+          // Buscar telefone do cliente diretamente do banco
+          const [cliente] = await db
+            .select()
+            .from(clients)
+            .where(eq(clients.id, conversation.clientId))
+            .limit(1);
           const telefone = cliente?.celular || cliente?.telefone2;
           
           console.log(`🗑️ [DELETE ENDPOINT] Cliente: ${cliente?.nome}, telefone: ${telefone}`);
