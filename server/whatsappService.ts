@@ -662,9 +662,15 @@ export async function sendMessage(sessionId: string, telefone: string, mensagem:
 
     console.log(`📤 Enviando mensagem para ${jid}...`);
     
-    await sock.sendMessage(jid, { text: mensagem });
+    const result = await sock.sendMessage(jid, { text: mensagem });
     
-    console.log(`✅ Mensagem enviada com sucesso para ${jid}`);
+    // ✅ VALIDAÇÃO RIGOROSA: Verificar se realmente foi enviado
+    if (!result || !result.key || !result.key.id) {
+      console.error(`❌ Falha ao enviar para ${jid}: Resposta inválida ou sem ID. Retorno:`, result);
+      return false;
+    }
+    
+    console.log(`✅ Mensagem enviada com sucesso para ${jid}. Message ID: ${result.key.id}`);
     return true;
   } catch (error) {
     console.error(`❌ Erro ao enviar mensagem para ${telefone}:`, error);
@@ -689,12 +695,18 @@ export async function sendImage(sessionId: string, telefone: string, imageBase64
     console.log(`📤 Enviando imagem para ${jid}...`);
     
     const buffer = Buffer.from(imageBase64.split(",")[1] || imageBase64, "base64");
-    await sock.sendMessage(jid, { 
+    const result = await sock.sendMessage(jid, { 
       image: buffer,
       caption: caption || ""
     });
     
-    console.log(`✅ Imagem enviada com sucesso para ${jid}`);
+    // ✅ VALIDAÇÃO RIGOROSA
+    if (!result || !result.key || !result.key.id) {
+      console.error(`❌ Falha ao enviar imagem para ${jid}: Resposta inválida. Retorno:`, result);
+      return false;
+    }
+    
+    console.log(`✅ Imagem enviada com sucesso para ${jid}. Message ID: ${result.key.id}`);
     return true;
   } catch (error) {
     console.error(`❌ Erro ao enviar imagem para ${telefone}:`, error);
@@ -776,7 +788,13 @@ export async function sendAudio(sessionId: string, telefone: string, audioBase64
       ptt: true
     });
     
-    console.log(`✅ Áudio enviado com sucesso para ${jid}. Message ID:`, result.key?.id);
+    // ✅ VALIDAÇÃO RIGOROSA
+    if (!result || !result.key || !result.key.id) {
+      console.error(`❌ Falha ao enviar áudio para ${jid}: Resposta inválida. Retorno:`, result);
+      return false;
+    }
+    
+    console.log(`✅ Áudio enviado com sucesso para ${jid}. Message ID: ${result.key.id}`);
     return true;
   } catch (error) {
     console.error(`❌ Erro ao enviar áudio para ${telefone}:`, error);
@@ -803,13 +821,19 @@ export async function sendDocument(sessionId: string, telefone: string, docBase6
     const buffer = Buffer.from(docBase64.split(",")[1] || docBase64, "base64");
     const mimeType = getMimeTypeFromFileName(filename);
     
-    await sock.sendMessage(jid, { 
+    const result = await sock.sendMessage(jid, { 
       document: buffer,
       mimetype: mimeType,
       fileName: filename
     });
     
-    console.log(`✅ Documento enviado com sucesso para ${jid} (${mimeType})`);
+    // ✅ VALIDAÇÃO RIGOROSA
+    if (!result || !result.key || !result.key.id) {
+      console.error(`❌ Falha ao enviar documento para ${jid}: Resposta inválida. Retorno:`, result);
+      return false;
+    }
+    
+    console.log(`✅ Documento enviado com sucesso para ${jid} (${mimeType}). Message ID: ${result.key.id}`);
     return true;
   } catch (error) {
     console.error(`❌ Erro ao enviar documento para ${telefone}:`, error);
