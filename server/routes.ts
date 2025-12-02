@@ -1151,11 +1151,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         respondidos: sendingsData.filter(s => s.totalRespostas && s.totalRespostas > 0).length,
         erros: sendingsData.filter(s => s.status === 'erro').length,
         pendentes: clientIds.length - sendingsData.length,
-        // Engajamento
-        engajamentoAlto: sendingsData.filter(s => s.estadoDerivado === 'engajamento_alto' || s.estadoDerivado === 'respondeu_imediato').length,
-        engajamentoMedio: sendingsData.filter(s => s.estadoDerivado === 'engajamento_medio' || s.estadoDerivado === 'respondeu_24h').length,
-        engajamentoBaixo: sendingsData.filter(s => s.estadoDerivado === 'engajamento_baixo' || s.estadoDerivado === 'visualizou_nao_respondeu').length,
-        semEngajamento: sendingsData.filter(s => s.estadoDerivado === 'sem_engajamento' || s.estadoDerivado === 'nao_visualizado').length,
+        // Engajamento - calculado no mesmo padrão que clientesDetalhados
+        engajamentoAlto: sendingsData.filter(s => {
+          if (s.totalRespostas && s.totalRespostas > 0 && s.dataPrimeiraResposta && s.dataSending) {
+            const tempo = new Date(s.dataPrimeiraResposta).getTime() - new Date(s.dataSending).getTime();
+            return tempo < 3600000;
+          }
+          return false;
+        }).length,
+        engajamentoMedio: sendingsData.filter(s => {
+          if (s.totalRespostas && s.totalRespostas > 0) {
+            if (s.dataPrimeiraResposta && s.dataSending) {
+              const tempo = new Date(s.dataPrimeiraResposta).getTime() - new Date(s.dataSending).getTime();
+              return tempo >= 3600000 && tempo < 86400000;
+            }
+            return true;
+          }
+          return false;
+        }).length,
+        engajamentoBaixo: sendingsData.filter(s => {
+          if (s.status === 'erro') return false;
+          if (s.totalRespostas && s.totalRespostas > 0) {
+            if (s.dataPrimeiraResposta && s.dataSending) {
+              const tempo = new Date(s.dataPrimeiraResposta).getTime() - new Date(s.dataSending).getTime();
+              return tempo >= 86400000;
+            }
+            return false;
+          }
+          return s.status === 'lido' || s.status === 'entregue';
+        }).length,
+        semEngajamento: sendingsData.filter(s => s.status === 'enviado' || s.status === 'erro').length,
       };
 
       // ✅ FORMATAR CLIENTES COM STATUS DETALHADO
@@ -1168,20 +1193,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         else if (s.status === 'entregue') etiqueta = 'Entregue';
         else if (s.status === 'enviado') etiqueta = 'Enviado';
 
-        // Calcular engajamento
-        let engajamento = 'baixo';
-        if (s.totalRespostas && s.totalRespostas > 0) {
+        // Calcular engajamento (entregue = baixo, enviado = nenhum)
+        let engajamento = 'nenhum';
+        if (s.status === 'erro') {
+          engajamento = 'nenhum';
+        } else if (s.totalRespostas && s.totalRespostas > 0) {
           if (s.dataPrimeiraResposta && s.dataSending) {
             const tempoResposta = new Date(s.dataPrimeiraResposta).getTime() - new Date(s.dataSending).getTime();
             if (tempoResposta < 3600000) engajamento = 'alto'; // < 1h
             else if (tempoResposta < 86400000) engajamento = 'medio'; // < 24h
+            else engajamento = 'baixo';
           } else {
             engajamento = 'medio';
           }
         } else if (s.status === 'lido') {
           engajamento = 'baixo';
-        } else if (s.status === 'entregue' || s.status === 'enviado') {
-          engajamento = 'nenhum';
+        } else if (s.status === 'entregue') {
+          engajamento = 'baixo'; // Entregue = baixo engajamento (não nenhum)
+        } else if (s.status === 'enviado') {
+          engajamento = 'nenhum'; // Apenas enviado = sem engajamento ainda
         }
 
         return {

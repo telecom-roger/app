@@ -1191,6 +1191,41 @@ export async function recordCampaignSending(data: InsertCampaignSending): Promis
           ELSE ${campaignSendings.mensagemUsada}
           END
         `,
+        // whatsappMessageId: SEMPRE atualiza se tiver valor (fundamental para rastreamento)
+        whatsappMessageId: sql`
+          CASE WHEN ${data.whatsappMessageId || null} IS NOT NULL 
+          THEN ${data.whatsappMessageId}
+          ELSE ${campaignSendings.whatsappMessageId}
+          END
+        `,
+        // statusWhatsapp: só atualiza se status avançar
+        statusWhatsapp: sql`
+          CASE WHEN ${newPriority} >= (
+            CASE ${campaignSendings.status}
+              WHEN 'erro' THEN 1 
+              WHEN 'enviado' THEN 2 
+              WHEN 'entregue' THEN 3 
+              WHEN 'lido' THEN 4 
+              ELSE 0 
+            END
+          ) THEN COALESCE(${data.statusWhatsapp || null}, ${campaignSendings.statusWhatsapp})
+          ELSE ${campaignSendings.statusWhatsapp}
+          END
+        `,
+        // estadoDerivado: só atualiza se status avançar
+        estadoDerivado: sql`
+          CASE WHEN ${newPriority} >= (
+            CASE ${campaignSendings.status}
+              WHEN 'erro' THEN 1 
+              WHEN 'enviado' THEN 2 
+              WHEN 'entregue' THEN 3 
+              WHEN 'lido' THEN 4 
+              ELSE 0 
+            END
+          ) THEN COALESCE(${data.estadoDerivado || null}, ${campaignSendings.estadoDerivado})
+          ELSE ${campaignSendings.estadoDerivado}
+          END
+        `,
       },
     })
     .returning();
