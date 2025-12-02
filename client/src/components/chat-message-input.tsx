@@ -57,7 +57,7 @@ export function ChatMessageInput({
           />
 
           <div 
-            className="relative flex-1 flex items-end px-3 py-1.5 gap-2" 
+            className="relative flex-1 flex items-center px-3 py-1.5 gap-2" 
             style={{
               backgroundColor: "#f7f7f8",
               border: "1px solid #e5e5e5",
