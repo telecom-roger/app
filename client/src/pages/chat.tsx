@@ -1658,9 +1658,9 @@ export default function Chat() {
                     <h2 className="text-xl font-bold text-slate-900 dark:text-[#FFFFFF]">
                       {detailedClient.nome || "Sem nome"}
                     </h2>
-                    {detailedClient.contato && (
+                    {detailedClient.nomeGestor && (
                       <p className="text-sm text-slate-600 dark:text-[#A9A9A9] mt-0.5">
-                        Gestor: {detailedClient.contato.split(" ")[0]}
+                        Gestor: {detailedClient.nomeGestor.split(" ")[0]}
                       </p>
                     )}
                     {detailedClient.cnpj && (
