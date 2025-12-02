@@ -29,38 +29,38 @@ declare module 'http' {
   }
 }
 
-// ⚡ ULTRA-FAST HEALTH CHECK - responds immediately before any middleware
-// Must respond INSTANTLY without any conditional logic
+// Server ready state for health checks
+let serverReady = false;
+export function markServerReady() { serverReady = true; }
+
+// ⚡ ULTRA-FAST HEALTH CHECK ENDPOINTS - MUST be BEFORE ANY MIDDLEWARE
+// These respond instantly without ANY processing
 app.get("/health", (req, res) => {
-  res.status(200).json({ ok: true });
+  res.setHeader("Content-Type", "application/json");
+  res.status(200).end('{"ok":true}');
 });
 
 app.head("/health", (req, res) => {
   res.status(200).end();
 });
 
-// HEAD "/" for rapid deployment health checks
-// Replit uses HEAD requests for health probes - responds instantly before any middleware
+// CRITICAL: GET / must respond instantly for deployment health checks
+app.get("/", (req, res, next) => {
+  // Health check requests (non-HTML accepts)
+  if (!req.accepts("html")) {
+    res.setHeader("Content-Type", "application/json");
+    return res.status(200).end('{"ok":true}');
+  }
+  
+  // For browser requests, skip to Vite/static middleware
+  next();
+});
+
 app.head("/", (req, res) => {
   res.status(200).end();
 });
 
-// GET "/" for rapid deployment health checks (respond instantly before vite/static middleware)
-// CRITICAL: This must respond within health check timeout
-app.get("/", (req, res, next) => {
-  // For non-HTML requests (health checks), respond instantly
-  if (!req.accepts("html")) {
-    return res.status(200).json({ ok: true });
-  }
-  
-  // For browser requests, let Vite/static file serving handle it
-  next();
-});
-
-// Server ready state for health checks
-let serverReady = false;
-export function markServerReady() { serverReady = true; }
-
+// ALL MIDDLEWARES must come AFTER health check routes
 app.use(express.json({
   limit: "50mb",
   verify: (req, _res, buf) => {
