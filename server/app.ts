@@ -9,6 +9,7 @@ import express, {
 
 import { registerRoutes, bootstrapWhatsAppSessions, startCampaignScheduler } from "./routes";
 import { startAutomationCron } from "./automationService";
+import { setupAuth } from "./localAuth";
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -163,8 +164,20 @@ export default async function runApp(
 
     // Trigger expensive operations on next tick (after health checks pass)
     // This ensures health checks respond instantly
-    process.nextTick(() => {
-      startExpensiveOpsOnce();
+    process.nextTick(async () => {
+      // Setup authentication completely async
+      try {
+        await setupAuth(app);
+      } catch (err) {
+        console.error("❌ Error setting up auth:", err);
+      }
+
+      // Start expensive operations
+      try {
+        startExpensiveOpsOnce();
+      } catch (err) {
+        console.error("❌ Error starting expensive ops:", err);
+      }
     });
   });
 }

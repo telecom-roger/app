@@ -68,12 +68,8 @@ function onlyInDev(req: Request, res: Response, next: Function) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup authentication - NON-BLOCKING
-  // Start setupAuth in background without awaiting
+  // ⚠️ NO setupAuth() here - moved to after server.listen()
   // This prevents blocking the server startup for health checks
-  setupAuth(app).catch(err => {
-    console.error("❌ Error setting up authentication:", err);
-  });
 
   // Block all test endpoints in production
   if (!isDev) {
