@@ -5206,7 +5206,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== UNREAD MESSAGES NOTIFICATIONS ====================
+  app.get("/api/unread-messages", isAuthenticated, async (req, res) => {
+    try {
+      const user = (req.user as any);
+      const limit = parseInt(req.query.limit as string) || 30;
+      const offset = parseInt(req.query.offset as string) || 0;
 
+      // Buscar conversas com mensagens não lidas
+      const unreadMsgs = await db
+        .select({
+          messageId: messages.id,
+          conteudo: messages.conteudo,
+          createdAt: messages.createdAt,
+          conversationId: messages.conversationId,
+          clientId: conversations.clientId,
+          clientName: clients.nome,
+          clientPhone: clients.celular,
+        })
+        .from(messages)
+        .innerJoin(conversations, eq(messages.conversationId, conversations.id))
+        .innerJoin(clients, eq(conversations.clientId, clients.id))
+        .where(and(
+          eq(conversations.userId, user.id),
+          eq(messages.sender, "client"),
+          eq(messages.lido, false)
+        ))
+        .orderBy(desc(messages.createdAt))
+        .limit(limit + 1)
+        .offset(offset);
+
+      const hasMore = unreadMsgs.length > limit;
+      const items = unreadMsgs.slice(0, limit);
+
+      res.json({
+        messages: items,
+        hasMore,
+        total: items.length,
+        offset,
+        limit,
+      });
+    } catch (error: any) {
+      console.error("Error fetching unread messages:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
 
   const httpServer = createServer(app);
 
