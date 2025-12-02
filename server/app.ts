@@ -76,13 +76,9 @@ app.head("/health", (req, res) => {
   res.status(200).end();
 });
 
-// ✅ ROOT ROUTE - Same as /health for production deployment
-// Responds instantly with JSON, then triggers lazy-load of expensive operations
+// ✅ ROOT ROUTE - ZERO operations, pure health check
+// Responds instantly with JSON, ZERO side effects
 app.get("/", (req, res) => {
-  // Lazy-load expensive operations on first request (completely async, non-blocking)
-  startExpensiveOpsOnce();
-  
-  // Return immediately with JSON
   res.setHeader("Content-Type", "application/json");
   res.status(200).end('{"ok":true}');
 });
@@ -164,5 +160,11 @@ export default async function runApp(
         console.error("❌ Erro ao setup static files:", err);
       }
     })();
+
+    // Trigger expensive operations on next tick (after health checks pass)
+    // This ensures health checks respond instantly
+    process.nextTick(() => {
+      startExpensiveOpsOnce();
+    });
   });
 }
