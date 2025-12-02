@@ -778,20 +778,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
 
-      // Atualizar tag do cliente para manter sincronizado
-      if (oldOpportunity.clientId) {
-        const client = await storage.getClientById(oldOpportunity.clientId);
-        if (client) {
-          const oldTags = client.tags || [];
-          // Remover tag antiga, adicionar tag nova
-          let newTags = oldTags.filter((t: string) => t !== oldOpportunity.etapa);
-          if (!newTags.includes(etapaNormalizada)) {
-            newTags = [etapaNormalizada]; // Cliente tem apenas 1 tag/oportunidade
-          }
-          await storage.updateClient(oldOpportunity.clientId, { tags: newTags });
-        }
-      }
-
       // 🔄 RECALCULATE CLIENT STATUS
       if (oldOpportunity.clientId) {
         const newStatus = await storage.recalculateClientStatus(oldOpportunity.clientId);

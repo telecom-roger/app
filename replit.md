@@ -28,6 +28,7 @@ The application features a professional design system utilizing a deep dark blue
 - **AI Automation**: Integrated with OpenAI GPT-4o Mini for sentiment analysis of WhatsApp responses, automatically moving Kanban opportunities based on sentiment and creating intelligent notifications. It handles partial vs. total refusal scenarios and identifies automatic system messages. It also supports multi-vendor isolation, ensuring each salesperson manages their own opportunities, and facilitates new sales cycles for clients previously in "FECHADO" or "PERDIDO" status by creating new opportunities.
 - **Client Status Automation**: Client status (`ativo`, `lead_quente`, `engajado`, `em_negociacao`, `em_fechamento`, `perdido`, `remarketing`) is automatically recalculated based on opportunity stages. A new "REMARKETING" status identifies reconverted clients. The `statusComercial` field was consolidated into a single `status` field for clarity and efficiency.
 - **Contract Reminder Job**: An automated job sends progressive WhatsApp reminders for "PROPOSTA ENVIADA" opportunities, eventually moving them to "PERDIDO" if no manual action is taken.
+- **Tags System**: Tags are completely separate from opportunity stages. Tags are used exclusively for chat filtering and conversation organization. They do NOT affect opportunity stages, client status, or kanban board. When an opportunity stage changes, tags remain untouched.
 
 ### System Design Choices
 - **Folder Structure**: Organized into `client/src`, `server`, and `shared`.
@@ -35,6 +36,12 @@ The application features a professional design system utilizing a deep dark blue
 - **Database**: PostgreSQL with Drizzle ORM, optimized with foreign key indices and increased payload limits.
 - **Storage System**: Abstracted storage methods for CRUD operations.
 - **Audit System**: Complete logging for creation, editing, and deletion actions, including IP and User-Agent tracking.
+- **Architectural Rule**: Tags and Opportunities/Stages remain completely separate. Tags are only for chat filtering, never used for stage transitions or status calculations.
+
+## Recent Changes (Current Session)
+- **CRITICAL BUG FIX #2**: Fixed tag/stage coupling - removed code that was updating tags when stages changed
+- Previously corrected `recalculateClientStatus()` implementation to properly persist status changes
+- Tags now remain completely independent of opportunity stages (tags for chat filtering only)
 
 ## External Dependencies
 - **Replit Database**: PostgreSQL for persistent data storage.
