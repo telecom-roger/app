@@ -1200,7 +1200,7 @@ export default function Chat() {
                             })()}
                           </div>
                         </div>
-                        <div className="flex items-center gap-1 flex-shrink-0">
+                        <div className="flex items-center gap-0.5 flex-shrink-0">
                           {(conv as any).oculta && (
                             <EyeOff className="h-3 w-3 text-slate-400" />
                           )}
