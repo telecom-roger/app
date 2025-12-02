@@ -1168,16 +1168,16 @@ export default function Chat() {
                       key={conv.id}
                       onClick={() => handleSelectConversation(conv.id)}
                       onContextMenu={handleContextMenu}
-                      className={`w-full text-left p-3 rounded-lg transition-colors mb-1 hover:bg-slate-100 dark:hover:bg-slate-800 border-b border-slate-200 dark:border-slate-700 ${
+                      className={`w-full text-left p-3 sm:p-4 rounded-lg transition-colors mb-2 hover:bg-slate-100 dark:hover:bg-slate-800 border-b border-slate-200 dark:border-slate-700 ${
                         selectedConversationId === conv.id
                           ? "bg-slate-100 dark:bg-slate-800 text-foreground"
                           : "text-foreground"
                       }`}
                       data-testid={`button-conversation-${conv.id}`}
                     >
-                      <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start justify-between gap-3 mb-2">
                         <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <Avatar className="h-8 w-8 flex-shrink-0" data-testid={`avatar-${conv.id}`}>
+                          <Avatar className="h-9 w-9 flex-shrink-0" data-testid={`avatar-${conv.id}`}>
                             <AvatarFallback style={{ backgroundColor: '#F0F1F2', color: '#1F1F1F' }} className="bg-slate-300 text-slate-700 text-xs font-bold">
                               {initials}
                             </AvatarFallback>
@@ -1200,17 +1200,17 @@ export default function Chat() {
                             })()}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 whitespace-nowrap">
+                        <div className="flex items-center gap-2 flex-shrink-0">
                           {(conv as any).oculta && (
                             <EyeOff className="h-3 w-3 text-slate-400" />
                           )}
                           {(conv.unreadCount ?? 0) > 0 && conv.unreadCount && (
-                            <span className="bg-primary text-white text-xs font-bold rounded-full min-w-[24px] h-6 flex items-center justify-center">
+                            <span className="bg-primary text-white text-xs font-bold rounded-full min-w-[24px] h-6 flex items-center justify-center flex-shrink-0">
                               {conv.unreadCount > 99 ? "99+" : conv.unreadCount}
                             </span>
                           )}
                           {conv.ultimaMensagemEm && (
-                            <p className="text-xs text-slate-600 dark:text-slate-400">
+                            <p className="text-xs text-slate-600 dark:text-slate-400 flex-shrink-0">
                               {new Date(conv.ultimaMensagemEm).toLocaleTimeString("pt-BR", {
                                 hour: "2-digit",
                                 minute: "2-digit"
