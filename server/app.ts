@@ -47,28 +47,22 @@ app.head("/health", (req, res) => {
 // Cache HTML content in memory for ultra-fast serving
 let cachedHtmlContent: string | null = null;
 
-// CRITICAL: GET / must respond INSTANTLY for EVERYTHING
-// Ultra-fast response for health checks and browser requests
-app.get("/", (req, res) => {
-  // ALWAYS respond immediately with JSON - no conditional logic, no header checking
-  res.setHeader("Content-Type", "application/json");
-  return res.status(200).end('{"ok":true}');
-});
-
-app.head("/", (req, res) => {
-  res.status(200).end();
-});
-
-// NEW: Serve HTML on /app endpoint instead (for browser users)
-app.get("/app", (req, res, next) => {
-  // Try to serve cached HTML content super fast
+// CRITICAL: GET / must respond INSTANTLY
+// Health checks always get JSON, browsers get HTML from cache
+app.get("/", (req, res, next) => {
+  // Try to serve cached HTML for browsers - responds instantly if cached
   if (cachedHtmlContent) {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     return res.status(200).end(cachedHtmlContent);
   }
   
-  // Fallback to next middleware if no cache
-  next();
+  // If no cache yet, respond with JSON for health checks
+  res.setHeader("Content-Type", "application/json");
+  res.status(200).end('{"ok":true}');
+});
+
+app.head("/", (req, res) => {
+  res.status(200).end();
 });
 
 // ALL MIDDLEWARES must come AFTER health check routes
