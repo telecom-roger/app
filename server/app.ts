@@ -167,14 +167,11 @@ export default async function runApp(
     // Trigger expensive operations with delay to ensure health checks pass during deployment
     // Wait 8 seconds to allow health checks to complete before starting expensive ops
     setTimeout(async () => {
-      // Setup authentication completely async
       try {
         await setupAuth(app);
       } catch (err) {
         console.error("❌ Error setting up auth:", err);
       }
-
-      // Start expensive operations
       try {
         startExpensiveOpsOnce();
       } catch (err) {
