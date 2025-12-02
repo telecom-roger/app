@@ -3180,6 +3180,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const etapa = (analysis.etapa || "CONTATO").toUpperCase();
             console.log(`🤖 IA (CHAT): ${analysis.sentimento} (${analysis.confianca}%) → ${etapa}`);
 
+            // 🚫 VALIDAÇÃO CRÍTICA: Mensagem neutra (sem intenção comercial) = NÃO AGIR
+            const ehMensagemNeutra = analysis.sentimento === "neutro" && analysis.intenção === "indefinida";
+            if (ehMensagemNeutra && !existingOpp) {
+              console.log(`⚠️ MENSAGEM NEUTRA: Não cria oportunidade`);
+              // Não faz nada - mensagem ignorada
+              res.json(mensagem);
+              return;
+            }
+
             // 🤖 DETECÇÃO: Se mensagem automática → MOVER PARA AUTOMÁTICA (apenas se etapa NÃO bloqueada)
             if (analysis.ehMensagemAutomatica) {
               console.log(`🤖 MENSAGEM AUTOMÁTICA DETECTADA`);
@@ -3222,21 +3231,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // ✅ Analisar movimento normal
 
               if (analysis.deveAgir === false) {
-                // IA diz "não mover" → criar opp em CONTATO se não existir
+                // IA diz "não mover" → NÃO FAGE NADA (nem cria opp)
                 console.log(`⚠️ IA NÃO MOVE: deveAgir=false (${analysis.motivo})`);
-                if (!existingOpp) {
-                  const [newOpp] = await db.insert(opportunities).values({
-                    clientId: conv.clientId,
-                    titulo: `${client.nome} - ${analysis.motivo}`,
-                    etapa: "CONTATO",
-                    valorEstimado: "5000",
-                    responsavelId: user.id || conv.userId,
-                    ordem: 0,
-                  }).returning();
-                  console.log(`✅ OPP CRIADA (CONTATO): ${analysis.motivo}`);
-                  const newStatus3 = await storage.recalculateClientStatus(conv.clientId);
-                  await storage.updateClient(conv.clientId, { status: newStatus3 });
-                }
               } else if (existingOpp && existingOpp.etapa !== etapa) {
                 // 🔥 EXCEÇÃO CRÍTICA: Se em CONTATO e cliente aprova → DEVE mover para PROPOSTA
                 const ehTransicaoObrigatoriaCONTATOtoPROPOSTA = 
@@ -3294,20 +3290,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   }
                 }
               } else if (!existingOpp) {
-                // Criar nova oportunidade na etapa detectada
-                // Mas sempre criar em CONTATO ou LEAD
-                const etapaParaCriar = (etapa === "LEAD" || etapa === "CONTATO") ? etapa : "CONTATO";
-                const [newOpp] = await db.insert(opportunities).values({
-                  clientId: conv.clientId,
-                  titulo: `${client.nome} - ${analysis.motivo}`,
-                  etapa: etapaParaCriar,
-                  valorEstimado: "5000",
-                  responsavelId: user.id || conv.userId,
-                  ordem: 0,
-                }).returning();
-                console.log(`✅ OPP CRIADA (CHAT): ${etapaParaCriar}`);
-                const newStatus7 = await storage.recalculateClientStatus(conv.clientId);
-                await storage.updateClient(conv.clientId, { status: newStatus7 });
+                // 🚫 Só criar opp se houver intenção comercial real
+                if (analysis.sentimento === "positivo" || analysis.intenção === "aprovacao_envio" || analysis.intenção === "solicitacao_info") {
+                  // Criar em CONTATO (1ª msg com intenção)
+                  const [newOpp] = await db.insert(opportunities).values({
+                    clientId: conv.clientId,
+                    titulo: `${client.nome} - ${analysis.motivo}`,
+                    etapa: "CONTATO",
+                    valorEstimado: "5000",
+                    responsavelId: user.id || conv.userId,
+                    ordem: 0,
+                  }).returning();
+                  console.log(`✅ OPP CRIADA (CONTATO): ${analysis.motivo}`);
+                  const newStatus7 = await storage.recalculateClientStatus(conv.clientId);
+                  await storage.updateClient(conv.clientId, { status: newStatus7 });
+                } else {
+                  console.log(`⚠️ NÃO CRIA OPP: Mensagem sem intenção comercial (${analysis.intenção})`);
+                }
               }
             }
           }

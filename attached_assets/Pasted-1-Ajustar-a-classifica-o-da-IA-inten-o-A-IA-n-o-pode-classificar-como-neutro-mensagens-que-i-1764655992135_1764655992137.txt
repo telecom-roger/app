@@ -1,0 +1,122 @@
+1. Ajustar a classificação da IA (intenção)
+
+A IA não pode classificar como “neutro” mensagens que indicam interesse comercial.
+
+Mensagens que DEVEM ser classifcadas como Interesse/Proposta:
+
+“manda proposta”
+
+“tenho interesse”
+
+“qual plano?”
+
+“pode me enviar”
+
+“quero saber mais”
+
+“me explica”
+
+“pode mandar”
+
+“to vendo isso”
+
+“qual o valor?”
+
+“quanto fica pra mim?”
+
+Mensagens que podem ser neutras:
+
+“teste”
+
+“oi”
+
+“bom dia”
+
+“kk”
+
+“valeu”
+
+“...”
+
+“blz”
+
+“obrigado”
+
+Regra geral da IA:
+
+Se houver qualquer intenção comercial → Interest
+
+Sem intenção → Neutral
+
+2. Ajustar a criação/atualização de oportunidade
+
+Regras:
+
+(A) Quando é cliente novo (sem oportunidades):
+
+Primeira mensagem → criar oportunidade com status CONTATO
+
+Segunda mensagem com intenção → mudar automaticamente para PROPOSTA
+
+(B) Quando já existe uma oportunidade ativa (status abaixo de PROPOSTA):
+
+Se a IA detectar intenção → subir a oportunidade para PROPOSTA
+
+Não pode voltar status para trás (ex: Proposta → Contato)
+
+(C) Quando o usuário move manualmente no Kanban
+
+O cliente e a oportunidade devem sincronizar o status.
+
+Se eu mover a oportunidade, atualizar o status do cliente também.
+
+Sempre respeitar o status mais avançado.
+
+3. Ajustar recalculateClientStatus()
+
+Implementar essas regras:
+
+A função sempre atualiza o CLIENTE com o status atual da oportunidade.
+
+Nunca reduzir nível (ex.: nunca voltar de Proposta → Contato).
+
+Se não existe oportunidade ativa e a mensagem tem intenção → criar oportunidade em PROPOSTA imediatamente.
+
+Se existe oportunidade, somente atualizar se for avanço.
+
+4. Regras para novas conversas após fechado (novo ciclo)
+
+Se o cliente estiver como ATIVO ou FECHADO
+e mandar uma nova mensagem com intenção comercial:
+→ Criar nova oportunidade (novo ciclo de venda)
+
+Se ele mandar apenas “oi”, “teste”, “kkk” não criar nada.
+
+5. Correção específica do comportamento atual
+
+Hoje, quando o cliente envia “teste” ele está sendo marcado como:
+
+intenção = neutro (correto)
+
+status = Contato (correto)
+
+MAS em alguns casos está indo para “Proposta” automático.
+
+→ Corrigir isso para respeitar a regra:
+Neutro → nunca mover para Proposta.
+
+6. Objetivo final
+
+O sistema deve:
+
+Criar oportunidade apenas quando existir intenção comercial real.
+
+Subir automaticamente no funil quando fizer sentido.
+
+Atualizar etiqueta/status corretamente no cliente.
+
+Sincronizar Kanban ↔ Cliente.
+
+Evitar duplicar oportunidades sem necessidade.
+
+Criar nova oportunidade apenas após ciclo fechado.
