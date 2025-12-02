@@ -55,19 +55,9 @@ export function ChatMessageInput({
             className="hidden"
             data-testid="chat-input-file-upload"
           />
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => document.getElementById("chat-file-upload")?.click()}
-            disabled={disabled || isRecording}
-            data-testid="chat-input-file-button"
-            className="h-10 w-10 flex-shrink-0 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
-          >
-            <Paperclip className="h-5 w-5" />
-          </Button>
 
           <div 
-            className="relative flex-1 flex items-end px-4 py-1.5" 
+            className="relative flex-1 flex items-end px-3 py-1.5 gap-2" 
             style={{
               backgroundColor: "#f7f7f8",
               border: "1px solid #e5e5e5",
@@ -75,6 +65,16 @@ export function ChatMessageInput({
               boxShadow: "0 2px 12px rgba(0, 0, 0, 0.08)"
             }}
           >
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => document.getElementById("chat-file-upload")?.click()}
+              disabled={disabled || isRecording}
+              data-testid="chat-input-file-button"
+              className="h-8 w-8 flex-shrink-0 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
             <textarea
               ref={textareaRef}
               value={value}
@@ -83,7 +83,7 @@ export function ChatMessageInput({
               placeholder={placeholder}
               disabled={disabled}
               data-testid="chat-input-textarea"
-              className="w-full resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:outline-none text-sm placeholder-slate-500 dark:placeholder-slate-400 dark:text-white max-h-32 py-1"
+              className="flex-1 resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:outline-none text-sm placeholder-slate-500 dark:placeholder-slate-400 dark:text-white max-h-32 py-1"
               style={{
                 height: "auto",
                 minHeight: "32px",
