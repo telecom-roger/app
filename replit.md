@@ -48,6 +48,19 @@ The application features a professional design system utilizing a deep dark blue
 - **Architectural Rule**: Tags and Opportunities/Stages remain completely separate. Tags are only for chat filtering, never used for stage transitions or status calculations.
 
 ## Recent Changes (Current Session)
+- **MAJOR REFACTOR**: Complete classification logic overhaul with explicit rules
+  - **LISTA PROPOSTA** (SEMPRE cria PROPOSTA):
+    - "ok", "okk", "okkk", "OK", "joia", "👍", "👌", "sim", "blz", "beleza", "manda", "pode mandar", "envia", "me manda" ✅
+  - **LISTA CONTATO** (cria CONTATO):
+    - "quero saber mais", "como funciona?", "pode me explicar?", "qual operadora é melhor?" ✅
+  - **LISTA NEUTRA** (NÃO cria):
+    - "oi", "eae", "bom dia", "boa tarde", "kkk", "teste", "valeu", "obrigado", "🙌", "🙏" ✅
+  - **Ordem de execução obrigatória**:
+    1. Verificar se é neutra → não cria ✅
+    2. Verificar se é ação (OK, 👍, etc) → cria PROPOSTA ✅
+    3. Verificar intenção fraca → cria CONTATO ✅
+    4. Se já existe opp → atualizar ✅
+    5. Se cliente ativo → criar nova opp ✅
 - **CRITICAL BUG FIX #5**: Removed "tudo bem" from aprovacao keywords
   - "Tudo bem?" era criando oportunidade em PROPOSTA (ERRADO) ❌
   - Agora "tudo bem" está em mensagens neutras puras ✅
