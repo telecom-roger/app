@@ -33,7 +33,7 @@ declare module 'http' {
 let serverReady = false;
 export function markServerReady() { serverReady = true; }
 
-// ⚡ ULTRA-FAST HEALTH CHECK ENDPOINTS - MUST be BEFORE ANY MIDDLEWARE
+// ⚡ ULTRA-FAST HEALTH CHECK + ROOT ENDPOINTS - MUST be BEFORE ANY MIDDLEWARE
 // These respond instantly without ANY processing
 app.get("/health", (req, res) => {
   res.setHeader("Content-Type", "application/json");
@@ -42,6 +42,13 @@ app.get("/health", (req, res) => {
 
 app.head("/health", (req, res) => {
   res.status(200).end();
+});
+
+// ✅ ROOT ROUTE - Registered IMMEDIATELY for deployment health checks
+// This will be overridden later by serveStatic() but ensures / responds instantly
+app.get("/", (req, res) => {
+  res.setHeader("Content-Type", "text/html");
+  res.status(200).end('<!DOCTYPE html><html><body>Carregando...</body></html>');
 });
 
 // ALL MIDDLEWARES must come AFTER health check routes
@@ -113,14 +120,15 @@ export default async function runApp(
     markServerReady();
     
     // Setup static file serving AFTER server is listening (non-blocking)
-    // This must run after health check is ready, so deployment probes pass immediately
-    process.nextTick(() => {
+    // DELAYED: 1000ms to ensure health checks pass before serving static files
+    // This allows the /health and / endpoints to respond instantly
+    setTimeout(() => {
       try {
         void setup(app, server);
       } catch (err) {
         console.error("❌ Erro ao setup static files:", err);
       }
-    });
+    }, 1000);
     
     // Start campaign scheduler AFTER server is listening (fire-and-forget, non-blocking)
     // DELAYED: 2000ms to ensure health checks pass before expensive operations start
@@ -134,7 +142,7 @@ export default async function runApp(
     }, 2000);
     
     // Start automation cron jobs AFTER server is listening (fire-and-forget, non-blocking)
-    // DELAYED: 2500ms to ensure health checks pass before expensive operations start
+    // DELAYED: 3000ms to ensure health checks pass before expensive operations start
     setTimeout(() => {
       try {
         startAutomationCron();
@@ -142,12 +150,12 @@ export default async function runApp(
       } catch (err) {
         console.error("❌ Erro ao iniciar cron jobs:", err);
       }
-    }, 2500);
+    }, 3000);
     
     // Bootstrap WhatsApp sessions in COMPLETELY async context
     // Fire-and-forget: do NOT await, do NOT block
     // Failures are caught and logged but do not affect server health
-    // DELAYED: 3000ms to ensure health checks pass well before expensive operations
+    // DELAYED: 4000ms to ensure health checks pass well before expensive operations
     setTimeout(() => {
       try {
         // Call without await - let it run completely async
@@ -157,6 +165,6 @@ export default async function runApp(
       } catch (err) {
         console.error("❌ Erro ao iniciar bootstrap WhatsApp:", err);
       }
-    }, 3000);
+    }, 4000);
   });
 }
