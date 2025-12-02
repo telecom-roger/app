@@ -67,8 +67,8 @@ function onlyInDev(req: Request, res: Response, next: Function) {
   next();
 }
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  // ⚠️ NO setupAuth() here - moved to after server.listen()
+export async function registerRoutes(app: Express, server: Server): Promise<void> {
+  // ⚠️ NO setupAuth() here - moved to runApp() after server.listen()
   // This prevents blocking the server startup for health checks
 
   // Block all test endpoints in production
@@ -5245,9 +5245,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  const httpServer = createServer(app);
-
-  return httpServer;
+  // Server is now created and passed in from runApp()
+  // No need to create it here
 }
 
 // ==================== SCHEDULED CAMPAIGNS STARTER ====================

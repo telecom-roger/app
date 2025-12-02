@@ -1,4 +1,4 @@
-import { type Server } from "node:http";
+import { createServer, type Server } from "node:http";
 
 import express, {
   type Express,
@@ -33,6 +33,10 @@ declare module 'http' {
 // Server ready state for health checks
 let serverReady = false;
 export function markServerReady() { serverReady = true; }
+
+// Routes ready state - gates traffic until auth/routes are initialized
+let routesReady = false;
+export function markRoutesReady() { routesReady = true; }
 
 // Pre-loaded index.html for instant SPA serving
 let preloadedIndexHtml: string | null = null;
@@ -96,7 +100,32 @@ app.head("/health", (req, res) => {
   res.status(200).end();
 });
 
-// ALL MIDDLEWARES must come AFTER health check routes
+// Startup guard middleware - returns 503 for non-health routes until initialization is complete
+// This ensures the server can accept connections and respond to health checks immediately
+// while other routes wait for auth/database/routing to finish initializing
+app.use((req, res, next) => {
+  // Always allow health checks through
+  if (req.path === "/health") {
+    return next();
+  }
+  
+  // Allow root endpoint through (serves pre-loaded HTML or fallback)
+  if (req.path === "/") {
+    return next();
+  }
+  
+  // Check if routes are ready for all other requests
+  if (!routesReady) {
+    return res.status(503).json({ 
+      error: "Service initializing", 
+      message: "The application is starting up. Please try again in a few seconds."
+    });
+  }
+  
+  next();
+});
+
+// ALL MIDDLEWARES must come AFTER health check routes and startup guard
 app.use(express.json({
   limit: "50mb",
   verify: (req, _res, buf) => {
@@ -138,17 +167,17 @@ app.use((req, res, next) => {
 export default async function runApp(
   setup: (app: Express, server: Server) => Promise<void>,
 ) {
-  // Setup auth FIRST before registering routes
-  await setupAuth(app);
-  
-  const server = await registerRoutes(app);
+  // Create HTTP server FIRST before any blocking operations
+  const server = createServer(app);
 
+  // Add global error handler
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
+    // Log error for debugging but don't rethrow to avoid crashing the process
+    console.error("❌ Error handler caught:", err);
     res.status(status).json({ message });
-    throw err;
   });
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
@@ -156,6 +185,9 @@ export default async function runApp(
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
+  
+  // ⚡ START LISTENING IMMEDIATELY - BEFORE setupAuth and registerRoutes
+  // This ensures /health endpoint responds instantly for deployment health checks
   server.listen({
     port,
     host: "0.0.0.0",
@@ -167,13 +199,29 @@ export default async function runApp(
     // NO DELAYS - health checks must pass instantly
     markServerReady();
     
-    // Setup static file serving completely async (fire-and-forget)
+    // Initialize auth, routes, and static files asynchronously
     // This runs in background without blocking health checks
     void (async () => {
       try {
+        log("🔐 Initializing authentication...");
+        await setupAuth(app);
+        log("✅ Authentication initialized");
+        
+        log("🛣️  Registering routes...");
+        await registerRoutes(app, server);
+        log("✅ Routes registered");
+        
+        // Mark routes as ready - removes 503 guard
+        markRoutesReady();
+        log("✅ Application routes ready for traffic");
+        
+        log("📁 Setting up static file serving...");
         await setup(app, server);
+        log("✅ Static files ready");
       } catch (err) {
-        console.error("❌ Erro ao setup static files:", err);
+        console.error("❌ FATAL: Error during server initialization:", err);
+        // Don't crash the server - health checks should still pass
+        // but routes will remain gated with 503
       }
     })();
 

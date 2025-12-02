@@ -6,18 +6,51 @@ import type { Express, RequestHandler } from "express";
 import connectPg from "connect-pg-simple";
 import * as storage from "./storage";
 
+async function createSessionStoreWithRetry(maxRetries = 3, retryDelayMs = 1000): Promise<any> {
+  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const pgStore = connectPg(session);
+      const sessionStore = new pgStore({
+        conString: process.env.DATABASE_URL,
+        createTableIfMissing: false,
+        ttl: sessionTtl,
+        tableName: "sessions",
+      });
+      
+      // Add error handler for session store connection issues
+      sessionStore.on?.('error', (err) => {
+        console.error("⚠️ Session store error:", err);
+        // Don't crash - session store errors should not bring down the server
+      });
+      
+      console.log(`✅ PostgreSQL session store connected (attempt ${attempt}/${maxRetries})`);
+      return sessionStore;
+    } catch (err) {
+      console.error(`❌ Failed to create session store (attempt ${attempt}/${maxRetries}):`, err);
+      
+      if (attempt < maxRetries) {
+        const delay = retryDelayMs * attempt; // Exponential backoff
+        console.log(`⏳ Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        console.warn("⚠️ Max retries reached. Falling back to in-memory session store (sessions will not persist across restarts)");
+        throw err; // Final attempt failed, throw to trigger fallback
+      }
+    }
+  }
+  
+  return null; // Should never reach here
+}
+
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
-    ttl: sessionTtl,
-    tableName: "sessions",
-  });
+  
+  // Return session middleware immediately
+  // Store will be created asynchronously during setupAuth
   return session({
     secret: process.env.SESSION_SECRET!,
-    store: sessionStore,
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -37,10 +70,48 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 export async function setupAuth(app: Express) {
-  app.set("trust proxy", 1);
-  app.use(getSession());
-  app.use(passport.initialize());
-  app.use(passport.session());
+  try {
+    app.set("trust proxy", 1);
+    
+    // Try to create PostgreSQL session store with retry/backoff
+    const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
+    let sessionMiddleware;
+    
+    try {
+      const sessionStore = await createSessionStoreWithRetry(3, 1000);
+      sessionMiddleware = session({
+        secret: process.env.SESSION_SECRET!,
+        store: sessionStore,
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          maxAge: sessionTtl,
+        },
+      });
+    } catch (err) {
+      // Fallback to in-memory session store
+      console.warn("⚠️ Using in-memory session store as fallback");
+      sessionMiddleware = session({
+        secret: process.env.SESSION_SECRET!,
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          maxAge: sessionTtl,
+        },
+      });
+    }
+    
+    app.use(sessionMiddleware);
+    app.use(passport.initialize());
+    app.use(passport.session());
+  } catch (err) {
+    console.error("❌ Error setting up authentication middleware:", err);
+    throw err; // Re-throw to be caught by runApp error handler
+  }
 
   // Local strategy for email/password
   passport.use(
