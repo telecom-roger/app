@@ -1312,18 +1312,13 @@ export default function Chat() {
                       );
                     })()}
                     <p className="font-medium text-slate-900 dark:text-white truncate">
-                      {(() => {
-                        const nomeCompleto = selectedConversation.client?.nome || "Contato";
-                        const primeiroNome = nomeCompleto.split(" ")[0];
-                        return primeiroNome.length > 20 ? primeiroNome.substring(0, 20) + "..." : primeiroNome;
-                      })()}
+                      {(selectedConversation.client?.nome || "Contato").length > 30
+                        ? (selectedConversation.client?.nome || "Contato").substring(0, 30) + "..."
+                        : selectedConversation.client?.nome || "Contato"}
                     </p>
                   </div>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
-                    {[
-                      (selectedConversation.client as any)?.cnpj,
-                      (selectedConversation.client as any)?.contato
-                    ].filter(Boolean).join(" • ") || selectedConversation.client?.celular || "Sem contato"}
+                    {selectedConversation.client?.celular || (selectedConversation.client as any)?.cnpj || "Sem contato"}
                   </p>
                 </div>
               </div>
