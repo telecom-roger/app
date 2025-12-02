@@ -6,8 +6,7 @@ import express, { type Express } from "express";
 import runApp from "./app";
 
 export async function serveStatic(app: Express, _server: Server) {
-  // In production, the build outputs to ../dist/public (relative to server/)
-  const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
+  const distPath = path.resolve(import.meta.dirname, "public");
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
