@@ -97,13 +97,12 @@ export function ChatMessageInput({
                 disabled={isLoading || disabled}
                 size="icon"
                 data-testid="chat-input-send-button"
-                className="h-8 w-8 flex-shrink-0 ml-2 text-primary dark:text-primary hover:opacity-70 transition-opacity"
-                variant="ghost"
+                className="h-9 w-9 flex-shrink-0 ml-2 bg-primary hover:bg-primary/90 text-white transition-colors"
               >
                 {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
-                  <Send className="h-4 w-4" />
+                  <Send className="h-5 w-5" />
                 )}
               </Button>
             ) : (
