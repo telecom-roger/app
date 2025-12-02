@@ -3290,29 +3290,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   }
                 }
               } else if (!existingOpp) {
-                // 🚫 Só criar opp se houver intenção comercial REAL
-                // Intenção comercial = sentimento positivo OU intenção explícita
-                const temIntencaoComercial = 
-                  analysis.sentimento === "positivo" && 
-                  (analysis.intenção === "aprovacao_envio" || 
-                   analysis.intenção === "solicitacao_info" ||
-                   analysis.intenção === "indefinida" && analysis.confianca >= 70);
-                
-                if (temIntencaoComercial) {
-                  // 🚀 Criar em PROPOSTA (não CONTATO - primeira msg com intenção já é PROPOSTA)
+                // 🚫 Só criar opp se houver intenção comercial real
+                if (analysis.sentimento === "positivo" || analysis.intenção === "aprovacao_envio" || analysis.intenção === "solicitacao_info") {
+                  // Criar em CONTATO (1ª msg com intenção)
                   const [newOpp] = await db.insert(opportunities).values({
                     clientId: conv.clientId,
                     titulo: `${client.nome} - ${analysis.motivo}`,
-                    etapa: "PROPOSTA",
+                    etapa: "CONTATO",
                     valorEstimado: "5000",
                     responsavelId: user.id || conv.userId,
                     ordem: 0,
                   }).returning();
-                  console.log(`🚀 OPP CRIADA (PROPOSTA - 1ª msg comercial): ${analysis.motivo}`);
+                  console.log(`✅ OPP CRIADA (CONTATO): ${analysis.motivo}`);
                   const newStatus7 = await storage.recalculateClientStatus(conv.clientId);
                   await storage.updateClient(conv.clientId, { status: newStatus7 });
                 } else {
-                  console.log(`⚠️ NÃO CRIA OPP: Mensagem sem intenção comercial (${analysis.sentimento}/${analysis.intenção})`);
+                  console.log(`⚠️ NÃO CRIA OPP: Mensagem sem intenção comercial (${analysis.intenção})`);
                 }
               }
             }
