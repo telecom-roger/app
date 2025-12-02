@@ -1148,7 +1148,7 @@ export async function checkAguardandoAceiteTimeouts() {
         }
         
         console.log(`✅ Agendando 1º lembrete para oportunidade ${opp.id}`);
-        const nextTime = new Date(Date.now() + 2 * 1000); // 2 seg para teste
+        const nextTime = new Date(); // ✅ EXECUTA IMEDIATAMENTE no próximo ciclo do cron
         
         await db.insert(automationTasks).values({
           userId: opp.responsavelId,
@@ -1194,7 +1194,7 @@ export async function checkAguardandoAceiteTimeouts() {
           // 3º lembrete foi executado = agendar movimento para AGUARDANDO ATENÇÃO IMEDIATAMENTE
           console.log(`⏭️ 3º lembrete executado! Agendando movimento IMEDIATO para AGUARDANDO ATENÇÃO...`);
           
-          const proximaExecucao = new Date(); // AGORA para teste
+          const proximaExecucao = new Date(); // ✅ EXECUTA IMEDIATAMENTE
           
           await db.insert(automationTasks).values({
             userId: opp.responsavelId,
