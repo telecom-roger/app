@@ -1968,15 +1968,16 @@ export default function Chat() {
                   </div>
                 </div>
               )}
-              <div className="p-3 sm:p-6 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex gap-2 sm:gap-3 items-end">
+              <div className="p-3 sm:p-6 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex gap-2 sm:gap-3 items-center">
                 <div className="relative flex-1">
-                  <Textarea
+                  <input
                     autoFocus
+                    type="text"
                     placeholder="Escreva sua mensagem..."
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
                     onKeyPress={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
+                      if (e.key === "Enter") {
                         e.preventDefault();
                         handleSendMessage();
                       }
@@ -1984,7 +1985,7 @@ export default function Chat() {
                     onPaste={handlePaste}
                     disabled={sendMutation.isPending || recordedAudio !== null || pastedImage !== null}
                     data-testid="input-message"
-                    className="resize-none min-h-11 sm:min-h-12 max-h-32 text-sm sm:text-base border-0 focus-visible:ring-0 pr-12"
+                    className="w-full h-10 sm:h-11 px-4 pr-12 text-sm sm:text-base border-0 focus-visible:ring-0 bg-slate-50 dark:bg-slate-700 rounded-full"
                   />
                   {messageText.trim() ? (
                     <Button
@@ -1992,7 +1993,7 @@ export default function Chat() {
                       disabled={sendMutation.isPending || recordedAudio !== null}
                       size="icon"
                       data-testid="button-send-message"
-                      className="absolute right-2 bottom-2 h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0"
+                      className="absolute right-1 h-8 w-8 flex-shrink-0"
                       variant="ghost"
                     >
                       {sendMutation.isPending ? (
@@ -2008,7 +2009,7 @@ export default function Chat() {
                       onClick={isRecording ? handleStopRecording : handleStartRecording}
                       disabled={sendMutation.isPending || recordedAudio !== null}
                       data-testid="button-voice-record"
-                      className="absolute right-2 bottom-2 h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0"
+                      className="absolute right-1 h-8 w-8 flex-shrink-0"
                     >
                       {isRecording ? (
                         <StopCircle className="h-4 w-4 animate-pulse" />
