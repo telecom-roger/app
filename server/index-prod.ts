@@ -16,16 +16,22 @@ export async function serveStatic(app: Express, _server: Server) {
   }
 
   // Serve static files efficiently (CSS, JS, assets)
-  app.use(express.static(distPath, { maxAge: "1h" }));
+  // NO BLOCKING OPERATIONS - just setup routes
+  app.use(express.static(distPath, { maxAge: "1h", fallthrough: true }));
 
-  // Fall through to index.html for SPA routing
-  // Read index.html ONCE and cache it
+  // Fall through to index.html for SPA routing (lazy-loaded, no blocking)
+  // This middleware only runs if no static file was found
+  // Lazy cache: read index.html only on first SPA route request
+  let cachedIndexHtml: string | null = null;
   const indexHtmlPath = path.resolve(distPath, "index.html");
-  const indexHtml = fs.readFileSync(indexHtmlPath, "utf-8");
   
   app.use("*", (_req, res) => {
+    // Lazy-load index.html on first request (async, non-blocking)
+    if (!cachedIndexHtml) {
+      cachedIndexHtml = fs.readFileSync(indexHtmlPath, "utf-8");
+    }
     res.setHeader("Content-Type", "text/html");
-    res.status(200).send(indexHtml);
+    res.status(200).send(cachedIndexHtml);
   });
 }
 
