@@ -589,6 +589,7 @@ async function processMessageStatusUpdate(sessionId: string, updates: any) {
       // Mapeia status do Baileys para nosso sistema
       // status: 0 = erro, 1 = pendente, 2 = enviado (servidor), 3 = entregue, 4 = lido
       let statusEntrega: 'enviado' | 'entregue' | 'lido' | null = null;
+      const statusPriority = { enviado: 2, entregue: 3, lido: 4 };
       
       if (status === 3) {
         statusEntrega = 'entregue';
@@ -604,6 +605,21 @@ async function processMessageStatusUpdate(sessionId: string, updates: any) {
       if (statusEntrega) {
         const now = new Date();
         
+        // GUARD: Verificar se já temos um status "melhor" - não permitir regressão
+        try {
+          const [existingMsg] = await db.select({ statusEntrega: messages.statusEntrega })
+            .from(messages)
+            .where(eq(messages.whatsappMessageId, messageId))
+            .limit(1);
+          
+          if (existingMsg && statusPriority[existingMsg.statusEntrega] > statusPriority[statusEntrega]) {
+            console.log(`⛔ [STATUS] IGNORANDO regressão: ${existingMsg.statusEntrega} (${statusPriority[existingMsg.statusEntrega]}) → ${statusEntrega} (${statusPriority[statusEntrega]})`);
+            continue;
+          }
+        } catch (err) {
+          // Mensagem não existe no chat, seguir normalmente
+        }
+        
         // 1. Atualiza na tabela messages (chat)
         try {
           await db.update(messages)
@@ -617,6 +633,17 @@ async function processMessageStatusUpdate(sessionId: string, updates: any) {
         // 2. ✅ NOVO: Atualiza na tabela campaign_sendings (campanhas)
         try {
           const { campaignSendings } = await import('@shared/schema');
+          
+          // GUARD: Verificar status anterior em campaign_sendings também
+          const [existingCampaign] = await db.select({ status: campaignSendings.status })
+            .from(campaignSendings)
+            .where(eq(campaignSendings.whatsappMessageId, messageId))
+            .limit(1);
+          
+          if (existingCampaign && statusPriority[existingCampaign.status] > statusPriority[statusEntrega]) {
+            console.log(`⛔ [STATUS CAMPAIGN] IGNORANDO regressão: ${existingCampaign.status} → ${statusEntrega}`);
+            continue;
+          }
           
           // Prepara campos para atualização
           const updateData: any = {
