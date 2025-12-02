@@ -786,6 +786,8 @@ export async function getConversations(userId: string, showHidden: boolean = fal
         celular: clients.celular,
         telefone2: clients.telefone2,
         tags: clients.tags,
+        cnpj: clients.cnpj,
+        contato: clients.contato,
       }
     })
     .from(conversations)
