@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle, Download, Plus, Info, User, Zap, Eye, EyeOff, ChevronDown, Trash2, Forward } from "lucide-react";
+import { ChatMessageInput } from "@/components/chat-message-input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { SiWhatsapp } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
@@ -1968,74 +1969,17 @@ export default function Chat() {
                   </div>
                 </div>
               )}
-              <div className="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex gap-2 items-end">
-                <input
-                  type="file"
-                  id="file-upload"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  data-testid="input-file-upload"
-                />
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => document.getElementById("file-upload")?.click()}
-                  disabled={sendMutation.isPending || isRecording || recordedAudio !== null}
-                  data-testid="button-file-upload"
-                  className="h-9 w-9 flex-shrink-0"
-                >
-                  <Paperclip className="h-4 w-4" />
-                </Button>
-                <div className="relative flex-1 flex items-end">
-                  <Textarea
-                    autoFocus
-                    placeholder="Digite uma mensagem…"
-                    value={messageText}
-                    onChange={(e) => setMessageText(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                    onPaste={handlePaste}
-                    disabled={sendMutation.isPending || recordedAudio !== null || pastedImage !== null}
-                    data-testid="input-message"
-                    className="w-full min-h-10 max-h-24 px-4 py-2 text-sm border-0 focus-visible:ring-0 bg-slate-50 dark:bg-slate-700 rounded-lg resize-none"
-                  />
-                  {messageText.trim() ? (
-                    <Button
-                      onClick={handleSendMessage}
-                      disabled={sendMutation.isPending || recordedAudio !== null}
-                      size="icon"
-                      data-testid="button-send-message"
-                      className="h-8 w-8 flex-shrink-0 absolute right-1.5 bottom-1.5"
-                      variant="ghost"
-                    >
-                      {sendMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Send className="h-4 w-4" />
-                      )}
-                    </Button>
-                  ) : (
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={isRecording ? handleStopRecording : handleStartRecording}
-                      disabled={sendMutation.isPending || recordedAudio !== null}
-                      data-testid="button-voice-record"
-                      className="h-8 w-8 flex-shrink-0 absolute right-1.5 bottom-1.5"
-                    >
-                      {isRecording ? (
-                        <StopCircle className="h-4 w-4 animate-pulse" />
-                      ) : (
-                        <Mic className="h-4 w-4" />
-                      )}
-                    </Button>
-                  )}
-                </div>
-              </div>
+              <ChatMessageInput
+                value={messageText}
+                onChange={setMessageText}
+                onSend={handleSendMessage}
+                onFileUpload={handleFileUpload}
+                onStartRecording={handleStartRecording}
+                onStopRecording={handleStopRecording}
+                disabled={sendMutation.isPending || recordedAudio !== null || pastedImage !== null}
+                isLoading={sendMutation.isPending}
+                isRecording={isRecording}
+              />
             </div>
           </>
         ) : (
