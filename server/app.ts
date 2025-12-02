@@ -73,6 +73,13 @@ app.get("/health", (req, res) => {
   res.status(200).end('{"ok":true}');
 });
 
+// ⚡ FAST ROOT ENDPOINT - responds immediately for health checks in deployment
+// This gets overridden by SPA middleware after startup completes
+app.get("/", (_req, res) => {
+  res.setHeader("Content-Type", "text/html");
+  res.status(200).send('<!DOCTYPE html><html><body>Loading...</body></html>');
+});
+
 app.head("/health", (req, res) => {
   res.status(200).end();
 });
