@@ -1175,7 +1175,7 @@ export default function Chat() {
                       }`}
                       data-testid={`button-conversation-${conv.id}`}
                     >
-                      <div className="flex items-stretch justify-between gap-1">
+                      <div className="flex items-stretch gap-1" style={{ marginRight: '-12px' }}>
                         <div className="flex items-center gap-1.5 min-w-0 flex-1">
                           <Avatar className="h-8 w-8 flex-shrink-0" data-testid={`avatar-${conv.id}`}>
                             <AvatarFallback style={{ backgroundColor: '#F0F1F2', color: '#1F1F1F' }} className="bg-slate-300 text-slate-700 text-xs font-bold">
@@ -1200,7 +1200,7 @@ export default function Chat() {
                             })()}
                           </div>
                         </div>
-                        <div className="flex items-center gap-0.5 flex-shrink-0">
+                        <div className="flex items-center gap-0.5 flex-shrink-0" style={{ marginLeft: 'auto', paddingRight: '12px' }}>
                           {(conv as any).oculta && (
                             <EyeOff className="h-3 w-3 text-slate-400" />
                           )}
@@ -1210,7 +1210,7 @@ export default function Chat() {
                             </span>
                           )}
                           {conv.ultimaMensagemEm && (
-                            <p className="text-xs text-slate-600 dark:text-slate-400 flex-shrink-0" style={{ marginLeft: '-14px' }}>
+                            <p className="text-xs text-slate-600 dark:text-slate-400 flex-shrink-0">
                               {new Date(conv.ultimaMensagemEm).toLocaleTimeString("pt-BR", {
                                 hour: "2-digit",
                                 minute: "2-digit"
