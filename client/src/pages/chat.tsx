@@ -1193,7 +1193,7 @@ export default function Chat() {
                               const tag = allTags.find(t => t.nome === tagName);
                               return (
                                 <div
-                                  className={`w-2 h-2 rounded-full flex-shrink-0 ${tag?.cor || "bg-gray-500"}`}
+                                  className={`w-3 h-3 rounded-full flex-shrink-0 ${tag?.cor || "bg-gray-500"}`}
                                   data-testid={`dot-tag-inline-${conv.id}`}
                                 />
                               );
@@ -1219,20 +1219,20 @@ export default function Chat() {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-start justify-between gap-1 mt-0.5">
-                        <div className="flex-1 min-w-0 ml-9.5">
-                          <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
-                            {conv.client?.celular || (conv.client as any)?.cnpj || "Sem contato"}
-                          </p>
-                          {conv.ultimaMensagem && (
-                            <p className="text-xs text-slate-600 dark:text-slate-400 truncate mt-0.5">
-                              {conv.ultimaMensagem.length > 50
-                                ? conv.ultimaMensagem.substring(0, 50) + "..."
-                                : conv.ultimaMensagem}
-                            </p>
-                          )}
-                        </div>
+                      <div className="flex items-center justify-between gap-1 mt-0.5 ml-9.5">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 truncate flex-1 min-w-0">
+                          {conv.client?.celular || (conv.client as any)?.cnpj || "Sem contato"}
+                        </p>
                       </div>
+                      {conv.ultimaMensagem && (
+                        <div className="flex items-center justify-between gap-1 mt-0.5 ml-9.5">
+                          <p className="text-xs text-slate-600 dark:text-slate-400 truncate flex-1 min-w-0">
+                            {conv.ultimaMensagem.length > 50
+                              ? conv.ultimaMensagem.substring(0, 50) + "..."
+                              : conv.ultimaMensagem}
+                          </p>
+                        </div>
+                      )}
                     </button>
                     );
                   })
