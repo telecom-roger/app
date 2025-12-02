@@ -44,15 +44,34 @@ app.head("/health", (req, res) => {
   res.status(200).end();
 });
 
-// CRITICAL: GET / must respond instantly for deployment health checks
+// Cache HTML content in memory for ultra-fast serving
+let cachedHtmlContent: string | null = null;
+
+// CRITICAL: GET / must respond INSTANTLY without ANY middleware
+// Bypass all middleware for health checks by responding immediately
 app.get("/", (req, res, next) => {
-  // Health check requests (non-HTML accepts)
-  if (!req.accepts("html")) {
+  // ALWAYS respond immediately - no middleware processing
+  // Check if it's a health check (not a browser requesting HTML)
+  const userAgent = req.get("user-agent") || "";
+  const accept = req.get("accept") || "";
+  
+  // Health check: curl, health checker tools, bots, non-HTML requests
+  if (!accept.includes("text/html") || 
+      userAgent.includes("curl") || 
+      userAgent.includes("health") ||
+      userAgent.includes("bot") ||
+      userAgent.includes("check")) {
     res.setHeader("Content-Type", "application/json");
     return res.status(200).end('{"ok":true}');
   }
   
-  // For browser requests, skip to Vite/static middleware
+  // Browser requesting HTML: try to serve cached content super fast
+  if (cachedHtmlContent) {
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.status(200).end(cachedHtmlContent);
+  }
+  
+  // Fallback to next middleware if no cache
   next();
 });
 
@@ -102,6 +121,19 @@ app.use((req, res, next) => {
 export default async function runApp(
   setup: (app: Express, server: Server) => Promise<void>,
 ) {
+  // Pre-cache HTML content for ultra-fast health check responses
+  try {
+    const fs = await import("fs");
+    const path = await import("path");
+    const htmlPath = path.resolve(import.meta.dirname, "public", "index.html");
+    if (fs.existsSync(htmlPath)) {
+      cachedHtmlContent = fs.readFileSync(htmlPath, "utf-8");
+      console.log("✅ HTML cache loaded for ultra-fast serving");
+    }
+  } catch (err) {
+    console.error("⚠️ Failed to pre-cache HTML:", err);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
