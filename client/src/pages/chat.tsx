@@ -986,9 +986,9 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+    <div className="flex h-full bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Left Sidebar - Conversations List */}
-      <div className="w-full md:w-80 lg:w-96 flex flex-col border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 overflow-hidden">
+      <div className="w-full md:w-80 lg:w-96 flex flex-col border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50">
         {/* Search Input */}
         <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 border-b border-slate-200 dark:border-slate-700">
           <SearchFilter
@@ -1291,7 +1291,7 @@ export default function Chat() {
       </div>
 
       {/* Right Panel - Messages */}
-      <div className="flex-1 flex flex-col bg-white dark:bg-slate-800 overflow-hidden">
+      <div className="flex-1 flex flex-col bg-white dark:bg-slate-800">
         {selectedConversation ? (
           <>
             {/* Header */}
