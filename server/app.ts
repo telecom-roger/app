@@ -45,21 +45,15 @@ app.head("/", (req, res) => {
   res.status(200).end();
 });
 
-// GET "/" for rapid deployment health checks (respond before vite middleware)
-// This ensures the root path responds instantly without hitting the Vite middleware
+// GET "/" for rapid deployment health checks (respond instantly before vite/static middleware)
+// CRITICAL: This must respond within health check timeout
 app.get("/", (req, res, next) => {
-  // If not a browser request (accept header includes text/html), skip to vite
+  // For non-HTML requests (health checks), respond instantly
   if (!req.accepts("html")) {
-    return next();
-  }
-  
-  // For health checks (user-agent may be a bot/health checker), respond instantly
-  const userAgent = (req.get("user-agent") || "").toLowerCase();
-  if (userAgent.includes("health") || userAgent.includes("check") || userAgent.includes("curl")) {
     return res.status(200).json({ ok: true });
   }
   
-  // Otherwise, let Vite handle it
+  // For browser requests, let Vite/static file serving handle it
   next();
 });
 
@@ -145,7 +139,7 @@ export default async function runApp(
     });
     
     // Start automation cron jobs AFTER server is listening (fire-and-forget, non-blocking)
-    // Use setTimeout to ensure it runs after setup
+    // DELAYED: 1000ms to ensure health checks pass before expensive operations start
     setTimeout(() => {
       try {
         startAutomationCron();
@@ -153,11 +147,12 @@ export default async function runApp(
       } catch (err) {
         console.error("❌ Erro ao iniciar cron jobs:", err);
       }
-    }, 50);
+    }, 1000);
     
     // Bootstrap WhatsApp sessions in COMPLETELY async context
     // Fire-and-forget: do NOT await, do NOT block
     // Failures are caught and logged but do not affect server health
+    // DELAYED: 1500ms to ensure health checks pass well before expensive operations
     setTimeout(() => {
       try {
         // Call without await - let it run completely async
@@ -167,6 +162,6 @@ export default async function runApp(
       } catch (err) {
         console.error("❌ Erro ao iniciar bootstrap WhatsApp:", err);
       }
-    }, 100);
+    }, 1500);
   });
 }

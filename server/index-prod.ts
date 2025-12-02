@@ -14,9 +14,11 @@ export async function serveStatic(app: Express, _server: Server) {
     );
   }
 
+  // Serve static files efficiently
   app.use(express.static(distPath, { maxAge: "1h" }));
 
-  // fall through to index.html if the file doesn't exist
+  // Fall through to index.html for SPA routing
+  // This middleware runs AFTER the / route handler, so health checks pass fast
   app.use("*", (_req, res) => {
     res.sendFile(path.resolve(distPath, "index.html"), { maxAge: "1h" });
   });
