@@ -31,6 +31,7 @@ The application features a professional design system utilizing a deep dark blue
 - **Tags System**: Tags are completely separate from opportunity stages. Tags are used exclusively for chat filtering and conversation organization. They do NOT affect opportunity stages, client status, or kanban board. When an opportunity stage changes, tags remain untouched.
 - **AI Message Classification**: Mensagens neutras = NÃO criam oportunidades. "👍" com sentimento positivo = cria em PROPOSTA. Mensagens com intenção comercial = criam na etapa sugerida. Sentimento negativo = move para PERDIDO. Nunca volta status pra trás.
 - **Chat UX**: Cursor mantém focus no campo de input após enviar mensagem (Enter ou botão enviar).
+- **Offline Message Queue**: Mensagens enviadas quando WhatsApp está desconectado são salvas com status `pendente_offline`. Quando a sessão reconecta, a função `processPendingMessages()` automaticamente processa e envia todas as mensagens pendentes do usuário. Mensagens com problemas (cliente sem telefone, tipo não suportado) são marcadas como `erro` para evitar loop infinito de retries.
 
 ### System Design Choices
 - **Folder Structure**: Organized into `client/src`, `server`, and `shared`.
