@@ -90,11 +90,8 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     "ok?",
     "🙃",
     "😊",
-    "👍",
     "👌",
     "✌",
-    "✔️",
-    "✅",
     "...",
     "…"
   ];
