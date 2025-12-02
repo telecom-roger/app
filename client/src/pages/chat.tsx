@@ -1182,8 +1182,8 @@ export default function Chat() {
                               {initials}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="flex items-center gap-0.5 min-w-0 flex-1">
-                            <p className="text-sm font-medium truncate text-slate-900 dark:text-white">
+                          <div className="flex items-center gap-1 min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate text-slate-900 dark:text-white leading-none">
                               {clientName.length > 30
                                 ? clientName.substring(0, 30) + "..."
                                 : clientName}
@@ -1193,8 +1193,9 @@ export default function Chat() {
                               const tag = allTags.find(t => t.nome === tagName);
                               return (
                                 <div
-                                  className={`w-3 h-3 rounded-full flex-shrink-0 ${tag?.cor || "bg-gray-500"}`}
+                                  className={`w-2.5 h-2.5 rounded-full flex-shrink-0 self-center ${tag?.cor || "bg-gray-500"}`}
                                   data-testid={`dot-tag-inline-${conv.id}`}
+                                  style={{ marginTop: '-2px' }}
                                 />
                               );
                             })()}
