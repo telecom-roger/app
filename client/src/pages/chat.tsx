@@ -1904,9 +1904,9 @@ export default function Chat() {
             )}
 
             {/* Input */}
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1 sm:gap-3 -mt-1 sm:mt-0">
               {pastedImage && (
-                <div className="px-3 sm:px-6 pt-4 pb-3 mx-3 sm:mx-6 flex items-center gap-3 sm:gap-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
+                <div className="px-2 sm:px-6 pt-3 pb-2 mx-2 sm:mx-6 flex items-center gap-2 sm:gap-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
                   <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue/10 dark:bg-blue/20 flex items-center justify-center">
                     <img src={pastedImage.base64} alt="Preview" className="w-10 h-10 object-cover rounded-full" />
                   </div>
@@ -1938,7 +1938,7 @@ export default function Chat() {
                 </div>
               )}
               {recordedAudio && (
-                <div className="px-3 sm:px-6 pt-4 pb-3 mx-3 sm:mx-6 flex items-center gap-3 sm:gap-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
+                <div className="px-2 sm:px-6 pt-3 pb-2 mx-2 sm:mx-6 flex items-center gap-2 sm:gap-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
                   <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
                     <Music className="h-5 w-5 text-primary" />
                   </div>
