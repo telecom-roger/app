@@ -4,8 +4,9 @@ import { type Server } from "node:http";
 
 import express, { type Express } from "express";
 import runApp from "./app";
+import { setIndexHtml } from "./app";
 
-// ✅ GLOBAL CACHE - loaded async after server starts
+// ✅ GLOBAL CACHE - pre-loaded during startup for instant serving
 let cachedIndexHtml: string | null = null;
 let distPath: string | null = null;
 
@@ -19,6 +20,16 @@ export async function serveStatic(app: Express, _server: Server) {
     );
   }
 
+  // PRE-LOAD index.html during startup (synchronously) for instant serving
+  try {
+    cachedIndexHtml = fs.readFileSync(path.resolve(distPath, "index.html"), "utf-8");
+    // Share with app.ts so "/" endpoint can serve it instantly
+    setIndexHtml(cachedIndexHtml);
+  } catch (err) {
+    console.error("Error pre-loading index.html:", err);
+    throw err;
+  }
+
   // Serve static files efficiently (CSS, JS, assets)
   app.use(express.static(distPath, { maxAge: "1h", fallthrough: true }));
 
@@ -30,19 +41,13 @@ export async function serveStatic(app: Express, _server: Server) {
       return next();
     }
     
-    // Lazy-load index.html on first SPA request
-    if (!cachedIndexHtml && distPath) {
-      try {
-        cachedIndexHtml = fs.readFileSync(path.resolve(distPath, "index.html"), "utf-8");
-      } catch (err) {
-        console.error("Error loading index.html:", err);
-        return res.status(500).send("Error loading application");
-      }
+    // Serve pre-loaded index.html for SPA routes
+    if (cachedIndexHtml) {
+      res.setHeader("Content-Type", "text/html");
+      res.status(200).send(cachedIndexHtml);
+    } else {
+      res.status(500).send("Application not ready");
     }
-    
-    // Serve cached index.html for SPA routes
-    res.setHeader("Content-Type", "text/html");
-    res.status(200).send(cachedIndexHtml);
   });
 }
 

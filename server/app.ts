@@ -34,6 +34,10 @@ declare module 'http' {
 let serverReady = false;
 export function markServerReady() { serverReady = true; }
 
+// Pre-loaded index.html for instant SPA serving
+let preloadedIndexHtml: string | null = null;
+export function setIndexHtml(html: string) { preloadedIndexHtml = html; }
+
 // ✅ Flag para lazy-load de operações caras (apenas UMA VEZ)
 let expensiveOpsStarted = false;
 function startExpensiveOpsOnce() {
@@ -73,11 +77,16 @@ app.get("/health", (req, res) => {
   res.status(200).end('{"ok":true}');
 });
 
-// ⚡ FAST ROOT ENDPOINT - responds immediately for health checks in deployment
-// This gets overridden by SPA middleware after startup completes
+// ⚡ FAST ROOT ENDPOINT - serves pre-loaded index.html instantly
 app.get("/", (_req, res) => {
   res.setHeader("Content-Type", "text/html");
-  res.status(200).send('<!DOCTYPE html><html><body>Loading...</body></html>');
+  // Serve pre-loaded index.html for instant response (no file system access)
+  if (preloadedIndexHtml) {
+    res.status(200).end(preloadedIndexHtml);
+  } else {
+    // Fallback during startup before index.html is loaded
+    res.status(200).end('<!DOCTYPE html><html><body>Loading...</body></html>');
+  }
 });
 
 app.head("/health", (req, res) => {
