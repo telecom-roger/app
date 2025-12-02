@@ -571,15 +571,48 @@ async function processMessageStatusUpdate(sessionId: string, updates: any) {
       }
       
       if (statusEntrega) {
+        const now = new Date();
+        
+        // 1. Atualiza na tabela messages (chat)
         try {
-          // Atualiza o status no banco de dados
-          const result = await db.update(messages)
+          await db.update(messages)
             .set({ statusEntrega })
             .where(eq(messages.whatsappMessageId, messageId));
-          
-          console.log(`✅ [STATUS] Atualizado para ${statusEntrega}: ${messageId}`);
+          console.log(`✅ [STATUS] Atualizado chat para ${statusEntrega}: ${messageId}`);
         } catch (err) {
-          console.log(`⚠️ [STATUS] Não encontrou mensagem ${messageId} no banco (normal para msgs recebidas)`);
+          // Normal para mensagens que não estão no chat
+        }
+        
+        // 2. ✅ NOVO: Atualiza na tabela campaign_sendings (campanhas)
+        try {
+          const { campaignSendings } = await import('@shared/schema');
+          
+          // Prepara campos para atualização
+          const updateData: any = {
+            status: statusEntrega,
+            statusWhatsapp: status,
+            ultimaInteracao: now,
+          };
+          
+          // Campos específicos por status
+          if (status === 3) {
+            updateData.dataEntrega = now;
+            updateData.estadoDerivado = 'entregue';
+          } else if (status === 4) {
+            updateData.dataVisualizacao = now;
+            updateData.estadoDerivado = 'visualizado';
+          }
+          
+          const result = await db.update(campaignSendings)
+            .set(updateData)
+            .where(eq(campaignSendings.whatsappMessageId, messageId))
+            .returning({ id: campaignSendings.id });
+          
+          if (result.length > 0) {
+            console.log(`✅ [STATUS] Atualizado campaign_sendings para ${statusEntrega}: ${messageId}`);
+          }
+        } catch (err) {
+          // Normal para mensagens que não são de campanha
         }
       }
     }
@@ -1101,15 +1134,17 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
         
         // Tenta enviar via WhatsApp se houver sessão ativa
         let mensagemEnviada = false;
+        let whatsappMessageId: string | undefined;
         if (sessionId && isSessionAlive(sessionId)) {
           const result = await sendMessage(sessionId, client.celular || client.telefone2, conteudo);
           mensagemEnviada = result.success;
+          whatsappMessageId = result.messageId; // ✅ Captura o messageId para rastreamento
         }
         
         // ✅ CONTAGEM IMEDIATA: Incrementa enviados/erros LOGO APÓS o envio
         if (mensagemEnviada) {
           enviados++;
-          console.log(`✅ [${index + 1}/${recipientClients.length}] Enviado para ${client.nome}`);
+          console.log(`✅ [${index + 1}/${recipientClients.length}] Enviado para ${client.nome} [msgId: ${whatsappMessageId}]`);
         } else {
           erros++;
           console.log(`❌ [${index + 1}/${recipientClients.length}] Falha ao enviar para ${client.nome}`);
@@ -1159,7 +1194,7 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
           console.warn(`⚠️ Erro ao registrar interação:`, err);
         }
 
-        // Registra em campaign_sendings
+        // Registra em campaign_sendings com whatsappMessageId para rastreamento
         try {
           await storage.recordCampaignSending({
             userId: campaign.createdBy,
@@ -1171,6 +1206,9 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
             origemDisparo: origemDisparo,
             mensagemUsada: conteudo,
             modeloId: campaign.templateId || null,
+            whatsappMessageId: whatsappMessageId, // ✅ NOVO: Salva messageId para rastreamento de status
+            statusWhatsapp: mensagemEnviada ? 2 : 0, // 2=enviado, 0=erro
+            estadoDerivado: mensagemEnviada ? 'enviado' : 'erro',
           });
         } catch (err) {
           console.warn(`⚠️ Erro ao registrar envio em campaign_sendings:`, err);

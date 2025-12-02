@@ -545,15 +545,32 @@ export const campaignSendings = pgTable("campaign_sendings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   campaignId: varchar("campaign_id").references(() => campaigns.id, { onDelete: "cascade" }),
-  campaignName: text("campaign_name").notNull(), // Store campaign name for reference
+  campaignName: text("campaign_name").notNull(),
   clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
-  status: varchar("status", { length: 20 }).notNull().default("enviado"), // enviado, erro, etc
-  erroMensagem: text("erro_mensagem"), // Error details if failed
+  status: varchar("status", { length: 20 }).notNull().default("enviado"), // erro, enviado, entregue, lido
+  erroMensagem: text("erro_mensagem"),
   dataSending: timestamp("data_sending").defaultNow(),
-  // ✅ Novos campos para unificação de envios imediatos com agendamentos
-  origemDisparo: varchar("origem_disparo", { length: 30 }).default("agendamento"), // agendamento, envio_imediato
-  mensagemUsada: text("mensagem_usada"), // Texto final enviado após merge de variáveis
-  modeloId: varchar("modelo_id").references(() => templates.id, { onDelete: "set null" }), // Template usado
+  origemDisparo: varchar("origem_disparo", { length: 30 }).default("agendamento"),
+  mensagemUsada: text("mensagem_usada"),
+  modeloId: varchar("modelo_id").references(() => templates.id, { onDelete: "set null" }),
+  
+  // ✅ NOVOS CAMPOS: Rastreamento completo de status WhatsApp
+  whatsappMessageId: varchar("whatsapp_message_id", { length: 100 }), // ID da mensagem no WhatsApp
+  statusWhatsapp: integer("status_whatsapp").default(0), // 0=erro, 1=pendente, 2=enviado, 3=entregue, 4=lido
+  dataEntrega: timestamp("data_entrega"), // Quando recebeu ack 3 (entregue)
+  dataVisualizacao: timestamp("data_visualizacao"), // Quando recebeu ack 4 (lido)
+  dataPrimeiraResposta: timestamp("data_primeira_resposta"),
+  dataUltimaResposta: timestamp("data_ultima_resposta"),
+  totalRespostas: integer("total_respostas").default(0),
+  ultimaInteracao: timestamp("ultima_interacao"),
+  
+  // ✅ Estado derivado (etiqueta calculada automaticamente)
+  estadoDerivado: varchar("estado_derivado", { length: 50 }).default("enviado"),
+  // Valores: enviado, entregue, nao_entregue, numero_invalido, bloqueado, 
+  //          visualizado, nao_visualizado, visualizou_nao_respondeu,
+  //          respondeu, respondeu_imediato, respondeu_24h, respondeu_dias, respondeu_muito_tempo,
+  //          engajamento_alto, engajamento_medio, engajamento_baixo, sem_engajamento
+  
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
   index("idx_campaign_sendings_user").on(table.userId),
@@ -562,7 +579,8 @@ export const campaignSendings = pgTable("campaign_sendings", {
   index("idx_campaign_sendings_date").on(table.dataSending),
   index("idx_campaign_sendings_user_client").on(table.userId, table.clientId),
   index("idx_campaign_sendings_origem").on(table.origemDisparo),
-  // ✅ ÚNICO: Evita duplicatas de envio para mesmo cliente na mesma campanha
+  index("idx_campaign_sendings_whatsapp_id").on(table.whatsappMessageId),
+  index("idx_campaign_sendings_estado").on(table.estadoDerivado),
   uniqueIndex("idx_campaign_sendings_unique_client_campaign").on(table.campaignId, table.clientId),
 ]);
 
@@ -574,6 +592,9 @@ export const insertCampaignSendingSchema = createInsertSchema(campaignSendings).
   origemDisparo: z.enum(["agendamento", "envio_imediato"]).default("agendamento"),
   mensagemUsada: z.string().optional(),
   modeloId: z.string().optional().nullable(),
+  whatsappMessageId: z.string().optional(),
+  statusWhatsapp: z.number().optional(),
+  estadoDerivado: z.string().optional(),
 });
 
 export type CampaignSending = typeof campaignSendings.$inferSelect;
