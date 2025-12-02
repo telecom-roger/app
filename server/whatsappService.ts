@@ -345,53 +345,78 @@ async function processIncomingMessages(sessionId: string, m: any) {
           }
         }
         
+        // ✅ PASSO 1: Buscar conversa para este usuário + telefone
         let conversation = await storage.findConversationByPhoneAndUser(senderPhone, userId);
         
         if (!conversation) {
           console.warn(`[RECEBIMENTO] ⚠️ Conversa não encontrada via findConversationByPhoneAndUser`);
-          console.log(`🔍 Buscando cliente com: "${senderPhone}"`);
+          console.log(`🔍 [BUSCA GLOBAL] Buscando cliente por telefone: "${senderPhone}"`);
           
-          // Search for existing client (senderPhone is already normalized without 55)
-          const [client] = await db
+          // ✅ PASSO 2: Buscar cliente GLOBALMENTE (sem filtrar por usuário) - MAS COM PRIORIDADE
+          // Buscar exato primeiro, depois fuzzy
+          let client = null;
+          
+          // Busca exata
+          const exactMatches = await db
             .select()
             .from(clientsTable)
             .where(or(
               eq(clientsTable.celular, senderPhone),
-              eq(clientsTable.telefone2, senderPhone),
-              ilike(clientsTable.celular, `%${senderPhone}%`),
-              ilike(clientsTable.telefone2, `%${senderPhone}%`)
-            ))
-            .limit(1);
+              eq(clientsTable.telefone2, senderPhone)
+            ));
           
-          if (client) {
-            console.log(`✅ Cliente encontrado: ${client.id} (${client.nome})`);
-            conversation = await storage.createOrGetConversation(client.id, userId);
-            console.log(`✨ Conversa criada automaticamente: ${conversation.id}`);
+          if (exactMatches.length > 0) {
+            // Se encontrar múltiplos, preferir aquele com status "ativo" ou mais recente
+            client = exactMatches.sort((a, b) => {
+              if (a.status === "ativo" && b.status !== "ativo") return -1;
+              if (b.status === "ativo" && a.status !== "ativo") return 1;
+              return new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime();
+            })[0];
+            console.log(`✅ [CLIENTE ENCONTRADO] Exato: ${client.id} (${client.nome}) - celular: ${client.celular}`);
           } else {
-            console.warn(`[RECEBIMENTO] ⚠️ Cliente não encontrado, criando novo...`);
+            // Busca fuzzy se exato não encontrar
+            const fuzzyMatches = await db
+              .select()
+              .from(clientsTable)
+              .where(or(
+                ilike(clientsTable.celular, `%${senderPhone}%`),
+                ilike(clientsTable.telefone2, `%${senderPhone}%`)
+              ))
+              .limit(5);
             
-            // Auto-create new client - store WITHOUT 55 prefix (senderPhone already normalized)
+            if (fuzzyMatches.length > 0) {
+              client = fuzzyMatches[0];
+              console.log(`✅ [CLIENTE ENCONTRADO] Fuzzy: ${client.id} (${client.nome})`);
+            }
+          }
+          
+          // ✅ PASSO 3: Se encontrou cliente, usar ele. Se não, criar novo
+          if (client) {
+            console.log(`✅ Usando cliente existente: ${client.id} (${client.nome})`);
+            conversation = await storage.createOrGetConversation(client.id, userId);
+            console.log(`✨ Conversa criada para usuário ${userId}: ${conversation.id}`);
+          } else {
+            console.warn(`[RECEBIMENTO] ⚠️ Nenhum cliente encontrado - criando novo`);
+            
+            // Auto-create new client
             const novoCliente = await storage.createClient({
               nome: `NOVO CONTATO -> ${senderPhone}`,
               celular: senderPhone,
               status: "Lead",
               carteira: "CONTATO",
-              createdBy: userId, // Atrelar ao usuário que recebeu a mensagem
+              createdBy: userId,
             });
             
             console.log(`✅ Novo cliente criado: ${novoCliente.id} (${senderPhone})`);
             
-            // Create timeline entry for new client created by system
             await storage.createInteraction({
               clientId: novoCliente.id,
               tipo: "nota",
               origem: "system",
               titulo: "Contato criado por sistema",
-              texto: `Contato criado automaticamente ao receber primeira mensagem do WhatsApp em ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`,
+              texto: `Contato criado automaticamente ao receber primeira mensagem do WhatsApp`,
               createdBy: userId,
             });
-            
-            console.log(`📍 Timeline entry criada para novo cliente`);
             
             conversation = await storage.createOrGetConversation(novoCliente.id, userId);
             console.log(`✨ Conversa criada para novo contato: ${conversation.id}`);
