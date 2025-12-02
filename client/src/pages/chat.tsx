@@ -1968,76 +1968,72 @@ export default function Chat() {
                   </div>
                 </div>
               )}
-              <div className="fixed bottom-0 left-0 right-0 p-4 sm:p-6 bg-white dark:bg-slate-800 shadow-lg">
-                <div className="mx-auto" style={{ maxWidth: "calc(100% - 2rem)" }}>
-                  <div className="relative flex items-end gap-2">
-                    <input
-                      type="file"
-                      id="file-upload"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                      data-testid="input-file-upload"
-                    />
+              <div className="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex gap-2 items-end">
+                <input
+                  type="file"
+                  id="file-upload"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  data-testid="input-file-upload"
+                />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => document.getElementById("file-upload")?.click()}
+                  disabled={sendMutation.isPending || isRecording || recordedAudio !== null}
+                  data-testid="button-file-upload"
+                  className="h-9 w-9 flex-shrink-0"
+                >
+                  <Paperclip className="h-4 w-4" />
+                </Button>
+                <div className="relative flex-1 flex items-end">
+                  <Textarea
+                    autoFocus
+                    placeholder="Digite uma mensagem…"
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                    onPaste={handlePaste}
+                    disabled={sendMutation.isPending || recordedAudio !== null || pastedImage !== null}
+                    data-testid="input-message"
+                    className="w-full min-h-10 max-h-24 px-4 py-2 text-sm border-0 focus-visible:ring-0 bg-slate-50 dark:bg-slate-700 rounded-lg resize-none"
+                  />
+                  {messageText.trim() ? (
+                    <Button
+                      onClick={handleSendMessage}
+                      disabled={sendMutation.isPending || recordedAudio !== null}
+                      size="icon"
+                      data-testid="button-send-message"
+                      className="h-8 w-8 flex-shrink-0 absolute right-1.5 bottom-1.5"
+                      variant="ghost"
+                    >
+                      {sendMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                    </Button>
+                  ) : (
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={() => document.getElementById("file-upload")?.click()}
-                      disabled={sendMutation.isPending || isRecording || recordedAudio !== null}
-                      data-testid="button-file-upload"
-                      className="h-10 w-10 flex-shrink-0"
+                      onClick={isRecording ? handleStopRecording : handleStartRecording}
+                      disabled={sendMutation.isPending || recordedAudio !== null}
+                      data-testid="button-voice-record"
+                      className="h-8 w-8 flex-shrink-0 absolute right-1.5 bottom-1.5"
                     >
-                      <Paperclip className="h-5 w-5" />
-                    </Button>
-                    <div className="relative flex-1 flex items-end">
-                      <Textarea
-                        autoFocus
-                        placeholder="Digite uma mensagem…"
-                        value={messageText}
-                        onChange={(e) => setMessageText(e.target.value)}
-                        onKeyPress={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSendMessage();
-                          }
-                        }}
-                        onPaste={handlePaste}
-                        disabled={sendMutation.isPending || recordedAudio !== null || pastedImage !== null}
-                        data-testid="input-message"
-                        className="w-full min-h-11 max-h-32 px-4 py-2 text-sm sm:text-base border-0 focus-visible:ring-0 bg-slate-100 dark:bg-slate-700 rounded-2xl resize-none"
-                      />
-                      {messageText.trim() ? (
-                        <Button
-                          onClick={handleSendMessage}
-                          disabled={sendMutation.isPending || recordedAudio !== null}
-                          size="icon"
-                          data-testid="button-send-message"
-                          className="h-10 w-10 flex-shrink-0 absolute right-1"
-                          variant="ghost"
-                        >
-                          {sendMutation.isPending ? (
-                            <Loader2 className="h-5 w-5 animate-spin" />
-                          ) : (
-                            <Send className="h-5 w-5" />
-                          )}
-                        </Button>
+                      {isRecording ? (
+                        <StopCircle className="h-4 w-4 animate-pulse" />
                       ) : (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={isRecording ? handleStopRecording : handleStartRecording}
-                          disabled={sendMutation.isPending || recordedAudio !== null}
-                          data-testid="button-voice-record"
-                          className="h-10 w-10 flex-shrink-0 absolute right-1"
-                        >
-                          {isRecording ? (
-                            <StopCircle className="h-5 w-5 animate-pulse" />
-                          ) : (
-                            <Mic className="h-5 w-5" />
-                          )}
-                        </Button>
+                        <Mic className="h-4 w-4" />
                       )}
-                    </div>
-                  </div>
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
