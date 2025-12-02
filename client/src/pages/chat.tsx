@@ -1175,31 +1175,30 @@ export default function Chat() {
                       }`}
                       data-testid={`button-conversation-${conv.id}`}
                     >
-                      <div className="flex items-stretch justify-between gap-1">
+                      <div className="flex items-center justify-between gap-1">
                         <div className="flex items-center gap-1.5 min-w-0 flex-1">
                           <Avatar className="h-8 w-8 flex-shrink-0" data-testid={`avatar-${conv.id}`}>
                             <AvatarFallback style={{ backgroundColor: '#F0F1F2', color: '#1F1F1F' }} className="bg-slate-300 text-slate-700 text-xs font-bold">
                               {initials}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="flex items-center gap-0.5 min-w-0 flex-1">
-                            <p className="text-sm font-medium truncate text-slate-900 dark:text-white">
-                              {clientName.length > 30
-                                ? clientName.substring(0, 30) + "..."
-                                : clientName}
-                            </p>
-                            {conv.client?.tags?.[0] && (() => {
-                              const tagName = conv.client.tags[0];
-                              const tag = allTags.find(t => t.nome === tagName);
-                              return (
-                                <div
-                                  className={`w-2 h-2 rounded-full flex-shrink-0 ${tag?.cor || "bg-gray-500"}`}
-                                  data-testid={`dot-tag-inline-${conv.id}`}
-                                />
-                              );
-                            })()}
-                          </div>
+                          <p className="text-sm font-medium truncate text-slate-900 dark:text-white min-w-0 flex-1">
+                            {clientName.length > 30
+                              ? clientName.substring(0, 30) + "..."
+                              : clientName}
+                          </p>
                         </div>
+                        {conv.client?.tags?.[0] && (() => {
+                          const tagName = conv.client.tags[0];
+                          const tag = allTags.find(t => t.nome === tagName);
+                          return (
+                            <div
+                              className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${tag?.cor || "bg-gray-500"}`}
+                              data-testid={`dot-tag-inline-${conv.id}`}
+                              style={{ alignSelf: 'center', marginTop: '6px' }}
+                            />
+                          );
+                        })()}
                         <div className="flex items-center gap-1 flex-shrink-0">
                           {(conv as any).oculta && (
                             <EyeOff className="h-3 w-3 text-slate-400" />
