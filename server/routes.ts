@@ -759,6 +759,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await db.insert(automationTasks).values({
             userId: (req.user as any).id,
             clientId: opportunity.clientId,
+            opportunityId: opportunity.id,  // ✅ CORRIGIDO: adicionar opportunityId para evitar duplicação
             tipo: "contrato_enviado_message",
             proximaExecucao: new Date(), // Executar imediatamente
             dados: { opportunityId: opportunity.id },
