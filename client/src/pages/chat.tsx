@@ -1168,21 +1168,21 @@ export default function Chat() {
                       key={conv.id}
                       onClick={() => handleSelectConversation(conv.id)}
                       onContextMenu={handleContextMenu}
-                      className={`w-full text-left p-3 sm:p-4 rounded-lg transition-colors mb-1 hover:bg-slate-100 dark:hover:bg-slate-800 border-b border-slate-200 dark:border-slate-700 ${
+                      className={`w-full text-left p-2.5 sm:p-3 rounded-lg transition-colors mb-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 border-b border-slate-200 dark:border-slate-700 ${
                         selectedConversationId === conv.id
                           ? "bg-slate-100 dark:bg-slate-800 text-foreground"
                           : "text-foreground"
                       }`}
                       data-testid={`button-conversation-${conv.id}`}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
                           <Avatar className="h-8 w-8 flex-shrink-0" data-testid={`avatar-${conv.id}`}>
                             <AvatarFallback style={{ backgroundColor: '#F0F1F2', color: '#1F1F1F' }} className="bg-slate-300 text-slate-700 text-xs font-bold">
                               {initials}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="flex items-center gap-1 min-w-0 flex-1">
+                          <div className="flex items-center gap-0.5 min-w-0 flex-1">
                             <p className="text-sm font-medium truncate text-slate-900 dark:text-white">
                               {clientName.length > 30
                                 ? clientName.substring(0, 30) + "..."
@@ -1200,7 +1200,7 @@ export default function Chat() {
                             })()}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           {(conv as any).oculta && (
                             <EyeOff className="h-3 w-3 text-slate-400" />
                           )}
@@ -1219,13 +1219,13 @@ export default function Chat() {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-start justify-between gap-2 mt-1">
-                        <div className="flex-1 min-w-0 ml-10">
+                      <div className="flex items-start justify-between gap-1 mt-0.5">
+                        <div className="flex-1 min-w-0 ml-9.5">
                           <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
                             {conv.client?.celular || (conv.client as any)?.cnpj || "Sem contato"}
                           </p>
                           {conv.ultimaMensagem && (
-                            <p className="text-xs text-slate-600 dark:text-slate-400 truncate mt-1">
+                            <p className="text-xs text-slate-600 dark:text-slate-400 truncate mt-0.5">
                               {conv.ultimaMensagem.length > 50
                                 ? conv.ultimaMensagem.substring(0, 50) + "..."
                                 : conv.ultimaMensagem}
