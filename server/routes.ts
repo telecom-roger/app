@@ -3294,16 +3294,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               } else if (!existingOpp) {
                 // 🚫 Só criar opp se houver intenção comercial real
                 if (analysis.sentimento === "positivo" || analysis.intenção === "aprovacao_envio" || analysis.intenção === "solicitacao_info") {
-                  // Criar em CONTATO (1ª msg com intenção)
+                  // Criar na etapa sugerida pela IA (CONTATO ou PROPOSTA)
+                  const etapaParaCriar = (analysis.etapa || "CONTATO").toUpperCase();
                   const [newOpp] = await db.insert(opportunities).values({
                     clientId: conv.clientId,
                     titulo: `${client.nome} - ${analysis.motivo}`,
-                    etapa: "CONTATO",
+                    etapa: etapaParaCriar,
                     valorEstimado: "5000",
                     responsavelId: user.id || conv.userId,
                     ordem: 0,
                   }).returning();
-                  console.log(`✅ OPP CRIADA (CONTATO): ${analysis.motivo}`);
+                  console.log(`✅ OPP CRIADA (${etapaParaCriar}): ${analysis.motivo}`);
                   const newStatus7 = await storage.recalculateClientStatus(conv.clientId);
                   await storage.updateClient(conv.clientId, { status: newStatus7 });
                 } else {
