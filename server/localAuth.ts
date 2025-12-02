@@ -96,6 +96,15 @@ export async function setupAuth(app: Express) {
     });
   });
 
+  // Get current authenticated user
+  app.get("/api/auth/user", (req, res) => {
+    if (req.isAuthenticated()) {
+      res.json(req.user);
+    } else {
+      res.status(401).json({ error: "Unauthorized" });
+    }
+  });
+
   // Register route
   app.post("/api/register", async (req, res) => {
     try {
