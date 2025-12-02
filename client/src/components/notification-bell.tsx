@@ -107,9 +107,9 @@ export function NotificationBell() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1">
+                        <div className="flex items-start justify-between gap-2">
                           <p className="font-semibold text-xs truncate">{msg.clientName}</p>
-                          <p className="text-xs text-muted-foreground flex-shrink-0 whitespace-nowrap">
+                          <p className="text-xs text-muted-foreground flex-shrink-0">
                             {formatDistanceToNow(new Date(msg.createdAt), { addSuffix: false, locale: ptBR })}
                           </p>
                         </div>

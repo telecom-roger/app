@@ -998,9 +998,22 @@ export default function Chat() {
                 setSearchTerm(e.target.value);
                 setShowSearchResults(e.target.value.trim().length > 0);
               }}
-              className="pl-9 h-9 sm:h-10 text-sm"
+              className="pl-9 pr-9 h-9 sm:h-10 text-sm"
               data-testid="input-search-client"
             />
+            {searchTerm && (
+              <button
+                onClick={() => {
+                  setSearchTerm("");
+                  setShowSearchResults(false);
+                }}
+                className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="button-clear-search"
+                title="Limpar"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
 
