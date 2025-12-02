@@ -8,7 +8,6 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationBell } from "@/components/notification-bell";
 import { ChatNotificationBell } from "@/components/chat-notification-bell";
-import { MessagesNotificationBell } from "@/components/messages-notification-bell";
 import { LogoutButton } from "@/components/logout-button";
 import { AppSidebar } from "@/components/app-sidebar";
 import { useAuth } from "@/hooks/useAuth";
@@ -122,7 +121,6 @@ function AppContent() {
           <header className="flex items-center justify-between px-3 md:px-6 py-2 md:py-3 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 gap-2">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
             <div className="flex items-center gap-1 md:gap-2">
-              <MessagesNotificationBell />
               <ChatNotificationBell />
               <NotificationBell />
               <ThemeToggle />
