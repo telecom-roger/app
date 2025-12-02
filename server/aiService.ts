@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { db } from "./db";
 import { clients, opportunities, messages } from "@shared/schema";
-import { eq, and, sql, desc, gte, lt } from "drizzle-orm";
+import { eq, and, sql, desc, gte, lt, inArray } from "drizzle-orm";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -623,7 +623,7 @@ export async function validateOpportunityCreation(
   }
 
   // ❌ REGRA 3: Etapa deve ser válida
-  if (!analysis.etapa || analysis.etapa === "" || analysis.etapa === "AUTOMÁTICA") {
+  if (analysis.etapa === "" || analysis.etapa === "AUTOMÁTICA") {
     return { podecriar: false, motivo: "Etapa inválida ou automática" };
   }
 
