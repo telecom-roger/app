@@ -1164,9 +1164,19 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
     const tempoRandomMin = campaign.tempoAleatorioMin || 10; // segundos
     const tempoRandomMax = campaign.tempoAleatorioMax || 60; // segundos
 
-    // Pega a primeira sessão ativa para enviar mensagens
-    const activeSessions = getAllActiveSessions();
-    const sessionId = activeSessions.length > 0 ? activeSessions[0] : null;
+    // ✅ INDIVIDUAL: Busca a sessão WhatsApp do usuário que criou a campanha
+    const userSession = await storage.getConnectedSessionByUserId(campaign.createdBy);
+    const sessionId = userSession?.sessionId || null;
+    
+    if (!sessionId) {
+      console.error(`❌ Usuário ${campaign.createdBy} não tem sessão WhatsApp conectada!`);
+      await db.update(campaigns)
+        .set({ status: 'erro', totalErros: recipientClients.length })
+        .where(eq(campaigns.id, campaign.id));
+      return;
+    }
+    
+    console.log(`📱 Usando sessão ${sessionId} do usuário ${campaign.createdBy}`);
     
     // Envia mensagens via WhatsApp
     for (let index = 0; index < recipientClients.length; index++) {

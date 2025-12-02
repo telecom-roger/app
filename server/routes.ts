@@ -2120,11 +2120,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = (req.user as any);
-      const sessions = await storage.getAllWhatsappSessions(user.role === 'admin' ? undefined : user.id);
-      const sessaoConectada = sessions.find((s) => s.status === 'conectada');
+      // ✅ INDIVIDUAL: Sempre usa a sessão do próprio usuário (não importa se admin)
+      const sessaoConectada = await storage.getConnectedSessionByUserId(user.id);
       
       if (!sessaoConectada) {
-        return res.status(400).json({ error: "Nenhuma sessão WhatsApp conectada" });
+        return res.status(400).json({ error: "Você não tem sessão WhatsApp conectada. Conecte seu WhatsApp primeiro." });
       }
 
       // Create campaign tracking ID
@@ -2354,13 +2354,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "telefone e mensagem são obrigatórios" });
       }
 
-      // Get user's first active WhatsApp session
+      // ✅ INDIVIDUAL: Sempre usa a sessão do próprio usuário (não importa se admin)
       const user = (req.user as any);
-      const sessions = await storage.getAllWhatsappSessions(user.role === 'admin' ? undefined : user.id);
-      const sessaoConectada = sessions.find((s) => s.status === 'conectada');
+      const sessaoConectada = await storage.getConnectedSessionByUserId(user.id);
       
       if (!sessaoConectada) {
-        return res.status(400).json({ error: "Nenhuma sessão WhatsApp conectada" });
+        return res.status(400).json({ error: "Você não tem sessão WhatsApp conectada. Conecte seu WhatsApp primeiro." });
       }
 
       // Verify the session is actually alive
@@ -2846,12 +2845,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`📤 [FORWARD] Encaminhando mensagem para ${normalizedPhone}`);
 
-      // Check WhatsApp connection
-      const activeSessions = await db.select().from(whatsappSessions).where(eq(whatsappSessions.status, "conectada"));
-      if (activeSessions.length === 0) {
-        return res.status(400).json({ error: "WhatsApp não conectado" });
+      // ✅ INDIVIDUAL: Busca a sessão do próprio usuário
+      const session = await storage.getConnectedSessionByUserId(user.id);
+      if (!session) {
+        return res.status(400).json({ error: "Você não tem sessão WhatsApp conectada. Conecte seu WhatsApp primeiro." });
       }
-      const session = activeSessions[0];
 
       // Get or create conversation with target client
       let targetConversation;
@@ -5254,6 +5252,17 @@ export function startCampaignScheduler() {
             }
             
             console.log(`🔒 Executando campanha ${campaign.id} do usuário ${ownerId} [status: em_progresso]`);
+            
+            // ✅ INDIVIDUAL: Verificar se o usuário tem sessão WhatsApp conectada ANTES de executar
+            const userSession = await storage.getConnectedSessionByUserId(ownerId);
+            if (!userSession) {
+              console.error(`❌ [SCHEDULER] Usuário ${ownerId} não tem sessão WhatsApp conectada!`);
+              await db.update(campaignsTable)
+                .set({ status: 'erro', totalErros: campaign.totalRecipients || 0 })
+                .where(eq(campaignsTable.id, campaign.id));
+              continue;
+            }
+            console.log(`📱 [SCHEDULER] Usando sessão ${userSession.sessionId} do usuário ${ownerId}`);
             
             // Carrega APENAS clientes do dono da campanha
             const userClients = await storage.getClients({ 

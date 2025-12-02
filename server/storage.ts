@@ -595,6 +595,22 @@ export async function getAllWhatsappSessions(userId?: string) {
   return await query.orderBy(desc(whatsappSessions.createdAt));
 }
 
+// Busca a sessão WhatsApp conectada de um usuário específico
+export async function getConnectedSessionByUserId(userId: string) {
+  const [result] = await db
+    .select()
+    .from(whatsappSessions)
+    .where(
+      and(
+        eq(whatsappSessions.userId, userId),
+        eq(whatsappSessions.status, 'conectada'),
+        eq(whatsappSessions.ativo, true)
+      )
+    )
+    .limit(1);
+  return result;
+}
+
 // ==================== WHATSAPP BROADCAST STORAGE ====================
 export async function getBroadcastStats(filtros?: { status?: string; carteira?: string }) {
   let conditions = [];
