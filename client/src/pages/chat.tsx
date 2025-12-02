@@ -1210,7 +1210,7 @@ export default function Chat() {
                             </span>
                           )}
                           {conv.ultimaMensagemEm && (
-                            <p className="text-xs text-slate-600 dark:text-slate-400 flex-shrink-0">
+                            <p className="text-xs text-slate-600 dark:text-slate-400 flex-shrink-0" style={{ marginLeft: '-8px' }}>
                               {new Date(conv.ultimaMensagemEm).toLocaleTimeString("pt-BR", {
                                 hour: "2-digit",
                                 minute: "2-digit"
