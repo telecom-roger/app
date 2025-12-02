@@ -116,15 +116,13 @@ export function NotificationBell() {
                         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{msg.conteudo}</p>
                       </div>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="default"
+                    <button
                       onClick={() => handleConversation(msg.clientId, msg.conversationId)}
                       data-testid={`button-conversar-${msg.messageId}`}
-                      className="w-full mt-1.5 h-6 text-xs py-1"
+                      className="mt-1.5 px-2 py-0.5 text-xs bg-primary text-primary-foreground rounded hover-elevate transition-colors"
                     >
                       Conversar
-                    </Button>
+                    </button>
                   </div>
                 ))}
               </div>
