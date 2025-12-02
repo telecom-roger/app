@@ -1100,7 +1100,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get campaign details with recipients
+  // Get campaign details with recipients - EXPANDED with full tracking
   app.get("/api/campaigns/:id/details", isAuthenticated, async (req, res) => {
     try {
       const campaign = await storage.getCampaignById(req.params.id);
@@ -1116,57 +1116,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the client IDs from the campaign filter (it's a JSONB object)
       const clientIds: string[] = (campaign.filtros as any)?.clientIds || [];
       
-      if (clientIds.length === 0) {
-        return res.json([]);
-      }
-
-      // ✅ Buscar status real do envio da tabela campaign_sendings (não do cliente!)
-      // ORDER BY: status='enviado' primeiro, depois por data (mais recente)
-      const allClients = await db
+      // ✅ NOVO: Buscar todos os registros de envio com campos detalhados
+      const sendingsData = await db
         .select({
-          id: clients.id,
-          nome: clients.nome,
-          telefone: clients.celular,
-          email: clients.email,
+          id: campaignSendings.id,
+          clientId: campaignSendings.clientId,
+          clientNome: clients.nome,
+          clientTelefone: clients.celular,
+          clientEmail: clients.email,
           status: campaignSendings.status,
+          statusWhatsapp: campaignSendings.statusWhatsapp,
+          estadoDerivado: campaignSendings.estadoDerivado,
           erroMensagem: campaignSendings.erroMensagem,
           dataSending: campaignSendings.dataSending,
+          dataEntrega: campaignSendings.dataEntrega,
+          dataVisualizacao: campaignSendings.dataVisualizacao,
+          dataPrimeiraResposta: campaignSendings.dataPrimeiraResposta,
+          dataUltimaResposta: campaignSendings.dataUltimaResposta,
+          totalRespostas: campaignSendings.totalRespostas,
+          ultimaInteracao: campaignSendings.ultimaInteracao,
+          mensagemUsada: campaignSendings.mensagemUsada,
         })
-        .from(clients)
-        .leftJoin(
-          campaignSendings, 
-          and(
-            eq(campaignSendings.clientId, clients.id),
-            eq(campaignSendings.campaignId, req.params.id)
-          )
-        )
-        .where(inArray(clients.id, clientIds))
-        .orderBy(
-          // Priorizar 'enviado' sobre 'erro' usando CASE (enviado = 1, erro = 2)
-          sql`CASE WHEN ${campaignSendings.status} = 'enviado' THEN 1 WHEN ${campaignSendings.status} = 'erro' THEN 2 ELSE 3 END`,
-          desc(campaignSendings.dataSending)
-        )
-        .limit(10000);
+        .from(campaignSendings)
+        .innerJoin(clients, eq(clients.id, campaignSendings.clientId))
+        .where(eq(campaignSendings.campaignId, req.params.id))
+        .orderBy(desc(campaignSendings.dataSending));
 
-      // ✅ Deduplicar: Como os registros vêm ordenados (enviado primeiro), basta pegar o primeiro de cada cliente
-      const uniqueClientMap = new Map<string, typeof allClients[0]>();
-      for (const record of allClients) {
-        if (!uniqueClientMap.has(record.id)) {
-          uniqueClientMap.set(record.id, record);
+      // ✅ CALCULAR RESUMO
+      const resumo = {
+        total: sendingsData.length,
+        enviados: sendingsData.filter(s => s.status === 'enviado' || s.status === 'entregue' || s.status === 'lido').length,
+        entregues: sendingsData.filter(s => s.status === 'entregue' || s.status === 'lido').length,
+        visualizados: sendingsData.filter(s => s.status === 'lido').length,
+        respondidos: sendingsData.filter(s => s.totalRespostas && s.totalRespostas > 0).length,
+        erros: sendingsData.filter(s => s.status === 'erro').length,
+        pendentes: clientIds.length - sendingsData.length,
+        // Engajamento
+        engajamentoAlto: sendingsData.filter(s => s.estadoDerivado === 'engajamento_alto' || s.estadoDerivado === 'respondeu_imediato').length,
+        engajamentoMedio: sendingsData.filter(s => s.estadoDerivado === 'engajamento_medio' || s.estadoDerivado === 'respondeu_24h').length,
+        engajamentoBaixo: sendingsData.filter(s => s.estadoDerivado === 'engajamento_baixo' || s.estadoDerivado === 'visualizou_nao_respondeu').length,
+        semEngajamento: sendingsData.filter(s => s.estadoDerivado === 'sem_engajamento' || s.estadoDerivado === 'nao_visualizado').length,
+      };
+
+      // ✅ FORMATAR CLIENTES COM STATUS DETALHADO
+      const clientesDetalhados = sendingsData.map(s => {
+        // Calcular etiqueta legível
+        let etiqueta = 'Enviado';
+        if (s.status === 'erro') etiqueta = 'Erro no envio';
+        else if (s.totalRespostas && s.totalRespostas > 0) etiqueta = 'Respondeu';
+        else if (s.status === 'lido') etiqueta = 'Visualizado';
+        else if (s.status === 'entregue') etiqueta = 'Entregue';
+        else if (s.status === 'enviado') etiqueta = 'Enviado';
+
+        // Calcular engajamento
+        let engajamento = 'baixo';
+        if (s.totalRespostas && s.totalRespostas > 0) {
+          if (s.dataPrimeiraResposta && s.dataSending) {
+            const tempoResposta = new Date(s.dataPrimeiraResposta).getTime() - new Date(s.dataSending).getTime();
+            if (tempoResposta < 3600000) engajamento = 'alto'; // < 1h
+            else if (tempoResposta < 86400000) engajamento = 'medio'; // < 24h
+          } else {
+            engajamento = 'medio';
+          }
+        } else if (s.status === 'lido') {
+          engajamento = 'baixo';
+        } else if (s.status === 'entregue' || s.status === 'enviado') {
+          engajamento = 'nenhum';
+        }
+
+        return {
+          id: s.id,
+          clientId: s.clientId,
+          nome: s.clientNome,
+          telefone: s.clientTelefone,
+          email: s.clientEmail,
+          status: s.status,
+          etiqueta,
+          engajamento,
+          statusWhatsapp: s.statusWhatsapp,
+          erroMensagem: s.erroMensagem,
+          dataSending: s.dataSending,
+          dataEntrega: s.dataEntrega,
+          dataVisualizacao: s.dataVisualizacao,
+          dataPrimeiraResposta: s.dataPrimeiraResposta,
+          dataUltimaResposta: s.dataUltimaResposta,
+          totalRespostas: s.totalRespostas || 0,
+          ultimaInteracao: s.ultimaInteracao,
+        };
+      });
+
+      // ✅ GERAR TIMELINE DA CAMPANHA
+      const timeline: Array<{data: Date, tipo: string, descricao: string, clienteNome?: string}> = [];
+      
+      // Adicionar eventos de cada cliente
+      for (const s of sendingsData) {
+        if (s.dataSending) {
+          timeline.push({ data: s.dataSending, tipo: 'envio', descricao: `Mensagem enviada para ${s.clientNome}`, clienteNome: s.clientNome || undefined });
+        }
+        if (s.dataEntrega) {
+          timeline.push({ data: s.dataEntrega, tipo: 'entrega', descricao: `Mensagem entregue para ${s.clientNome}`, clienteNome: s.clientNome || undefined });
+        }
+        if (s.dataVisualizacao) {
+          timeline.push({ data: s.dataVisualizacao, tipo: 'visualizacao', descricao: `${s.clientNome} visualizou a mensagem`, clienteNome: s.clientNome || undefined });
+        }
+        if (s.dataPrimeiraResposta) {
+          timeline.push({ data: s.dataPrimeiraResposta, tipo: 'resposta', descricao: `${s.clientNome} respondeu`, clienteNome: s.clientNome || undefined });
+        }
+        if (s.status === 'erro') {
+          timeline.push({ data: s.dataSending || new Date(), tipo: 'erro', descricao: `Erro ao enviar para ${s.clientNome}: ${s.erroMensagem || 'Falha desconhecida'}`, clienteNome: s.clientNome || undefined });
         }
       }
 
-      // Mapear para formato esperado pelo frontend
-      const result = Array.from(uniqueClientMap.values()).map(c => ({
-        id: c.id,
-        nome: c.nome,
-        telefone: c.telefone,
-        email: c.email,
-        status: c.status === 'erro' ? 'Erro' : c.status === 'enviado' ? 'Enviado' : 'Pendente',
-        erroMensagem: c.erroMensagem,
-      }));
+      // Ordenar timeline por data (mais recente primeiro)
+      timeline.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
 
-      res.json(result);
+      res.json({
+        campaign,
+        resumo,
+        clientes: clientesDetalhados,
+        timeline: timeline.slice(0, 100), // Limitar a 100 eventos mais recentes
+      });
     } catch (error: any) {
       console.error("Error fetching campaign details:", error);
       res.status(500).json({ error: "Internal server error" });
