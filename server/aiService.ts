@@ -237,6 +237,26 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
 
   // 🤖 DETECTAR MENSAGENS AUTOMÁTICAS
   const mensagensAutomaticas = [
+    // Padrões típicos de auto-resposta de empresas
+    "agradecem seu contato",
+    "agradecemos seu contato",
+    "obrigado pelo contato",
+    "obrigado por entrar em contato",
+    "como podemos ajudar",
+    "como posso ajudar",
+    "em que posso ajudar",
+    "em que podemos ajudar",
+    "podemos ajuda-lo",
+    "podemos ajudá-lo",
+    "sou assistente virtual",
+    "sou um assistente",
+    "atendimento automatico",
+    "atendimento automático",
+    "bem-vindo ao",
+    "bem vindo ao",
+    "seja bem-vindo",
+    "seja bem vindo",
+    // Padrões antigos
     "deixe seu contato",
     "aguarde",
     "nosso suporte retornará",
@@ -254,6 +274,29 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     "em breve entraremos",
     "mensagem automatica",
     "mensagem automática",
+    // Padrões de auto-resposta WhatsApp Business
+    "esta e uma resposta automatica",
+    "esta é uma resposta automática",
+    "resposta automatica",
+    "resposta automática",
+    "horario de atendimento",
+    "horário de atendimento",
+    "nosso horario",
+    "nosso horário",
+    "em breve retornaremos",
+    "em breve responderemos",
+    "logo entraremos em contato",
+    "entraremos em contato em breve",
+    "equipe de atendimento",
+    "nossa equipe entrara",
+    "nossa equipe entrará",
+    "selecione uma opcao",
+    "selecione uma opção",
+    "digite o numero",
+    "digite o número",
+    "para falar com",
+    "menu de opcoes",
+    "menu de opções",
   ];
 
   if (mensagensAutomaticas.some(palavra => msg.includes(palavra))) {
@@ -524,8 +567,8 @@ Palavras: quero saber mais, como funciona, pode me explicar, qual operadora é m
 **NEGATIVE → etapa:"PERDIDO"**
 Palavras: caro, muito caro, não quero, não gostei, não tenho interesse, para de mandar, não insista, chato, pare, bloquear, absurdo, péssimo, ruim, cancela tudo
 
-**AUTOMÁTICA → etapa:"AUTOMÁTICA"**
-Palavras: deixe seu contato, aguarde, nosso suporte retornará, estamos verificando
+**AUTOMÁTICA → etapa:"AUTOMÁTICA"** (mensagens de auto-resposta de empresas/bots)
+Palavras: agradecem seu contato, agradecemos seu contato, como podemos ajudar, como posso ajudar, em que posso ajudar, sou assistente virtual, atendimento automático, bem-vindo ao, seja bem-vindo, deixe seu contato, aguarde, nosso suporte retornará, estamos verificando, fora do horário, resposta automática, horário de atendimento, nossa equipe entrará, selecione uma opção, digite o número, menu de opções
 
 **INDECISÃO → etapa:"" (não mover)**
 Palavras: vou pensar, deixa comigo, estou ocupado, depois conversamos
