@@ -1433,7 +1433,7 @@ export default function Chat() {
             </div>
 
             {/* Messages */}
-            <ScrollArea className="flex-1 p-3 sm:p-4 pb-32 md:pb-24 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950">
+            <ScrollArea className="flex-1 p-3 sm:p-4 pb-16 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950">
               <div className="space-y-3 flex flex-col">
                 {messagesLoading ? (
                   <div className="flex items-center justify-center h-20">
