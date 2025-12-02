@@ -82,6 +82,7 @@ export function ChatMessageInput({
               onKeyPress={handleKeyPress}
               placeholder={placeholder}
               disabled={disabled}
+              autoFocus
               data-testid="chat-input-textarea"
               className="flex-1 resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:outline-none text-sm placeholder-slate-500 dark:placeholder-slate-400 dark:text-white max-h-32"
               style={{
