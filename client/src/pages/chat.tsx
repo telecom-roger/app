@@ -1200,7 +1200,7 @@ export default function Chat() {
                             })()}
                           </div>
                         </div>
-                        <div className="flex items-center gap-0.5 flex-shrink-0 -ml-3 sm:ml-auto" style={{ paddingRight: '12px' }}>
+                        <div className="flex items-center gap-0.5 flex-shrink-0 -ml-6 sm:ml-auto" style={{ paddingRight: '12px' }}>
                           {(conv as any).oculta && (
                             <EyeOff className="h-3 w-3 text-slate-400" />
                           )}
