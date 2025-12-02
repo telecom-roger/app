@@ -80,14 +80,6 @@ app.head("/health", (req, res) => {
 // ✅ ROOT ROUTE - ZERO operations, pure health check
 // Responds instantly with JSON, ZERO side effects
 // Both GET and HEAD to catch all health check methods
-app.get("/", (req, res) => {
-  res.setHeader("Content-Type", "application/json");
-  res.status(200).end('{"ok":true}');
-});
-
-app.head("/", (req, res) => {
-  res.status(200).end();
-});
 
 // ALL MIDDLEWARES must come AFTER health check routes
 app.use(express.json({
