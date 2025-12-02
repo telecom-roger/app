@@ -111,10 +111,16 @@ export default async function runApp(
   try {
     const fs = await import("fs");
     const path = await import("path");
-    const htmlPath = path.resolve(import.meta.dirname, "public", "index.html");
+    // Try dist/public first (production build), then public (dev)
+    let htmlPath = path.resolve(import.meta.dirname, "..", "dist", "public", "index.html");
+    if (!fs.existsSync(htmlPath)) {
+      htmlPath = path.resolve(import.meta.dirname, "public", "index.html");
+    }
     if (fs.existsSync(htmlPath)) {
       cachedHtmlContent = fs.readFileSync(htmlPath, "utf-8");
       console.log("✅ HTML cache loaded for ultra-fast serving");
+    } else {
+      console.warn("⚠️ HTML file not found - will serve JSON for /");
     }
   } catch (err) {
     console.error("⚠️ Failed to pre-cache HTML:", err);
