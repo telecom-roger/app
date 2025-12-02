@@ -612,8 +612,8 @@ async function processMessageStatusUpdate(sessionId: string, updates: any) {
             .where(eq(messages.whatsappMessageId, messageId))
             .limit(1);
           
-          if (existingMsg && statusPriority[existingMsg.statusEntrega] > statusPriority[statusEntrega]) {
-            console.log(`⛔ [STATUS] IGNORANDO regressão: ${existingMsg.statusEntrega} (${statusPriority[existingMsg.statusEntrega]}) → ${statusEntrega} (${statusPriority[statusEntrega]})`);
+          if (existingMsg && existingMsg.statusEntrega && statusPriority[existingMsg.statusEntrega as keyof typeof statusPriority] > statusPriority[statusEntrega as keyof typeof statusPriority]) {
+            console.log(`⛔ [STATUS] IGNORANDO regressão: ${existingMsg.statusEntrega} (${statusPriority[existingMsg.statusEntrega as keyof typeof statusPriority]}) → ${statusEntrega} (${statusPriority[statusEntrega as keyof typeof statusPriority]})`);
             continue;
           }
         } catch (err) {
@@ -640,7 +640,7 @@ async function processMessageStatusUpdate(sessionId: string, updates: any) {
             .where(eq(campaignSendings.whatsappMessageId, messageId))
             .limit(1);
           
-          if (existingCampaign && statusPriority[existingCampaign.status] > statusPriority[statusEntrega]) {
+          if (existingCampaign && existingCampaign.status && statusPriority[existingCampaign.status as keyof typeof statusPriority] > statusPriority[statusEntrega as keyof typeof statusPriority]) {
             console.log(`⛔ [STATUS CAMPAIGN] IGNORANDO regressão: ${existingCampaign.status} → ${statusEntrega}`);
             continue;
           }

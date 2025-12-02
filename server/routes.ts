@@ -1026,6 +1026,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       const campaign = await storage.createCampaign(validatedData);
 
+      // ✅ Criar registros em campaign_sendings para cada cliente
+      if (clientIds && clientIds.length > 0) {
+        const sendingsToCreate = clientIds.map(clientId => ({
+          campaignId: campaign.id,
+          clientId,
+          status: 'pendente' as const,
+          dataSending: new Date(),
+        }));
+        
+        // Insert all at once
+        await db.insert(campaignSendings).values(sendingsToCreate);
+        console.log(`✅ Criados ${sendingsToCreate.length} registros de envio para campanha ${campaign.id}`);
+      }
+
       // Create audit log
       await storage.createAuditLog({
         userId: (req.user as any).id,
@@ -1095,6 +1109,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const campaign = await storage.createCampaign(validatedData);
+
+      // ✅ Criar registros em campaign_sendings para cada cliente
+      const clientIds: string[] = (filtros as any)?.clientIds || [];
+      if (clientIds && clientIds.length > 0) {
+        const sendingsToCreate = clientIds.map(clientId => ({
+          campaignId: campaign.id,
+          clientId,
+          status: 'pendente' as const,
+        }));
+        
+        // Insert all at once
+        await db.insert(campaignSendings).values(sendingsToCreate);
+        console.log(`✅ Criados ${sendingsToCreate.length} registros de envio para campanha agendada ${campaign.id}`);
+      }
 
       await storage.createAuditLog({
         userId: (req.user as any).id,
