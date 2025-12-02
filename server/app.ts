@@ -77,17 +77,20 @@ app.get("/health", (req, res) => {
   res.status(200).end('{"ok":true}');
 });
 
-// ⚡ FAST ROOT ENDPOINT - serves pre-loaded index.html instantly
-app.get("/", (_req, res) => {
-  res.setHeader("Content-Type", "text/html");
-  // Serve pre-loaded index.html for instant response (no file system access)
-  if (preloadedIndexHtml) {
-    res.status(200).end(preloadedIndexHtml);
-  } else {
-    // Fallback during startup before index.html is loaded
-    res.status(200).end('<!DOCTYPE html><html><body>Loading...</body></html>');
-  }
-});
+// ⚡ FAST ROOT ENDPOINT - serves pre-loaded index.html instantly (PRODUCTION ONLY)
+// In development, Vite handles "/" so we skip this endpoint
+if (process.env.NODE_ENV === "production") {
+  app.get("/", (_req, res) => {
+    res.setHeader("Content-Type", "text/html");
+    // Serve pre-loaded index.html for instant response (no file system access)
+    if (preloadedIndexHtml) {
+      res.status(200).end(preloadedIndexHtml);
+    } else {
+      // Fallback during startup before index.html is loaded
+      res.status(200).end('<!DOCTYPE html><html><body>Loading...</body></html>');
+    }
+  });
+}
 
 app.head("/health", (req, res) => {
   res.status(200).end();

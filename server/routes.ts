@@ -1031,11 +1031,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // ✅ Criar registros em campaign_sendings para cada cliente
       const clientIds: string[] = (filtros as any)?.clientIds || [];
+      const userId = (req.user as any).id;
       if (clientIds && clientIds.length > 0) {
         const sendingsToCreate = clientIds.map(clientId => ({
           campaignId: campaign.id,
           clientId,
+          userId,
+          campaignName: nome,
           status: 'pendente' as const,
+          origemDisparo: 'agendamento' as const,
         }));
         
         // Insert all at once
