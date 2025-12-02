@@ -33,6 +33,38 @@ declare module 'http' {
 let serverReady = false;
 export function markServerReady() { serverReady = true; }
 
+// ✅ Flag para lazy-load de operações caras (apenas UMA VEZ)
+let expensiveOpsStarted = false;
+function startExpensiveOpsOnce() {
+  if (expensiveOpsStarted) return;
+  expensiveOpsStarted = true;
+
+  // Fire-and-forget: completamente async, sem block
+  void (async () => {
+    try {
+      void startCampaignScheduler();
+      log("📅 Campaign Scheduler iniciado!");
+    } catch (err) {
+      console.error("❌ Erro ao iniciar campaign scheduler:", err);
+    }
+
+    try {
+      void startAutomationCron();
+      log("🤖 Automation Cron Jobs iniciados!");
+    } catch (err) {
+      console.error("❌ Erro ao iniciar cron jobs:", err);
+    }
+
+    try {
+      void bootstrapWhatsAppSessions().catch(err => {
+        console.error("❌ Erro ao bootstrap WhatsApp sessions:", err);
+      });
+    } catch (err) {
+      console.error("❌ Erro ao iniciar bootstrap WhatsApp:", err);
+    }
+  })();
+}
+
 // ⚡ ULTRA-FAST HEALTH CHECK + ROOT ENDPOINTS - MUST be BEFORE ANY MIDDLEWARE
 // These respond instantly without ANY processing
 app.get("/health", (req, res) => {
@@ -44,11 +76,15 @@ app.head("/health", (req, res) => {
   res.status(200).end();
 });
 
-// ✅ ROOT ROUTE - Registered IMMEDIATELY for deployment health checks
-// This will be overridden later by serveStatic() but ensures / responds instantly
+// ✅ ROOT ROUTE - Same as /health for production deployment
+// Responds instantly with JSON, then triggers lazy-load of expensive operations
 app.get("/", (req, res) => {
-  res.setHeader("Content-Type", "text/html");
-  res.status(200).end('<!DOCTYPE html><html><body>Carregando...</body></html>');
+  // Lazy-load expensive operations on first request (completely async, non-blocking)
+  startExpensiveOpsOnce();
+  
+  // Return immediately with JSON
+  res.setHeader("Content-Type", "application/json");
+  res.status(200).end('{"ok":true}');
 });
 
 // ALL MIDDLEWARES must come AFTER health check routes
@@ -116,55 +152,17 @@ export default async function runApp(
     log(`serving on port ${port}`);
     
     // CRITICAL: Mark server as ready for health checks IMMEDIATELY
-    // This must happen BEFORE any other operations
+    // NO DELAYS - health checks must pass instantly
     markServerReady();
     
-    // Setup static file serving AFTER server is listening (non-blocking)
-    // DELAYED: 1000ms to ensure health checks pass before serving static files
-    // This allows the /health and / endpoints to respond instantly
-    setTimeout(() => {
+    // Setup static file serving completely async (fire-and-forget)
+    // This runs in background without blocking health checks
+    void (async () => {
       try {
-        void setup(app, server);
+        await setup(app, server);
       } catch (err) {
         console.error("❌ Erro ao setup static files:", err);
       }
-    }, 1000);
-    
-    // Start campaign scheduler AFTER server is listening (fire-and-forget, non-blocking)
-    // DELAYED: 2000ms to ensure health checks pass before expensive operations start
-    setTimeout(() => {
-      try {
-        startCampaignScheduler();
-        log("📅 Campaign Scheduler iniciado!");
-      } catch (err) {
-        console.error("❌ Erro ao iniciar campaign scheduler:", err);
-      }
-    }, 2000);
-    
-    // Start automation cron jobs AFTER server is listening (fire-and-forget, non-blocking)
-    // DELAYED: 3000ms to ensure health checks pass before expensive operations start
-    setTimeout(() => {
-      try {
-        startAutomationCron();
-        log("🤖 Automation Cron Jobs iniciados!");
-      } catch (err) {
-        console.error("❌ Erro ao iniciar cron jobs:", err);
-      }
-    }, 3000);
-    
-    // Bootstrap WhatsApp sessions in COMPLETELY async context
-    // Fire-and-forget: do NOT await, do NOT block
-    // Failures are caught and logged but do not affect server health
-    // DELAYED: 4000ms to ensure health checks pass well before expensive operations
-    setTimeout(() => {
-      try {
-        // Call without await - let it run completely async
-        void bootstrapWhatsAppSessions().catch(err => {
-          console.error("❌ Erro ao bootstrap WhatsApp sessions:", err);
-        });
-      } catch (err) {
-        console.error("❌ Erro ao iniciar bootstrap WhatsApp:", err);
-      }
-    }, 4000);
+    })();
   });
 }

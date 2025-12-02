@@ -15,19 +15,17 @@ export async function serveStatic(app: Express, _server: Server) {
     );
   }
 
-  // ✅ Fast root route that returns index.html immediately for SPA
-  // This ensures deployment health checks on / pass instantly
-  app.get("/", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
-  });
-
-  // Serve static files efficiently
+  // Serve static files efficiently (CSS, JS, assets)
   app.use(express.static(distPath, { maxAge: "1h" }));
 
   // Fall through to index.html for SPA routing
-  // This middleware runs AFTER the / route handler, so health checks pass fast
+  // Read index.html ONCE and cache it
+  const indexHtmlPath = path.resolve(distPath, "index.html");
+  const indexHtml = fs.readFileSync(indexHtmlPath, "utf-8");
+  
   app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+    res.setHeader("Content-Type", "text/html");
+    res.status(200).send(indexHtml);
   });
 }
 
