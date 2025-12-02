@@ -42,7 +42,15 @@ export function ChatMessageInput({
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       onSend();
+      // Manter o focus no textarea após enviar
+      setTimeout(() => textareaRef.current?.focus(), 0);
     }
+  };
+
+  const handleSendClick = () => {
+    onSend();
+    // Manter o focus no textarea após enviar
+    setTimeout(() => textareaRef.current?.focus(), 0);
   };
 
   return (
@@ -96,7 +104,7 @@ export function ChatMessageInput({
 
             {value.trim() ? (
               <Button
-                onClick={onSend}
+                onClick={handleSendClick}
                 disabled={isLoading || disabled}
                 size="icon"
                 data-testid="chat-input-send-button"

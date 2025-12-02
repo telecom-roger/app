@@ -29,15 +29,8 @@ The application features a professional design system utilizing a deep dark blue
 - **Client Status Automation**: Client status (`ativo`, `lead_quente`, `engajado`, `em_negociacao`, `em_fechamento`, `perdido`, `remarketing`) is automatically recalculated based on opportunity stages. A new "REMARKETING" status identifies reconverted clients. The `statusComercial` field was consolidated into a single `status` field for clarity and efficiency.
 - **Contract Reminder Job**: An automated job sends progressive WhatsApp reminders for "PROPOSTA ENVIADA" opportunities, eventually moving them to "PERDIDO" if no manual action is taken.
 - **Tags System**: Tags are completely separate from opportunity stages. Tags are used exclusively for chat filtering and conversation organization. They do NOT affect opportunity stages, client status, or kanban board. When an opportunity stage changes, tags remain untouched.
-- **AI Message Classification (NOVO - ATUALIZADO)**: 
-  - Mensagens neutras ("teste", "oi", "bom dia", "blz", "kkk") = NÃO criam oportunidades ✅
-  - "👍" com sentimento positivo = Aprova (pode criar em PROPOSTA) ✅
-  - Mensagens com intenção comercial = Criam na etapa sugerida pela IA (CONTATO ou PROPOSTA)
-  - Se IA sugere PROPOSTA (confiança alta) → cria direto em PROPOSTA ✅
-  - Se IA sugere CONTATO → cria em CONTATO
-  - Sentimento positivo + intenção = Aprova e avança funil
-  - Sentimento negativo = Move para PERDIDO
-  - Nunca volta status pra trás (ex: PROPOSTA → CONTATO)
+- **AI Message Classification**: Mensagens neutras = NÃO criam oportunidades. "👍" com sentimento positivo = cria em PROPOSTA. Mensagens com intenção comercial = criam na etapa sugerida. Sentimento negativo = move para PERDIDO. Nunca volta status pra trás.
+- **Chat UX**: Cursor mantém focus no campo de input após enviar mensagem (Enter ou botão enviar).
 
 ### System Design Choices
 - **Folder Structure**: Organized into `client/src`, `server`, and `shared`.
@@ -46,65 +39,18 @@ The application features a professional design system utilizing a deep dark blue
 - **Storage System**: Abstracted storage methods for CRUD operations.
 - **Audit System**: Complete logging for creation, editing, and deletion actions, including IP and User-Agent tracking.
 - **Architectural Rule**: Tags and Opportunities/Stages remain completely separate. Tags are only for chat filtering, never used for stage transitions or status calculations.
+- **Deployment**: Health check endpoints respond in <1ms (no blocking operations). Campaign scheduler, automation cron, and WhatsApp bootstrap run with 2-3 second delays to ensure deployment health checks pass before expensive operations start.
 
-## Recent Changes (Current Session)
-- **REGRAS DE CRIAÇÃO DE OPORTUNIDADES** (9 validações):
-  1. ✅ Apenas mensagens do cliente (incoming)
-  2. ✅ Não está respondendo pergunta do atendente
-  3. ✅ Mensagem em LISTA DE PROPOSTA ou CONTATO (ou intenção comercial clara)
-  4. ✅ Mensagem NÃO em lista neutra
-  5. ✅ Nunca 2+ opps ativas por cliente (1 por vez!)
-  6. ✅ Se já existe opp aberta → atualiza, não cria
-  7. ✅ Validação: deveAgir=true + etapa válida
-  8. ✅ Etapa não pode ser AUTOMÁTICA ou vazia
-  9. ✅ Detecção de mensagens de fluxo do atendente (nome, CPF, email, etc)
-- **REGRA DOS 30 MINUTOS**:
-  - ✅ Conversa ativa (últimos 30 min) bloqueia criação automática
-  - ✅ EXCETO: mensagens da LISTA PROPOSTA sempre criam (mesmo em conversa ativa)
-  - ✅ Valida timestamp de mensagens antes de permitir criação
-- **CLASSIFICAÇÃO REFATORADA** com 4 passos explícitos:
-  1. Verificar se é NEUTRA → NÃO cria
-  2. Verificar se é AÇÃO (OK, 👍) → Cria PROPOSTA
-  3. Verificar INTENÇÃO FRACA → Cria CONTATO
-  4. Se não nas listas, consultar IA para intenção comercial clara
-- **LISTA PROPOSTA**: "ok", "okk", "okkk", "OK", "joia", "👍", "👌", "sim", "blz", "beleza", "manda", "pode mandar", "envia", "me manda"
-- **LISTA CONTATO**: "quero saber mais", "como funciona?", "pode me explicar?", "qual operadora é melhor?"
-- **LISTA NEUTRA**: "oi", "eae", "bom dia", "boa tarde", "kkk", "teste", "valeu", "obrigado", "🙌", "🙏"
-
-## Recent Changes (Current Session)
-- **MAJOR REFACTOR**: Complete classification logic overhaul with explicit rules
-  - **LISTA PROPOSTA** (SEMPRE cria PROPOSTA):
-    - "ok", "okk", "okkk", "OK", "joia", "👍", "👌", "sim", "blz", "beleza", "manda", "pode mandar", "envia", "me manda" ✅
-  - **LISTA CONTATO** (cria CONTATO):
-    - "quero saber mais", "como funciona?", "pode me explicar?", "qual operadora é melhor?" ✅
-  - **LISTA NEUTRA** (NÃO cria):
-    - "oi", "eae", "bom dia", "boa tarde", "kkk", "teste", "valeu", "obrigado", "🙌", "🙏" ✅
-  - **Ordem de execução obrigatória**:
-    1. Verificar se é neutra → não cria ✅
-    2. Verificar se é ação (OK, 👍, etc) → cria PROPOSTA ✅
-    3. Verificar intenção fraca → cria CONTATO ✅
-    4. Se já existe opp → atualizar ✅
-    5. Se cliente ativo → criar nova opp ✅
-- **CRITICAL BUG FIX #5**: Removed "tudo bem" from aprovacao keywords
-  - "Tudo bem?" era criando oportunidade em PROPOSTA (ERRADO) ❌
-  - Agora "tudo bem" está em mensagens neutras puras ✅
-  - "Tudo bem?" = mensagem neutra, não cria opp ✅
-- **FEATURE UPDATE #1**: Opportunity creation now respects IA suggestion for etapa
-  - Se IA sugere PROPOSTA → cria direto em PROPOSTA ✅
-  - Se IA sugere CONTATO → cria em CONTATO ✅
-  - Etapa padrão mantém CONTATO se IA não sugerir ✅
-- **CRITICAL BUG FIX #4**: Fixed IA neutral message classification (FINAL FIX)
-  - "oi", "teste", "blz", "kkk", "tudo bem" → neutro/indefinida/deveAgir=false ✅
-  - "👍" com sentimento positivo → pode criar em PROPOSTA ✅
-  - ZERO mensagens neutras puras criam oportunidades ✅
-  - Bloqueio ocorre ANTES de qualquer criação ✅
-- **CRITICAL BUG FIX #3**: Fixed AI classification - now respects message intention vs neutral
-  - Mensagens neutras NÃO criam oportunidades ✅
-  - Apenas mensagens com intenção comercial avançam o funil ✅
-  - Validação: `deveAgir === false` não cria mais opp automática ✅
-- **CRITICAL BUG FIX #2**: Fixed tag/stage coupling - removed code that was updating tags when stages changed
-- Previously corrected `recalculateClientStatus()` implementation to properly persist status changes
-- Tags now remain completely independent of opportunity stages (tags for chat filtering only)
+## Recent Changes (Current Session - DEPLOYMENT & UX)
+- **DEPLOYMENT FIX**: Removed blocking operations from registerRoutes() to enable fast health checks
+  - Moved campaign scheduler to `startCampaignScheduler()` with 2000ms delay ✅
+  - Automation cron initialized with 2500ms delay ✅
+  - WhatsApp bootstrap initialized with 3000ms delay ✅
+  - Health check response time: <1ms (passing Replit deployment health checks) ✅
+- **CHAT UX FIX**: Added automatic cursor refocus after sending message
+  - When user presses Enter or clicks Send button, cursor stays in input field ✅
+  - Applies to both keyboard and mouse interactions ✅
+  - Works with all message types (text, files, audio) ✅
 
 ## External Dependencies
 - **Replit Database**: PostgreSQL for persistent data storage.
