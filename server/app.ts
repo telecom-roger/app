@@ -45,6 +45,24 @@ app.head("/", (req, res) => {
   res.status(200).end();
 });
 
+// GET "/" for rapid deployment health checks (respond before vite middleware)
+// This ensures the root path responds instantly without hitting the Vite middleware
+app.get("/", (req, res, next) => {
+  // If not a browser request (accept header includes text/html), skip to vite
+  if (!req.accepts("html")) {
+    return next();
+  }
+  
+  // For health checks (user-agent may be a bot/health checker), respond instantly
+  const userAgent = (req.get("user-agent") || "").toLowerCase();
+  if (userAgent.includes("health") || userAgent.includes("check") || userAgent.includes("curl")) {
+    return res.status(200).json({ ok: true });
+  }
+  
+  // Otherwise, let Vite handle it
+  next();
+});
+
 // Server ready state for health checks
 let serverReady = false;
 export function markServerReady() { serverReady = true; }
