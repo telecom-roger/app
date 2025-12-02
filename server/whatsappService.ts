@@ -375,6 +375,9 @@ async function processIncomingMessages(sessionId: string, m: any) {
                   etapa: analysis.etapa,
                 });
                 console.log(`✅ Oportunidade ATUALIZADA de ${openOpp.etapa} para ${analysis.etapa}`);
+                // 🔄 RECALCULATE CLIENT STATUS after update
+                const newStatus = await storage.recalculateClientStatus(conversation.clientId);
+                await storage.updateClient(conversation.clientId, { status: newStatus });
               } else {
                 console.log(`ℹ️ Oportunidade mantida em ${openOpp.etapa} (etapaValida=${etapaValida}, deveAgir=${analysis.deveAgir})`);
               }
@@ -399,6 +402,10 @@ async function processIncomingMessages(sessionId: string, m: any) {
                   createdBy: userId,
                   meta: { etapa: analysis.etapa, motivo: analysis.motivo, tipo_movimento: "automática" },
                 });
+                
+                // 🔄 RECALCULATE CLIENT STATUS after create
+                const newStatus = await storage.recalculateClientStatus(conversation.clientId);
+                await storage.updateClient(conversation.clientId, { status: newStatus });
               } else {
                 console.log(`ℹ️ Nenhum negócio criado (deveAgir=${analysis.deveAgir}, etapa=${analysis.etapa})`);
               }

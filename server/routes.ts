@@ -3211,7 +3211,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.log(`✅ OPP MOVIDA (AUTOMÁTICO): ${oldEtapa} → AUTOMÁTICA`);
                 // 📝 REGISTRAR NA TIMELINE (IA)
                 await storage.recordEtapaChange(existingOpp.id, conv.clientId, oldEtapa, "AUTOMÁTICA", "ia", user.id);
-                await storage.recalculateClientStatus(conv.clientId);
+                const newStatus1 = await storage.recalculateClientStatus(conv.clientId);
+                await storage.updateClient(conv.clientId, { status: newStatus1 });
               } else {
                 // Criar nova oportunidade em AUTOMÁTICA
                 const [newOpp] = await db.insert(opportunities).values({
@@ -3223,7 +3224,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   ordem: 0,
                 }).returning();
                 console.log(`✅ OPP CRIADA (AUTOMÁTICO): AUTOMÁTICA`);
-                await storage.recalculateClientStatus(conv.clientId);
+                const newStatus2 = await storage.recalculateClientStatus(conv.clientId);
+                await storage.updateClient(conv.clientId, { status: newStatus2 });
               }
             }
             // 🛑 BLOQUEIO: Se etapa BLOQUEADA → IA NÃO ANALISA (exceto mensagem automática)
@@ -3246,7 +3248,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     ordem: 0,
                   }).returning();
                   console.log(`✅ OPP CRIADA (CONTATO): ${analysis.motivo}`);
-                  await storage.recalculateClientStatus(conv.clientId);
+                  const newStatus3 = await storage.recalculateClientStatus(conv.clientId);
+                  await storage.updateClient(conv.clientId, { status: newStatus3 });
                 }
               } else if (existingOpp && existingOpp.etapa !== etapa) {
                 // 🔥 EXCEÇÃO CRÍTICA: Se em CONTATO e cliente aprova → DEVE mover para PROPOSTA
@@ -3268,7 +3271,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   console.log(`🔥 OPP MOVIDA (OBRIGATÓRIO): ${oldEtapa} → PROPOSTA (aprovação detectada)`);
                   // 📝 REGISTRAR NA TIMELINE (IA)
                   await storage.recordEtapaChange(existingOpp.id, conv.clientId, oldEtapa, "PROPOSTA", "ia", user.id);
-                  await storage.recalculateClientStatus(conv.clientId);
+                  const newStatus4 = await storage.recalculateClientStatus(conv.clientId);
+                  await storage.updateClient(conv.clientId, { status: newStatus4 });
                 } else {
                   // Validar movimento: só LEAD e CONTATO
                   if (existingOpp.etapa === "LEAD") {
@@ -3283,7 +3287,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     console.log(`✅ OPP MOVIDA (CHAT): ${oldEtapa} → ${etapa}`);
                     // 📝 REGISTRAR NA TIMELINE (IA)
                     await storage.recordEtapaChange(existingOpp.id, conv.clientId, oldEtapa, etapa, "ia", user.id);
-                    await storage.recalculateClientStatus(conv.clientId);
+                    const newStatus5 = await storage.recalculateClientStatus(conv.clientId);
+                    await storage.updateClient(conv.clientId, { status: newStatus5 });
                   } else if (existingOpp.etapa === "CONTATO" && (etapa === "PROPOSTA" || etapa === "PERDIDO")) {
                     // CONTATO → PROPOSTA ou PERDIDO
                     const oldEtapa = existingOpp.etapa;
@@ -3296,7 +3301,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     console.log(`✅ OPP MOVIDA (CHAT): ${oldEtapa} → ${etapa}`);
                     // 📝 REGISTRAR NA TIMELINE (IA)
                     await storage.recordEtapaChange(existingOpp.id, conv.clientId, oldEtapa, etapa, "ia", user.id);
-                    await storage.recalculateClientStatus(conv.clientId);
+                    const newStatus6 = await storage.recalculateClientStatus(conv.clientId);
+                    await storage.updateClient(conv.clientId, { status: newStatus6 });
                   } else {
                     console.log(`🛑 MOVIMENTO NÃO PERMITIDO: ${existingOpp.etapa} → ${etapa}`);
                   }
@@ -3314,7 +3320,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   ordem: 0,
                 }).returning();
                 console.log(`✅ OPP CRIADA (CHAT): ${etapaParaCriar}`);
-                await storage.recalculateClientStatus(conv.clientId);
+                const newStatus7 = await storage.recalculateClientStatus(conv.clientId);
+                await storage.updateClient(conv.clientId, { status: newStatus7 });
               }
             }
           }
