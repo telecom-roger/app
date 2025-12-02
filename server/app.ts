@@ -7,7 +7,7 @@ import express, {
   NextFunction,
 } from "express";
 
-import { registerRoutes, bootstrapWhatsAppSessions } from "./routes";
+import { registerRoutes, bootstrapWhatsAppSessions, startCampaignScheduler } from "./routes";
 import { startAutomationCron } from "./automationService";
 
 export function log(message: string, source = "express") {
@@ -154,8 +154,19 @@ export default async function runApp(
       }
     });
     
+    // Start campaign scheduler AFTER server is listening (fire-and-forget, non-blocking)
+    // DELAYED: 2000ms to ensure health checks pass before expensive operations start
+    setTimeout(() => {
+      try {
+        startCampaignScheduler();
+        log("📅 Campaign Scheduler iniciado!");
+      } catch (err) {
+        console.error("❌ Erro ao iniciar campaign scheduler:", err);
+      }
+    }, 2000);
+    
     // Start automation cron jobs AFTER server is listening (fire-and-forget, non-blocking)
-    // DELAYED: 1000ms to ensure health checks pass before expensive operations start
+    // DELAYED: 2500ms to ensure health checks pass before expensive operations start
     setTimeout(() => {
       try {
         startAutomationCron();
@@ -163,12 +174,12 @@ export default async function runApp(
       } catch (err) {
         console.error("❌ Erro ao iniciar cron jobs:", err);
       }
-    }, 1000);
+    }, 2500);
     
     // Bootstrap WhatsApp sessions in COMPLETELY async context
     // Fire-and-forget: do NOT await, do NOT block
     // Failures are caught and logged but do not affect server health
-    // DELAYED: 1500ms to ensure health checks pass well before expensive operations
+    // DELAYED: 3000ms to ensure health checks pass well before expensive operations
     setTimeout(() => {
       try {
         // Call without await - let it run completely async
@@ -178,6 +189,6 @@ export default async function runApp(
       } catch (err) {
         console.error("❌ Erro ao iniciar bootstrap WhatsApp:", err);
       }
-    }, 1500);
+    }, 3000);
   });
 }

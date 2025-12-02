@@ -87,73 +87,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // See bootstrapWhatsAppSessions() function below
 
   // ==================== SCHEDULER: CAMPANHAS AGENDADAS ====================
-  // Executa a cada 1 minuto
-  cron.schedule('* * * * *', async () => {
-    try {
-      const now = new Date();
-      const dueCampaigns = await db
-        .select()
-        .from(campaignsTable)
-        .where(
-          and(
-            eq(campaignsTable.status, 'agendada'),
-            lte(campaignsTable.agendadaPara, now)
-          )
-        );
-
-      if (dueCampaigns.length > 0) {
-        console.log(`⏰ SCHEDULER: Encontradas ${dueCampaigns.length} campanhas para executar`);
-
-        // Executa cada campanha com isolamento por usuário
-        for (const campaign of dueCampaigns) {
-          try {
-            const ownerId = campaign.createdBy || undefined;
-            if (!ownerId) {
-              console.warn(`⚠️ Campanha ${campaign.id} sem proprietário definido`);
-              continue;
-            }
-            
-            // ✅ CORREÇÃO ATÔMICA: Só atualiza se ainda está "agendada"
-            // WHERE status='agendada' garante que apenas UMA instância executa
-            const [claimed] = await db.update(campaignsTable)
-              .set({ status: 'em_progresso' })
-              .where(and(
-                eq(campaignsTable.id, campaign.id),
-                eq(campaignsTable.status, 'agendada')
-              ))
-              .returning({ id: campaignsTable.id });
-            
-            if (!claimed) {
-              console.log(`⏭️ Campanha ${campaign.id} já está em execução - pulando`);
-              continue;
-            }
-            
-            console.log(`🔒 Executando campanha ${campaign.id} do usuário ${ownerId} [status: em_progresso]`);
-            
-            // Carrega APENAS clientes do dono da campanha
-            const userClients = await storage.getClients({ 
-              userId: ownerId,
-              limit: 10000,
-              isAdmin: false 
-            });
-            const clientsList = userClients.clientes || [];
-
-            if (clientsList.length === 0) {
-              console.warn(`⚠️ Nenhum cliente encontrado para usuário ${ownerId}`);
-              continue;
-            }
-
-            console.log(`📤 Campanha ${campaign.id}: ${clientsList.length} clientes do usuário ${ownerId}`);
-            await whatsappService.executeCampaign(campaign, db, clientsList);
-          } catch (campaignError) {
-            console.error(`❌ Erro ao executar campanha ${campaign.id}:`, campaignError);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('❌ Erro no scheduler de campanhas:', error);
-    }
-  });
+  // MOVED TO BACKGROUND - Initialized with delay to avoid blocking health checks
+  // See startCampaignScheduler() function below
 
   // ==================== AUTH ROUTES ====================
   app.get("/api/auth/user", isAuthenticated, async (req, res) => {
@@ -5271,6 +5206,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
   return httpServer;
+}
+
+// ==================== SCHEDULED CAMPAIGNS STARTER ====================
+export function startCampaignScheduler() {
+  console.log(`⏰ [SCHEDULER] Iniciando scheduler de campanhas...`);
+  cron.schedule('* * * * *', async () => {
+    try {
+      const now = new Date();
+      const dueCampaigns = await db
+        .select()
+        .from(campaignsTable)
+        .where(
+          and(
+            eq(campaignsTable.status, 'agendada'),
+            lte(campaignsTable.agendadaPara, now)
+          )
+        );
+
+      if (dueCampaigns.length > 0) {
+        console.log(`⏰ SCHEDULER: Encontradas ${dueCampaigns.length} campanhas para executar`);
+
+        // Executa cada campanha com isolamento por usuário
+        for (const campaign of dueCampaigns) {
+          try {
+            const ownerId = campaign.createdBy || undefined;
+            if (!ownerId) {
+              console.warn(`⚠️ Campanha ${campaign.id} sem proprietário definido`);
+              continue;
+            }
+            
+            // ✅ CORREÇÃO ATÔMICA: Só atualiza se ainda está "agendada"
+            // WHERE status='agendada' garante que apenas UMA instância executa
+            const [claimed] = await db.update(campaignsTable)
+              .set({ status: 'em_progresso' })
+              .where(and(
+                eq(campaignsTable.id, campaign.id),
+                eq(campaignsTable.status, 'agendada')
+              ))
+              .returning({ id: campaignsTable.id });
+            
+            if (!claimed) {
+              console.log(`⏭️ Campanha ${campaign.id} já está em execução - pulando`);
+              continue;
+            }
+            
+            console.log(`🔒 Executando campanha ${campaign.id} do usuário ${ownerId} [status: em_progresso]`);
+            
+            // Carrega APENAS clientes do dono da campanha
+            const userClients = await storage.getClients({ 
+              userId: ownerId,
+              limit: 10000,
+              isAdmin: false 
+            });
+            const clientsList = userClients.clientes || [];
+
+            if (clientsList.length === 0) {
+              console.warn(`⚠️ Nenhum cliente encontrado para usuário ${ownerId}`);
+              continue;
+            }
+
+            console.log(`📤 Campanha ${campaign.id}: ${clientsList.length} clientes do usuário ${ownerId}`);
+            await whatsappService.executeCampaign(campaign, db, clientsList);
+          } catch (campaignError) {
+            console.error(`❌ Erro ao executar campanha ${campaign.id}:`, campaignError);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Erro no scheduler de campanhas:', error);
+    }
+  });
 }
 
 export async function bootstrapWhatsAppSessions() {
