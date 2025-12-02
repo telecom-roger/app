@@ -46,8 +46,8 @@ export function ChatMessageInput({
   };
 
   return (
-    <div className="sticky bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-40 px-3 sm:px-4 py-3 sm:py-4 border-t border-slate-200 dark:border-slate-700 flex justify-center">
-      <div className="flex gap-2 sm:gap-3 items-end w-full max-w-2xl">
+    <div className="sticky bottom-0 left-0 right-0 bg-white dark:bg-slate-900 z-40 px-3 sm:px-4 py-3 sm:py-4 border-t border-slate-200 dark:border-slate-700 flex justify-center">
+      <div className="flex gap-3 items-end w-full max-w-2xl">
           <input
             type="file"
             id="chat-file-upload"
@@ -61,12 +61,20 @@ export function ChatMessageInput({
             onClick={() => document.getElementById("chat-file-upload")?.click()}
             disabled={disabled || isRecording}
             data-testid="chat-input-file-button"
-            className="h-10 w-10 flex-shrink-0 hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="h-10 w-10 flex-shrink-0 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
           >
             <Paperclip className="h-5 w-5" />
           </Button>
 
-          <div className="relative flex-1 bg-slate-100 dark:bg-slate-700 rounded-3xl shadow-sm flex items-end px-4 py-2">
+          <div 
+            className="relative flex-1 flex items-end px-4 py-1.5" 
+            style={{
+              backgroundColor: "#f7f7f8",
+              border: "1px solid #e5e5e5",
+              borderRadius: "999px",
+              boxShadow: "0 2px 12px rgba(0, 0, 0, 0.08)"
+            }}
+          >
             <textarea
               ref={textareaRef}
               value={value}
@@ -75,11 +83,11 @@ export function ChatMessageInput({
               placeholder={placeholder}
               disabled={disabled}
               data-testid="chat-input-textarea"
-              className="w-full resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:outline-none text-sm placeholder-slate-500 dark:placeholder-slate-400 dark:text-white max-h-40 py-2"
+              className="w-full resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:outline-none text-sm placeholder-slate-500 dark:placeholder-slate-400 dark:text-white max-h-32 py-1"
               style={{
                 height: "auto",
-                minHeight: "40px",
-                maxHeight: "160px",
+                minHeight: "32px",
+                maxHeight: "128px",
               }}
             />
 
@@ -89,7 +97,7 @@ export function ChatMessageInput({
                 disabled={isLoading || disabled}
                 size="icon"
                 data-testid="chat-input-send-button"
-                className="h-8 w-8 flex-shrink-0 ml-2"
+                className="h-8 w-8 flex-shrink-0 ml-2 text-primary dark:text-primary hover:opacity-70 transition-opacity"
                 variant="ghost"
               >
                 {isLoading ? (
@@ -105,10 +113,10 @@ export function ChatMessageInput({
                 onClick={isRecording ? onStopRecording : onStartRecording}
                 disabled={isLoading || disabled}
                 data-testid="chat-input-voice-button"
-                className="h-8 w-8 flex-shrink-0 ml-2"
+                className="h-8 w-8 flex-shrink-0 ml-2 text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors"
               >
                 {isRecording ? (
-                  <StopCircle className="h-4 w-4 animate-pulse" />
+                  <StopCircle className="h-4 w-4 animate-pulse text-red-500" />
                 ) : (
                   <Mic className="h-4 w-4" />
                 )}
