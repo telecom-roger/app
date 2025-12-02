@@ -1232,10 +1232,20 @@ export async function sendDocument(sessionId: string, telefone: string, docBase6
   }
 }
 
+// ✅ Lock para evitar múltiplas execuções de campanha
+const campaignExecutionLock = new Set<string>();
+
 export async function executeCampaign(campaign: any, db: any, clients: any[]): Promise<void> {
   try {
-    const { campaigns } = await import('@shared/schema');
+    const { campaigns, campaignSendings } = await import('@shared/schema');
     const { eq } = await import('drizzle-orm');
+    
+    // ✅ PROTEÇÃO: Evitar múltiplas execuções da mesma campanha
+    if (campaignExecutionLock.has(campaign.id)) {
+      console.warn(`⚠️ [PROTEÇÃO] Campanha ${campaign.id} já está em execução. Pulando...`);
+      return;
+    }
+    campaignExecutionLock.add(campaign.id);
     
     console.log(`🚀 INICIANDO EXECUÇÃO DE CAMPANHA: ${campaign.nome} (${campaign.id})`);
     
@@ -1247,6 +1257,7 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
     const clientIds = campaign.filtros?.clientIds || [];
     if (clientIds.length === 0) {
       console.warn(`⚠️ Nenhum cliente selecionado para campanha ${campaign.id}`);
+      campaignExecutionLock.delete(campaign.id);
       return;
     }
 
@@ -1382,6 +1393,13 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
 
         // Registra em campaign_sendings com whatsappMessageId para rastreamento
         try {
+          // ✅ Verificar que campanha ainda existe
+          const campaignExists = await db.select().from(campaigns).where(eq(campaigns.id, campaign.id)).limit(1);
+          if (campaignExists.length === 0) {
+            console.warn(`⚠️ Campanha ${campaign.id} foi deletada. Abortando...`);
+            break; // Sair do loop
+          }
+          
           await storage.recordCampaignSending({
             userId: campaign.createdBy,
             campaignId: campaign.id,
@@ -1392,12 +1410,16 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
             origemDisparo: origemDisparo,
             mensagemUsada: conteudo,
             modeloId: campaign.templateId || null,
-            whatsappMessageId: whatsappMessageId, // ✅ NOVO: Salva messageId para rastreamento de status
-            statusWhatsapp: mensagemEnviada ? 2 : 0, // 2=enviado, 0=erro
+            whatsappMessageId: whatsappMessageId,
+            statusWhatsapp: mensagemEnviada ? 2 : 0,
             estadoDerivado: mensagemEnviada ? 'enviado' : 'erro',
           });
         } catch (err) {
           console.warn(`⚠️ Erro ao registrar envio em campaign_sendings:`, err);
+          if (err instanceof Error && err.message.includes('foreign key')) {
+            console.warn(`⚠️ Erro de chave estrangeira - campanha pode ter sido deletada`);
+            break; // Sair do loop para evitar mais erros
+          }
         }
 
         // Delay entre mensagens: 21s + 10-60s aleatório (total 31-81s)
@@ -1451,5 +1473,9 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
     console.log(`✅ CAMPANHA CONCLUÍDA: ${campaign.nome} | Enviados: ${enviados} | Erros: ${erros}`);
   } catch (error) {
     console.error(`❌ Erro ao executar campanha:`, error);
+  } finally {
+    // ✅ Remover lock ao finalizar (sucesso ou erro)
+    campaignExecutionLock.delete(campaign.id);
+    console.log(`🔓 Lock removido para campanha ${campaign.id}`);
   }
 }
