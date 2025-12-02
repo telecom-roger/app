@@ -1175,15 +1175,15 @@ export default function Chat() {
                       }`}
                       data-testid={`button-conversation-${conv.id}`}
                     >
-                      <div className="flex items-center justify-between gap-1">
+                      <div className="flex items-stretch justify-between gap-1">
                         <div className="flex items-center gap-1.5 min-w-0 flex-1">
                           <Avatar className="h-8 w-8 flex-shrink-0" data-testid={`avatar-${conv.id}`}>
                             <AvatarFallback style={{ backgroundColor: '#F0F1F2', color: '#1F1F1F' }} className="bg-slate-300 text-slate-700 text-xs font-bold">
                               {initials}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="flex items-center gap-1 min-w-0 flex-1">
-                            <p className="text-sm font-medium truncate text-slate-900 dark:text-white leading-none">
+                          <div className="flex items-center gap-0.5 min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate text-slate-900 dark:text-white">
                               {clientName.length > 30
                                 ? clientName.substring(0, 30) + "..."
                                 : clientName}
@@ -1193,9 +1193,8 @@ export default function Chat() {
                               const tag = allTags.find(t => t.nome === tagName);
                               return (
                                 <div
-                                  className={`w-2.5 h-2.5 rounded-full flex-shrink-0 self-center ${tag?.cor || "bg-gray-500"}`}
+                                  className={`w-2 h-2 rounded-full flex-shrink-0 ${tag?.cor || "bg-gray-500"}`}
                                   data-testid={`dot-tag-inline-${conv.id}`}
-                                  style={{ marginTop: '-2px' }}
                                 />
                               );
                             })()}
@@ -1220,19 +1219,15 @@ export default function Chat() {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center justify-between gap-1 mt-0.5 ml-9.5">
-                        <p className="text-xs text-slate-600 dark:text-slate-400 truncate flex-1 min-w-0">
-                          {conv.client?.celular || (conv.client as any)?.cnpj || "Sem contato"}
-                        </p>
-                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 truncate mt-0.5" style={{ paddingLeft: '38px' }}>
+                        {conv.client?.celular || (conv.client as any)?.cnpj || "Sem contato"}
+                      </p>
                       {conv.ultimaMensagem && (
-                        <div className="flex items-center justify-between gap-1 mt-0.5 ml-9.5">
-                          <p className="text-xs text-slate-600 dark:text-slate-400 truncate flex-1 min-w-0">
-                            {conv.ultimaMensagem.length > 50
-                              ? conv.ultimaMensagem.substring(0, 50) + "..."
-                              : conv.ultimaMensagem}
-                          </p>
-                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 truncate mt-0.5" style={{ paddingLeft: '38px' }}>
+                          {conv.ultimaMensagem.length > 50
+                            ? conv.ultimaMensagem.substring(0, 50) + "..."
+                            : conv.ultimaMensagem}
+                        </p>
                       )}
                     </button>
                     );
