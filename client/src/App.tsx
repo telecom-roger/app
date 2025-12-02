@@ -38,6 +38,7 @@ import ModelosMensagens from "@/pages/modelos-mensagens";
 import CampanhasAgendadas from "@/pages/campanhas-agendadas";
 import CampanhasEmExecucao from "@/pages/campanhas-em-execucao";
 import CampanhasHistorico from "@/pages/campanhas-historico";
+import CampanhaDetalhes from "@/pages/campanha-detalhes";
 import QuickRepliesConfig from "@/pages/quick-replies-config";
 import TagsConfig from "@/pages/tags-config";
 import TestAutomation from "@/pages/test-automation";
@@ -69,6 +70,7 @@ function Router({ isAuthenticated }: { isAuthenticated: boolean }) {
       <Route path="/campanhas-agendadas" component={CampanhasAgendadas} />
       <Route path="/campanhas-em-execucao" component={CampanhasEmExecucao} />
       <Route path="/campanhas-historico" component={CampanhasHistorico} />
+      <Route path="/campanhas/:id/detalhes" component={CampanhaDetalhes} />
       <Route path="/mensagens-rapidas" component={QuickRepliesConfig} />
       <Route path="/importacao" component={Importacao} />
       <Route path="/admin/usuarios" component={AdminUsuarios} />

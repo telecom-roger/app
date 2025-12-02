@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -293,15 +294,16 @@ export default function CampanhasHistorico() {
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleViewDetails(campaign)}
-                              data-testid={`button-view-details-${campaign.id}`}
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              Detalhes
-                            </Button>
+                            <Link href={`/campanhas/${campaign.id}/detalhes`}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                data-testid={`button-view-details-${campaign.id}`}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                Ver Relatório
+                              </Button>
+                            </Link>
                           </TableCell>
                         </TableRow>
                       );
