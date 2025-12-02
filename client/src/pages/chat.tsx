@@ -1603,16 +1603,23 @@ export default function Chat() {
               {/* Header - Cliente */}
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-4">
-                  <Avatar className="h-16 w-16 flex-shrink-0 border-2 border-[#1A73E8]/20">
-                    <AvatarFallback className="bg-[#1A73E8]/10 text-[#1A73E8] font-bold text-xl">
-                      {(detailedClient.nome || "C")
-                        .split(" ")
-                        .slice(0, 2)
-                        .map((w: string) => w[0])
-                        .join("")
-                        .toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="flex flex-col items-center gap-2">
+                    <Avatar className="h-16 w-16 flex-shrink-0 border-2 border-[#1A73E8]/20">
+                      <AvatarFallback className="bg-[#1A73E8]/10 text-[#1A73E8] font-bold text-xl">
+                        {(detailedClient.nome || "C")
+                          .split(" ")
+                          .slice(0, 2)
+                          .map((w: string) => w[0])
+                          .join("")
+                          .toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    {clientOpportunities && clientOpportunities.length > 0 && (
+                      <Badge className="bg-[#1A73E8] text-white text-xs px-2 py-0.5 whitespace-nowrap">
+                        {clientOpportunities[0].etapa.toUpperCase()}
+                      </Badge>
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <h2 className="text-xl font-bold text-slate-900 dark:text-[#FFFFFF]">
                       {detailedClient.nome || "Sem nome"}
