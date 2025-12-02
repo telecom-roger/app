@@ -3175,16 +3175,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
               orderBy: (o: any) => desc(o.createdAt),
             });
 
-            // ✅ Analisar mensagem (oportunidade em LEAD/CONTATO ou não existe)
+            // ✅ Analisar mensagem
             const analysis = await analyzeClientMessage(conteudo, { nome: client.nome });
             const etapa = (analysis.etapa || "CONTATO").toUpperCase();
-            console.log(`🤖 IA (CHAT): ${analysis.sentimento} (${analysis.confianca}%) → ${etapa}`);
+            console.log(`🤖 IA (CHAT): ${analysis.sentimento} (${analysis.confianca}%) → ${etapa} | deveAgir=${analysis.deveAgir}`);
 
-            // 🚫 VALIDAÇÃO CRÍTICA: Mensagem neutra (sem intenção comercial) = NÃO AGIR
+            // 🚫 VALIDAÇÃO CRÍTICA #1: Se deveAgir=false → NUNCA FAZ NADA (neutro, indefinido, bloqueado)
+            if (analysis.deveAgir === false) {
+              console.log(`🛑 BLOQUEIO TOTAL: deveAgir=false (${analysis.motivo})`);
+              res.json(mensagem);
+              return;
+            }
+
+            // 🚫 VALIDAÇÃO CRÍTICA #2: Se mensagem neutra com intenção indefinida → NUNCA CRIA
             const ehMensagemNeutra = analysis.sentimento === "neutro" && analysis.intenção === "indefinida";
-            if (ehMensagemNeutra && !existingOpp) {
-              console.log(`⚠️ MENSAGEM NEUTRA: Não cria oportunidade`);
-              // Não faz nada - mensagem ignorada
+            if (ehMensagemNeutra) {
+              console.log(`⚠️ MENSAGEM NEUTRA/INDEFINIDA: Não cria oportunidade`);
               res.json(mensagem);
               return;
             }
@@ -3228,12 +3234,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`🛑 IA BLOQUEADA: ${existingOpp.etapa} - IA PROIBIDO`);
             }
             else {
-              // ✅ Analisar movimento normal
-
-              if (analysis.deveAgir === false) {
-                // IA diz "não mover" → NÃO FAGE NADA (nem cria opp)
-                console.log(`⚠️ IA NÃO MOVE: deveAgir=false (${analysis.motivo})`);
-              } else if (existingOpp && existingOpp.etapa !== etapa) {
+              // ✅ Analisar movimento normal (já passou por validações críticas acima)
+              if (existingOpp && existingOpp.etapa !== etapa) {
                 // 🔥 EXCEÇÃO CRÍTICA: Se em CONTATO e cliente aprova → DEVE mover para PROPOSTA
                 const ehTransicaoObrigatoriaCONTATOtoPROPOSTA = 
                   existingOpp.etapa === "CONTATO" && 

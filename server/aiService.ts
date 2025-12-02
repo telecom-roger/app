@@ -69,7 +69,52 @@ function normalizeMessage(text: string): string {
 function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysis {
   const msg = normalizeMessage(mensagem);
   
-  // 🎯 1️⃣ DETECTAR MENSAGENS AUTOMÁTICAS (PRIMEIRA VERIFICAÇÃO)
+  // 🚫 0️⃣ DETECTAR MENSAGENS PURAMENTE NEUTRAS (PRIMEIRA VERIFICAÇÃO - BLOQUEIO TOTAL)
+  // Não deve criar oportunidade, não deve mover
+  const mensagensNeutrasPuras = [
+    "oi",
+    "ola",
+    "olá",
+    "teste",
+    "test",
+    "blz",
+    "kkk",
+    "kk",
+    "haha",
+    "rsrs",
+    "valeu",
+    "valew",
+    "obrigado",
+    "obrigada",
+    "thanks",
+    "ok?",
+    "🙃",
+    "😊",
+    "👍",
+    "👌",
+    "✌",
+    "✔️",
+    "✅",
+    "...",
+    "…"
+  ];
+  
+  if (mensagensNeutrasPuras.some(palavra => msg === palavra || msg === palavra.trim())) {
+    return {
+      sentimento: "neutro",
+      confianca: 100,
+      intenção: "indefinida",
+      motivo: "Mensagem completamente neutra/vazia",
+      etapa: "", // NÃO MOVER
+      deveAgir: false, // 🚫 BLOQUEIO TOTAL
+      deveCriarNovoNegocio: false,
+      ehRecusaParcial: false,
+      ehMensagemAutomatica: false,
+      sugestao: "Ignorar mensagem",
+    };
+  }
+  
+  // 🎯 1️⃣ DETECTAR MENSAGENS AUTOMÁTICAS (SEGUNDA VERIFICAÇÃO)
   const mensagensAutomaticas = [
     "deixe seu contato",
     "aguarde",
@@ -288,7 +333,6 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     "ok",
     "certo",
     "beleza",
-    "blz",
     "tranquilo",
     "combinado",
     "pode ser",

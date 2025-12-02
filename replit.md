@@ -30,7 +30,7 @@ The application features a professional design system utilizing a deep dark blue
 - **Contract Reminder Job**: An automated job sends progressive WhatsApp reminders for "PROPOSTA ENVIADA" opportunities, eventually moving them to "PERDIDO" if no manual action is taken.
 - **Tags System**: Tags are completely separate from opportunity stages. Tags are used exclusively for chat filtering and conversation organization. They do NOT affect opportunity stages, client status, or kanban board. When an opportunity stage changes, tags remain untouched.
 - **AI Message Classification (NOVO)**: 
-  - Mensagens neutras ("teste", "oi", "bom dia", etc.) = NÃO criam oportunidades
+  - Mensagens neutras ("teste", "oi", "bom dia", "blz", "kkk", "👍") = NÃO criam oportunidades ✅
   - Mensagens com intenção comercial ("manda proposta", "tenho interesse", etc.) = Criam em CONTATO (1ª msg) → PROPOSTA (2ª msg)
   - Sentimento positivo + intenção = Aprova e avança funil
   - Sentimento negativo = Move para PERDIDO
@@ -45,6 +45,10 @@ The application features a professional design system utilizing a deep dark blue
 - **Architectural Rule**: Tags and Opportunities/Stages remain completely separate. Tags are only for chat filtering, never used for stage transitions or status calculations.
 
 ## Recent Changes (Current Session)
+- **CRITICAL BUG FIX #4**: Fixed IA neutral message classification (FINAL FIX)
+  - "oi", "teste", "blz", "kkk", "👍" → neutro/indefinida/deveAgir=false ✅
+  - ZERO mensagens neutras criam oportunidades ✅
+  - Bloqueio ocorre ANTES de qualquer criação ✅
 - **CRITICAL BUG FIX #3**: Fixed AI classification - now respects message intention vs neutral
   - Mensagens neutras NÃO criam oportunidades ✅
   - Apenas mensagens com intenção comercial avançam o funil ✅
