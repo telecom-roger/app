@@ -47,18 +47,32 @@ app.head("/health", (req, res) => {
 // Cache HTML content in memory for ultra-fast serving
 let cachedHtmlContent: string | null = null;
 
-// CRITICAL: GET / must respond INSTANTLY
-// Health checks always get JSON, browsers get HTML from cache
+// CRITICAL: GET / must respond INSTANTLY without ANY middleware
+// Bypass all middleware for health checks by responding immediately
 app.get("/", (req, res, next) => {
-  // Try to serve cached HTML for browsers - responds instantly if cached
+  // ALWAYS respond immediately - no middleware processing
+  // Check if it's a health check (not a browser requesting HTML)
+  const userAgent = req.get("user-agent") || "";
+  const accept = req.get("accept") || "";
+  
+  // Health check: curl, health checker tools, bots, non-HTML requests
+  if (!accept.includes("text/html") || 
+      userAgent.includes("curl") || 
+      userAgent.includes("health") ||
+      userAgent.includes("bot") ||
+      userAgent.includes("check")) {
+    res.setHeader("Content-Type", "application/json");
+    return res.status(200).end('{"ok":true}');
+  }
+  
+  // Browser requesting HTML: try to serve cached content super fast
   if (cachedHtmlContent) {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     return res.status(200).end(cachedHtmlContent);
   }
   
-  // If no cache yet, respond with JSON for health checks
-  res.setHeader("Content-Type", "application/json");
-  res.status(200).end('{"ok":true}');
+  // Fallback to next middleware if no cache
+  next();
 });
 
 app.head("/", (req, res) => {
@@ -66,20 +80,6 @@ app.head("/", (req, res) => {
 });
 
 // ALL MIDDLEWARES must come AFTER health check routes
-
-// ⚡ SERVE STATIC FILES (CSS, JS, fonts, etc)
-const staticDir = import.meta.resolve("../dist/public");
-if (staticDir) {
-  import("path").then(path => {
-    const resolvedPath = path.dirname(staticDir.replace("file://", ""));
-    app.use(express.static(resolvedPath, {
-      maxAge: "1d",
-      etag: false,
-      lastModified: false,
-    }));
-  });
-}
-
 app.use(express.json({
   limit: "50mb",
   verify: (req, _res, buf) => {
@@ -125,16 +125,10 @@ export default async function runApp(
   try {
     const fs = await import("fs");
     const path = await import("path");
-    // Try dist/public first (production build), then public (dev)
-    let htmlPath = path.resolve(import.meta.dirname, "..", "dist", "public", "index.html");
-    if (!fs.existsSync(htmlPath)) {
-      htmlPath = path.resolve(import.meta.dirname, "public", "index.html");
-    }
+    const htmlPath = path.resolve(import.meta.dirname, "public", "index.html");
     if (fs.existsSync(htmlPath)) {
       cachedHtmlContent = fs.readFileSync(htmlPath, "utf-8");
       console.log("✅ HTML cache loaded for ultra-fast serving");
-    } else {
-      console.warn("⚠️ HTML file not found - will serve JSON for /");
     }
   } catch (err) {
     console.error("⚠️ Failed to pre-cache HTML:", err);
@@ -177,7 +171,7 @@ export default async function runApp(
     });
     
     // Start automation cron jobs AFTER server is listening (fire-and-forget, non-blocking)
-    // DELAYED: 5000ms to ensure health checks pass before expensive operations start
+    // DELAYED: 1000ms to ensure health checks pass before expensive operations start
     setTimeout(() => {
       try {
         startAutomationCron();
@@ -185,12 +179,12 @@ export default async function runApp(
       } catch (err) {
         console.error("❌ Erro ao iniciar cron jobs:", err);
       }
-    }, 5000);
+    }, 1000);
     
     // Bootstrap WhatsApp sessions in COMPLETELY async context
     // Fire-and-forget: do NOT await, do NOT block
     // Failures are caught and logged but do not affect server health
-    // DELAYED: 5500ms to ensure health checks pass well before expensive operations
+    // DELAYED: 1500ms to ensure health checks pass well before expensive operations
     setTimeout(() => {
       try {
         // Call without await - let it run completely async
@@ -200,6 +194,6 @@ export default async function runApp(
       } catch (err) {
         console.error("❌ Erro ao iniciar bootstrap WhatsApp:", err);
       }
-    }, 5500);
+    }, 1500);
   });
 }
