@@ -1264,20 +1264,9 @@ export default function Chat() {
                     apiRequest("PATCH", `/api/chat/conversations/${contextMenuConvId}/toggle-unread`, { naoLida: newNaoLida })
                       .then(() => {
                         refetchConversations();
-                        toast({
-                          title: newNaoLida ? "Marcada como não lida" : "Marcada como lida",
-                          description: newNaoLida 
-                            ? "A conversa aparecerá destacada como lembrete" 
-                            : "O destaque foi removido",
-                        });
                       })
                       .catch(err => {
                         console.error("Erro ao alterar status:", err);
-                        toast({
-                          title: "Erro",
-                          description: "Não foi possível alterar a conversa",
-                          variant: "destructive",
-                        });
                       });
                   }
                   setContextMenuOpen(false);
