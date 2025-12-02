@@ -10,7 +10,7 @@ import { setupAuth, isAuthenticated } from "./localAuth";
 import { db } from "./db";
 import { simulateClientResponse, getAllAutomationTasks, getAllFollowUps, getAllClientScores, createTestFollowUps, createTestKanbanMovement, processBatchResponses } from "./testAutomation";
 import { checkPropostaEnviadaTimeouts } from "./automationService";
-import { analyzeClientMessage } from "./aiService";
+import { analyzeClientMessage, validateOpportunityCreation } from "./aiService";
 
 // ======================== CONSTANTES DE ETAPAS (AUTOMAÇÃO) ========================
 // 🔥 REGRAS CRÍTICAS DE MOVIMENTO DA IA:
@@ -2665,17 +2665,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.log(`ℹ️ [Chat] Oportunidade mantida em ${openOpp.etapa} (etapaValida=${etapaValida}, deveAgir=${analysis.deveAgir})`);
               }
             } else {
-              // ✅ NÃO TEM NEGÓCIO ABERTO → CRIAR NOVO (apenas se IA decidiu agir)
-              if (analysis.deveAgir && analysis.etapa && analysis.etapa !== "AUTOMÁTICA" && analysis.etapa !== "") {
+              // ✅ NÃO TEM NEGÓCIO ABERTO → VALIDAR E CRIAR NOVO
+              const creationValidation = await validateOpportunityCreation(
+                conversation.clientId,
+                analysis,
+                true // isClientMessage = true (vem de webhook/chat)
+              );
+
+              if (creationValidation.podecriar) {
                 const novaOpp = await storage.createOpportunity({
                   clientId: conversation.clientId,
                   titulo: `${client?.nome} - Novo Negócio`,
-                  etapa: analysis.etapa,
+                  etapa: creationValidation.etapa,
                   userId: user.id,
                 });
-                console.log(`🆕 [Chat] NOVO negócio CRIADO em ${analysis.etapa}`);
+                console.log(`🆕 [Chat] NOVO negócio CRIADO em ${creationValidation.etapa}`);
               } else {
-                console.log(`ℹ️ [Chat] Nenhum negócio criado (deveAgir=${analysis.deveAgir}, etapa=${analysis.etapa})`);
+                console.log(`ℹ️ [Chat] Nenhum negócio criado - ${creationValidation.motivo}`);
               }
             }
           } catch (iaError) {

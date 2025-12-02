@@ -20,6 +20,12 @@ export interface MessageAnalysis {
   sugestao: string;
 }
 
+export interface OpportunityCreationRules {
+  podecriar: boolean;
+  motivo: string;
+  etapa?: string;
+}
+
 // Etapas que bloqueiam ações da IA
 export const ETAPAS_MANUAIS_BLOQUEADAS = ["PROPOSTA ENVIADA", "CONTRATO ENVIADO", "AGUARDANDO ACEITE", "AGUARDANDO ATENÇÃO", "AGUARDANDO CONTRATO"];
 
@@ -466,4 +472,88 @@ JSON OBRIGATÓRIO:
     console.log(`📝 [FALLBACK] "${mensagem}" → ${localAnalysis.etapa}`);
     return localAnalysis;
   }
+}
+
+// ========================================
+// VALIDAÇÕES PARA CRIAÇÃO DE OPORTUNIDADES
+// ========================================
+
+function isAtendentMessage(mensagem: string): boolean {
+  const atendentePalavras = [
+    "qual seu nome",
+    "qual nome",
+    "qual seu cpf",
+    "qual cpf",
+    "qual sua data de nascimento",
+    "data de nascimento",
+    "qual seu endereco",
+    "qual endereco",
+    "qual seu email",
+    "qual email",
+    "qual seu telefone",
+    "qual telefone",
+    "qual sua empresa",
+    "qual empresa",
+    "qual seu cnpj",
+    "qual cnpj",
+    "pergunta",
+    "poderia responder",
+    "pode responder",
+  ];
+  
+  const msg = mensagem.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return atendentePalavras.some(palavra => msg.includes(palavra));
+}
+
+export async function validateOpportunityCreation(
+  clientId: string,
+  analysis: MessageAnalysis,
+  isClientMessage: boolean = true
+): Promise<OpportunityCreationRules> {
+  // ❌ REGRA 1: Apenas mensagens do cliente (incoming)
+  if (!isClientMessage) {
+    return { podecriar: false, motivo: "Mensagem não é do cliente" };
+  }
+
+  // ❌ REGRA 2: Não criar se IA decidiu não agir
+  if (!analysis.deveAgir) {
+    return { podecriar: false, motivo: "IA decidiu não agir (deveAgir=false)" };
+  }
+
+  // ❌ REGRA 3: Etapa deve ser válida
+  if (!analysis.etapa || analysis.etapa === "" || analysis.etapa === "AUTOMÁTICA") {
+    return { podecriar: false, motivo: "Etapa inválida ou automática" };
+  }
+
+  // ❌ REGRA 4: Nunca 2+ opps ativas por cliente
+  const openOpps = await db
+    .select()
+    .from(opportunities)
+    .where(
+      and(
+        eq(opportunities.clientId, clientId),
+        inArray(opportunities.etapa, [
+          "LEAD",
+          "CONTATO",
+          "PROPOSTA",
+          "FORNECEDOR",
+          "AUTOMÁTICA",
+          "PROPOSTA ENVIADA",
+          "AGUARDANDO CONTRATO",
+          "CONTRATO ENVIADO",
+          "AGUARDANDO ACEITE",
+          "AGUARDANDO ATENÇÃO",
+        ])
+      )
+    );
+
+  if (openOpps.length > 0) {
+    return {
+      podecriar: false,
+      motivo: `Cliente já tem ${openOpps.length} oportunidade(s) aberta(s)`,
+    };
+  }
+
+  // ✅ TODAS AS CONDIÇÕES ATENDIDAS
+  return { podecriar: true, motivo: "Todas as condições atendidas", etapa: analysis.etapa };
 }

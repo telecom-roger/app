@@ -48,6 +48,26 @@ The application features a professional design system utilizing a deep dark blue
 - **Architectural Rule**: Tags and Opportunities/Stages remain completely separate. Tags are only for chat filtering, never used for stage transitions or status calculations.
 
 ## Recent Changes (Current Session)
+- **REGRAS DE CRIAÇÃO DE OPORTUNIDADES** (9 validações):
+  1. ✅ Apenas mensagens do cliente (incoming)
+  2. ✅ Não está respondendo pergunta do atendente
+  3. ✅ Mensagem em LISTA DE PROPOSTA ou CONTATO (ou intenção comercial clara)
+  4. ✅ Mensagem NÃO em lista neutra
+  5. ✅ Nunca 2+ opps ativas por cliente (1 por vez!)
+  6. ✅ Se já existe opp aberta → atualiza, não cria
+  7. ✅ Validação: deveAgir=true + etapa válida
+  8. ✅ Etapa não pode ser AUTOMÁTICA ou vazia
+  9. ✅ Detecção de mensagens de fluxo do atendente (nome, CPF, email, etc)
+- **CLASSIFICAÇÃO REFATORADA** com 4 passos explícitos:
+  1. Verificar se é NEUTRA → NÃO cria
+  2. Verificar se é AÇÃO (OK, 👍) → Cria PROPOSTA
+  3. Verificar INTENÇÃO FRACA → Cria CONTATO
+  4. Se não nas listas, consultar IA para intenção comercial clara
+- **LISTA PROPOSTA**: "ok", "okk", "okkk", "OK", "joia", "👍", "👌", "sim", "blz", "beleza", "manda", "pode mandar", "envia", "me manda"
+- **LISTA CONTATO**: "quero saber mais", "como funciona?", "pode me explicar?", "qual operadora é melhor?"
+- **LISTA NEUTRA**: "oi", "eae", "bom dia", "boa tarde", "kkk", "teste", "valeu", "obrigado", "🙌", "🙏"
+
+## Recent Changes (Current Session)
 - **MAJOR REFACTOR**: Complete classification logic overhaul with explicit rules
   - **LISTA PROPOSTA** (SEMPRE cria PROPOSTA):
     - "ok", "okk", "okkk", "OK", "joia", "👍", "👌", "sim", "blz", "beleza", "manda", "pode mandar", "envia", "me manda" ✅
