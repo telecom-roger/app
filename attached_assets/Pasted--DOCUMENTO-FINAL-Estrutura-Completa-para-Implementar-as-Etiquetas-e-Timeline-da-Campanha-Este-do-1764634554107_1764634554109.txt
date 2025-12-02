@@ -1,0 +1,319 @@
+✅ DOCUMENTO FINAL — Estrutura Completa para Implementar as Etiquetas e Timeline da Campanha
+
+Este documento descreve tudo o que precisa ser feito no backend e no frontend para implementar etiquetas (status) e timeline de eventos para cada cliente dentro de uma campanha, sem nenhum código, apenas a lógica e as tarefas.
+
+🟪 1. EVENTOS QUE DEVEM SER REGISTRADOS (backend)
+
+Salvar para cada cliente de cada campanha:
+
+data_envio
+
+data_entrega (quando ack >= 2)
+
+data_visualizacao (quando ack == 3)
+
+data_primeira_resposta
+
+data_ultima_resposta
+
+total_respostas
+
+ultima_interacao
+
+status_envio → enviado / entregue / falha
+
+status_whatsapp → ack atual
+
+estado_derivado → etiqueta atual do cliente
+
+erro_envio (se existir)
+
+campanha_id
+
+telefone / cliente_id
+
+mensagem_id (para vincular respostas)
+
+Isso permite reconstruir tudo depois.
+
+🟥 2. ESTADOS DERIVADOS (ETIQUETAS EM PORTUGUÊS)
+
+Esses estados são calculados automaticamente pelo backend e exibidos no frontend.
+
+Envio / Entrega
+
+Enviado
+
+Entregue
+
+Não entregue
+
+Número inválido
+
+Bloqueado pelo WhatsApp
+
+Visualização
+
+Visualizado
+
+Não visualizado
+
+Visualizou e não respondeu
+
+Resposta
+
+Respondeu
+
+Respondeu imediatamente
+
+Respondeu em até 24 horas
+
+Respondeu após 24 horas
+
+Respondeu após alguns dias
+
+Respondeu depois de muito tempo
+
+Respondeu sem visualizar
+
+Engajamento
+
+Engajamento alto
+
+Engajamento médio
+
+Engajamento baixo
+
+Sem engajamento
+
+Erros
+
+Erro no envio
+
+Erro desconhecido
+
+Estados de espera
+
+Aguardando visualização
+
+Aguardando resposta
+
+Essas labels aparecem na tabela da campanha.
+
+🟩 3. COMO O BACKEND DEFINE A ETIQUETA (LÓGICA DE CLASSIFICAÇÃO)
+
+Se não houve entrega → Não entregue / Número inválido / Bloqueado
+
+Se houve entrega mas não visualização → Não visualizado
+
+Se visualizou e não respondeu → Visualizou e não respondeu
+
+Se respondeu:
+
+Em até 1h → Respondeu imediatamente
+
+Em até 24h → Respondeu em até 24 horas
+
+Entre 1 e 7 dias → Respondeu após alguns dias
+
+Mais de 7 dias → Respondeu depois de muito tempo
+
+Se houve resposta mas sem ack 3 → Respondeu sem visualizar
+
+Quando houver respostas múltiplas → atualizar total_respostas
+
+Atualizar ultima_interacao a cada evento
+
+Atualizar estado_derivado sempre que houver novo evento
+
+🟦 4. TIMELINE (BACKEND)
+
+A timeline é formada sempre que ocorrer algum evento.
+
+Cada item da timeline contém:
+
+data/hora (timestamp)
+
+tipo de evento
+
+descrição do evento
+
+Eventos que devem aparecer:
+
+“Mensagem enviada”
+
+“Mensagem entregue”
+
+“Mensagem visualizada”
+
+“Cliente respondeu: …”
+
+“Resposta registrada”
+
+“Erro no envio”
+
+“Status alterado para: …”
+
+A timeline é apenas visual, gerada a partir dos eventos já salvos.
+
+🟧 5. FRONTEND — EXIBIÇÃO NA TELA DA CAMPANHA
+Na lista de clientes da campanha:
+
+Exibir:
+
+Nome do cliente
+
+Telefone
+
+Etiqueta (estado_derivado)
+
+Data de envio
+
+Última interação
+
+Status do WhatsApp (ícones simples)
+
+Filtros rápidos:
+
+Respondidos
+
+Visualizou e não respondeu
+
+Não visualizou
+
+Não entregue
+
+Número inválido
+
+Engajamento alto / médio / baixo
+
+Ações em massa:
+
+Reenviar para “Não visualizou”
+
+Criar follow-up para “Visualizou e não respondeu”
+
+Marcar como “Cold”
+
+🟫 6. FRONTEND — DETALHES DO CLIENTE (DENTRO DA CAMPANHA)
+
+Dentro da página de detalhes da campanha, quando o usuário clicar no cliente:
+
+Mostrar:
+
+ETIQUETA atual
+
+Resumo:
+
+Enviado em
+
+Entregue em
+
+Visualizado em
+
+Resposta em
+
+Tempo até a resposta
+
+Timeline completa:
+
+evento por evento
+
+Dados do cliente
+
+Possíveis ações automáticas:
+
+enviar follow-up
+
+mover etapa no funil
+
+marcar como cold
+
+🟨 7. JOB DE VERIFICAÇÃO (BACKEND)
+
+Necessário rodar periodicamente:
+
+Atualizar status de entrega (ack)
+
+Atualizar visualização
+
+Atualizar etiqueta (estado_derivado)
+
+Recalcular engajamento
+
+Registrar eventos na timeline
+
+🟧 8. REGRAS DE ENGAJAMENTO
+
+Calcular com base em:
+
+tempo até a resposta
+
+total de respostas
+
+visualização sem resposta
+
+repetição do comportamento
+
+Etiquetas:
+
+Engajamento alto → respondeu rápido, interagiu
+
+Engajamento médio → respondeu depois
+
+Engajamento baixo → visualizou e não respondeu
+
+Sem engajamento → não visualizou nem respondeu
+
+🟦 9. CAMPANHAS COM MÚLTIPLAS MENSAGENS
+
+Se uma campanha manda várias mensagens para o mesmo cliente:
+
+Vincular resposta à última mensagem entregue antes da resposta
+
+Salvar mensagem_id vinculada à resposta
+
+timeline fica mais clara com isso
+
+🟩 10. O QUE O REPLIT PRECISA ENTREGAR
+Banco
+
+Tabelas/campos para armazenar todos os eventos listados no item 1.
+
+Campo estado_derivado.
+
+Estrutura para timeline.
+
+Tabela de mensagens enviadas por campanha.
+
+Backend
+
+Rota de envio registra data_envio.
+
+Listener WPPConnect registra entrega, visualização e respostas.
+
+Job periódico para atualizar status.
+
+Função para calcular etiqueta (estado_derivado).
+
+Função para gerar timeline.
+
+Filtros de busca.
+
+Frontend
+
+Tabela da campanha com etiquetas.
+
+Filtros laterais.
+
+Tela “Detalhes do cliente”.
+
+Timeline visual.
+
+Resumo do cliente.
+
+Ações de follow-up.
+
+🎯 11. CONCLUSÃO FINAL (o que você entrega para o Replit)
+
+Implementar o sistema de etiquetas + timeline completo para cada cliente dentro de uma campanha, com base na estrutura acima, seguindo exatamente os eventos, etiquetas, regras de classificação, lógica de engajamento, telas, filtros, timeline e atualizações periódicas descritas neste documento.
