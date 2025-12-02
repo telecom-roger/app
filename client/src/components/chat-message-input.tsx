@@ -99,7 +99,7 @@ export function ChatMessageInput({
                 disabled={isLoading || disabled}
                 size="icon"
                 data-testid="chat-input-send-button"
-                className="h-9 w-9 flex-shrink-0 ml-2 bg-primary hover:bg-primary/90 text-white transition-colors"
+                className="h-9 w-9 flex-shrink-0 ml-2 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
               >
                 {isLoading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -110,16 +110,15 @@ export function ChatMessageInput({
             ) : (
               <Button
                 size="icon"
-                variant="ghost"
                 onClick={isRecording ? onStopRecording : onStartRecording}
                 disabled={isLoading || disabled}
                 data-testid="chat-input-voice-button"
-                className="h-8 w-8 flex-shrink-0 ml-2 text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors"
+                className="h-9 w-9 flex-shrink-0 ml-2 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
               >
                 {isRecording ? (
-                  <StopCircle className="h-4 w-4 animate-pulse text-red-500" />
+                  <StopCircle className="h-5 w-5 animate-pulse text-red-500" />
                 ) : (
-                  <Mic className="h-4 w-4" />
+                  <Mic className="h-5 w-5" />
                 )}
               </Button>
             )}
