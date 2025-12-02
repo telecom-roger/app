@@ -1660,7 +1660,7 @@ export default function Chat() {
                     </h2>
                     {detailedClient.contato && (
                       <p className="text-sm text-slate-600 dark:text-[#A9A9A9] mt-0.5">
-                        Gestor: {detailedClient.contato}
+                        Gestor: {detailedClient.contato.split(" ")[0]}
                       </p>
                     )}
                     {detailedClient.cnpj && (
