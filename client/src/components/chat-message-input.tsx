@@ -60,7 +60,7 @@ export function ChatMessageInput({
             className="relative flex-1 flex items-center px-3 py-1.5 gap-2" 
             style={{
               backgroundColor: "#f7f7f8",
-              border: "1px solid #e5e5e5",
+              border: "1px solid #999999",
               borderRadius: "999px",
               boxShadow: "0 2px 12px rgba(0, 0, 0, 0.08)"
             }}
