@@ -1970,6 +1970,7 @@ export default function Chat() {
               )}
               <div className="p-3 sm:p-6 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex gap-2 sm:gap-3 items-end">
                 <Textarea
+                  autoFocus
                   placeholder="Digite..."
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
