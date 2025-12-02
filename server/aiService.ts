@@ -88,6 +88,8 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     "obrigada",
     "thanks",
     "ok?",
+    "tudo bem",
+    "tudo bem?",
     "🙃",
     "😊",
     "👌",
@@ -364,7 +366,6 @@ function analyzeLocalTest(mensagem: string, etapaAtual?: string): MessageAnalysi
     // Extras mantidos
     "sim",
     "claro",
-    "tudo bem",
     "concordo",
     "aceito",
     "interessado",

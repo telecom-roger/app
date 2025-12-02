@@ -48,12 +48,16 @@ The application features a professional design system utilizing a deep dark blue
 - **Architectural Rule**: Tags and Opportunities/Stages remain completely separate. Tags are only for chat filtering, never used for stage transitions or status calculations.
 
 ## Recent Changes (Current Session)
+- **CRITICAL BUG FIX #5**: Removed "tudo bem" from aprovacao keywords
+  - "Tudo bem?" era criando oportunidade em PROPOSTA (ERRADO) ❌
+  - Agora "tudo bem" está em mensagens neutras puras ✅
+  - "Tudo bem?" = mensagem neutra, não cria opp ✅
 - **FEATURE UPDATE #1**: Opportunity creation now respects IA suggestion for etapa
   - Se IA sugere PROPOSTA → cria direto em PROPOSTA ✅
   - Se IA sugere CONTATO → cria em CONTATO ✅
   - Etapa padrão mantém CONTATO se IA não sugerir ✅
 - **CRITICAL BUG FIX #4**: Fixed IA neutral message classification (FINAL FIX)
-  - "oi", "teste", "blz", "kkk" → neutro/indefinida/deveAgir=false ✅
+  - "oi", "teste", "blz", "kkk", "tudo bem" → neutro/indefinida/deveAgir=false ✅
   - "👍" com sentimento positivo → pode criar em PROPOSTA ✅
   - ZERO mensagens neutras puras criam oportunidades ✅
   - Bloqueio ocorre ANTES de qualquer criação ✅
