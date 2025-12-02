@@ -210,6 +210,32 @@ export async function deleteClient(id: string): Promise<void> {
   await db.delete(clients).where(eq(clients.id, id));
 }
 
+// Verificar se usuário pode acessar o cliente (criou ou compartilhado)
+export async function canUserAccessClient(clientId: string, userId: string): Promise<boolean> {
+  const [client] = await db
+    .select()
+    .from(clients)
+    .where(eq(clients.id, clientId))
+    .limit(1);
+  
+  if (!client) return false;
+  
+  // Usuário é o proprietário
+  if (client.createdBy === userId) return true;
+  
+  // Cliente foi compartilhado com o usuário
+  const [sharing] = await db
+    .select()
+    .from(clientSharing)
+    .where(and(
+      eq(clientSharing.clientId, clientId),
+      eq(clientSharing.sharedWithUserId, userId)
+    ))
+    .limit(1);
+  
+  return !!sharing;
+}
+
 // ==================== CONTACT STORAGE ====================
 export async function createContact(data: InsertContact): Promise<Contact> {
   const [result] = await db.insert(contacts).values(data).returning();

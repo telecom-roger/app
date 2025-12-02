@@ -370,7 +370,7 @@ async function processIncomingMessages(sessionId: string, m: any) {
             client = exactMatches.sort((a, b) => {
               if (a.status === "ativo" && b.status !== "ativo") return -1;
               if (b.status === "ativo" && a.status !== "ativo") return 1;
-              return new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime();
+              return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
             })[0];
             console.log(`✅ [CLIENTE ENCONTRADO] Exato: ${client.id} (${client.nome}) - celular: ${client.celular}`);
           } else {
@@ -390,12 +390,22 @@ async function processIncomingMessages(sessionId: string, m: any) {
             }
           }
           
-          // ✅ PASSO 3: Se encontrou cliente, usar ele. Se não, criar novo
+          // ✅ PASSO 3: Se encontrou cliente E usuário pode acessar, usar ele. Se não, criar novo
           if (client) {
-            console.log(`✅ Usando cliente existente: ${client.id} (${client.nome})`);
-            conversation = await storage.createOrGetConversation(client.id, userId);
-            console.log(`✨ Conversa criada para usuário ${userId}: ${conversation.id}`);
-          } else {
+            // Verificar se o usuário pode acessar esse cliente (criou ou compartilhado)
+            const canAccess = await storage.canUserAccessClient(client.id, userId);
+            
+            if (canAccess) {
+              console.log(`✅ Usando cliente existente: ${client.id} (${client.nome})`);
+              conversation = await storage.createOrGetConversation(client.id, userId);
+              console.log(`✨ Conversa criada para usuário ${userId}: ${conversation.id}`);
+            } else {
+              console.warn(`⚠️ Cliente encontrado mas usuário não tem acesso: ${client.id}`);
+              client = null; // Forçar criação de novo contato
+            }
+          }
+          
+          if (!client) {
             console.warn(`[RECEBIMENTO] ⚠️ Nenhum cliente encontrado - criando novo`);
             
             // Auto-create new client
@@ -423,6 +433,11 @@ async function processIncomingMessages(sessionId: string, m: any) {
           }
         }
 
+        if (!conversation) {
+          console.error(`[RECEBIMENTO] ❌ ERRO: Conversa não foi criada!`);
+          continue;
+        }
+        
         console.log(`[RECEBIMENTO] Conversa encontrada/criada: ${conversation.id}`);
         
         // 🔓 REABRIR CONVERSA SE ESTIVER OCULTA (cliente respondeu = reabre automaticamente)
