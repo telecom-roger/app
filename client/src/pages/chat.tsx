@@ -474,11 +474,26 @@ export default function Chat() {
         // Mostra notificação visual se a janela não está em foco OU se há múltiplas mensagens
         if (!document.hasFocus() || messages.length > previousMessageCount + 1) {
           if ("Notification" in window && Notification.permission === "granted") {
-            new Notification(`Nova mensagem de ${clientName}`, {
-              body: messagePreview,
-              icon: "/icon.png",
-              tag: `message-${newMessage.conversationId}`,
-            });
+            // Usar Service Worker se disponível, senão usar constructor direto
+            if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+              navigator.serviceWorker.ready.then((registration) => {
+                registration.showNotification(`Nova mensagem de ${clientName}`, {
+                  body: messagePreview,
+                  icon: "/icon.png",
+                  tag: `message-${newMessage.conversationId}`,
+                });
+              });
+            } else {
+              try {
+                new Notification(`Nova mensagem de ${clientName}`, {
+                  body: messagePreview,
+                  icon: "/icon.png",
+                  tag: `message-${newMessage.conversationId}`,
+                });
+              } catch (err) {
+                console.log("⚠️ Erro ao criar notificação:", err);
+              }
+            }
             console.log("📬 Notificação visual mostrada");
           } else {
             console.log("⚠️ Notificações bloqueadas ou não suportadas");
