@@ -71,7 +71,7 @@ export function ChatMessageInput({
               onClick={() => document.getElementById("chat-file-upload")?.click()}
               disabled={disabled || isRecording}
               data-testid="chat-input-file-button"
-              className="h-8 w-8 flex-shrink-0 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+              className="h-8 w-8 flex-shrink-0 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors border border-gray-400 dark:border-gray-600"
             >
               <Paperclip className="h-4 w-4" />
             </Button>
@@ -99,7 +99,7 @@ export function ChatMessageInput({
                 disabled={isLoading || disabled}
                 size="icon"
                 data-testid="chat-input-send-button"
-                className="h-9 w-9 flex-shrink-0 ml-2 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                className="h-9 w-9 flex-shrink-0 ml-2 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors border border-gray-400 dark:border-gray-600"
               >
                 {isLoading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -113,7 +113,7 @@ export function ChatMessageInput({
                 onClick={isRecording ? onStopRecording : onStartRecording}
                 disabled={isLoading || disabled}
                 data-testid="chat-input-voice-button"
-                className="h-9 w-9 flex-shrink-0 ml-2 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                className="h-9 w-9 flex-shrink-0 ml-2 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors border border-gray-400 dark:border-gray-600"
               >
                 {isRecording ? (
                   <StopCircle className="h-5 w-5 animate-pulse text-red-500" />
