@@ -33,6 +33,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { SearchFilter } from "@/components/search-filter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, GripVertical, User, DollarSign, Trash2, Edit2, TrendingUp, Zap, Settings, MessageCircle } from "lucide-react";
@@ -386,14 +387,14 @@ export default function Kanban() {
           {/* Controls */}
           <div className="flex flex-col gap-3">
             <div className="flex flex-col lg:flex-row gap-2 lg:gap-3 items-start lg:items-center flex-wrap">
-              <Input
-                type="text"
-                value={filtroCliente}
-                onChange={(e) => setFiltroCliente(e.target.value)}
-                placeholder="Buscar cliente ou CNPJ..."
-                className="w-full lg:w-56 text-xs lg:text-sm border-slate-200 dark:border-slate-700"
-                data-testid="input-filtro-cliente"
-              />
+              <div className="w-full lg:w-56">
+                <SearchFilter
+                  placeholder="Buscar cliente ou CNPJ..."
+                  value={filtroCliente}
+                  onChange={setFiltroCliente}
+                  testId="input-filtro-cliente"
+                />
+              </div>
 
               <Select value={filtroResponsavel} onValueChange={setFiltroResponsavel}>
                 <SelectTrigger className="w-full lg:w-48 text-xs lg:text-sm border-slate-200 dark:border-slate-700" data-testid="select-responsavel">

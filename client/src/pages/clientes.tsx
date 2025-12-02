@@ -8,6 +8,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchFilter } from "@/components/search-filter";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -630,16 +631,12 @@ export default function Clientes() {
           <Card className="p-5 border-0 shadow-sm bg-white dark:bg-slate-800/50">
             <div className="space-y-4">
               <div className="flex flex-col md:flex-row gap-3">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input
-                    placeholder="Buscar por nome, razão social ou CNPJ..."
-                    className="pl-10 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    data-testid="input-search-clientes"
-                  />
-                </div>
+                <SearchFilter
+                placeholder="Buscar por nome, razão social ou CNPJ..."
+                value={searchTerm}
+                onChange={setSearchTerm}
+                testId="input-search-clientes"
+              />
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-full md:w-48 border-slate-200 dark:border-slate-700" data-testid="select-status">
                     <SelectValue placeholder="Status" />

@@ -68,6 +68,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertCampaignSchema, type Campaign, type Template } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Plus, Trash2, Clock, X, AlertCircle, Loader2, Calendar, CheckCircle, Users, Loader } from "lucide-react";
+import { SearchFilter } from "@/components/search-filter";
 import { useWhatsAppStatus } from "@/hooks/useWhatsAppStatus";
 import {
   Form,
@@ -761,12 +762,11 @@ export default function CampanhasAgendadas() {
               {/* Linha 1: Busca e Status */}
               <div className="flex gap-2 items-end flex-wrap">
                 <div className="flex-1 min-w-56">
-                  <Input
+                  <SearchFilter
                     placeholder="Buscar por razão social ou telefone..."
                     value={searchClientes}
-                    onChange={(e) => setSearchClientes(e.target.value)}
-                    className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 h-9"
-                    data-testid="input-search-clientes-db"
+                    onChange={setSearchClientes}
+                    testId="input-search-clientes-db"
                   />
                 </div>
                 <Select value={filtroStatus} onValueChange={setFiltroStatus}>

@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle, Download, Plus, Info, User, Zap, Eye, EyeOff, ChevronDown, Trash2, Forward } from "lucide-react";
 import { ChatMessageInput } from "@/components/chat-message-input";
+import { SearchFilter } from "@/components/search-filter";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { SiWhatsapp } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
@@ -990,32 +991,16 @@ export default function Chat() {
       <div className="w-full md:w-80 lg:w-96 flex flex-col border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50">
         {/* Search Input */}
         <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 border-b border-slate-200 dark:border-slate-700">
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar cliente..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setShowSearchResults(e.target.value.trim().length > 0);
-              }}
-              className="pl-9 pr-9 h-9 sm:h-10 text-sm"
-              data-testid="input-search-client"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => {
-                  setSearchTerm("");
-                  setShowSearchResults(false);
-                }}
-                className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
-                data-testid="button-clear-search"
-                title="Limpar"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
+          <SearchFilter
+            placeholder="Buscar cliente..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e);
+              setShowSearchResults(e.trim().length > 0);
+            }}
+            onClear={() => setShowSearchResults(false)}
+            testId="input-search-client"
+          />
         </div>
 
         {/* Tag Filter Section */}
