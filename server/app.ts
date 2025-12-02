@@ -44,25 +44,6 @@ app.head("/health", (req, res) => {
   res.status(200).end();
 });
 
-// Cache HTML content in memory for ultra-fast serving
-let cachedHtmlContent: string | null = null;
-
-// CRITICAL: GET / must respond INSTANTLY - serve cached HTML or empty response
-app.get("/", (req, res) => {
-  // Ultra-fast response: serve pre-cached HTML if available
-  if (cachedHtmlContent) {
-    res.setHeader("Content-Type", "text/html; charset=utf-8");
-    return res.status(200).end(cachedHtmlContent);
-  }
-  // Fallback: instant JSON response (for health checks during startup)
-  res.setHeader("Content-Type", "application/json");
-  res.status(200).end('{"ok":true}');
-});
-
-app.head("/", (req, res) => {
-  res.status(200).end();
-});
-
 // ALL MIDDLEWARES must come AFTER health check routes
 app.use(express.json({
   limit: "50mb",
@@ -105,19 +86,6 @@ app.use((req, res, next) => {
 export default async function runApp(
   setup: (app: Express, server: Server) => Promise<void>,
 ) {
-  // Pre-cache HTML content for ultra-fast health check responses
-  try {
-    const fs = await import("fs");
-    const path = await import("path");
-    const htmlPath = path.resolve(import.meta.dirname, "public", "index.html");
-    if (fs.existsSync(htmlPath)) {
-      cachedHtmlContent = fs.readFileSync(htmlPath, "utf-8");
-      console.log("✅ HTML cache loaded for ultra-fast serving");
-    }
-  } catch (err) {
-    console.error("⚠️ Failed to pre-cache HTML:", err);
-  }
-
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
