@@ -1993,7 +1993,7 @@ export default function Chat() {
                   onPaste={handlePaste}
                   disabled={sendMutation.isPending || recordedAudio !== null || pastedImage !== null}
                   data-testid="input-message"
-                  className="resize-none min-h-11 sm:min-h-12 max-h-32 text-sm sm:text-base !focus:ring-0 !focus:outline-none !focus-visible:ring-0 !focus-visible:outline-none !focus-visible:ring-offset-0 rounded-lg !border-0 !focus:border-0"
+                  className="resize-none min-h-11 sm:min-h-12 max-h-32 text-sm sm:text-base !rounded-lg !border !border-input !focus:ring-0 !focus:outline-none !focus-visible:ring-0 !focus-visible:outline-none !focus-visible:ring-offset-0"
                 />
                 <input
                   type="file"
