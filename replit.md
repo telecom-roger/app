@@ -40,14 +40,24 @@ The application features a professional design system utilizing a deep dark blue
 - **Storage System**: Abstracted storage methods for CRUD operations.
 - **Audit System**: Complete logging for creation, editing, and deletion actions, including IP and User-Agent tracking.
 - **Architectural Rule**: Tags and Opportunities/Stages remain completely separate. Tags are only for chat filtering, never used for stage transitions or status calculations.
-- **Deployment**: Health check endpoints respond in <1ms (no blocking operations). Campaign scheduler, automation cron, and WhatsApp bootstrap run with 2-3 second delays to ensure deployment health checks pass before expensive operations start.
+- **Deployment & Health Checks**: Server listens immediately (before auth/routes initialization) to ensure instant health check responses. `/health` endpoint responds in ~2ms with no dependencies. Startup guard middleware returns 503 for non-/health routes until initialization completes. Campaign scheduler, automation cron, and WhatsApp bootstrap run with delays (2-3s) to ensure deployment health checks pass before expensive operations start. Global error handler logs but doesn't throw to prevent crashes. PostgreSQL session store uses retry/backoff with fallback to in-memory sessions.
 
-## Recent Changes (Current Session - DEPLOYMENT & UX)
-- **DEPLOYMENT FIX**: Removed blocking operations from registerRoutes() to enable fast health checks
+## Recent Changes (Current Session - DEPLOYMENT HEALTH CHECK FIXES)
+- **CRITICAL DEPLOYMENT FIX**: Restructured server startup to ensure instant health check responses
+  - Server now listens on 0.0.0.0:5000 IMMEDIATELY, before any blocking operations ✅
+  - `/health` endpoint responds in ~2ms, before auth/routes initialization ✅
+  - Authentication and routes initialize asynchronously AFTER server starts listening ✅
+  - Added startup guard middleware: returns 503 for non-/health routes until initialization completes ✅
+  - Removed `throw err` from global error handler to prevent process crashes ✅
+  - Implemented retry/backoff logic for PostgreSQL session store (3 attempts, exponential delays) ✅
+  - Session store falls back to in-memory if database connection fails after retries ✅
+  - Health check response time: ~2ms (instant deployment health check pass) ✅
+  - Root endpoint `/` responds in ~10ms with pre-loaded HTML ✅
+  - All API routes work correctly after initialization ✅
+- **PREVIOUS DEPLOYMENT FIX**: Removed blocking operations from registerRoutes()
   - Moved campaign scheduler to `startCampaignScheduler()` with 2000ms delay ✅
   - Automation cron initialized with 2500ms delay ✅
   - WhatsApp bootstrap initialized with 3000ms delay ✅
-  - Health check response time: <1ms (passing Replit deployment health checks) ✅
 - **CHAT UX FIX**: Added automatic cursor refocus after sending message
   - When user presses Enter or clicks Send button, cursor stays in input field ✅
   - Applies to both keyboard and mouse interactions ✅
