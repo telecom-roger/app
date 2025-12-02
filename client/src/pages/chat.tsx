@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle, Download, Plus, Info, User, Zap, Eye, EyeOff, ChevronDown, Trash2, Forward } from "lucide-react";
+import { Loader2, Send, Phone, MessageSquare, Search, X, Paperclip, Image as ImageIcon, Music, File, Mic, StopCircle, Download, Plus, Info, User, Zap, Eye, EyeOff, ChevronDown, Trash2, Forward, Copy } from "lucide-react";
 import { ChatMessageInput } from "@/components/chat-message-input";
 import { SearchFilter } from "@/components/search-filter";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -1658,6 +1658,24 @@ export default function Chat() {
                     <h2 className="text-xl font-bold text-slate-900 dark:text-[#FFFFFF]">
                       {detailedClient.nome || "Sem nome"}
                     </h2>
+                    {detailedClient.contato && (
+                      <p className="text-sm text-slate-600 dark:text-[#A9A9A9] mt-0.5">
+                        Gestor: {detailedClient.contato}
+                      </p>
+                    )}
+                    {detailedClient.cnpj && (
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(detailedClient.cnpj || "");
+                          toast({ title: "CNPJ copiado!" });
+                        }}
+                        className="flex items-center gap-1 text-sm text-slate-600 dark:text-[#A9A9A9] hover:text-slate-900 dark:hover:text-white mt-0.5 transition-colors"
+                        data-testid="button-copy-cnpj"
+                      >
+                        <span className="font-mono">{detailedClient.cnpj}</span>
+                        <Copy className="h-3 w-3" />
+                      </button>
+                    )}
                     <button
                       onClick={() => {
                         navigate(`/clientes/${detailedClient.id}`);
