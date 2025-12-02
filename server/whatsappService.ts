@@ -8,7 +8,7 @@ import { promisify } from "util";
 import * as storage from "./storage";
 import { db } from "./db";
 import { or, ilike, eq, and, desc, gte } from "drizzle-orm";
-import { clients as clientsTable, automationConfigs, messages } from "@shared/schema";
+import { clients as clientsTable, automationConfigs, messages, campaignSendings } from "@shared/schema";
 import { analyzeClientMessage } from "./aiService";
 
 const execAsync = promisify(exec);
@@ -313,6 +313,37 @@ async function processIncomingMessages(sessionId: string, m: any) {
         });
 
         console.log(`📥 ✅ RECEBIDO E SALVO DE ${senderPhone}: "${conteudo}"`);
+
+        // 📊 ATUALIZAR CONTADORES DE RESPOSTA EM CAMPAIGN_SENDINGS
+        try {
+          if (!conversation.clientId) {
+            console.warn(`⚠️ conversation.clientId não definido, ignorando campaign update`);
+          } else {
+            const sendingRecords = await db
+              .select()
+              .from(campaignSendings)
+              .where(eq(campaignSendings.clientId, conversation.clientId))
+              .orderBy(desc(campaignSendings.dataSending))
+              .limit(1);
+            
+            console.log(`🔍 Procurando campaign_sendings para clientId=${conversation.clientId}, encontrados: ${sendingRecords.length}`);
+            
+            if (sendingRecords.length > 0) {
+              const sendingRecord = sendingRecords[0];
+              const dataPrimeiraResposta = sendingRecord.dataPrimeiraResposta || new Date();
+              await db
+                .update(campaignSendings)
+                .set({
+                  totalRespostas: (sendingRecord.totalRespostas || 0) + 1,
+                  dataPrimeiraResposta,
+                })
+                .where(eq(campaignSendings.id, sendingRecord.id));
+              console.log(`📊 ✅ Campaign_sendings incrementado: totalRespostas=${(sendingRecord.totalRespostas || 0) + 1}`);
+            }
+          }
+        } catch (err) {
+          console.warn(`⚠️ Erro ao incrementar campaign_sendings:`, err);
+        }
 
         // 🤖 IA: Analisar mensagem e criar/mover oportunidade automaticamente
         if (tipo === "texto" && conteudo && conversation.clientId) {

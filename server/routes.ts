@@ -1011,10 +1011,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // ✅ Calcular totalRecipients a partir de filtros.clientIds
       const clientIds = (req.body.filtros?.clientIds as string[]) || [];
       
+      // ✅ Extrair tempos customizados do request, permitir override
+      const tempoFixoSegundos = req.body.tempoFixoSegundos !== undefined ? req.body.tempoFixoSegundos : 70;
+      const tempoAleatorioMin = req.body.tempoAleatorioMin !== undefined ? req.body.tempoAleatorioMin : 30;
+      const tempoAleatorioMax = req.body.tempoAleatorioMax !== undefined ? req.body.tempoAleatorioMax : 60;
+      
       const validatedData = insertCampaignSchema.parse({
         ...req.body,
         totalRecipients: clientIds.length || 0,
         createdBy: (req.user as any).id,
+        tempoFixoSegundos,
+        tempoAleatorioMin,
+        tempoAleatorioMax,
       });
       const campaign = await storage.createCampaign(validatedData);
 
@@ -1061,10 +1069,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/campaigns/schedule", isAuthenticated, async (req, res) => {
     try {
-      const { nome, templateId, agendadaPara, filtros, totalRecipients } = req.body;
+      const { nome, templateId, agendadaPara, filtros, totalRecipients, tempoFixoSegundos, tempoAleatorioMin, tempoAleatorioMax } = req.body;
       if (!nome || !templateId || !agendadaPara) {
         return res.status(400).json({ error: "Nome, templateId e agendadaPara são obrigatórios" });
       }
+
+      // ✅ Extrair tempos customizados, usar defaults se não informados
+      const tempo_fixo = tempoFixoSegundos !== undefined ? tempoFixoSegundos : 70;
+      const tempo_min = tempoAleatorioMin !== undefined ? tempoAleatorioMin : 30;
+      const tempo_max = tempoAleatorioMax !== undefined ? tempoAleatorioMax : 60;
 
       // ✅ Salvar origemDisparo nos filtros para exibição correta no histórico
       const validatedData = insertCampaignSchema.parse({
@@ -1076,6 +1089,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filtros: { ...(filtros || {}), origemDisparo: "agendamento" },
         totalRecipients: totalRecipients || 0,
         createdBy: (req.user as any).id,
+        tempoFixoSegundos: tempo_fixo,
+        tempoAleatorioMin: tempo_min,
+        tempoAleatorioMax: tempo_max,
       });
 
       const campaign = await storage.createCampaign(validatedData);
