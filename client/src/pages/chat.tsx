@@ -1160,7 +1160,7 @@ export default function Chat() {
                         </div>
                         <div className="flex items-center gap-0.5 flex-shrink-0 -ml-6 sm:ml-auto" style={{ paddingRight: '12px' }}>
                           {(conv as any).naoLida && (
-                            <div className="w-2.5 h-2.5 bg-blue-500 rounded-full flex-shrink-0" title="Marcada como não lida" />
+                            <div className="w-2.5 h-2.5 bg-black dark:bg-white rounded-full flex-shrink-0" title="Marcada como não lida" />
                           )}
                           {(conv as any).oculta && (
                             <EyeOff className="h-3 w-3 text-slate-400" />
