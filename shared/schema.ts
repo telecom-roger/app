@@ -361,6 +361,7 @@ export const conversations = pgTable("conversations", {
   assunto: text("assunto"),
   ativa: boolean("ativa").default(true),
   oculta: boolean("oculta").default(false),
+  naoLida: boolean("nao_lida").default(false),
   ultimaMensagem: text("ultima_mensagem"),
   ultimaMensagemEm: timestamp("ultima_mensagem_em"),
   createdAt: timestamp("created_at").defaultNow(),

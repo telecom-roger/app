@@ -2502,6 +2502,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Toggle conversation unread status (marcar como não lida)
+  app.patch("/api/chat/conversations/:conversationId/toggle-unread", isAuthenticated, async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      const { naoLida } = req.body;
+      const user = (req.user as any);
+
+      if (typeof naoLida !== 'boolean') {
+        return res.status(400).json({ error: "Campo 'naoLida' deve ser boolean" });
+      }
+
+      const [updated] = await db
+        .update(conversations)
+        .set({ naoLida })
+        .where(and(eq(conversations.id, conversationId), eq(conversations.userId, user.id)))
+        .returning();
+      
+      if (!updated) {
+        return res.status(403).json({ error: "Conversa não encontrada ou acesso negado" });
+      }
+
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error toggling conversation unread:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/chat/messages/:conversationId", isAuthenticated, async (req, res) => {
     try {
       const { conversationId } = req.params;

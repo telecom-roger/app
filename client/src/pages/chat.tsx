@@ -168,6 +168,7 @@ export default function Chat() {
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
   const [contextMenuConvId, setContextMenuConvId] = useState<string | null>(null);
   const [contextMenuConvOculta, setContextMenuConvOculta] = useState(false);
+  const [contextMenuConvNaoLida, setContextMenuConvNaoLida] = useState(false);
   const [showHiddenConversations, setShowHiddenConversations] = useState(false);
   const [showClientInfo, setShowClientInfo] = useState(false);
   const [businessValue, setBusinessValue] = useState<string>("");
@@ -1112,11 +1113,12 @@ export default function Chat() {
 
                     const handleContextMenu = (e: React.MouseEvent) => {
                       e.preventDefault();
-                      console.log("🖱️ Context menu acionado para conversa:", conv.id, "oculta:", (conv as any).oculta);
+                      console.log("🖱️ Context menu acionado para conversa:", conv.id, "oculta:", (conv as any).oculta, "naoLida:", (conv as any).naoLida);
                       setContextMenuOpen(true);
                       setContextMenuPos({ x: e.clientX, y: e.clientY });
                       setContextMenuConvId(conv.id);
                       setContextMenuConvOculta((conv as any).oculta ?? false);
+                      setContextMenuConvNaoLida((conv as any).naoLida ?? false);
                     };
 
                     return (
@@ -1157,6 +1159,9 @@ export default function Chat() {
                           </div>
                         </div>
                         <div className="flex items-center gap-0.5 flex-shrink-0 -ml-6 sm:ml-auto" style={{ paddingRight: '12px' }}>
+                          {(conv as any).naoLida && (
+                            <div className="w-2.5 h-2.5 bg-blue-500 rounded-full flex-shrink-0" title="Marcada como não lida" />
+                          )}
                           {(conv as any).oculta && (
                             <EyeOff className="h-3 w-3 text-slate-400" />
                           )}
@@ -1249,6 +1254,46 @@ export default function Chat() {
                   <>
                     <EyeOff className="h-4 w-4" />
                     Ocultar conversa
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  if (contextMenuConvId) {
+                    const newNaoLida = !contextMenuConvNaoLida;
+                    apiRequest("PATCH", `/api/chat/conversations/${contextMenuConvId}/toggle-unread`, { naoLida: newNaoLida })
+                      .then(() => {
+                        refetchConversations();
+                        toast({
+                          title: newNaoLida ? "Marcada como não lida" : "Marcada como lida",
+                          description: newNaoLida 
+                            ? "A conversa aparecerá destacada como lembrete" 
+                            : "O destaque foi removido",
+                        });
+                      })
+                      .catch(err => {
+                        console.error("Erro ao alterar status:", err);
+                        toast({
+                          title: "Erro",
+                          description: "Não foi possível alterar a conversa",
+                          variant: "destructive",
+                        });
+                      });
+                  }
+                  setContextMenuOpen(false);
+                }}
+                className="w-full text-left px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-slate-900 dark:text-white flex items-center gap-2"
+                data-testid="button-toggle-unread-conversation"
+              >
+                {contextMenuConvNaoLida ? (
+                  <>
+                    <MessageSquare className="h-4 w-4" />
+                    Marcar como lida
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare className="h-4 w-4 text-blue-500" />
+                    Marcar como não lida
                   </>
                 )}
               </button>
