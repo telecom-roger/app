@@ -47,25 +47,21 @@ app.head("/health", (req, res) => {
 // Cache HTML content in memory for ultra-fast serving
 let cachedHtmlContent: string | null = null;
 
-// CRITICAL: GET / must respond INSTANTLY without ANY middleware
-// Bypass all middleware for health checks by responding immediately
-app.get("/", (req, res, next) => {
-  // ALWAYS respond immediately - no middleware processing
-  // Check if it's a health check (not a browser requesting HTML)
-  const userAgent = req.get("user-agent") || "";
-  const accept = req.get("accept") || "";
-  
-  // Health check: curl, health checker tools, bots, non-HTML requests
-  if (!accept.includes("text/html") || 
-      userAgent.includes("curl") || 
-      userAgent.includes("health") ||
-      userAgent.includes("bot") ||
-      userAgent.includes("check")) {
-    res.setHeader("Content-Type", "application/json");
-    return res.status(200).end('{"ok":true}');
-  }
-  
-  // Browser requesting HTML: try to serve cached content super fast
+// CRITICAL: GET / must respond INSTANTLY for EVERYTHING
+// Ultra-fast response for health checks and browser requests
+app.get("/", (req, res) => {
+  // ALWAYS respond immediately with JSON - no conditional logic, no header checking
+  res.setHeader("Content-Type", "application/json");
+  return res.status(200).end('{"ok":true}');
+});
+
+app.head("/", (req, res) => {
+  res.status(200).end();
+});
+
+// NEW: Serve HTML on /app endpoint instead (for browser users)
+app.get("/app", (req, res, next) => {
+  // Try to serve cached HTML content super fast
   if (cachedHtmlContent) {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     return res.status(200).end(cachedHtmlContent);
@@ -73,10 +69,6 @@ app.get("/", (req, res, next) => {
   
   // Fallback to next middleware if no cache
   next();
-});
-
-app.head("/", (req, res) => {
-  res.status(200).end();
 });
 
 // ALL MIDDLEWARES must come AFTER health check routes
@@ -171,7 +163,7 @@ export default async function runApp(
     });
     
     // Start automation cron jobs AFTER server is listening (fire-and-forget, non-blocking)
-    // DELAYED: 1000ms to ensure health checks pass before expensive operations start
+    // DELAYED: 5000ms to ensure health checks pass before expensive operations start
     setTimeout(() => {
       try {
         startAutomationCron();
@@ -179,12 +171,12 @@ export default async function runApp(
       } catch (err) {
         console.error("❌ Erro ao iniciar cron jobs:", err);
       }
-    }, 1000);
+    }, 5000);
     
     // Bootstrap WhatsApp sessions in COMPLETELY async context
     // Fire-and-forget: do NOT await, do NOT block
     // Failures are caught and logged but do not affect server health
-    // DELAYED: 1500ms to ensure health checks pass well before expensive operations
+    // DELAYED: 5500ms to ensure health checks pass well before expensive operations
     setTimeout(() => {
       try {
         // Call without await - let it run completely async
@@ -194,6 +186,6 @@ export default async function runApp(
       } catch (err) {
         console.error("❌ Erro ao iniciar bootstrap WhatsApp:", err);
       }
-    }, 1500);
+    }, 5500);
   });
 }
