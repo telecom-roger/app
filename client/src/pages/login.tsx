@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Target, Loader2, Lock, Mail } from "lucide-react";
+import { queryClient } from "@/lib/queryClient";
 
 export default function Login() {
   const [, navigate] = useLocation();
@@ -35,12 +36,15 @@ export default function Login() {
         return;
       }
 
+      // Invalidar cache de autenticação para recarregar dados do usuário
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+
       toast({
         title: "Sucesso",
         description: "Login realizado com sucesso",
       });
 
-      navigate("/dashboard");
+      navigate("/");
     } catch (error: any) {
       toast({
         title: "Erro",
