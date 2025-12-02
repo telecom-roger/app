@@ -77,15 +77,6 @@ app.head("/health", (req, res) => {
   res.status(200).end();
 });
 
-// ✅ ROOT ROUTE - Simple 200 OK for health checks during deployment
-app.get("/", (req, res) => {
-  res.status(200).end('OK');
-});
-
-app.head("/", (req, res) => {
-  res.status(200).end();
-});
-
 // ALL MIDDLEWARES must come AFTER health check routes
 app.use(express.json({
   limit: "50mb",
@@ -165,6 +156,6 @@ export default async function runApp(
     })();
 
     // Trigger expensive operations with delay to ensure health checks pass during deployment
-    setTimeout(() => startExpensiveOpsOnce(), 8000);
+    setTimeout(() => startExpensiveOpsOnce(), 15000);
   });
 }
