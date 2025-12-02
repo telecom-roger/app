@@ -776,6 +776,7 @@ export async function getConversations(userId: string, showHidden: boolean = fal
       assunto: conversations.assunto,
       ativa: conversations.ativa,
       oculta: conversations.oculta,
+      naoLida: conversations.naoLida,
       ultimaMensagem: conversations.ultimaMensagem,
       ultimaMensagemEm: conversations.ultimaMensagemEm,
       createdAt: conversations.createdAt,
