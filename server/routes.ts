@@ -4237,6 +4237,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/test/validate-opp-creation", isAuthenticated, async (req, res) => {
+    try {
+      const { clientId, mensagem, conversationId, isClientMessage = true } = req.body;
+      
+      if (!clientId || !mensagem) {
+        return res.status(400).json({ error: "clientId, mensagem são obrigatórios" });
+      }
+
+      // Analisar mensagem
+      const analysis = await analyzeClientMessage(mensagem);
+      
+      // Validar criação
+      const isPropostaAction = analysis.etapa === "PROPOSTA";
+      const validation = await validateOpportunityCreation(
+        clientId,
+        analysis,
+        isClientMessage,
+        conversationId,
+        isPropostaAction
+      );
+
+      res.json({
+        mensagem,
+        analysis: {
+          etapa: analysis.etapa,
+          sentimento: analysis.sentimento,
+          intenção: analysis.intenção,
+          deveAgir: analysis.deveAgir,
+          confianca: analysis.confianca,
+          motivo: analysis.motivo,
+        },
+        validation: {
+          podecriar: validation.podecriar,
+          motivo: validation.motivo,
+          etapa: validation.etapa,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
   app.post("/api/test/simulate-response", isAuthenticated, async (req, res) => {
     try {
       const { clientId, messageText } = req.body;
