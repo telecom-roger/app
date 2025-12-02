@@ -184,6 +184,16 @@ export default function Chat() {
   const [isForwarding, setIsForwarding] = useState(false);
   const [selectMode, setSelectMode] = useState(false); // Modo de seleção múltipla
   const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set());
+  const messageInputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Focus on message input when conversation is selected
+  useEffect(() => {
+    if (selectedConversationId) {
+      setTimeout(() => {
+        messageInputRef.current?.focus();
+      }, 100);
+    }
+  }, [selectedConversationId]);
 
   // Handle clientId from URL parameter
   useEffect(() => {
@@ -1970,6 +1980,7 @@ export default function Chat() {
               )}
               <div className="p-3 sm:p-6 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex gap-2 sm:gap-3 items-end">
                 <Textarea
+                  ref={messageInputRef}
                   placeholder="Digite..."
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
@@ -1982,7 +1993,7 @@ export default function Chat() {
                   onPaste={handlePaste}
                   disabled={sendMutation.isPending || recordedAudio !== null || pastedImage !== null}
                   data-testid="input-message"
-                  className="resize-none min-h-11 sm:min-h-12 max-h-32 text-sm sm:text-base"
+                  className="resize-none min-h-11 sm:min-h-12 max-h-32 text-sm sm:text-base focus-visible:ring-0 focus-visible:outline-none"
                 />
                 <input
                   type="file"
