@@ -1981,7 +1981,7 @@ export default function Chat() {
               <div className="p-3 sm:p-6 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex gap-2 sm:gap-3 items-end">
                 <Textarea
                   ref={messageInputRef}
-                  placeholder="Digite..."
+                  placeholder="Digite sua mensagem"
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
                   onKeyPress={(e) => {
@@ -1993,7 +1993,7 @@ export default function Chat() {
                   onPaste={handlePaste}
                   disabled={sendMutation.isPending || recordedAudio !== null || pastedImage !== null}
                   data-testid="input-message"
-                  className="resize-none min-h-11 sm:min-h-12 max-h-32 text-sm sm:text-base focus-visible:ring-0 focus-visible:outline-none"
+                  className="resize-none min-h-11 sm:min-h-12 max-h-32 text-sm sm:text-base focus-visible:ring-0 focus-visible:outline-none rounded-lg"
                 />
                 <input
                   type="file"
