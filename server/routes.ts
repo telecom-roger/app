@@ -2629,7 +2629,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })();
       }
 
-      // 🚀 ENVIAR MENSAGEM PARA WHATSAPP
+      // 🚀 ENVIAR MENSAGEM PARA WHATSAPP (ou marcar como pendente_offline)
       try {
         if (conversation && conversation.clientId) {
           // Pega a sessão do usuário
@@ -2639,73 +2639,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .where(and(eq(whatsappSessions.userId, user.id), eq(whatsappSessions.status, "conectada")))
             .limit(1);
 
-          if (session) {
-            // Pega o cliente para obter o telefone
-            const [client] = await db
-              .select()
-              .from(clients)
-              .where(eq(clients.id, conversation.clientId))
-              .limit(1);
+          // Pega o cliente para obter o telefone
+          const [client] = await db
+            .select()
+            .from(clients)
+            .where(eq(clients.id, conversation.clientId))
+            .limit(1);
 
-            if (client && client.celular) {
-              const isAlive = whatsappService.isSessionAlive(session.sessionId);
-              if (isAlive) {
-                // Formata o telefone para WhatsApp
-                let telefone = client.celular.replace(/\D/g, "");
-                if (!telefone.startsWith("55")) {
-                  telefone = "55" + telefone;
-                }
+          if (!session || !whatsappService.isSessionAlive(session.sessionId)) {
+            // 📬 OFFLINE: Salvar na fila para enviar quando reconectar
+            console.log(`📬 [OFFLINE] Sessão não conectada - salvando mensagem ${mensagem.id} na fila offline`);
+            await db.update(messages)
+              .set({ statusEntrega: 'pendente_offline' })
+              .where(eq(messages.id, mensagem.id));
+          } else if (client && client.celular) {
+            // Formata o telefone para WhatsApp
+            let telefone = client.celular.replace(/\D/g, "");
+            if (!telefone.startsWith("55")) {
+              telefone = "55" + telefone;
+            }
 
-                // Envia a mensagem e captura o messageId
-                let sendResult: { success: boolean; messageId?: string } = { success: false };
-                
-                if (tipo === "texto") {
-                  sendResult = await whatsappService.sendMessage(session.sessionId, telefone, conteudo);
-                  if (sendResult.success) {
-                    console.log(`✅ Mensagem enviada para WhatsApp: ${telefone} (msgId: ${sendResult.messageId})`);
-                  }
-                } else if (tipo === "imagem" && arquivo) {
-                  sendResult = await whatsappService.sendImage(session.sessionId, telefone, arquivo, conteudo);
-                  if (sendResult.success) console.log(`✅ Imagem enviada para WhatsApp: ${telefone} (msgId: ${sendResult.messageId})`);
-                } else if (tipo === "audio" && arquivo) {
-                  sendResult = await whatsappService.sendAudio(session.sessionId, telefone, arquivo);
-                  if (sendResult.success) console.log(`✅ Áudio enviado para WhatsApp: ${telefone} (msgId: ${sendResult.messageId})`);
-                } else if (tipo === "documento" && arquivo) {
-                  sendResult = await whatsappService.sendDocument(session.sessionId, telefone, arquivo, nomeArquivo);
-                  if (sendResult.success) console.log(`✅ Documento enviado para WhatsApp: ${telefone} (msgId: ${sendResult.messageId})`);
-                }
-                
-                // Atualiza a mensagem com o whatsappMessageId e statusEntrega
-                if (sendResult.success && sendResult.messageId) {
-                  try {
-                    await db.update(messages)
-                      .set({ 
-                        whatsappMessageId: sendResult.messageId,
-                        statusEntrega: 'enviado'
-                      })
-                      .where(eq(messages.id, mensagem.id));
-                    console.log(`✅ Mensagem ${mensagem.id} atualizada com msgId ${sendResult.messageId}`);
-                  } catch (err) {
-                    console.warn("Erro ao atualizar mensagem com msgId:", err);
-                  }
-                }
-                
-                // Update client status to "Enviado"
-                if (sendResult.success && conversation.clientId) {
-                  try {
-                    await storage.updateClient(conversation.clientId, { status: "Enviado" });
-                    console.log(`✅ Status do cliente ${conversation.clientId} atualizado para "Enviado"`);
-                  } catch (err) {
-                    console.warn("Erro ao atualizar status do cliente:", err);
-                  }
-                }
+            // Envia a mensagem e captura o messageId
+            let sendResult: { success: boolean; messageId?: string } = { success: false };
+            
+            if (tipo === "texto") {
+              sendResult = await whatsappService.sendMessage(session.sessionId, telefone, conteudo);
+              if (sendResult.success) {
+                console.log(`✅ Mensagem enviada para WhatsApp: ${telefone} (msgId: ${sendResult.messageId})`);
+              }
+            } else if (tipo === "imagem" && arquivo) {
+              sendResult = await whatsappService.sendImage(session.sessionId, telefone, arquivo, conteudo);
+              if (sendResult.success) console.log(`✅ Imagem enviada para WhatsApp: ${telefone} (msgId: ${sendResult.messageId})`);
+            } else if (tipo === "audio" && arquivo) {
+              sendResult = await whatsappService.sendAudio(session.sessionId, telefone, arquivo);
+              if (sendResult.success) console.log(`✅ Áudio enviado para WhatsApp: ${telefone} (msgId: ${sendResult.messageId})`);
+            } else if (tipo === "documento" && arquivo) {
+              sendResult = await whatsappService.sendDocument(session.sessionId, telefone, arquivo, nomeArquivo);
+              if (sendResult.success) console.log(`✅ Documento enviado para WhatsApp: ${telefone} (msgId: ${sendResult.messageId})`);
+            }
+            
+            // Atualiza a mensagem com o whatsappMessageId e statusEntrega
+            if (sendResult.success && sendResult.messageId) {
+              try {
+                await db.update(messages)
+                  .set({ 
+                    whatsappMessageId: sendResult.messageId,
+                    statusEntrega: 'enviado'
+                  })
+                  .where(eq(messages.id, mensagem.id));
+                console.log(`✅ Mensagem ${mensagem.id} atualizada com msgId ${sendResult.messageId}`);
+              } catch (err) {
+                console.warn("Erro ao atualizar mensagem com msgId:", err);
+              }
+            } else if (!sendResult.success) {
+              // Falhou ao enviar - marcar como pendente_offline para retry
+              console.log(`📬 [OFFLINE] Falha no envio - salvando mensagem ${mensagem.id} na fila offline`);
+              await db.update(messages)
+                .set({ statusEntrega: 'pendente_offline' })
+                .where(eq(messages.id, mensagem.id));
+            }
+            
+            // Update client status to "Enviado"
+            if (sendResult.success && conversation.clientId) {
+              try {
+                await storage.updateClient(conversation.clientId, { status: "Enviado" });
+                console.log(`✅ Status do cliente ${conversation.clientId} atualizado para "Enviado"`);
+              } catch (err) {
+                console.warn("Erro ao atualizar status do cliente:", err);
               }
             }
           }
         }
       } catch (whatsappError) {
         console.warn("⚠️ Mensagem salva mas não enviada para WhatsApp:", whatsappError);
-        // Não falha a requisição se WhatsApp falhar
+        // Marcar como pendente_offline para retry automático
+        try {
+          await db.update(messages)
+            .set({ statusEntrega: 'pendente_offline' })
+            .where(eq(messages.id, mensagem.id));
+        } catch (err) {
+          console.warn("Erro ao marcar como pendente_offline:", err);
+        }
       }
 
       res.json(mensagem);

@@ -8,8 +8,112 @@ import { promisify } from "util";
 import * as storage from "./storage";
 import { db } from "./db";
 import { or, ilike, eq, and, desc, gte } from "drizzle-orm";
-import { clients as clientsTable, automationConfigs, messages, campaignSendings } from "@shared/schema";
+import { clients as clientsTable, automationConfigs, messages, campaignSendings, conversations } from "@shared/schema";
 import { analyzeClientMessage } from "./aiService";
+
+// ==================== FILA DE MENSAGENS OFFLINE ====================
+async function processPendingMessages(sessionId: string, userId: string) {
+  try {
+    console.log(`\n📬 [OFFLINE QUEUE] Processando mensagens pendentes para sessão ${sessionId}...`);
+    
+    const pendingMessages = await db
+      .select({
+        message: messages,
+        conversation: conversations,
+        client: clientsTable,
+      })
+      .from(messages)
+      .innerJoin(conversations, eq(messages.conversationId, conversations.id))
+      .innerJoin(clientsTable, eq(conversations.clientId, clientsTable.id))
+      .where(
+        and(
+          eq(conversations.userId, userId),
+          eq(messages.sender, "user"),
+          eq(messages.statusEntrega, "pendente_offline")
+        )
+      )
+      .orderBy(messages.createdAt);
+    
+    if (pendingMessages.length === 0) {
+      console.log(`📭 [OFFLINE QUEUE] Nenhuma mensagem pendente encontrada`);
+      return;
+    }
+    
+    console.log(`📨 [OFFLINE QUEUE] Encontradas ${pendingMessages.length} mensagens pendentes`);
+    
+    let enviadas = 0;
+    let erros = 0;
+    
+    for (const item of pendingMessages) {
+      const { message, client } = item;
+      
+      if (!client.celular) {
+        console.warn(`⚠️ [OFFLINE QUEUE] Cliente sem celular - marcando mensagem ${message.id} como erro`);
+        await db.update(messages)
+          .set({ statusEntrega: "erro" })
+          .where(eq(messages.id, message.id));
+        erros++;
+        continue;
+      }
+      
+      let telefone = client.celular.replace(/\D/g, "");
+      if (!telefone.startsWith("55")) {
+        telefone = "55" + telefone;
+      }
+      
+      try {
+        let result: { success: boolean; messageId?: string } = { success: false };
+        
+        if (message.tipo === "texto") {
+          result = await sendMessage(sessionId, telefone, message.conteudo || "");
+        } else if (message.tipo === "imagem" && message.arquivo) {
+          result = await sendImage(sessionId, telefone, message.arquivo, message.conteudo || "");
+        } else if (message.tipo === "audio" && message.arquivo) {
+          result = await sendAudio(sessionId, telefone, message.arquivo);
+        } else if (message.tipo === "documento" && message.arquivo) {
+          result = await sendDocument(sessionId, telefone, message.arquivo, message.nomeArquivo || "arquivo");
+        } else {
+          console.warn(`⚠️ [OFFLINE QUEUE] Tipo não suportado ou arquivo faltando - marcando mensagem ${message.id} como erro`);
+          await db.update(messages)
+            .set({ statusEntrega: "erro" })
+            .where(eq(messages.id, message.id));
+          erros++;
+          continue;
+        }
+        
+        if (result.success) {
+          await db.update(messages)
+            .set({ 
+              statusEntrega: "enviado",
+              whatsappMessageId: result.messageId || null
+            })
+            .where(eq(messages.id, message.id));
+          enviadas++;
+          console.log(`✅ [OFFLINE QUEUE] Mensagem ${message.id} enviada com sucesso`);
+        } else {
+          await db.update(messages)
+            .set({ statusEntrega: "erro" })
+            .where(eq(messages.id, message.id));
+          erros++;
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+      } catch (err) {
+        console.error(`❌ [OFFLINE QUEUE] Erro ao enviar mensagem ${message.id}:`, err);
+        await db.update(messages)
+          .set({ statusEntrega: "erro" })
+          .where(eq(messages.id, message.id));
+        erros++;
+      }
+    }
+    
+    console.log(`📊 [OFFLINE QUEUE] Concluído: ${enviadas} enviadas, ${erros} erros`);
+    
+  } catch (error) {
+    console.error(`❌ [OFFLINE QUEUE] Erro ao processar fila:`, error);
+  }
+}
 
 const execAsync = promisify(exec);
 
@@ -760,6 +864,13 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
           setSessionUser(sessionId, storedUserId);
           await handleIncomingMessages(sessionId, sock);
           console.log(`🎯 INICIALIZAÇÃO COMPLETA: ${sessionId}`);
+          
+          // 📬 PROCESSAR FILA DE MENSAGENS OFFLINE (em background)
+          setTimeout(() => {
+            processPendingMessages(sessionId, storedUserId).catch(err => {
+              console.error(`❌ Erro ao processar fila offline:`, err);
+            });
+          }, 3000);
         }
       }
 
