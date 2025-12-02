@@ -2666,10 +2666,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             } else {
               // ✅ NÃO TEM NEGÓCIO ABERTO → VALIDAR E CRIAR NOVO
+              const isPropostaAction = analysis.intenção === "aprovacao_envio" || analysis.etapa === "PROPOSTA";
               const creationValidation = await validateOpportunityCreation(
                 conversation.clientId,
                 analysis,
-                true // isClientMessage = true (vem de webhook/chat)
+                true, // isClientMessage = true (vem de webhook/chat)
+                conversationId, // passa conversationId para validação de 30 min
+                isPropostaAction // indica se é ação PROPOSTA (lista de aprovação)
               );
 
               if (creationValidation.podecriar) {

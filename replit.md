@@ -58,6 +58,10 @@ The application features a professional design system utilizing a deep dark blue
   7. ✅ Validação: deveAgir=true + etapa válida
   8. ✅ Etapa não pode ser AUTOMÁTICA ou vazia
   9. ✅ Detecção de mensagens de fluxo do atendente (nome, CPF, email, etc)
+- **REGRA DOS 30 MINUTOS**:
+  - ✅ Conversa ativa (últimos 30 min) bloqueia criação automática
+  - ✅ EXCETO: mensagens da LISTA PROPOSTA sempre criam (mesmo em conversa ativa)
+  - ✅ Valida timestamp de mensagens antes de permitir criação
 - **CLASSIFICAÇÃO REFATORADA** com 4 passos explícitos:
   1. Verificar se é NEUTRA → NÃO cria
   2. Verificar se é AÇÃO (OK, 👍) → Cria PROPOSTA

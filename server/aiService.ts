@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { db } from "./db";
-import { clients, opportunities } from "@shared/schema";
-import { eq, and, sql, desc } from "drizzle-orm";
+import { clients, opportunities, messages } from "@shared/schema";
+import { eq, and, sql, desc, gte, lt } from "drizzle-orm";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -508,7 +508,9 @@ function isAtendentMessage(mensagem: string): boolean {
 export async function validateOpportunityCreation(
   clientId: string,
   analysis: MessageAnalysis,
-  isClientMessage: boolean = true
+  isClientMessage: boolean = true,
+  conversationId?: string,
+  isPropostaAction: boolean = false
 ): Promise<OpportunityCreationRules> {
   // ❌ REGRA 1: Apenas mensagens do cliente (incoming)
   if (!isClientMessage) {
@@ -552,6 +554,32 @@ export async function validateOpportunityCreation(
       podecriar: false,
       motivo: `Cliente já tem ${openOpps.length} oportunidade(s) aberta(s)`,
     };
+  }
+
+  // ❌ REGRA 5: Conversa ativa (últimos 30 min) bloqueia criação (a menos que seja PROPOSTA)
+  if (conversationId) {
+    const now = new Date();
+    const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
+    
+    const recentMessages = await db
+      .select()
+      .from(messages)
+      .where(
+        and(
+          eq(messages.conversationId, conversationId),
+          gte(messages.createdAt, thirtyMinutesAgo),
+          lt(messages.createdAt, now)
+        )
+      )
+      .limit(1);
+
+    // Se há conversa ativa e mensagem NÃO é PROPOSTA, bloquear
+    if (recentMessages.length > 0 && !isPropostaAction && analysis.etapa !== "PROPOSTA") {
+      return {
+        podecriar: false,
+        motivo: "Conversa ativa nos últimos 30 minutos - bloqueia criação (exceto PROPOSTA)",
+      };
+    }
   }
 
   // ✅ TODAS AS CONDIÇÕES ATENDIDAS
