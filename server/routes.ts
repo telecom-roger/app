@@ -3692,50 +3692,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { clientId } = req.params;
       const { tagName, valorEstimado } = req.body;
-      const user = req.user as any;
       
-      console.log(`🏷️ Adicionando tag ao cliente:`, { clientId, tagName, valorEstimado });
+      console.log(`🏷️ Adicionando tag ao cliente:`, { clientId, tagName });
       
+      // APENAS adicionar a tag - SEM criar oportunidades
       const client = await storage.addTagToClient(clientId, tagName);
       if (!client) return res.status(404).json({ error: "Client not found" });
       
       console.log(`✅ Cliente atualizado com tag: ${tagName}`);
-      
-      // Criar oportunidade automaticamente com a tag como etapa
-      if (tagName && valorEstimado && valorEstimado > 0) {
-        try {
-          console.log(`📌 Criando oportunidade com valor: ${valorEstimado / 100}`);
-          const opp = await storage.createOpportunity({
-            clientId,
-            titulo: `Oportunidade de Negócio - ${tagName}`,
-            valorEstimado,
-            etapa: tagName,
-            responsavelId: user.id,
-          });
-          console.log(`✅ Oportunidade criada:`, opp.id);
-          
-          // 📝 REGISTRAR CRIAÇÃO NO TIMELINE
-          await storage.createInteraction({
-            clientId,
-            tipo: "oportunidade_criada",
-            origem: "manual",
-            titulo: `Oportunidade de Negócio - ${tagName}`,
-            texto: `Etapa: ${tagName} | Valor: R$ ${(valorEstimado / 100).toFixed(2)}`,
-            createdBy: user.id,
-            meta: { etapa: tagName, valor: valorEstimado },
-          });
-          
-          // 🔄 RECALCULATE CLIENT STATUS
-          const newStatus = await storage.recalculateClientStatus(clientId);
-          await storage.updateClient(clientId, { status: newStatus });
-          console.log(`🔄 Status do cliente atualizado: ${newStatus.toUpperCase()}`);
-        } catch (err) {
-          console.error(`❌ Erro ao criar oportunidade:`, err);
-        }
-      } else {
-        console.log(`⚠️ Oportunidade não criada - valorEstimado:`, valorEstimado);
-      }
-      
       res.json(client);
     } catch (error: any) {
       console.error("Error adding tag to client:", error);
@@ -3747,8 +3711,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/clients/:clientId/tags/:tagName", isAuthenticated, async (req, res) => {
     try {
       const { clientId, tagName } = req.params;
+      
+      console.log(`🏷️ Removendo tag do cliente:`, { clientId, tagName });
+      
+      // APENAS remover a tag - SEM deletar oportunidades
       const client = await storage.removeTagFromClient(clientId, tagName);
       if (!client) return res.status(404).json({ error: "Client not found" });
+      
+      console.log(`✅ Tag removida: ${tagName}`);
       res.json(client);
     } catch (error: any) {
       console.error("Error removing tag from client:", error);

@@ -847,39 +847,12 @@ export default function Chat() {
     mutationFn: async (tagName: string) => {
       if (!currentClientId || !detailedClient) return;
       
-      // 1. Adicionar tag ao cliente
+      // APENAS adicionar tag ao cliente - SEM criar oportunidades
       const tagRes = await apiRequest("POST", `/api/clients/${currentClientId}/tags`, { tagName, valorEstimado: businessValue });
-      
-      // 2. Gerenciar oportunidade - cada cliente tem apenas 1 oportunidade por vez
-      try {
-        const oppsRes = await fetch(`/api/opportunities`);
-        const opps = await oppsRes.json();
-        // Buscar oportunidades do cliente
-        const clientOpps = opps.filter((op: any) => op.clientId === currentClientId);
-        
-        // Remover todas as oportunidades antigas do cliente
-        for (const opp of clientOpps) {
-          await apiRequest("DELETE", `/api/opportunities/${opp.id}`, {});
-        }
-        
-        // Criar nova oportunidade na etiqueta selecionada (mesmo sem valor)
-        await apiRequest("POST", "/api/opportunities", {
-          clientId: currentClientId,
-          titulo: `${detailedClient.nome}`,
-          etapa: tagName,
-          valorEstimado: businessValue || "",
-          responsavelId: detailedClient.createdBy,
-        });
-      } catch (err) {
-        console.error("Erro ao gerenciar oportunidade:", err);
-      }
       
       return tagRes.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] }).then(() => {
-        queryClient.refetchQueries({ queryKey: ["/api/opportunities"] });
-      });
       refetchConversations();
       refetchDetailedClient();
       setBusinessValue("");
@@ -895,32 +868,15 @@ export default function Chat() {
     mutationFn: async (tagName: string) => {
       if (!currentClientId) return;
       
-      // 1. Remover tag do cliente
+      // APENAS remover tag do cliente - SEM deletar oportunidades
       const res = await apiRequest("DELETE", `/api/clients/${currentClientId}/tags/${tagName}`, {});
-      
-      // 2. Remover oportunidade correspondente
-      if (detailedClient?.id) {
-        try {
-          const oppsRes = await fetch(`/api/opportunities`);
-          const opps = await oppsRes.json();
-          const opToDelete = opps.find((op: any) => op.clientId === detailedClient.id && op.etapa === tagName);
-          if (opToDelete) {
-            await apiRequest("DELETE", `/api/opportunities/${opToDelete.id}`, {});
-          }
-        } catch (err) {
-          console.error("Erro ao remover oportunidade:", err);
-        }
-      }
       
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] }).then(() => {
-        queryClient.refetchQueries({ queryKey: ["/api/opportunities"] });
-      });
       refetchConversations();
       refetchDetailedClient();
-      toast({ title: "Etiqueta e oportunidade removidas", variant: "default" });
+      toast({ title: "Etiqueta removida", variant: "default" });
     },
     onError: (error: any) => {
       toast({ title: "Erro ao remover etiqueta", description: error.message, variant: "destructive" });
