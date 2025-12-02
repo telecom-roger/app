@@ -970,49 +970,63 @@ async function executeAguardandoAceiteReminder(task: any) {
     createdBy: task.userId,
   });
   
-  // 📱 ENVIAR VIA WHATSAPP AUTOMATICAMENTE (IGUAL AO ENDPOINT POST)
+  // 📱 ENVIAR VIA WHATSAPP - IGUAL AO CONTRATO ENVIADO (QUE FUNCIONA!)
   try {
-    // Pega a sessão do usuário (importante: por userId!)
+    // ✅ BUSCA SESSÃO DO BANCO (igual executeContratoEnviadoMessage)
     const [session] = await db
       .select()
       .from(whatsappSessions)
       .where(and(eq(whatsappSessions.userId, task.userId), eq(whatsappSessions.status, "conectada")))
       .limit(1);
-    
+
     if (session) {
-      // Usa client.celular (não telefone_2!)
+      // Usa client.celular
       if (client && client.celular) {
         const isAlive = whatsappService.isSessionAlive(session.sessionId);
         if (isAlive) {
-          // Formata o telefone para WhatsApp
-          let telefone = client.celular.replace(/\D/g, "");
+          // Formata o telefone para WhatsApp (normalização completa)
+          let telefone = client.celular.replace(/\D/g, "").trim();
+          // Remove 55 duplicado se existir
+          if (telefone.startsWith("5555")) {
+            telefone = telefone.substring(2);
+          }
+          // Adiciona 55 se não tiver
           if (!telefone.startsWith("55")) {
             telefone = "55" + telefone;
           }
           
-          console.log(`📱 Enviando lembrete ${lembreteNum} via WhatsApp para ${telefone}...`);
-          const result = await whatsappService.sendMessage(session.sessionId, telefone, mensagem);
-          if (result.success && result.messageId) {
-            console.log(`✅ Lembrete ${lembreteNum}/3 enviado via WhatsApp com sucesso para ${client.nome} (ID: ${result.messageId})`);
-            // ✅ ATUALIZAR whatsappMessageId e status para tracking de ticks
-            await db.update(messages)
-              .set({ 
-                whatsappMessageId: result.messageId,
-                statusEntrega: "enviado"
-              })
-              .where(eq(messages.id, insertedMessage.id));
-          } else {
-            console.warn(`⚠️ Falha ao enviar lembrete via WhatsApp para ${client.nome}`);
+          try {
+            console.log(`📱 Enviando lembrete ${lembreteNum} via WhatsApp para ${telefone}...`);
+            const result = await whatsappService.sendMessage(session.sessionId, telefone, mensagem);
+            if (result.success && result.messageId) {
+              console.log(`✅ Lembrete ${lembreteNum}/3 enviado via WhatsApp com sucesso para ${client.nome} (ID: ${result.messageId})`);
+              // ✅ ATUALIZAR whatsappMessageId e status para tracking de ticks
+              await db.update(messages)
+                .set({ 
+                  whatsappMessageId: result.messageId,
+                  statusEntrega: "enviado"
+                })
+                .where(eq(messages.id, insertedMessage.id));
+            } else {
+              console.warn(`⚠️ Falha ao enviar lembrete via WhatsApp para ${client.nome}`);
+              await db.update(messages)
+                .set({ statusEntrega: "erro" })
+                .where(eq(messages.id, insertedMessage.id));
+            }
+          } catch (error) {
+            console.error(`❌ Erro ao enviar mensagem via WhatsApp:`, error);
             await db.update(messages)
               .set({ statusEntrega: "erro" })
               .where(eq(messages.id, insertedMessage.id));
           }
+        } else {
+          console.warn(`⚠️ Sessão WhatsApp não está viva (isAlive=false). Mensagem só no chat.`);
         }
       } else {
         console.warn(`⚠️ Cliente sem celular. Mensagem só no chat.`);
       }
     } else {
-      console.warn(`⚠️ Nenhuma sessão WhatsApp conectada. Mensagem só no chat.`);
+      console.warn(`⚠️ Nenhuma sessão WhatsApp conectada para userId ${task.userId}. Mensagem só no chat.`);
     }
   } catch (error) {
     console.error(`❌ Erro ao enviar WhatsApp:`, error);
