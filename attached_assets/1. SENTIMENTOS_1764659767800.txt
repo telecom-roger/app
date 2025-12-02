@@ -1,0 +1,292 @@
+1. SENTIMENTOS
+positivo
+
+gostei
+
+perfeito
+
+ótimo
+
+excelente
+
+maravilha
+
+adorei
+
+faz sentido
+
+obrigado
+
+gostei bastante
+
+gostei muito
+
+claro
+
+sim
+
+incrível
+
+muito bom
+
+adorei a ideia
+
+gostei da proposta
+
+gostei do atendimento
+
+negativo
+
+não gostei
+
+ruim
+
+péssimo
+
+não faz sentido
+
+estou confuso
+
+não entendi
+
+não obrigado
+
+não quero
+
+não preciso
+
+não me interessa
+
+deixe pra lá
+
+agora não
+
+muito ruim
+
+não gostei da proposta
+
+isso não serve pra mim
+
+neutro
+
+entendi
+
+ok
+
+beleza
+
+certo
+
+vou ver
+
+vou pensar
+
+mais tarde
+
+depois vejo
+
+pode ser
+
+talvez
+
+estou avaliando
+
+deixa eu verificar
+
+vou analisar
+
+2. INTENÇÕES
+interesse
+
+quero saber mais
+
+me envia detalhes
+
+como funciona?
+
+gostei da proposta
+
+esse valor é bom?
+
+quero entender melhor
+
+me chama
+
+pode falar
+
+quero conhecer mais
+
+como funciona esse serviço?
+
+tem mais informações?
+
+compra
+
+quero contratar
+
+quero fechar
+
+podemos fechar agora?
+
+quero avançar
+
+me manda o contrato
+
+quero formalizar
+
+como faço o pagamento?
+
+posso fechar hoje
+
+quero assinar
+
+vamos fechar
+
+dúvida
+
+qual é o valor?
+
+quanto custa?
+
+quais condições?
+
+quais prazos?
+
+como posso iniciar?
+
+tem taxa?
+
+qual prazo de entrega?
+
+qual o tempo de implementação?
+
+3. INTENÇÕES COMERCIAIS (para CRM)
+lead_quente
+
+gostei e quero saber mais
+
+me manda a oferta
+
+tem desconto?
+
+é esse mesmo o preço?
+
+quero falar com um consultor
+
+posso fechar hoje
+
+estou muito interessado
+
+em_negociacao
+
+me envia o contrato
+
+quase fechando
+
+só falta um detalhe
+
+estou analisando
+
+quase decidido
+
+quero validação final
+
+preciso confirmar uma coisa antes
+
+em_fechamento
+
+vou fechar
+
+manda pra eu assinar
+
+contrato ok
+
+aprovação final
+
+vamos pra frente
+
+quero finalizar isso agora
+
+4. RESPOSTAS NEGATIVAS
+soft_negative (recusa leve)
+
+não agora
+
+mais tarde
+
+depois falamos
+
+não tenho tempo agora
+
+estou ocupado
+
+manda depois
+
+não posso agora
+
+estou correndo no momento
+
+hard_negative (recusa forte)
+
+não quero
+
+não me interessa
+
+não preciso
+
+pare de mandar mensagem
+
+retire meu número
+
+não entre mais em contato
+
+não tenho interesse nenhum
+
+5. OBJEÇÕES
+valor
+
+muito caro
+
+está acima do orçamento
+
+preço alto
+
+não posso pagar isso agora
+
+achei caro
+
+não cabe no meu orçamento
+
+tempo
+
+agora não dá
+
+sem tempo
+
+muito corrido
+
+vejo isso depois
+
+podemos falar semana que vem?
+
+confiança
+
+não conheço
+
+não tenho segurança
+
+preciso pesquisar mais
+
+preciso ver depoimentos
+
+não sei se vale a pena
+
+necessidade
+
+não preciso disso
+
+já tenho solução
+
+não é prioridade
+
+não vejo necessidade agora
