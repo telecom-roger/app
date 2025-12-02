@@ -66,6 +66,20 @@ app.head("/", (req, res) => {
 });
 
 // ALL MIDDLEWARES must come AFTER health check routes
+
+// ⚡ SERVE STATIC FILES (CSS, JS, fonts, etc)
+const staticDir = import.meta.resolve("../dist/public");
+if (staticDir) {
+  import("path").then(path => {
+    const resolvedPath = path.dirname(staticDir.replace("file://", ""));
+    app.use(express.static(resolvedPath, {
+      maxAge: "1d",
+      etag: false,
+      lastModified: false,
+    }));
+  });
+}
+
 app.use(express.json({
   limit: "50mb",
   verify: (req, _res, buf) => {
