@@ -26,7 +26,7 @@ export async function serveStatic(app: Express, _server: Server) {
   // ⚠️ SKIP health check routes - let app.ts handlers respond instantly
   app.use("*", (req, res, next) => {
     // Skip health check routes - they're handled by fast endpoints in app.ts
-    if (req.path === "/" || req.path === "/health") {
+    if (req.path === "/health") {
       return next();
     }
     

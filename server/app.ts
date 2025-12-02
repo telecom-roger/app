@@ -77,9 +77,14 @@ app.head("/health", (req, res) => {
   res.status(200).end();
 });
 
-// ✅ ROOT ROUTE - ZERO operations, pure health check
-// Responds instantly with JSON, ZERO side effects
-// Both GET and HEAD to catch all health check methods
+// ✅ ROOT ROUTE - Simple 200 OK for health checks during deployment
+app.get("/", (req, res) => {
+  res.status(200).end('OK');
+});
+
+app.head("/", (req, res) => {
+  res.status(200).end();
+});
 
 // ALL MIDDLEWARES must come AFTER health check routes
 app.use(express.json({
@@ -159,9 +164,9 @@ export default async function runApp(
       }
     })();
 
-    // Trigger expensive operations on next tick (after health checks pass)
-    // This ensures health checks respond instantly
-    process.nextTick(async () => {
+    // Trigger expensive operations with delay to ensure health checks pass during deployment
+    // Wait 5 seconds to allow health checks to complete before starting expensive ops
+    setTimeout(async () => {
       // Setup authentication completely async
       try {
         await setupAuth(app);
@@ -175,6 +180,6 @@ export default async function runApp(
       } catch (err) {
         console.error("❌ Error starting expensive ops:", err);
       }
-    });
+    }, 5000);
   });
 }
