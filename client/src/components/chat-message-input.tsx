@@ -9,6 +9,7 @@ interface ChatMessageInputProps {
   onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onStartRecording: () => void;
   onStopRecording: () => void;
+  onPaste?: (e: React.ClipboardEvent<HTMLTextAreaElement>) => void;
   disabled?: boolean;
   isLoading?: boolean;
   isRecording?: boolean;
@@ -22,6 +23,7 @@ export const ChatMessageInput = forwardRef<HTMLTextAreaElement, ChatMessageInput
   onFileUpload,
   onStartRecording,
   onStopRecording,
+  onPaste,
   disabled = false,
   isLoading = false,
   isRecording = false,
@@ -99,6 +101,7 @@ export const ChatMessageInput = forwardRef<HTMLTextAreaElement, ChatMessageInput
               value={value}
               onChange={(e) => onChange(e.target.value)}
               onKeyPress={handleKeyPress}
+              onPaste={onPaste}
               placeholder={placeholder}
               disabled={disabled}
               autoFocus

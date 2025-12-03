@@ -1996,6 +1996,7 @@ export default function Chat() {
                 onChange={setMessageText}
                 onSend={handleSendMessage}
                 onFileUpload={handleFileUpload}
+                onPaste={handlePaste}
                 onStartRecording={handleStartRecording}
                 onStopRecording={handleStopRecording}
                 disabled={sendMutation.isPending || recordedAudio !== null || pastedImage !== null}
