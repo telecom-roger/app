@@ -43,20 +43,29 @@ The application features a professional design system utilizing a deep dark blue
 - **Architectural Rule**: Tags and Opportunities/Stages remain completely separate. Tags are only for chat filtering, never used for stage transitions or status calculations.
 - **Deployment & Health Checks**: Server calls `server.listen()` IMMEDIATELY on 0.0.0.0:5000. Health check middleware (GET / and GET /health) is the FIRST middleware, ALWAYS responding in <4ms before ANY other processing. All async initialization (auth, routes, static files, heavy ops) deferred AFTER server.listen() callback. Vite and static file middleware explicitly skip health check paths to prevent interference.
 
-## Recent Changes (Current Session - FILTROS APRIMORADOS NO SELETOR DE CLIENTES)
-- **FILTROS POR STATUS DE ENVIO E CAMPANHA ESPECÍFICA**: Sistema completo de filtros para análise de campanhas
-  - Label atualizado de "Status Envio" para "Status de Envio (Campanhas)" para clareza ✅
-  - Filtro por status mantido: enviado, nao_enviado, erro (baseado em campaign_sendings) ✅
-  - Novo filtro por campanha específica: dropdown com campanhas concluídas ✅
-  - Endpoint GET /api/campaigns/for-filter retorna até 50 campanhas concluídas ✅
-  - Filtros combinam: Status + Campanha + Tipo + Carteira + Cidade + Search ✅
-  - Backend otimizado: filtra sendings por campaignId quando especificado ✅
-  - Retorna campaignName junto com status de envio para contexto ✅
-  - Casos de uso suportados:
-    - Filtrar por status geral (quem recebeu QUALQUER campanha)
-    - Filtrar por campanha específica (todos os clientes dessa campanha)
-    - Combinar status + campanha (ex: apenas quem recebeu com sucesso a Black Friday)
-  - Paginação server-side mantida para performance com 500k+ clientes ✅
+## Recent Changes (Current Session - FILTROS AVANÇADOS COMPLETOS NO SELETOR DE CLIENTES)
+- **FILTROS COMPLETOS REPLICADOS DO RELATÓRIO DE CAMPANHAS**: Sistema robusto de filtros com pré-processamento correto
+  - **Novos Filtros Implementados**:
+    - Status de Envio: enviado, entregue, lido, erro (hierarquia: erro > lido > entregue > enviado)
+    - Engajamento: alto, médio, baixo, nenhum (baseado em estadoDerivado)
+    - Etiqueta: Respondeu, Visualizado, Entregue, Enviado, Erro no envio (hierarquia: Erro > Respondeu > Visualizado > Entregue > Enviado)
+    - Campanha: dropdown com até 50 campanhas concluídas mais recentes
+  - **Arquitetura de Pré-Filtro** (solução para bug crítico de paginação):
+    - Filtros aplicados ANTES da contagem e paginação
+    - Busca campaign_sendings → calcula meta (sendStatus, etiqueta, engajamento) → filtra clientIds
+    - Adiciona `inArray(clients.id, preFilteredClientIds)` nas condições WHERE
+    - Garante `total` e `totalPages` corretos para qualquer combinação de filtros
+    - Ordenação DESC por dataSending para pegar sending mais recente por cliente
+    - Early return quando nenhum cliente passa nos filtros (evita query desnecessária)
+  - **Filtros Combinados Suportados**:
+    - Status + Engajamento + Etiqueta + Campanha + Tipo + Carteira + Cidade + Search
+    - Todos funcionam em conjunto sem quebrar paginação
+  - **Casos de Uso**:
+    - Filtrar clientes com alto engajamento que responderam
+    - Ver quem visualizou mas não respondeu em campanha específica
+    - Identificar erros de envio em campanhas de remarketing
+    - Combinar múltiplos critérios para segmentação precisa
+  - **Performance**: Otimizado para 500k+ clientes com pré-filtro em memória e paginação server-side
 
 - **SESSÃO ANTERIOR (CAMPAIGN RETRY SYSTEM + ANTI-DUPLICATAS)**:
   - Sistema robusto para reprocessar campanhas que falharam
