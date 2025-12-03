@@ -206,7 +206,7 @@ export async function registerRoutes(app: Express, server: Server): Promise<void
       } = req.query;
       
       const pageNum = Math.max(1, parseInt(page as string) || 1);
-      const limitNum = Math.min(100, Math.max(10, parseInt(limit as string) || 50));
+      const limitNum = Math.min(99999, Math.max(10, parseInt(limit as string) || 50)); // ✅ Permitir até 99999 para "Todos"
       const offset = (pageNum - 1) * limitNum;
       
       // Parse query params

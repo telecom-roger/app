@@ -143,6 +143,7 @@ export default function CampanhasAgendadas() {
   
   // ✅ Estados de paginação
   const [currentPage, setCurrentPage] = useState(1);
+  const [limitPerPage, setLimitPerPage] = useState(50); // ✅ Limite configurável
   const [allLoadedClientes, setAllLoadedClientes] = useState<ClientForImport[]>([]);
   const [totalClientes, setTotalClientes] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -224,7 +225,7 @@ export default function CampanhasAgendadas() {
   useEffect(() => {
     setCurrentPage(1);
     setAllLoadedClientes([]);
-  }, [selectedTiposFilter, selectedCarteirasFilter, selectedCidadesFilter, selectedSendStatusFilter, selectedCampaignFilter, selectedEngajamentoFilter, selectedEtiquetaFilter, debouncedSearch, filtroStatus, selectedTag]);
+  }, [selectedTiposFilter, selectedCarteirasFilter, selectedCidadesFilter, selectedSendStatusFilter, selectedCampaignFilter, selectedEngajamentoFilter, selectedEtiquetaFilter, debouncedSearch, filtroStatus, selectedTag, limitPerPage]);
 
   // ✅ Fetch clients with PAGINATION + SERVER-SIDE FILTERS
   const { data: clientesResponse, isLoading: carregandoClientes, isFetching } = useQuery<{
@@ -237,6 +238,7 @@ export default function CampanhasAgendadas() {
     queryKey: [
       "/api/clients/whatsapp-list",
       currentPage,
+      limitPerPage,
       Array.from(selectedTiposFilter).sort().join(","),
       Array.from(selectedCarteirasFilter).sort().join(","),
       Array.from(selectedCidadesFilter).sort().join(","),
@@ -250,7 +252,7 @@ export default function CampanhasAgendadas() {
     queryFn: async () => {
       const params = new URLSearchParams();
       params.append('page', String(currentPage));
-      params.append('limit', '50');
+      params.append('limit', String(limitPerPage));
       if (selectedTiposFilter.size > 0) {
         params.append('tipos', Array.from(selectedTiposFilter).join(','));
       }
@@ -836,6 +838,23 @@ export default function CampanhasAgendadas() {
 
               {/* Linha 2: Filtros Multi-Select */}
               <div className="flex gap-2 flex-wrap items-center">
+                {/* ✅ Seletor de Limite */}
+                <div className="flex items-center gap-2 bg-orange-50 dark:bg-orange-900/20 px-3 py-1 rounded-lg border border-orange-200 dark:border-orange-800">
+                  <Label className="text-xs font-semibold text-orange-700 dark:text-orange-300 whitespace-nowrap">Exibir:</Label>
+                  <Select value={String(limitPerPage)} onValueChange={(v) => setLimitPerPage(Number(v))}>
+                    <SelectTrigger className="w-24 h-7 text-xs bg-white dark:bg-slate-800" data-testid="select-limit-per-page">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="50">50 por vez</SelectItem>
+                      <SelectItem value="100">100 por vez</SelectItem>
+                      <SelectItem value="200">200 por vez</SelectItem>
+                      <SelectItem value="500">500 por vez</SelectItem>
+                      <SelectItem value="99999">Todos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
                 <MultiSelectFilter
                   label="Tipo"
                   options={tiposDisponiveis}
