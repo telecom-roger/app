@@ -1,0 +1,75 @@
+✅ 1. Verificar se existe qualquer middleware, rota ou static server que esteja interceptando "/" ou "/health"
+
+Essas duas rotas devem responder instantaneamente, antes de qualquer lógica pesada.
+Por favor, confirme se existe algum outro arquivo que sobrescreva, bloqueie ou demore a responder essas rotas.
+
+✅ 2. Garantir que tarefas pesadas (cron jobs, automações, inicialização do WhatsApp, loops, inicialização de filas, etc.) só rodem depois do servidor subir
+
+Quero confirmar que não existe nenhuma dessas situações:
+
+Cron jobs iniciando antes do server.listen
+
+Processos longos no startup bloqueando o event loop
+
+Inicialização de serviços externos antes das rotas ficarem prontas
+
+Essas tarefas devem rodar somente depois do servidor já estar escutando.
+
+✅ 3. Verificar se há qualquer arquivo criando um servidor duplicado
+
+Tenho um runApp(createServer...), então preciso garantir que:
+
+Não existe outro createServer(...)
+
+Não existe outro app.listen(...)
+
+Não existe outro arquivo exportando ou iniciando o servidor separadamente
+
+Isso também causa crash loop.
+
+✅ 4. Verificar se algum middleware causa bloqueio no event loop
+
+Exemplos de problemas:
+
+Leitura de arquivo gigante sincrona no runtime (não no startup)
+
+Loops longos
+
+Await sem timeout em serviços externos
+
+Deadlocks JS
+
+Essas situações podem estar causando o erro do cron:
+
+[NODE-CRON] [WARN] missed execution... Possible blocking IO or high CPU
+
+✅ 5. Confirmar que o fallback do SPA não intercepta / e /health
+
+Preciso garantir que:
+
+O static server não serve index.html automaticamente
+
+O fallback final só entrega index.html em rotas não existentes
+
+Nunca intercepta "/" nem "/health"
+
+📎 Arquivos que gostaria que revisasse (se possível):
+
+index-prod.ts ou server/index.ts
+
+app.ts
+
+routes.ts
+
+automationService.ts
+
+campaignScheduler.ts
+
+bootstrapWhatsAppSessions
+
+localAuth.ts
+
+Qualquer arquivo que inicializa cron jobs, sessão WhatsApp ou jobs repetitivos
+
+Obrigado!
+Depois da revisão, pode me informar onde encontrou problemas e o que recomenda corrigir.

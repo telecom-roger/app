@@ -1,5 +1,4 @@
 import { createServer, type Server } from "node:http";
-
 import express, {
   type Express,
   type Request,
@@ -15,6 +14,9 @@ import {
 import { startAutomationCron } from "./automationService";
 import { setupAuth } from "./localAuth";
 
+// --------------------------------------------------------
+// Logger util
+// --------------------------------------------------------
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -22,10 +24,12 @@ export function log(message: string, source = "express") {
     second: "2-digit",
     hour12: true,
   });
-
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
+// --------------------------------------------------------
+// Express app
+// --------------------------------------------------------
 export const app = express();
 
 declare module "http" {
@@ -34,7 +38,9 @@ declare module "http" {
   }
 }
 
+// --------------------------------------------------------
 // Flags internas
+// --------------------------------------------------------
 let serverReady = false;
 export function markServerReady() {
   serverReady = true;
@@ -45,13 +51,13 @@ export function markRoutesReady() {
   routesReady = true;
 }
 
-// Preload index.html
+// Preload SPA index.html
 let preloadedIndexHtml: string | null = null;
 export function setIndexHtml(html: string) {
   preloadedIndexHtml = html;
 }
 
-// Controle de operações caras
+// Controle de operações pesadas
 let expensiveOpsStarted = false;
 function startExpensiveOpsOnce() {
   if (expensiveOpsStarted) return;
@@ -80,43 +86,27 @@ function startExpensiveOpsOnce() {
   })();
 }
 
-//
-// ⚡⚡⚡ AJUSTE CRÍTICO PARA O REPLIT ⚡⚡⚡
-//
-
-// ROOT SEMPRE RÁPIDO
+// --------------------------------------------------------
+// ROTAS DE HEALTH CHECK (sempre no topo)
+// --------------------------------------------------------
 app.get("/", (_req, res) => {
-  res.status(200).send("OK");
+  res.setHeader("Content-Type", "text/html");
+  res.status(200).end("<!DOCTYPE html><html><body>OK</body></html>");
 });
 
-// Health check alternativo
 app.get("/health", (_req, res) => {
   res.setHeader("Content-Type", "application/json");
   res.status(200).end('{"ok":true}');
 });
-app.head("/health", (_req, res) => res.status(200).end());
 
-// SERVE SPA EM /app (não mais em "/")
-if (process.env.NODE_ENV === "production") {
-  app.get("/app", (_req, res) => {
-    res.setHeader("Content-Type", "text/html");
+app.head("/health", (_req, res) => {
+  res.status(200).end();
+});
 
-    if (preloadedIndexHtml) {
-      res.status(200).end(preloadedIndexHtml);
-    } else {
-      res
-        .status(200)
-        .end("<!DOCTYPE html><html><body>Loading...</body></html>");
-    }
-  });
-}
-
-//
-// ⚡ Startup guard NÃO bloqueia "/" nem "/health"
-//
+// --------------------------------------------------------
+// Startup guard
+// --------------------------------------------------------
 app.use((req, res, next) => {
-  if (req.path === "/" || req.path === "/health") return next();
-
   if (!routesReady) {
     return res.status(503).json({
       error: "Service initializing",
@@ -124,13 +114,12 @@ app.use((req, res, next) => {
         "The application is starting up. Please try again in a few seconds.",
     });
   }
-
   next();
 });
 
-//
+// --------------------------------------------------------
 // Middlewares normais
-//
+// --------------------------------------------------------
 app.use(
   express.json({
     limit: "50mb",
@@ -139,11 +128,10 @@ app.use(
     },
   }),
 );
+
 app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 
-//
-// Logger
-//
+// Logger para rotas /api
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -169,14 +157,31 @@ app.use((req, res, next) => {
   next();
 });
 
-//
-// RUN APP
-//
-  export default async function runApp(
-    setup: (app: Express, server: Server) => Promise<void>,
-  ) {
-    const server = createServer(app); // permanece igual
+// --------------------------------------------------------
+// SPA fallback (em /app) - só em produção
+// --------------------------------------------------------
+if (process.env.NODE_ENV === "production") {
+  app.get("/app", (_req, res) => {
+    res.setHeader("Content-Type", "text/html");
+    if (preloadedIndexHtml) {
+      res.status(200).end(preloadedIndexHtml);
+    } else {
+      res
+        .status(200)
+        .end("<!DOCTYPE html><html><body>Loading...</body></html>");
+    }
+  });
+}
 
+// --------------------------------------------------------
+// RUN APP
+// --------------------------------------------------------
+export default async function runApp(
+  setup: (app: Express, server: Server) => Promise<void>,
+) {
+  const server = createServer(app);
+
+  // Error handler global
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -184,15 +189,12 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
   });
 
-  const port = parseInt(process.env.PORT || "5000", 10);
+  const port = Number(process.env.PORT || 5000);
 
-  // ⚡ Mudança mínima: servidor inicia **imediatamente**, sem bloquear health checks
-  server.listen({ port, host: "0.0.0.0", reusePort: true }, () => {
+  server.listen(port, "0.0.0.0", () => {
     log(`serving on port ${port}`);
-
     markServerReady();
 
-    // inicialização assíncrona, não bloqueia /
     void (async () => {
       try {
         log("🔐 Initializing authentication...");
@@ -206,8 +208,12 @@ app.use((req, res, next) => {
         markRoutesReady();
         log("✅ Application routes ready for traffic");
 
-        startExpensiveOpsOnce();
+        log("📁 Setting up static file serving...");
+        await setup(app, server);
         log("✅ Static files ready");
+
+        // Start heavy operations after everything is ready
+        startExpensiveOpsOnce();
       } catch (err) {
         console.error("❌ FATAL: Error during server initialization:", err);
       }
