@@ -87,20 +87,17 @@ function startExpensiveOpsOnce() {
 }
 
 // ========================================================
-// 🟢 HEALTH CHECKS - ABSOLUTE FIRST MIDDLEWARE
-// Responds immediately, NEVER calls next() for health paths
+// 🟢 HEALTH CHECKS - FIRST MIDDLEWARE (only /health)
+// Responds immediately, bypasses all other middleware
 // ========================================================
 app.use((req, res, next) => {
   const path = req.path;
   const method = req.method;
   
-  // Respond to health checks immediately - bypass EVERYTHING
-  if ((path === "/" || path === "/health") && (method === "GET" || method === "HEAD")) {
-    res.status(200).type("text/html");
-    if (path === "/health") {
-      return res.end('{"ok":true}');
-    }
-    return res.end("OK");
+  // Only health endpoint responds immediately
+  if (path === "/health" && (method === "GET" || method === "HEAD")) {
+    res.status(200).type("application/json");
+    return res.end('{"ok":true}');
   }
   
   next();
