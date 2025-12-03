@@ -7,7 +7,11 @@ import express, {
   NextFunction,
 } from "express";
 
-import { registerRoutes, bootstrapWhatsAppSessions, startCampaignScheduler } from "./routes";
+import {
+  registerRoutes,
+  bootstrapWhatsAppSessions,
+  startCampaignScheduler,
+} from "./routes";
 import { startAutomationCron } from "./automationService";
 import { setupAuth } from "./localAuth";
 
@@ -24,22 +28,28 @@ export function log(message: string, source = "express") {
 
 export const app = express();
 
-declare module 'http' {
+declare module "http" {
   interface IncomingMessage {
-    rawBody: unknown
+    rawBody: unknown;
   }
 }
 
 // Flags internas
 let serverReady = false;
-export function markServerReady() { serverReady = true; }
+export function markServerReady() {
+  serverReady = true;
+}
 
 let routesReady = false;
-export function markRoutesReady() { routesReady = true; }
+export function markRoutesReady() {
+  routesReady = true;
+}
 
 // Preload index.html
 let preloadedIndexHtml: string | null = null;
-export function setIndexHtml(html: string) { preloadedIndexHtml = html; }
+export function setIndexHtml(html: string) {
+  preloadedIndexHtml = html;
+}
 
 // Controle de operações caras
 let expensiveOpsStarted = false;
@@ -74,22 +84,19 @@ function startExpensiveOpsOnce() {
 // ⚡⚡⚡ AJUSTE CRÍTICO PARA O REPLIT ⚡⚡⚡
 //
 
-// 👉 ROOT SEMPRE RÁPIDO (Replit health check)
+// ROOT SEMPRE RÁPIDO
 app.get("/", (_req, res) => {
   res.status(200).send("OK");
 });
 
 // Health check alternativo
-app.get("/health", (req, res) => {
+app.get("/health", (_req, res) => {
   res.setHeader("Content-Type", "application/json");
   res.status(200).end('{"ok":true}');
 });
+app.head("/health", (_req, res) => res.status(200).end());
 
-app.head("/health", (req, res) => {
-  res.status(200).end();
-});
-
-// 👉 SERVE SPA EM /app (não mais em "/")
+// SERVE SPA EM /app (não mais em "/")
 if (process.env.NODE_ENV === "production") {
   app.get("/app", (_req, res) => {
     res.setHeader("Content-Type", "text/html");
@@ -97,9 +104,9 @@ if (process.env.NODE_ENV === "production") {
     if (preloadedIndexHtml) {
       res.status(200).end(preloadedIndexHtml);
     } else {
-      res.status(200).end(
-        '<!DOCTYPE html><html><body>Loading...</body></html>'
-      );
+      res
+        .status(200)
+        .end("<!DOCTYPE html><html><body>Loading...</body></html>");
     }
   });
 }
@@ -108,15 +115,13 @@ if (process.env.NODE_ENV === "production") {
 // ⚡ Startup guard NÃO bloqueia "/" nem "/health"
 //
 app.use((req, res, next) => {
-
-  if (req.path === "/" || req.path === "/health") {
-    return next();
-  }
+  if (req.path === "/" || req.path === "/health") return next();
 
   if (!routesReady) {
     return res.status(503).json({
       error: "Service initializing",
-      message: "The application is starting up. Please try again in a few seconds."
+      message:
+        "The application is starting up. Please try again in a few seconds.",
     });
   }
 
@@ -126,13 +131,14 @@ app.use((req, res, next) => {
 //
 // Middlewares normais
 //
-app.use(express.json({
-  limit: "50mb",
-  verify: (req, _res, buf) => {
-    req.rawBody = buf;
-  }
-}));
-
+app.use(
+  express.json({
+    limit: "50mb",
+    verify: (req, _res, buf) => {
+      req.rawBody = buf;
+    },
+  }),
+);
 app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 
 //
@@ -153,15 +159,9 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-
-      if (capturedJsonResponse) {
+      if (capturedJsonResponse)
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
+      if (logLine.length > 80) logLine = logLine.slice(0, 79) + "…";
       log(logLine);
     }
   });
@@ -172,51 +172,45 @@ app.use((req, res, next) => {
 //
 // RUN APP
 //
-export default async function runApp(
-  setup: (app: Express, server: Server) => Promise<void>,
-) {
-  const server = createServer(app);
+  export default async function runApp(
+    setup: (app: Express, server: Server) => Promise<void>,
+  ) {
+    const server = createServer(app); // permanece igual
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
     console.error("❌ Error handler caught:", err);
     res.status(status).json({ message });
   });
 
-  const port = parseInt(process.env.PORT || '5000', 10);
+  const port = parseInt(process.env.PORT || "5000", 10);
 
-  server.listen(
-    { port, host: "0.0.0.0", reusePort: true },
-    () => {
-      log(`serving on port ${port}`);
+  // ⚡ Mudança mínima: servidor inicia **imediatamente**, sem bloquear health checks
+  server.listen({ port, host: "0.0.0.0", reusePort: true }, () => {
+    log(`serving on port ${port}`);
 
-      markServerReady();
+    markServerReady();
 
-      void (async () => {
-        try {
-          log("🔐 Initializing authentication...");
-          await setupAuth(app);
-          log("✅ Authentication initialized");
+    // inicialização assíncrona, não bloqueia /
+    void (async () => {
+      try {
+        log("🔐 Initializing authentication...");
+        await setupAuth(app);
+        log("✅ Authentication initialized");
 
-          log("🛣️  Registering routes...");
-          await registerRoutes(app, server);
-          log("✅ Routes registered");
+        log("🛣️  Registering routes...");
+        await registerRoutes(app, server);
+        log("✅ Routes registered");
 
-          markRoutesReady();
-          log("✅ Application routes ready for traffic");
+        markRoutesReady();
+        log("✅ Application routes ready for traffic");
 
-          log("📁 Setting up static file serving...");
-          await setup(app, server);
-          log("✅ Static files ready");
-        } catch (err) {
-          console.error("❌ FATAL: Error during server initialization:", err);
-        }
-      })();
-
-      // delay para operações pesadas
-      setTimeout(() => startExpensiveOpsOnce(), 15000);
-    }
-  );
+        startExpensiveOpsOnce();
+        log("✅ Static files ready");
+      } catch (err) {
+        console.error("❌ FATAL: Error during server initialization:", err);
+      }
+    })();
+  });
 }

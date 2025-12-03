@@ -3,56 +3,45 @@ import path from "node:path";
 import { type Server } from "node:http";
 
 import express, { type Express } from "express";
-import runApp, { app } from "./app";
-import { setIndexHtml } from "./app";
+import runApp, { app, setIndexHtml } from "./app";
 
-// 🚨 ENDPOINT RAIZ SUPER RÁPIDO — obrigatório para o Replit
+// ENDPOINT RAIZ SUPER RÁPIDO (Replit exige)
 app.get("/", (_req, res) => {
   res.setHeader("Content-Type", "text/html");
   res.status(200).end("<!DOCTYPE html><html><body>OK</body></html>");
 });
 
-// (Opcional) health explícito:
-// app.get("/health", (_req, res) => res.status(200).json({ ok: true }));
-
-// ---------------------------------------------
+// health
+app.get("/health", (_req, res) => res.status(200).json({ ok: true }));
 
 let cachedIndexHtml: string | null = null;
 let distPath: string | null = null;
+
+// ❗️ NÃO CRIAR SERVIDOR AQUI – runApp controla isso
+let server: Server | null = null;
 
 export async function serveStatic(app: Express, _server: Server) {
   distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
 
   if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
-    );
+    throw new Error(`Could not find the build directory: ${distPath}`);
   }
 
-  // Pré-carrega index.html
-  try {
-    cachedIndexHtml = fs.readFileSync(
-      path.resolve(distPath, "index.html"),
-      "utf-8",
-    );
+  // Preload
+  cachedIndexHtml = fs.readFileSync(
+    path.resolve(distPath, "index.html"),
+    "utf-8",
+  );
 
-    setIndexHtml(cachedIndexHtml);
-  } catch (err) {
-    console.error("Error pre-loading index.html:", err);
-    throw err;
-  }
+  setIndexHtml(cachedIndexHtml);
 
-  // Arquivos estáticos
+  // static
   app.use(express.static(distPath, { maxAge: "1h", fallthrough: true }));
 
-  // 🚨 NOVO FALLBACK — NÃO captura "/" e "/health"
+  // fallback
   app.use((req, res, next) => {
-    // deixa o health check passar
-    if (req.path === "/" || req.path === "/health") {
-      return next();
-    }
+    if (req.path === "/" || req.path === "/health") return next();
 
-    // fallback do SPA
     if (cachedIndexHtml) {
       res.setHeader("Content-Type", "text/html");
       return res.status(200).send(cachedIndexHtml);
@@ -62,6 +51,11 @@ export async function serveStatic(app: Express, _server: Server) {
   });
 }
 
+// inicialização
 (async () => {
-  await runApp(serveStatic);
+  try {
+    await runApp(serveStatic); // ✔️ NÃO PASSA MAIS SERVER
+  } catch (err) {
+    console.error("Error during app setup:", err);
+  }
 })();
