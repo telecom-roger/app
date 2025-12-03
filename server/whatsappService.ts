@@ -11,6 +11,50 @@ import { or, ilike, eq, and, desc, gte } from "drizzle-orm";
 import { clients as clientsTable, automationConfigs, messages, campaignSendings, conversations } from "@shared/schema";
 import { analyzeClientMessage } from "./aiService";
 
+// ==================== RETRY DE CAMPANHAS COM ERRO ====================
+async function retryFailedCampaigns(userId: string) {
+  try {
+    console.log(`\n🔄 [RETRY] Verificando campanhas com erro para usuário ${userId}...`);
+    
+    const { campaigns } = await import("@shared/schema");
+    const { eq, and } = await import("drizzle-orm");
+    
+    const failedCampaigns = await db
+      .select()
+      .from(campaigns)
+      .where(
+        and(
+          eq(campaigns.createdBy, userId),
+          eq(campaigns.status, 'erro')
+        )
+      );
+    
+    if (failedCampaigns.length === 0) {
+      console.log(`✅ [RETRY] Nenhuma campanha com erro encontrada`);
+      return;
+    }
+    
+    console.log(`🔄 [RETRY] Encontradas ${failedCampaigns.length} campanhas com erro. Reagendando...`);
+    
+    const now = new Date();
+    for (const campaign of failedCampaigns) {
+      await db.update(campaigns)
+        .set({ 
+          status: 'agendada',
+          agendadaPara: now,
+          totalErros: 0,
+        })
+        .where(eq(campaigns.id, campaign.id));
+      
+      console.log(`✅ [RETRY] Campanha "${campaign.nome}" (${campaign.id}) reagendada`);
+    }
+    
+    console.log(`✅ [RETRY] ${failedCampaigns.length} campanhas reagendadas com sucesso!`);
+  } catch (err) {
+    console.error(`❌ [RETRY] Erro ao reprocessar campanhas:`, err);
+  }
+}
+
 // ==================== FILA DE MENSAGENS OFFLINE ====================
 async function processPendingMessages(sessionId: string, userId: string) {
   try {
@@ -911,6 +955,13 @@ export async function initializeWhatsAppSession(sessionId: string, userId?: stri
               console.error(`❌ Erro ao processar fila offline:`, err);
             });
           }, 3000);
+          
+          // 🔄 REPROCESSAR CAMPANHAS COM ERRO (em background)
+          setTimeout(() => {
+            retryFailedCampaigns(storedUserId).catch(err => {
+              console.error(`❌ Erro ao reprocessar campanhas:`, err);
+            });
+          }, 5000);
         }
       }
 
