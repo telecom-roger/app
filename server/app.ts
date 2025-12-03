@@ -87,26 +87,18 @@ function startExpensiveOpsOnce() {
 }
 
 // --------------------------------------------------------
-// ROTAS DE HEALTH CHECK (sempre no topo)
+// ROTAS DE HEALTH CHECK - REMOVIDAS DAQUI
+// Definidas APENAS em index-prod.ts para evitar conflito
 // --------------------------------------------------------
-app.get("/", (_req, res) => {
-  res.setHeader("Content-Type", "text/html");
-  res.status(200).end("<!DOCTYPE html><html><body>OK</body></html>");
-});
-
-app.get("/health", (_req, res) => {
-  res.setHeader("Content-Type", "application/json");
-  res.status(200).end('{"ok":true}');
-});
-
-app.head("/health", (_req, res) => {
-  res.status(200).end();
-});
 
 // --------------------------------------------------------
-// Startup guard
+// Startup guard (NÃO intercepta "/" nem "/health")
 // --------------------------------------------------------
 app.use((req, res, next) => {
+  // Health checks passam sempre
+  if (req.path === "/" || req.path === "/health" || req.path.startsWith("/health")) {
+    return next();
+  }
   if (!routesReady) {
     return res.status(503).json({
       error: "Service initializing",
