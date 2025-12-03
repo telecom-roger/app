@@ -87,22 +87,28 @@ function startExpensiveOpsOnce() {
 }
 
 // ========================================================
-// 🟢 HEALTH CHECKS - FIRST MIDDLEWARE
-// Responds immediately before ANY other middleware/routes
+// 🟢 HEALTH CHECKS - ABSOLUTE FIRST MIDDLEWARE
+// Responds immediately, NEVER calls next() for health paths
 // ========================================================
 app.use((req, res, next) => {
-  // Health checks bypass all middleware
-  if (req.path === "/" || req.path === "/health") {
-    if (req.method === "GET" || req.method === "HEAD") {
-      res.status(200).type("text/html");
-      return res.send(req.path === "/health" ? '{"ok":true}' : "OK");
+  const path = req.path;
+  const method = req.method;
+  
+  // Respond to health checks immediately - bypass EVERYTHING
+  if ((path === "/" || path === "/health") && (method === "GET" || method === "HEAD")) {
+    res.status(200).type("text/html");
+    if (path === "/health") {
+      return res.end('{"ok":true}');
     }
+    return res.end("OK");
   }
+  
   next();
 });
 
 // --------------------------------------------------------
-// Startup guard (bloqueia rotas NÃO-health até server estar pronto)
+// Startup guard - ONLY blocks if server not ready
+// Health checks already handled above, so never reach here
 // --------------------------------------------------------
 app.use((req, res, next) => {
   if (!serverReady) {
