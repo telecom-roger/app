@@ -2345,6 +2345,37 @@ export async function registerRoutes(app: Express, server: Server): Promise<void
     }
   });
 
+  // Cancelar TODAS as campanhas em execução
+  app.post("/api/campaigns/cancel-all", isAuthenticated, async (req, res) => {
+    try {
+      const { campaigns: campaignsTable } = await import("@shared/schema");
+      
+      // Marcar todas as campanhas em memory como canceladas
+      const canceledIds: string[] = [];
+      for (const [id, campanha] of campanhasEmProgresso.entries()) {
+        campanha.parar = true;
+        canceledIds.push(id);
+        setTimeout(() => campanhasEmProgresso.delete(id), 1000);
+      }
+      
+      // Deletar todas as campanhas do banco de dados
+      if (canceledIds.length > 0) {
+        await db.delete(campaignsTable);
+      }
+      
+      console.log(`❌ TODAS as ${canceledIds.length} campanhas foram canceladas`);
+      res.json({ 
+        success: true, 
+        message: `${canceledIds.length} campanha(s) cancelada(s)`, 
+        canceledCount: canceledIds.length,
+        canceledIds 
+      });
+    } catch (error: any) {
+      console.error("Error canceling all campaigns:", error);
+      res.status(500).json({ error: "Erro ao cancelar campanhas" });
+    }
+  });
+
   // New endpoint for single message sending from campaigns page
   app.post("/api/whatsapp/enviar-broadcast", isAuthenticated, async (req, res) => {
     try {
