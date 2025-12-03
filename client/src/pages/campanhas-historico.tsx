@@ -22,7 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Eye, AlertCircle, CheckCircle, History, Zap, TrendingUp, Target } from "lucide-react";
+import { Eye, AlertCircle, CheckCircle, History, Zap, TrendingUp, Target, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -47,6 +47,7 @@ export default function CampanhasHistorico() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignDetail | null>(null);
   const [detailsData, setDetailsData] = useState<any[]>([]);
+  const [retryingCampaign, setRetryingCampaign] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -68,7 +69,7 @@ export default function CampanhasHistorico() {
       if (!res.ok) throw new Error("Failed to fetch campaigns");
       const data = await res.json();
       return Array.isArray(data) 
-        ? data.filter((c: any) => c.status === 'concluida')
+        ? data.filter((c: any) => c.status === 'concluida' || c.status === 'erro')
         : [];
     },
     refetchInterval: 3000,
@@ -93,10 +94,40 @@ export default function CampanhasHistorico() {
     }
   };
 
+  const handleRetry = async (campaignId: string, campaignName: string) => {
+    setRetryingCampaign(campaignId);
+    try {
+      const res = await fetch(`/api/campaigns/${campaignId}/retry`, {
+        method: 'POST',
+      });
+      
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Erro ao reprocessar campanha');
+      }
+      
+      const data = await res.json();
+      toast({
+        title: "✅ Campanha reprocessada!",
+        description: `A campanha "${campaignName}" foi reagendada e será executada em breve.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "❌ Erro ao reprocessar",
+        description: err.message || "Não foi possível reprocessar a campanha",
+        variant: "destructive",
+      });
+    } finally {
+      setRetryingCampaign(null);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'concluida':
         return <Badge className="bg-green-500">✅ Concluída</Badge>;
+      case 'erro':
+        return <Badge className="bg-red-500">❌ Erro</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
@@ -294,16 +325,31 @@ export default function CampanhasHistorico() {
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Link href={`/campanhas/${campaign.id}/detalhes`}>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                data-testid={`button-view-details-${campaign.id}`}
-                              >
-                                <Eye className="h-4 w-4 mr-1" />
-                                Ver Relatório
-                              </Button>
-                            </Link>
+                            <div className="flex items-center justify-end gap-2">
+                              {campaign.status === 'erro' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleRetry(campaign.id, campaign.nome)}
+                                  disabled={retryingCampaign === campaign.id}
+                                  data-testid={`button-retry-${campaign.id}`}
+                                  className="border-purple-500 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950"
+                                >
+                                  <RefreshCw className={`h-4 w-4 mr-1 ${retryingCampaign === campaign.id ? 'animate-spin' : ''}`} />
+                                  Reprocessar
+                                </Button>
+                              )}
+                              <Link href={`/campanhas/${campaign.id}/detalhes`}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  data-testid={`button-view-details-${campaign.id}`}
+                                >
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  Ver Relatório
+                                </Button>
+                              </Link>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
