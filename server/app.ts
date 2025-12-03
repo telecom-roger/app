@@ -87,26 +87,25 @@ function startExpensiveOpsOnce() {
 }
 
 // ========================================================
-// 🟢 HEALTH CHECK ROUTES - REGISTERED FIRST
-// These respond IMMEDIATELY before any middleware
+// 🟢 HEALTH CHECKS - FIRST MIDDLEWARE
+// Responds immediately before ANY other middleware/routes
 // ========================================================
-app.get("/", (_req, res) => {
-  res.status(200).type("text/html").send("OK");
-});
-
-app.get("/health", (_req, res) => {
-  res.status(200).type("application/json").send('{"ok":true}');
-});
-
-app.head("/health", (_req, res) => {
-  res.status(200).end();
+app.use((req, res, next) => {
+  // Health checks bypass all middleware
+  if (req.path === "/" || req.path === "/health") {
+    if (req.method === "GET" || req.method === "HEAD") {
+      res.status(200).type("text/html");
+      return res.send(req.path === "/health" ? '{"ok":true}' : "OK");
+    }
+  }
+  next();
 });
 
 // --------------------------------------------------------
 // Startup guard (bloqueia rotas NÃO-health até server estar pronto)
 // --------------------------------------------------------
 app.use((req, res, next) => {
-  if (!serverReady && req.path !== "/" && req.path !== "/health") {
+  if (!serverReady) {
     return res.status(503).json({ error: "Server starting" });
   }
   next();

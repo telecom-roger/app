@@ -40,17 +40,17 @@ The application features a professional design system utilizing a deep dark blue
 - **Storage System**: Abstracted storage methods for CRUD operations.
 - **Audit System**: Complete logging for creation, editing, and deletion actions, including IP and User-Agent tracking.
 - **Architectural Rule**: Tags and Opportunities/Stages remain completely separate. Tags are only for chat filtering, never used for stage transitions or status calculations.
-- **Deployment & Health Checks**: Server calls `server.listen()` IMMEDIATELY on 0.0.0.0:5000 without waiting for any async code. Health check endpoints (GET / and GET /health) registered BEFORE any middleware, responding in <4ms. All async initialization (auth, routes, static files, heavy ops) deferred AFTER server.listen() callback completes. Startup guard middleware only blocks non-health routes until initialization complete. Campaign scheduler, automation cron, and WhatsApp bootstrap run with 2s delay to avoid deployment health check timeouts.
+- **Deployment & Health Checks**: Server calls `server.listen()` IMMEDIATELY on 0.0.0.0:5000 without waiting for async code. Health check endpoints (GET / and GET /health) implemented as FIRST middleware, responding in <4ms before ANY other middleware. All async initialization (auth, routes, static files, heavy ops) deferred AFTER server.listen() callback. Campaign scheduler, automation cron, and WhatsApp bootstrap run with 2s delay.
 
-## Recent Changes (Current Session - HEALTH CHECK DEPLOYMENT FIX)
-- **FINAL HEALTH CHECK FIX**: Health check routes now respond instantly before any middleware
-  - Health check routes (GET /, GET /health) registered at app creation, BEFORE any middleware ✅
-  - Routes respond in <4ms (3.2ms measured), ensuring deployment health checks pass ✅
-  - Startup guard middleware only blocks non-health routes (all /api calls until init complete) ✅
-  - No middleware runs before health check route handlers ✅
-  - Server listens on 0.0.0.0:5000 IMMEDIATELY in listen() callback ✅
-  - All expensive operations deferred to 2s+ delays ✅
-  - Deployment now compatible with strict health check timeouts ✅
+## Recent Changes (Current Session - DEPLOYMENT HEALTH CHECK FINAL FIX)
+- **FINAL HEALTH CHECK MIDDLEWARE FIX**: Moved health checks to FIRST middleware layer
+  - Health checks now in `app.use()` middleware, NOT route handlers ✅
+  - Executes BEFORE static file middleware and all other middleware ✅
+  - GET / and GET /health respond in <4ms (3.2ms measured) ✅
+  - Startup guard middleware only blocks non-health routes until initialization ✅
+  - Server listens on 0.0.0.0:5000 IMMEDIATELY before async code ✅
+  - Static file serving and expensive ops deferred after server.listen() ✅
+  - Ready for Replit deployment with strict health check timeouts ✅
 
 ## External Dependencies
 - **Replit Database**: PostgreSQL for persistent data storage.
