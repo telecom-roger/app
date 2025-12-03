@@ -1080,21 +1080,41 @@ async function executeAguardandoAceiteReminder(task: any) {
   }
 }
 
-// ======================== SCHEDULER DE CRON (executar a cada 10 segundos - PRODUÇÃO) ========================
+// ======================== SCHEDULER DE CRON (executar a cada 30 segundos - OTIMIZADO) ========================
 export function startAutomationCron() {
-  console.log(`\n⏰ [AUTOMATION CRON] Iniciando scheduler (10 segundos - PRODUÇÃO)...`);
+  console.log(`\n⏰ [AUTOMATION CRON] Iniciando scheduler (30 segundos - OTIMIZADO)...`);
   
-  // Executar a cada 10 segundos em produção
-  const interval = setInterval(() => {
-    processAutomationTasks().catch(console.error);
-    checkPropostaEnviadaTimeouts().catch(console.error);
-    checkAguardandoAceiteTimeouts().catch(console.error);
-  }, 10 * 1000);
+  // Executar a cada 30 segundos (otimizado para evitar bloqueio do event loop)
+  const interval = setInterval(async () => {
+    try {
+      await processAutomationTasks();
+    } catch (err) {
+      console.error("❌ Erro em processAutomationTasks:", err);
+    }
+    
+    try {
+      await checkPropostaEnviadaTimeouts();
+    } catch (err) {
+      console.error("❌ Erro em checkPropostaEnviadaTimeouts:", err);
+    }
+    
+    try {
+      await checkAguardandoAceiteTimeouts();
+    } catch (err) {
+      console.error("❌ Erro em checkAguardandoAceiteTimeouts:", err);
+    }
+  }, 30 * 1000);
 
-  // Executar também na inicialização
-  processAutomationTasks().catch(console.error);
-  checkPropostaEnviadaTimeouts().catch(console.error);
-  checkAguardandoAceiteTimeouts().catch(console.error);
+  // Executar também na inicialização (com delay de 5s para não bloquear startup)
+  setTimeout(async () => {
+    try {
+      await processAutomationTasks();
+      await checkPropostaEnviadaTimeouts();
+      await checkAguardandoAceiteTimeouts();
+    } catch (err) {
+      console.error("❌ Erro na execução inicial do cron:", err);
+    }
+  }, 5000);
 
   return () => clearInterval(interval);
 }

@@ -6,18 +6,7 @@ import express, { type Express } from "express";
 import runApp, { app, setIndexHtml } from "./app";
 
 // --------------------------------------------------------
-// 🟢 HEALTH CHECKS — sempre no topo (antes de tudo)
-// --------------------------------------------------------
-
-app.get("/", (_req, res) => {
-  res.setHeader("Content-Type", "text/html");
-  res.status(200).end("<!DOCTYPE html><html><body>OK</body></html>");
-});
-
-app.get("/health", (_req, res) => {
-  res.status(200).json({ ok: true });
-});
-
+// 🟢 HEALTH CHECKS já definidos em app.ts (não duplicar!)
 // --------------------------------------------------------
 
 let cachedIndexHtml: string | null = null;
