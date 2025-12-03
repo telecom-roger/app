@@ -135,6 +135,7 @@ export default function CampanhasAgendadas() {
   const [selectedCarteirasFilter, setSelectedCarteirasFilter] = useState<Set<string>>(new Set());
   const [selectedCidadesFilter, setSelectedCidadesFilter] = useState<Set<string>>(new Set());
   const [selectedSendStatusFilter, setSelectedSendStatusFilter] = useState<Set<string>>(new Set());
+  const [selectedCampaignFilter, setSelectedCampaignFilter] = useState<string>("");
   // ✅ Inicia como true para carregar clientes automaticamente ao abrir seletor
   const [filtersInitiated, setFiltersInitiated] = useState(true);
   
@@ -206,11 +207,22 @@ export default function CampanhasAgendadas() {
     enabled: isAuthenticated && showClientSelector,
   });
 
+  // Fetch campanhas concluídas para filtro
+  const { data: campanhasParaFiltro = [] } = useQuery<{id: string; nome: string}[]>({
+    queryKey: ["/api/campaigns/for-filter"],
+    queryFn: async () => {
+      const res = await fetch("/api/campaigns/for-filter");
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: isAuthenticated && showClientSelector,
+  });
+
   // ✅ Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
     setAllLoadedClientes([]);
-  }, [selectedTiposFilter, selectedCarteirasFilter, selectedCidadesFilter, selectedSendStatusFilter, debouncedSearch, filtroStatus, selectedTag]);
+  }, [selectedTiposFilter, selectedCarteirasFilter, selectedCidadesFilter, selectedSendStatusFilter, selectedCampaignFilter, debouncedSearch, filtroStatus, selectedTag]);
 
   // ✅ Fetch clients with PAGINATION + SERVER-SIDE FILTERS
   const { data: clientesResponse, isLoading: carregandoClientes, isFetching } = useQuery<{
@@ -227,6 +239,7 @@ export default function CampanhasAgendadas() {
       Array.from(selectedCarteirasFilter).sort().join(","),
       Array.from(selectedCidadesFilter).sort().join(","),
       Array.from(selectedSendStatusFilter).sort().join(","),
+      selectedCampaignFilter,
       debouncedSearch,
       filtroStatus,
     ],
@@ -245,6 +258,9 @@ export default function CampanhasAgendadas() {
       }
       if (selectedSendStatusFilter.size > 0) {
         params.append('sendStatus', Array.from(selectedSendStatusFilter).join(','));
+      }
+      if (selectedCampaignFilter) {
+        params.append('campaignId', selectedCampaignFilter);
       }
       if (debouncedSearch && debouncedSearch.length >= 2) {
         params.append('search', debouncedSearch);
@@ -832,11 +848,28 @@ export default function CampanhasAgendadas() {
                 />
 
                 <MultiSelectFilter
-                  label="Status Envio"
+                  label="Status de Envio (Campanhas)"
                   options={["enviado", "nao_enviado", "erro"]}
                   selectedValues={selectedSendStatusFilter}
                   onSelectionChange={setSelectedSendStatusFilter}
                 />
+
+                {campanhasParaFiltro.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs font-medium whitespace-nowrap">Campanha:</Label>
+                    <Select value={selectedCampaignFilter} onValueChange={setSelectedCampaignFilter}>
+                      <SelectTrigger className="w-48 h-8 text-xs" data-testid="select-campaign-filter">
+                        <SelectValue placeholder="Todas as campanhas" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Todas as campanhas</SelectItem>
+                        {campanhasParaFiltro.map((camp) => (
+                          <SelectItem key={camp.id} value={camp.id}>{camp.nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
 
               {/* Linha 3: Tags */}

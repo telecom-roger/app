@@ -200,7 +200,7 @@ export async function registerRoutes(app: Express, server: Server): Promise<void
       const user = req.user as any;
       const { 
         tipos, carteiras, cidades, 
-        search, status, sendStatus: sendStatusFilter,
+        search, status, sendStatus: sendStatusFilter, campaignId,
         page = "1", limit = "50" 
       } = req.query;
       
@@ -280,17 +280,26 @@ export async function registerRoutes(app: Express, server: Server): Promise<void
       let recentSendings: any[] = [];
       if (clientIds.length > 0) {
         try {
+          // ✅ Se campaignId especificado, filtra por campanha específica
+          const sendingsConditions = [
+            eq(campaignSendings.userId, user.id),
+            inArray(campaignSendings.clientId, clientIds)
+          ];
+          
+          if (campaignId && typeof campaignId === 'string') {
+            sendingsConditions.push(eq(campaignSendings.campaignId, campaignId));
+          }
+          
           recentSendings = await db
             .select({
               clientId: campaignSendings.clientId,
               status: campaignSendings.status,
               dataSending: campaignSendings.dataSending,
+              campaignId: campaignSendings.campaignId,
+              campaignName: campaignSendings.campaignName,
             })
             .from(campaignSendings)
-            .where(and(
-              eq(campaignSendings.userId, user.id),
-              inArray(campaignSendings.clientId, clientIds)
-            ))
+            .where(and(...sendingsConditions))
             .orderBy(sql`${campaignSendings.dataSending} DESC`);
         } catch (err) {
           console.warn("Warning: could not fetch campaign sendings:", err);
@@ -996,6 +1005,32 @@ export async function registerRoutes(app: Express, server: Server): Promise<void
       res.json(scheduled || []);
     } catch (error: any) {
       console.error("Error fetching scheduled campaigns:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Endpoint para buscar campanhas concluídas (para filtro de seleção de clientes)
+  app.get("/api/campaigns/for-filter", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      
+      const completed = await db
+        .select({
+          id: campaignsTable.id,
+          nome: campaignsTable.nome,
+        })
+        .from(campaignsTable)
+        .where(
+          user.role === 'admin'
+            ? eq(campaignsTable.status, 'concluida')
+            : and(eq(campaignsTable.status, 'concluida'), eq(campaignsTable.createdBy, user.id))
+        )
+        .orderBy(desc(campaignsTable.criadoEm))
+        .limit(50);
+      
+      res.json(completed || []);
+    } catch (error: any) {
+      console.error("Error fetching campaigns for filter:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
