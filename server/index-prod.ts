@@ -42,17 +42,12 @@ export async function serveStatic(app: Express, _server: Server) {
   // 🟣 FALLBACK FINAL — entrega index.html para SPA routes
   // --------------------------------------------------------
   app.use((req, res, next) => {
-    // Never intercept health checks - handled by earlier middleware
-    if (req.path === "/" || req.path === "/health") {
-      return next();
-    }
-
     // Never intercept API routes
     if (req.path.startsWith("/api")) {
       return next();
     }
 
-    // Serve SPA fallback for all other routes
+    // Serve SPA fallback for all routes (including /)
     if (cachedIndexHtml) {
       res.setHeader("Content-Type", "text/html");
       return res.status(200).send(cachedIndexHtml);
