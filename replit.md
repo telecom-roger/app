@@ -43,25 +43,26 @@ The application features a professional design system utilizing a deep dark blue
 - **Architectural Rule**: Tags and Opportunities/Stages remain completely separate. Tags are only for chat filtering, never used for stage transitions or status calculations.
 - **Deployment & Health Checks**: Server calls `server.listen()` IMMEDIATELY on 0.0.0.0:5000. Health check middleware (GET / and GET /health) is the FIRST middleware, ALWAYS responding in <4ms before ANY other processing. All async initialization (auth, routes, static files, heavy ops) deferred AFTER server.listen() callback. Vite and static file middleware explicitly skip health check paths to prevent interference.
 
-## Recent Changes (Current Session - CAMPAIGN RETRY SYSTEM + ANTI-DUPLICATAS)
-- **CAMPAIGN RETRY SYSTEM**: Sistema robusto para reprocessar campanhas que falharam
-  - Histórico de campanhas mostra status 'concluida' E 'erro' ✅
-  - Badge vermelho para campanhas com erro ✅
-  - Botão "Reprocessar" com loading spinner para retry manual ✅
-  - Endpoint POST /api/campaigns/:id/retry com validações completas ✅
-  - Retry automático ao reconectar WhatsApp (após 5s) ✅
-  - Cooldown de 5 minutos por usuário evita reagendamentos duplicados ✅
-  - Consulta campanhasEmProgresso para evitar race conditions ✅
-  - Invalidação de cache React Query após retry manual ✅
-  - Logs detalhados para tracking de retries automáticos ✅
-  - Endpoint POST /api/campaigns/cancel-all para cancelar todas as campanhas ✅
-- **RETRY INTELIGENTE ANTI-DUPLICATAS**: Evita envio duplicado em retries
-  - Query em campaign_sendings busca clientes que já receberam (status='enviado') ✅
-  - Filtra lista para enviar APENAS aos que faltam receber ✅
-  - Logs mostram: total original, já enviados, faltam enviar ✅
-  - Se todos já receberam, finaliza como 'concluida' sem processar ✅
-  - Contabilização correta: totalEnviados = anteriores + novos ✅
-  - Preserva totalRecipients original para cálculo de taxa de sucesso ✅
+## Recent Changes (Current Session - FILTROS APRIMORADOS NO SELETOR DE CLIENTES)
+- **FILTROS POR STATUS DE ENVIO E CAMPANHA ESPECÍFICA**: Sistema completo de filtros para análise de campanhas
+  - Label atualizado de "Status Envio" para "Status de Envio (Campanhas)" para clareza ✅
+  - Filtro por status mantido: enviado, nao_enviado, erro (baseado em campaign_sendings) ✅
+  - Novo filtro por campanha específica: dropdown com campanhas concluídas ✅
+  - Endpoint GET /api/campaigns/for-filter retorna até 50 campanhas concluídas ✅
+  - Filtros combinam: Status + Campanha + Tipo + Carteira + Cidade + Search ✅
+  - Backend otimizado: filtra sendings por campaignId quando especificado ✅
+  - Retorna campaignName junto com status de envio para contexto ✅
+  - Casos de uso suportados:
+    - Filtrar por status geral (quem recebeu QUALQUER campanha)
+    - Filtrar por campanha específica (todos os clientes dessa campanha)
+    - Combinar status + campanha (ex: apenas quem recebeu com sucesso a Black Friday)
+  - Paginação server-side mantida para performance com 500k+ clientes ✅
+
+- **SESSÃO ANTERIOR (CAMPAIGN RETRY SYSTEM + ANTI-DUPLICATAS)**:
+  - Sistema robusto para reprocessar campanhas que falharam
+  - Retry manual (botão "Reprocessar") e automático (ao reconectar WhatsApp)
+  - Anti-duplicatas: busca em campaign_sendings quem já recebeu antes de reenviar
+  - Contabilização correta: totalEnviados = anteriores + novos
 
 ## External Dependencies
 - **Replit Database**: PostgreSQL for persistent data storage.
