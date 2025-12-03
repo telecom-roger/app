@@ -135,7 +135,7 @@ export default function CampanhasAgendadas() {
   const [selectedCarteirasFilter, setSelectedCarteirasFilter] = useState<Set<string>>(new Set());
   const [selectedCidadesFilter, setSelectedCidadesFilter] = useState<Set<string>>(new Set());
   const [selectedSendStatusFilter, setSelectedSendStatusFilter] = useState<Set<string>>(new Set());
-  const [selectedCampaignFilter, setSelectedCampaignFilter] = useState<string>("");
+  const [selectedCampaignFilter, setSelectedCampaignFilter] = useState<string>("all");
   const [selectedEngajamentoFilter, setSelectedEngajamentoFilter] = useState<Set<string>>(new Set());
   const [selectedEtiquetaFilter, setSelectedEtiquetaFilter] = useState<Set<string>>(new Set());
   // ✅ Inicia como true para carregar clientes automaticamente ao abrir seletor
@@ -263,7 +263,7 @@ export default function CampanhasAgendadas() {
       if (selectedSendStatusFilter.size > 0) {
         params.append('sendStatus', Array.from(selectedSendStatusFilter).join(','));
       }
-      if (selectedCampaignFilter) {
+      if (selectedCampaignFilter && selectedCampaignFilter !== 'all') {
         params.append('campaignId', selectedCampaignFilter);
       }
       if (selectedEngajamentoFilter.size > 0) {
@@ -885,7 +885,7 @@ export default function CampanhasAgendadas() {
                       <SelectValue placeholder="Todas as campanhas" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todas as campanhas</SelectItem>
+                      <SelectItem value="all">Todas as campanhas</SelectItem>
                       {campanhasParaFiltro && campanhasParaFiltro.length > 0 && campanhasParaFiltro.map((camp) => (
                         <SelectItem key={camp.id} value={camp.id}>{camp.nome}</SelectItem>
                       ))}
