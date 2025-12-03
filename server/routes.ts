@@ -2376,6 +2376,65 @@ export async function registerRoutes(app: Express, server: Server): Promise<void
     }
   });
 
+  // Reprocessar campanha com erro
+  app.post("/api/campaigns/:id/retry", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const user = req.user as any;
+      const { campaigns: campaignsTable } = await import("@shared/schema");
+      const { eq, and } = await import("drizzle-orm");
+      
+      // Buscar campanha no banco
+      const [campaign] = await db
+        .select()
+        .from(campaignsTable)
+        .where(eq(campaignsTable.id, id));
+      
+      if (!campaign) {
+        return res.status(404).json({ error: "Campanha não encontrada" });
+      }
+      
+      // Verificar se a campanha pertence ao usuário (ou se é admin)
+      if (user.role !== 'admin' && campaign.createdBy !== user.id) {
+        return res.status(403).json({ error: "Sem permissão para reprocessar esta campanha" });
+      }
+      
+      // Verificar se a campanha está com status "erro"
+      if (campaign.status !== 'erro') {
+        return res.status(400).json({ error: "Apenas campanhas com erro podem ser reprocessadas" });
+      }
+      
+      // Verificar se o usuário tem sessão WhatsApp conectada
+      const ownerId = campaign.createdBy || user.id;
+      const userSession = await storage.getConnectedSessionByUserId(ownerId);
+      if (!userSession) {
+        return res.status(400).json({ 
+          error: "Conecte seu WhatsApp antes de reprocessar a campanha" 
+        });
+      }
+      
+      // Reagendar campanha para execução imediata
+      const now = new Date();
+      await db.update(campaignsTable)
+        .set({ 
+          status: 'agendada',
+          agendadaPara: now,
+          totalErros: 0,  // Reset erros
+        })
+        .where(eq(campaignsTable.id, id));
+      
+      console.log(`🔄 Campanha ${id} reagendada para reprocessamento`);
+      res.json({ 
+        success: true, 
+        message: "Campanha reagendada para execução", 
+        campaignId: id 
+      });
+    } catch (error: any) {
+      console.error("Error retrying campaign:", error);
+      res.status(500).json({ error: "Erro ao reprocessar campanha" });
+    }
+  });
+
   // New endpoint for single message sending from campaigns page
   app.post("/api/whatsapp/enviar-broadcast", isAuthenticated, async (req, res) => {
     try {
