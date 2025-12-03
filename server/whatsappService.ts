@@ -11,13 +11,28 @@ import { or, ilike, eq, and, desc, gte } from "drizzle-orm";
 import { clients as clientsTable, automationConfigs, messages, campaignSendings, conversations } from "@shared/schema";
 import { analyzeClientMessage } from "./aiService";
 
+// Track last retry to prevent duplicates
+const lastRetryPerUser = new Map<string, Date>();
+const RETRY_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutos
+
 // ==================== RETRY DE CAMPANHAS COM ERRO ====================
 async function retryFailedCampaigns(userId: string) {
   try {
     console.log(`\n🔄 [RETRY] Verificando campanhas com erro para usuário ${userId}...`);
     
+    // ✅ IDEMPOTÊNCIA: Verifica se já tentou retry recentemente
+    const lastRetry = lastRetryPerUser.get(userId);
+    if (lastRetry) {
+      const timeSinceLastRetry = Date.now() - lastRetry.getTime();
+      if (timeSinceLastRetry < RETRY_COOLDOWN_MS) {
+        console.log(`⏭️ [RETRY] Cooldown ativo - último retry há ${Math.round(timeSinceLastRetry / 1000)}s`);
+        return;
+      }
+    }
+    
     const { campaigns } = await import("@shared/schema");
-    const { eq, and } = await import("drizzle-orm");
+    const { eq, and, or, isNull } = await import("drizzle-orm");
+    const { campanhasEmProgresso } = await import("./routes");
     
     const failedCampaigns = await db
       .select()
@@ -37,7 +52,21 @@ async function retryFailedCampaigns(userId: string) {
     console.log(`🔄 [RETRY] Encontradas ${failedCampaigns.length} campanhas com erro. Reagendando...`);
     
     const now = new Date();
+    let reagendadas = 0;
+    
     for (const campaign of failedCampaigns) {
+      // ✅ GUARD: Pula campanha se já está em progresso
+      const emProgressoValues = Array.from(campanhasEmProgresso.values());
+      const jaEmProgresso = emProgressoValues.some(c => 
+        c.id === campaign.id || 
+        (c.userId === userId && c.status === 'em_progresso')
+      );
+      
+      if (jaEmProgresso) {
+        console.log(`⏭️ [RETRY] Pulando campanha ${campaign.id} - já em progresso`);
+        continue;
+      }
+      
       await db.update(campaigns)
         .set({ 
           status: 'agendada',
@@ -46,10 +75,14 @@ async function retryFailedCampaigns(userId: string) {
         })
         .where(eq(campaigns.id, campaign.id));
       
+      reagendadas++;
       console.log(`✅ [RETRY] Campanha "${campaign.nome}" (${campaign.id}) reagendada`);
     }
     
-    console.log(`✅ [RETRY] ${failedCampaigns.length} campanhas reagendadas com sucesso!`);
+    // ✅ Atualiza timestamp do último retry
+    lastRetryPerUser.set(userId, new Date());
+    
+    console.log(`✅ [RETRY] ${reagendadas}/${failedCampaigns.length} campanhas reagendadas com sucesso!`);
   } catch (err) {
     console.error(`❌ [RETRY] Erro ao reprocessar campanhas:`, err);
   }

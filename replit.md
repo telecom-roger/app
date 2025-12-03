@@ -32,6 +32,7 @@ The application features a professional design system utilizing a deep dark blue
 - **AI Message Classification**: Mensagens neutras = NÃO criam oportunidades. "👍" com sentimento positivo = cria em PROPOSTA. Mensagens com intenção comercial = criam na etapa sugerida. Sentimento negativo = move para PERDIDO. Nunca volta status pra trás.
 - **Chat UX**: Cursor mantém focus no campo de input após enviar mensagem (Enter ou botão enviar).
 - **Offline Message Queue**: Mensagens enviadas quando WhatsApp está desconectado são salvas com status `pendente_offline`. Quando a sessão reconecta, a função `processPendingMessages()` automaticamente processa e envia todas as mensagens pendentes do usuário. Mensagens com problemas (cliente sem telefone, tipo não suportado) são marcadas como `erro` para evitar loop infinito de retries.
+- **Campaign Retry System**: Sistema completo de reprocessamento para campanhas que falharam por falta de conexão WhatsApp. **Manual**: Histórico de campanhas exibe campanhas com status 'erro' com badge vermelho e botão "Reprocessar" que valida WhatsApp conectado, verifica se não está em progresso, e reagenda para execução imediata com invalidação de cache. **Automático**: Quando WhatsApp reconecta, sistema busca campanhas com status 'erro' do usuário e reagenda automaticamente após 5 segundos. Implementa cooldown de 5 minutos por usuário para evitar reagendamentos duplicados em reconexões sucessivas. Ambos consultam `campanhasEmProgresso` antes de reagendar para evitar race conditions com campanhas já em execução.
 
 ### System Design Choices
 - **Folder Structure**: Organized into `client/src`, `server`, and `shared`.
@@ -42,17 +43,18 @@ The application features a professional design system utilizing a deep dark blue
 - **Architectural Rule**: Tags and Opportunities/Stages remain completely separate. Tags are only for chat filtering, never used for stage transitions or status calculations.
 - **Deployment & Health Checks**: Server calls `server.listen()` IMMEDIATELY on 0.0.0.0:5000. Health check middleware (GET / and GET /health) is the FIRST middleware, ALWAYS responding in <4ms before ANY other processing. All async initialization (auth, routes, static files, heavy ops) deferred AFTER server.listen() callback. Vite and static file middleware explicitly skip health check paths to prevent interference.
 
-## Recent Changes (Current Session - PRODUCTION-READY HEALTH CHECK ARCHITECTURE)
-- **COMPLETE HEALTH CHECK SOLUTION**: Fully isolated health check architecture for reliable deployment
-  - Health check middleware is FIRST middleware, responds instantly before anything else ✅
-  - Uses `res.end()` for immediate response (no buffering) ✅
-  - Explicitly NEVER calls `next()` for health check paths ✅
-  - Vite middleware in dev environment explicitly skips health checks ✅
-  - Static file middleware in prod explicitly skips health checks ✅
-  - Health checks respond in <4ms (3.1ms measured) ✅
-  - Server listens on 0.0.0.0:5000 immediately without waiting ✅
-  - All expensive operations deferred with delays ✅
-  - Production-ready deployment architecture ✅
+## Recent Changes (Current Session - CAMPAIGN RETRY SYSTEM)
+- **CAMPAIGN RETRY SYSTEM**: Sistema robusto para reprocessar campanhas que falharam
+  - Histórico de campanhas mostra status 'concluida' E 'erro' ✅
+  - Badge vermelho para campanhas com erro ✅
+  - Botão "Reprocessar" com loading spinner para retry manual ✅
+  - Endpoint POST /api/campaigns/:id/retry com validações completas ✅
+  - Retry automático ao reconectar WhatsApp (após 5s) ✅
+  - Cooldown de 5 minutos por usuário evita reagendamentos duplicados ✅
+  - Consulta campanhasEmProgresso para evitar race conditions ✅
+  - Invalidação de cache React Query após retry manual ✅
+  - Logs detalhados para tracking de retries automáticos ✅
+  - Endpoint POST /api/campaigns/cancel-all para cancelar todas as campanhas ✅
 
 ## External Dependencies
 - **Replit Database**: PostgreSQL for persistent data storage.

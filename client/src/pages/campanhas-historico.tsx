@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -107,6 +108,10 @@ export default function CampanhasHistorico() {
       }
       
       const data = await res.json();
+      
+      // ✅ Invalidar cache para refletir mudança imediatamente
+      await queryClient.invalidateQueries({ queryKey: ["/api/campaigns"] });
+      
       toast({
         title: "✅ Campanha reprocessada!",
         description: `A campanha "${campaignName}" foi reagendada e será executada em breve.`,

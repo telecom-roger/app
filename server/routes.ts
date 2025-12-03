@@ -36,7 +36,7 @@ const TODAS_ETAPAS = ["LEAD", "CONTATO", "PROPOSTA", "AUTOMÁTICA", "PERDIDO", "
 export let wsClients = new Set<any>();
 
 // Track campaigns in progress
-const campanhasEmProgresso = new Map<string, {
+export const campanhasEmProgresso = new Map<string, {
   id: string;
   userId: string;
   total: number;
@@ -2404,6 +2404,15 @@ export async function registerRoutes(app: Express, server: Server): Promise<void
         return res.status(400).json({ error: "Apenas campanhas com erro podem ser reprocessadas" });
       }
       
+      // ✅ GUARD: Verificar se campanha já está em progresso
+      const emProgressoValues = Array.from(campanhasEmProgresso.values());
+      const jaEmProgresso = emProgressoValues.some(c => c.id === id);
+      if (jaEmProgresso) {
+        return res.status(409).json({ 
+          error: "Campanha já está sendo processada" 
+        });
+      }
+      
       // Verificar se o usuário tem sessão WhatsApp conectada
       const ownerId = campaign.createdBy || user.id;
       const userSession = await storage.getConnectedSessionByUserId(ownerId);
@@ -2423,7 +2432,7 @@ export async function registerRoutes(app: Express, server: Server): Promise<void
         })
         .where(eq(campaignsTable.id, id));
       
-      console.log(`🔄 Campanha ${id} reagendada para reprocessamento`);
+      console.log(`🔄 Campanha ${id} reagendada para reprocessamento (manual)`);
       res.json({ 
         success: true, 
         message: "Campanha reagendada para execução", 
