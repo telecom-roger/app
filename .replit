@@ -30,13 +30,21 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
-waitForPort = 3000   # ajustado
+waitForPort = 5000   # ajustado
 
 [agent]
 integrations = [
   "javascript_openai:1.0.0",
   "javascript_log_in_with_replit:1.0.0",
 ]
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[[ports]]
+localPort = 41241
+externalPort = 3000
 
 # ❌ REMOVIDO:
 # [[ports]]
