@@ -1158,7 +1158,7 @@ export async function registerRoutes(app: Express, server: Server): Promise<void
             ? eq(campaignsTable.status, 'concluida')
             : and(eq(campaignsTable.status, 'concluida'), eq(campaignsTable.createdBy, user.id))
         )
-        .orderBy(desc(campaignsTable.criadoEm))
+        .orderBy(desc(campaignsTable.createdAt))
         .limit(50);
       
       res.json(completed || []);
