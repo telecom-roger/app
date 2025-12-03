@@ -36,7 +36,7 @@ export async function setupVite(app: Express, server: Server) {
     const url = req.originalUrl;
 
     // Skip health checks - already handled by earlier middleware
-    if (url === "/" || url === "/health") {
+    if (url === "/health") {
       return next();
     }
 
