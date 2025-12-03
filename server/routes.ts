@@ -201,6 +201,7 @@ export async function registerRoutes(app: Express, server: Server): Promise<void
       const { 
         tipos, carteiras, cidades, 
         search, status, sendStatus: sendStatusFilter, campaignId,
+        engajamento: engajamentoFilter, etiqueta: etiquetaFilter,
         page = "1", limit = "50" 
       } = req.query;
       
@@ -214,6 +215,98 @@ export async function registerRoutes(app: Express, server: Server): Promise<void
       const cidadesArray = typeof cidades === 'string' ? cidades.split(',').filter(Boolean) : [];
       const searchTerm = typeof search === 'string' ? search.trim() : '';
       const statusFilter = typeof status === 'string' && status !== 'todos' ? status : '';
+      const sendStatusArray = typeof sendStatusFilter === 'string' ? sendStatusFilter.split(',').filter(Boolean) : [];
+      const engajamentoArray = typeof engajamentoFilter === 'string' ? engajamentoFilter.split(',').filter(Boolean) : [];
+      const etiquetaArray = typeof etiquetaFilter === 'string' ? etiquetaFilter.split(',').filter(Boolean) : [];
+      
+      // ✅ PRÉ-FILTRO: Se há filtros de engajamento/etiqueta/sendStatus/campanha, buscar IDs elegíveis primeiro
+      let preFilteredClientIds: string[] | null = null;
+      
+      if (sendStatusArray.length > 0 || engajamentoArray.length > 0 || etiquetaArray.length > 0 || campaignId) {
+        const sendingsConditions = [eq(campaignSendings.userId, user.id)];
+        if (campaignId && typeof campaignId === 'string') {
+          sendingsConditions.push(eq(campaignSendings.campaignId, campaignId));
+        }
+        
+        const allSendings = await db
+          .select({
+            clientId: campaignSendings.clientId,
+            status: campaignSendings.status,
+            estadoDerivado: campaignSendings.estadoDerivado,
+            totalRespostas: campaignSendings.totalRespostas,
+            dataEntrega: campaignSendings.dataEntrega,
+            dataVisualizacao: campaignSendings.dataVisualizacao,
+            dataSending: campaignSendings.dataSending,
+          })
+          .from(campaignSendings)
+          .where(and(...sendingsConditions))
+          .orderBy(desc(campaignSendings.dataSending)); // ✅ Ordenar por data DESC para pegar mais recentes primeiro
+        
+        // Calcular sendStatus, etiqueta e engajamento para cada sending
+        const sendingsWithMeta = allSendings.map(s => {
+          let sendStatusValue = "nao_enviado";
+          if (s.status === "erro") {
+            sendStatusValue = "erro";
+          } else if (s.dataVisualizacao) {
+            sendStatusValue = "lido";
+          } else if (s.dataEntrega) {
+            sendStatusValue = "entregue";
+          } else if (s.status === "enviado") {
+            sendStatusValue = "enviado";
+          }
+          
+          let etiqueta = "Sem envio";
+          if (s.status === "erro") {
+            etiqueta = "Erro no envio";
+          } else if (s.totalRespostas && s.totalRespostas > 0) {
+            etiqueta = "Respondeu";
+          } else if (s.dataVisualizacao) {
+            etiqueta = "Visualizado";
+          } else if (s.dataEntrega) {
+            etiqueta = "Entregue";
+          } else if (s.status === "enviado") {
+            etiqueta = "Enviado";
+          }
+          
+          const engajamento = s.estadoDerivado || "nenhum";
+          
+          return { clientId: s.clientId, sendStatus: sendStatusValue, etiqueta, engajamento };
+        });
+        
+        // Agrupar por clientId (pegar o mais recente)
+        const clientMap = new Map<string, typeof sendingsWithMeta[0]>();
+        for (const s of sendingsWithMeta) {
+          if (!clientMap.has(s.clientId)) {
+            clientMap.set(s.clientId, s);
+          }
+        }
+        
+        // Filtrar baseado nos critérios
+        let filteredIds = Array.from(clientMap.entries());
+        
+        if (sendStatusArray.length > 0) {
+          filteredIds = filteredIds.filter(([_, meta]) => sendStatusArray.includes(meta.sendStatus));
+        }
+        if (engajamentoArray.length > 0) {
+          filteredIds = filteredIds.filter(([_, meta]) => engajamentoArray.includes(meta.engajamento));
+        }
+        if (etiquetaArray.length > 0) {
+          filteredIds = filteredIds.filter(([_, meta]) => etiquetaArray.includes(meta.etiqueta));
+        }
+        
+        preFilteredClientIds = filteredIds.map(([id]) => id);
+        
+        // Se nenhum cliente passou nos filtros, retornar vazio
+        if (preFilteredClientIds.length === 0) {
+          return res.json({
+            data: [],
+            total: 0,
+            page: pageNum,
+            limit: limitNum,
+            totalPages: 0,
+          });
+        }
+      }
       
       // Build where conditions
       let conditions: any[] = [
@@ -223,6 +316,11 @@ export async function registerRoutes(app: Express, server: Server): Promise<void
         ),
         sql`${clients.celular} IS NOT NULL AND ${clients.celular} != ''`
       ].filter(Boolean);
+      
+      // ✅ Adicionar condição de pré-filtro se houver
+      if (preFilteredClientIds !== null) {
+        conditions.push(inArray(clients.id, preFilteredClientIds));
+      }
       
       // Apply filters if provided
       if (tiposArray.length > 0) {
@@ -297,6 +395,10 @@ export async function registerRoutes(app: Express, server: Server): Promise<void
               dataSending: campaignSendings.dataSending,
               campaignId: campaignSendings.campaignId,
               campaignName: campaignSendings.campaignName,
+              estadoDerivado: campaignSendings.estadoDerivado,
+              totalRespostas: campaignSendings.totalRespostas,
+              dataEntrega: campaignSendings.dataEntrega,
+              dataVisualizacao: campaignSendings.dataVisualizacao,
             })
             .from(campaignSendings)
             .where(and(...sendingsConditions))
@@ -321,7 +423,42 @@ export async function registerRoutes(app: Express, server: Server): Promise<void
         }).filter(Boolean);
 
         const sendingHistory = clientSendingMap.get(client.id);
-        const sendStatusValue = sendingHistory?.status === "enviado" ? "enviado" : sendingHistory?.status === "erro" ? "erro" : "nao_enviado";
+        
+        // Determinar sendStatus (enviado/entregue/lido/erro)
+        let sendStatusValue = "nao_enviado";
+        if (sendingHistory) {
+          if (sendingHistory.status === "erro") {
+            sendStatusValue = "erro";
+          } else if (sendingHistory.dataVisualizacao) {
+            sendStatusValue = "lido";
+          } else if (sendingHistory.dataEntrega) {
+            sendStatusValue = "entregue";
+          } else if (sendingHistory.status === "enviado") {
+            sendStatusValue = "enviado";
+          }
+        }
+        
+        // Determinar etiqueta (Respondeu/Visualizado/Entregue/Enviado/Erro)
+        let etiqueta = "Sem envio";
+        if (sendingHistory) {
+          if (sendingHistory.status === "erro") {
+            etiqueta = "Erro no envio";
+          } else if (sendingHistory.totalRespostas && sendingHistory.totalRespostas > 0) {
+            etiqueta = "Respondeu";
+          } else if (sendingHistory.dataVisualizacao) {
+            etiqueta = "Visualizado";
+          } else if (sendingHistory.dataEntrega) {
+            etiqueta = "Entregue";
+          } else if (sendingHistory.status === "enviado") {
+            etiqueta = "Enviado";
+          }
+        }
+        
+        // Determinar engajamento (baseado em estadoDerivado)
+        let engajamento = "nenhum";
+        if (sendingHistory?.estadoDerivado) {
+          engajamento = sendingHistory.estadoDerivado;
+        }
 
         return {
           id: client.id,
@@ -335,17 +472,13 @@ export async function registerRoutes(app: Express, server: Server): Promise<void
           tipo: client.tipo,
           tags: clientTags,
           sendStatus: sendStatusValue,
+          etiqueta,
+          engajamento,
           lastSendDate: sendingHistory?.dataSending ? new Date(sendingHistory.dataSending).toLocaleDateString("pt-BR") : undefined,
         };
       });
       
-      // ✅ Filtrar por sendStatus no servidor se especificado
-      if (sendStatusFilter && typeof sendStatusFilter === 'string') {
-        const sendStatusArray = sendStatusFilter.split(',').filter(Boolean);
-        if (sendStatusArray.length > 0) {
-          result = result.filter(c => sendStatusArray.includes(c.sendStatus));
-        }
-      }
+      // ✅ Filtros já aplicados no PRÉ-FILTRO (antes da paginação)
 
       res.json({
         data: result,

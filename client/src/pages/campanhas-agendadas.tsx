@@ -136,6 +136,8 @@ export default function CampanhasAgendadas() {
   const [selectedCidadesFilter, setSelectedCidadesFilter] = useState<Set<string>>(new Set());
   const [selectedSendStatusFilter, setSelectedSendStatusFilter] = useState<Set<string>>(new Set());
   const [selectedCampaignFilter, setSelectedCampaignFilter] = useState<string>("");
+  const [selectedEngajamentoFilter, setSelectedEngajamentoFilter] = useState<Set<string>>(new Set());
+  const [selectedEtiquetaFilter, setSelectedEtiquetaFilter] = useState<Set<string>>(new Set());
   // ✅ Inicia como true para carregar clientes automaticamente ao abrir seletor
   const [filtersInitiated, setFiltersInitiated] = useState(true);
   
@@ -222,7 +224,7 @@ export default function CampanhasAgendadas() {
   useEffect(() => {
     setCurrentPage(1);
     setAllLoadedClientes([]);
-  }, [selectedTiposFilter, selectedCarteirasFilter, selectedCidadesFilter, selectedSendStatusFilter, selectedCampaignFilter, debouncedSearch, filtroStatus, selectedTag]);
+  }, [selectedTiposFilter, selectedCarteirasFilter, selectedCidadesFilter, selectedSendStatusFilter, selectedCampaignFilter, selectedEngajamentoFilter, selectedEtiquetaFilter, debouncedSearch, filtroStatus, selectedTag]);
 
   // ✅ Fetch clients with PAGINATION + SERVER-SIDE FILTERS
   const { data: clientesResponse, isLoading: carregandoClientes, isFetching } = useQuery<{
@@ -240,6 +242,8 @@ export default function CampanhasAgendadas() {
       Array.from(selectedCidadesFilter).sort().join(","),
       Array.from(selectedSendStatusFilter).sort().join(","),
       selectedCampaignFilter,
+      Array.from(selectedEngajamentoFilter).sort().join(","),
+      Array.from(selectedEtiquetaFilter).sort().join(","),
       debouncedSearch,
       filtroStatus,
     ],
@@ -261,6 +265,12 @@ export default function CampanhasAgendadas() {
       }
       if (selectedCampaignFilter) {
         params.append('campaignId', selectedCampaignFilter);
+      }
+      if (selectedEngajamentoFilter.size > 0) {
+        params.append('engajamento', Array.from(selectedEngajamentoFilter).join(','));
+      }
+      if (selectedEtiquetaFilter.size > 0) {
+        params.append('etiqueta', Array.from(selectedEtiquetaFilter).join(','));
       }
       if (debouncedSearch && debouncedSearch.length >= 2) {
         params.append('search', debouncedSearch);
@@ -848,28 +858,40 @@ export default function CampanhasAgendadas() {
                 />
 
                 <MultiSelectFilter
-                  label="Status de Envio (Campanhas)"
-                  options={["enviado", "nao_enviado", "erro"]}
+                  label="Status de Envio"
+                  options={["enviado", "entregue", "lido", "erro"]}
                   selectedValues={selectedSendStatusFilter}
                   onSelectionChange={setSelectedSendStatusFilter}
                 />
 
-                {campanhasParaFiltro.length > 0 && (
-                  <div className="flex items-center gap-2">
-                    <Label className="text-xs font-medium whitespace-nowrap">Campanha:</Label>
-                    <Select value={selectedCampaignFilter} onValueChange={setSelectedCampaignFilter}>
-                      <SelectTrigger className="w-48 h-8 text-xs" data-testid="select-campaign-filter">
-                        <SelectValue placeholder="Todas as campanhas" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">Todas as campanhas</SelectItem>
-                        {campanhasParaFiltro.map((camp) => (
-                          <SelectItem key={camp.id} value={camp.id}>{camp.nome}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+                <MultiSelectFilter
+                  label="Engajamento"
+                  options={["alto", "medio", "baixo", "nenhum"]}
+                  selectedValues={selectedEngajamentoFilter}
+                  onSelectionChange={setSelectedEngajamentoFilter}
+                />
+
+                <MultiSelectFilter
+                  label="Etiqueta"
+                  options={["Respondeu", "Visualizado", "Entregue", "Enviado", "Erro no envio"]}
+                  selectedValues={selectedEtiquetaFilter}
+                  onSelectionChange={setSelectedEtiquetaFilter}
+                />
+
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs font-medium whitespace-nowrap">Campanha:</Label>
+                  <Select value={selectedCampaignFilter} onValueChange={setSelectedCampaignFilter}>
+                    <SelectTrigger className="w-48 h-8 text-xs" data-testid="select-campaign-filter">
+                      <SelectValue placeholder="Todas as campanhas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Todas as campanhas</SelectItem>
+                      {campanhasParaFiltro && campanhasParaFiltro.length > 0 && campanhasParaFiltro.map((camp) => (
+                        <SelectItem key={camp.id} value={camp.id}>{camp.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Linha 3: Tags */}
