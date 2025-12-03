@@ -32,7 +32,7 @@ The application features a professional design system utilizing a deep dark blue
 - **AI Message Classification**: Mensagens neutras = NÃO criam oportunidades. "👍" com sentimento positivo = cria em PROPOSTA. Mensagens com intenção comercial = criam na etapa sugerida. Sentimento negativo = move para PERDIDO. Nunca volta status pra trás.
 - **Chat UX**: Cursor mantém focus no campo de input após enviar mensagem (Enter ou botão enviar).
 - **Offline Message Queue**: Mensagens enviadas quando WhatsApp está desconectado são salvas com status `pendente_offline`. Quando a sessão reconecta, a função `processPendingMessages()` automaticamente processa e envia todas as mensagens pendentes do usuário. Mensagens com problemas (cliente sem telefone, tipo não suportado) são marcadas como `erro` para evitar loop infinito de retries.
-- **Campaign Retry System**: Sistema completo de reprocessamento para campanhas que falharam por falta de conexão WhatsApp. **Manual**: Histórico de campanhas exibe campanhas com status 'erro' com badge vermelho e botão "Reprocessar" que valida WhatsApp conectado, verifica se não está em progresso, e reagenda para execução imediata com invalidação de cache. **Automático**: Quando WhatsApp reconecta, sistema busca campanhas com status 'erro' do usuário e reagenda automaticamente após 5 segundos. Implementa cooldown de 5 minutos por usuário para evitar reagendamentos duplicados em reconexões sucessivas. Ambos consultam `campanhasEmProgresso` antes de reagendar para evitar race conditions com campanhas já em execução.
+- **Campaign Retry System**: Sistema completo e inteligente de reprocessamento para campanhas que falharam por falta de conexão WhatsApp. **Manual**: Histórico de campanhas exibe campanhas com status 'erro' com badge vermelho e botão "Reprocessar" que valida WhatsApp conectado, verifica se não está em progresso, e reagenda para execução imediata com invalidação de cache. **Automático**: Quando WhatsApp reconecta, sistema busca campanhas com status 'erro' do usuário e reagenda automaticamente após 5 segundos. Implementa cooldown de 5 minutos por usuário para evitar reagendamentos duplicados em reconexões sucessivas. Ambos consultam `campanhasEmProgresso` antes de reagendar para evitar race conditions. **Anti-Duplicatas**: Ao executar retry, o sistema busca em `campaign_sendings` quais clientes já receberam mensagem com status 'enviado' e envia APENAS para os que faltam, evitando duplicatas e mantendo contabilização correta (totalEnviados = anteriores + novos).
 
 ### System Design Choices
 - **Folder Structure**: Organized into `client/src`, `server`, and `shared`.
@@ -43,7 +43,7 @@ The application features a professional design system utilizing a deep dark blue
 - **Architectural Rule**: Tags and Opportunities/Stages remain completely separate. Tags are only for chat filtering, never used for stage transitions or status calculations.
 - **Deployment & Health Checks**: Server calls `server.listen()` IMMEDIATELY on 0.0.0.0:5000. Health check middleware (GET / and GET /health) is the FIRST middleware, ALWAYS responding in <4ms before ANY other processing. All async initialization (auth, routes, static files, heavy ops) deferred AFTER server.listen() callback. Vite and static file middleware explicitly skip health check paths to prevent interference.
 
-## Recent Changes (Current Session - CAMPAIGN RETRY SYSTEM)
+## Recent Changes (Current Session - CAMPAIGN RETRY SYSTEM + ANTI-DUPLICATAS)
 - **CAMPAIGN RETRY SYSTEM**: Sistema robusto para reprocessar campanhas que falharam
   - Histórico de campanhas mostra status 'concluida' E 'erro' ✅
   - Badge vermelho para campanhas com erro ✅
@@ -55,6 +55,13 @@ The application features a professional design system utilizing a deep dark blue
   - Invalidação de cache React Query após retry manual ✅
   - Logs detalhados para tracking de retries automáticos ✅
   - Endpoint POST /api/campaigns/cancel-all para cancelar todas as campanhas ✅
+- **RETRY INTELIGENTE ANTI-DUPLICATAS**: Evita envio duplicado em retries
+  - Query em campaign_sendings busca clientes que já receberam (status='enviado') ✅
+  - Filtra lista para enviar APENAS aos que faltam receber ✅
+  - Logs mostram: total original, já enviados, faltam enviar ✅
+  - Se todos já receberam, finaliza como 'concluida' sem processar ✅
+  - Contabilização correta: totalEnviados = anteriores + novos ✅
+  - Preserva totalRecipients original para cálculo de taxa de sucesso ✅
 
 ## External Dependencies
 - **Replit Database**: PostgreSQL for persistent data storage.

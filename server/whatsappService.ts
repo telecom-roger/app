@@ -1401,7 +1401,37 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
     console.log(`📝 Usando conteúdo: ${conteudoBase?.substring(0, 50)}...`);
 
     // Pega os clientes a enviar
-    const recipientClients = clients.filter((c: any) => clientIds.includes(c.id));
+    let recipientClients = clients.filter((c: any) => clientIds.includes(c.id));
+    
+    // ✅ RETRY INTELIGENTE: Buscar quais clientes JÁ RECEBERAM mensagem dessa campanha
+    const alreadySent = await db
+      .select({ clientId: campaignSendings.clientId })
+      .from(campaignSendings)
+      .where(
+        and(
+          eq(campaignSendings.campaignId, campaign.id),
+          eq(campaignSendings.status, 'enviado')
+        )
+      );
+    
+    const alreadySentIds = new Set(alreadySent.map((s: { clientId: string }) => s.clientId));
+    const totalOriginal = recipientClients.length;
+    const jaEnviados = alreadySentIds.size;
+    
+    // Filtra para enviar APENAS os que ainda NÃO receberam
+    recipientClients = recipientClients.filter((c: any) => !alreadySentIds.has(c.id));
+    
+    console.log(`📊 [RETRY] Total na lista: ${totalOriginal} | Já enviados: ${jaEnviados} | Faltam: ${recipientClients.length}`);
+    
+    if (recipientClients.length === 0) {
+      console.log(`✅ [RETRY] Todos os clientes já receberam esta campanha - nada a fazer!`);
+      await db.update(campaigns)
+        .set({ status: 'concluida', totalEnviados: jaEnviados, totalErros: 0 })
+        .where(eq(campaigns.id, campaign.id));
+      campaignExecutionLock.delete(campaign.id);
+      return;
+    }
+    
     let enviados = 0;
     let erros = 0;
 
@@ -1563,11 +1593,11 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
           try {
             await db.update(campaigns)
               .set({ 
-                totalEnviados: enviados,
+                totalEnviados: jaEnviados + enviados,
                 totalErros: erros,
               })
               .where(eq(campaigns.id, campaign.id));
-            console.log(`📊 [PROGRESSO] ${enviados} enviados / ${erros} erros (${index + 1}/${recipientClients.length})`);
+            console.log(`📊 [PROGRESSO] ${jaEnviados + enviados} enviados total (${enviados} nesta rodada) / ${erros} erros (${index + 1}/${recipientClients.length})`);
           } catch (err) {
             console.warn(`⚠️ Erro ao atualizar progresso:`, err);
           }
@@ -1585,16 +1615,18 @@ export async function executeCampaign(campaign: any, db: any, clients: any[]): P
 
     // Atualiza status para "concluida" com estatísticas
     // ✅ Preservar totalRecipients original (importante para taxa de sucesso)
+    // ✅ SOMA ENVIADOS: já enviados anteriormente + enviados nesta rodada
+    const totalEnviadosFinal = jaEnviados + enviados;
     await db.update(campaigns)
       .set({ 
         status: 'concluida',
-        totalEnviados: enviados,
+        totalEnviados: totalEnviadosFinal,
         totalErros: erros,
-        totalRecipients: campaign.totalRecipients || recipientClients.length,
+        totalRecipients: campaign.totalRecipients || totalOriginal,
       })
       .where(eq(campaigns.id, campaign.id));
 
-    console.log(`✅ CAMPANHA CONCLUÍDA: ${campaign.nome} | Enviados: ${enviados} | Erros: ${erros}`);
+    console.log(`✅ CAMPANHA CONCLUÍDA: ${campaign.nome} | Total enviados: ${totalEnviadosFinal} (${jaEnviados} anteriores + ${enviados} agora) | Erros nesta rodada: ${erros}`);
   } catch (error) {
     console.error(`❌ Erro ao executar campanha:`, error);
   } finally {
