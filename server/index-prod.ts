@@ -6,7 +6,19 @@ import express, { type Express } from "express";
 import runApp, { app, setIndexHtml } from "./app";
 
 // --------------------------------------------------------
-// 🟢 HEALTH CHECKS já definidos em app.ts (não duplicar!)
+// 🟢 HEALTH CHECK IMEDIATO (primeira coisa, antes de TUDO)
+// Isso garante resposta < 10ms durante o deploy
+// --------------------------------------------------------
+app.use((req, res, next) => {
+  if (req.path === "/") {
+    return res.status(200).type("text/html").send("OK");
+  }
+  if (req.path === "/health" || req.path.startsWith("/health")) {
+    return res.status(200).type("application/json").send('{"ok":true}');
+  }
+  return next();
+});
+
 // --------------------------------------------------------
 
 let cachedIndexHtml: string | null = null;
@@ -20,10 +32,18 @@ export async function serveStatic(app: Express, _server: Server) {
     );
   }
 
-  // Carrega index.html uma vez
-  cachedIndexHtml = fs.readFileSync(path.join(distPath, "index.html"), "utf8");
-
-  setIndexHtml(cachedIndexHtml);
+  // --------------------------------------------------------
+  // 🟣 Carregar index.html de forma ASSÍNCRONA (não bloqueia health)
+  // --------------------------------------------------------
+  setImmediate(() => {
+    try {
+      cachedIndexHtml = fs.readFileSync(path.join(distPath, "index.html"), "utf8");
+      setIndexHtml(cachedIndexHtml);
+      console.log("✅ [PROD] index.html carregado em background");
+    } catch (err) {
+      console.error("❌ Erro ao carregar index.html:", err);
+    }
+  });
 
   // --------------------------------------------------------
   // 🟣 Conteúdo estático do build (SEM interceptar "/")
@@ -32,44 +52,38 @@ export async function serveStatic(app: Express, _server: Server) {
     express.static(distPath, {
       maxAge: "1h",
       fallthrough: true,
-      index: false, // evita servir index.html automaticamente
+      index: false,
     }),
   );
 
   // --------------------------------------------------------
-  // 🟣 FALLBACK FINAL — entrega index.html
-  // (somente se não for / e não for /health)
+  // 🟣 FALLBACK FINAL — entrega index.html para SPA routes
   // --------------------------------------------------------
   app.use((req, res, next) => {
-    // Nunca interceptar healthchecks
-    if (req.path === "/" || req.path.startsWith("/health")) {
+    // Nunca interceptar healthchecks (já respondidos acima)
+    if (req.path === "/" || req.path.startsWith("/health") || req.path.startsWith("/api")) {
       return next();
     }
 
     // Se não achar rota ou arquivo, entrega o SPA
-    res.setHeader("Content-Type", "text/html");
-    return res.status(200).send(cachedIndexHtml);
+    if (cachedIndexHtml) {
+      res.setHeader("Content-Type", "text/html");
+      return res.status(200).send(cachedIndexHtml);
+    }
+    
+    // Se ainda não carregou, aguarda um pouco
+    return res.status(503).send("Loading...");
   });
 }
 
 // --------------------------------------------------------
-// Inicializa sem criar servidor duplicado
-// AQUI não coloque tarefas pesadas! (cron jobs, automações, etc.)
+// Inicializa (health checks já respondem ANTES disso)
 // --------------------------------------------------------
 (async () => {
   try {
     await runApp(serveStatic);
-
-    // --------------------------------------------------------
-    // 🔵 Inicializações pesadas somente DEPOIS que o servidor subiu
-    // --------------------------------------------------------
-    // Exemplo:
-    // startCampaignScheduler();
-    // startAutomationCronJobs();
-    // bootstrapWhatsApp();
-
-    console.log("Server started. Heavy tasks initialized.");
+    console.log("✅ [PROD] Server started successfully.");
   } catch (err) {
-    console.error("Error starting server:", err);
+    console.error("❌ Error starting server:", err);
   }
 })();

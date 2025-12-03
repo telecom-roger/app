@@ -212,8 +212,10 @@ export default async function runApp(
         await setup(app, server);
         log("✅ Static files ready");
 
-        // Start heavy operations after everything is ready
-        startExpensiveOpsOnce();
+        // Start heavy operations with 2s delay (avoid CPU spike during health checks)
+        setTimeout(() => {
+          startExpensiveOpsOnce();
+        }, 2000);
       } catch (err) {
         console.error("❌ FATAL: Error during server initialization:", err);
       }
