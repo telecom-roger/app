@@ -7,20 +7,7 @@ import { type Express } from "express";
 import { createServer as createViteServer, createLogger } from "vite";
 
 import viteConfig from "../vite.config";
-import runApp, { app as expressApp } from "./app";
-
-// --------------------------------------------------------
-// 🟢 HEALTH CHECK IMEDIATO (antes de Vite middleware)
-// --------------------------------------------------------
-expressApp.use((req, res, next) => {
-  if (req.path === "/") {
-    return res.status(200).type("text/html").send("OK");
-  }
-  if (req.path === "/health" || req.path.startsWith("/health")) {
-    return res.status(200).type("application/json").send('{"ok":true}');
-  }
-  return next();
-});
+import runApp from "./app";
 
 export async function setupVite(app: Express, server: Server) {
   const viteLogger = createLogger();
@@ -47,11 +34,6 @@ export async function setupVite(app: Express, server: Server) {
   app.use(vite.middlewares);
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
-
-    // Skip health checks - already handled
-    if (url === "/" || url === "/health" || url.startsWith("/health")) {
-      return next();
-    }
 
     try {
       const clientTemplate = path.resolve(

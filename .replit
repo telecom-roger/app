@@ -42,6 +42,10 @@ integrations = [
 localPort = 5000
 externalPort = 80
 
+[[ports]]
+localPort = 38359
+externalPort = 3000
+
 
 # ❌ REMOVIDO:
 # [[ports]]

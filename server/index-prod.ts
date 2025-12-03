@@ -3,23 +3,7 @@ import path from "node:path";
 import { Server } from "node:http";
 
 import express, { type Express } from "express";
-import runApp, { app, setIndexHtml } from "./app";
-
-// --------------------------------------------------------
-// 🟢 HEALTH CHECK IMEDIATO (primeira coisa, antes de TUDO)
-// Isso garante resposta < 10ms durante o deploy
-// --------------------------------------------------------
-app.use((req, res, next) => {
-  if (req.path === "/") {
-    return res.status(200).type("text/html").send("OK");
-  }
-  if (req.path === "/health" || req.path.startsWith("/health")) {
-    return res.status(200).type("application/json").send('{"ok":true}');
-  }
-  return next();
-});
-
-// --------------------------------------------------------
+import runApp, { setIndexHtml } from "./app";
 
 let cachedIndexHtml: string | null = null;
 
@@ -33,17 +17,15 @@ export async function serveStatic(app: Express, _server: Server) {
   }
 
   // --------------------------------------------------------
-  // 🟣 Carregar index.html de forma ASSÍNCRONA (não bloqueia health)
+  // 🟣 Carregar index.html
   // --------------------------------------------------------
-  setImmediate(() => {
-    try {
-      cachedIndexHtml = fs.readFileSync(path.join(distPath, "index.html"), "utf8");
-      setIndexHtml(cachedIndexHtml);
-      console.log("✅ [PROD] index.html carregado em background");
-    } catch (err) {
-      console.error("❌ Erro ao carregar index.html:", err);
-    }
-  });
+  try {
+    cachedIndexHtml = fs.readFileSync(path.join(distPath, "index.html"), "utf8");
+    setIndexHtml(cachedIndexHtml);
+    console.log("✅ [PROD] index.html carregado");
+  } catch (err) {
+    console.error("❌ Erro ao carregar index.html:", err);
+  }
 
   // --------------------------------------------------------
   // 🟣 Conteúdo estático do build (SEM interceptar "/")
@@ -60,8 +42,8 @@ export async function serveStatic(app: Express, _server: Server) {
   // 🟣 FALLBACK FINAL — entrega index.html para SPA routes
   // --------------------------------------------------------
   app.use((req, res, next) => {
-    // Nunca interceptar healthchecks (já respondidos acima)
-    if (req.path === "/" || req.path.startsWith("/health") || req.path.startsWith("/api")) {
+    // Nunca interceptar API ou static files
+    if (req.path.startsWith("/api")) {
       return next();
     }
 
@@ -71,8 +53,7 @@ export async function serveStatic(app: Express, _server: Server) {
       return res.status(200).send(cachedIndexHtml);
     }
     
-    // Se ainda não carregou, aguarda um pouco
-    return res.status(503).send("Loading...");
+    return next();
   });
 }
 

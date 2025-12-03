@@ -87,24 +87,11 @@ function startExpensiveOpsOnce() {
 }
 
 // --------------------------------------------------------
-// ROTAS DE HEALTH CHECK - REMOVIDAS DAQUI
-// Definidas APENAS em index-prod.ts para evitar conflito
-// --------------------------------------------------------
-
-// --------------------------------------------------------
-// Startup guard (NÃO intercepta "/" nem "/health")
+// Startup guard (bloqueia rotas até server estar pronto)
 // --------------------------------------------------------
 app.use((req, res, next) => {
-  // Health checks passam sempre
-  if (req.path === "/" || req.path === "/health" || req.path.startsWith("/health")) {
-    return next();
-  }
-  if (!routesReady) {
-    return res.status(503).json({
-      error: "Service initializing",
-      message:
-        "The application is starting up. Please try again in a few seconds.",
-    });
+  if (!serverReady) {
+    return res.status(503).json({ error: "Server starting" });
   }
   next();
 });
@@ -182,6 +169,19 @@ export default async function runApp(
   });
 
   const port = Number(process.env.PORT || 5000);
+
+  // Registrar health checks PRIMEIRO (antes de qualquer middleware)
+  app.get("/", (_req, res) => {
+    res.status(200).type("text/html").send("OK");
+  });
+
+  app.get("/health", (_req, res) => {
+    res.status(200).type("application/json").send('{"ok":true}');
+  });
+
+  app.head("/health", (_req, res) => {
+    res.status(200).end();
+  });
 
   server.listen(port, "0.0.0.0", () => {
     log(`serving on port ${port}`);
