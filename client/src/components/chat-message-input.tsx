@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, forwardRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, Send, Paperclip, Mic, StopCircle } from "lucide-react";
 
@@ -15,7 +15,7 @@ interface ChatMessageInputProps {
   placeholder?: string;
 }
 
-export function ChatMessageInput({
+export const ChatMessageInput = forwardRef<HTMLTextAreaElement, ChatMessageInputProps>(({
   value,
   onChange,
   onSend,
@@ -26,9 +26,20 @@ export function ChatMessageInput({
   isLoading = false,
   isRecording = false,
   placeholder = "Digite uma mensagem…",
-}: ChatMessageInputProps) {
+}, ref) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [textareaHeight, setTextareaHeight] = useState("auto");
+
+  // Expor o focus method via ref
+  useEffect(() => {
+    if (ref) {
+      if (typeof ref === 'function') {
+        ref(textareaRef.current);
+      } else {
+        ref.current = textareaRef.current;
+      }
+    }
+  }, [ref]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -135,4 +146,4 @@ export function ChatMessageInput({
         </div>
     </div>
   );
-}
+});

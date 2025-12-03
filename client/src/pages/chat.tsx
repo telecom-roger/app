@@ -157,6 +157,7 @@ export default function Chat() {
   const [recordedAudio, setRecordedAudio] = useState<{ base64: string; blob: Blob } | null>(null);
   const shouldDiscardAudioRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLTextAreaElement>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [pastedImage, setPastedImage] = useState<{ base64: string; nome: string; tipo: string; size: number; mimeType: string } | null>(null);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
@@ -261,6 +262,15 @@ export default function Chat() {
     setForwardingMessages([]);
     setSelectedRecipients([]);
     setShowForwardModal(false);
+  }, [selectedConversationId]);
+
+  // Focus input when entering a conversation
+  useEffect(() => {
+    if (selectedConversationId && chatInputRef.current) {
+      setTimeout(() => {
+        chatInputRef.current?.focus();
+      }, 0);
+    }
   }, [selectedConversationId]);
 
   const { data: quickReplies = [] } = useQuery<QuickReply[]>({
@@ -1981,6 +1991,7 @@ export default function Chat() {
                 </div>
               )}
               <ChatMessageInput
+                ref={chatInputRef}
                 value={messageText}
                 onChange={setMessageText}
                 onSend={handleSendMessage}
