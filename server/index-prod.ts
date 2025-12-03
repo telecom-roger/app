@@ -3,15 +3,24 @@ import path from "node:path";
 import { type Server } from "node:http";
 
 import express, { type Express } from "express";
-import runApp from "./app";
+import runApp, { app } from "./app";
 import { setIndexHtml } from "./app";
 
-// ✅ GLOBAL CACHE - pre-loaded during startup for instant serving
+// 🚨 ENDPOINT RAIZ SUPER RÁPIDO — obrigatório para o Replit
+app.get("/", (_req, res) => {
+  res.setHeader("Content-Type", "text/html");
+  res.status(200).end("<!DOCTYPE html><html><body>OK</body></html>");
+});
+
+// (Opcional) health explícito:
+// app.get("/health", (_req, res) => res.status(200).json({ ok: true }));
+
+// ---------------------------------------------
+
 let cachedIndexHtml: string | null = null;
 let distPath: string | null = null;
 
 export async function serveStatic(app: Express, _server: Server) {
-  // ✅ FIXED: Correct path to dist/public directory in production build
   distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
 
   if (!fs.existsSync(distPath)) {
@@ -20,34 +29,36 @@ export async function serveStatic(app: Express, _server: Server) {
     );
   }
 
-  // PRE-LOAD index.html during startup (synchronously) for instant serving
+  // Pré-carrega index.html
   try {
-    cachedIndexHtml = fs.readFileSync(path.resolve(distPath, "index.html"), "utf-8");
-    // Share with app.ts so "/" endpoint can serve it instantly
+    cachedIndexHtml = fs.readFileSync(
+      path.resolve(distPath, "index.html"),
+      "utf-8",
+    );
+
     setIndexHtml(cachedIndexHtml);
   } catch (err) {
     console.error("Error pre-loading index.html:", err);
     throw err;
   }
 
-  // Serve static files efficiently (CSS, JS, assets)
+  // Arquivos estáticos
   app.use(express.static(distPath, { maxAge: "1h", fallthrough: true }));
 
-  // Fall through to index.html for SPA routing
-  // ⚠️ SKIP health check routes - let app.ts handlers respond instantly
-  app.use("*", (req, res, next) => {
-    // Skip health check routes - they're handled by fast endpoints in app.ts
-    if (req.path === "/health") {
+  // 🚨 NOVO FALLBACK — NÃO captura "/" e "/health"
+  app.use((req, res, next) => {
+    // deixa o health check passar
+    if (req.path === "/" || req.path === "/health") {
       return next();
     }
-    
-    // Serve pre-loaded index.html for SPA routes
+
+    // fallback do SPA
     if (cachedIndexHtml) {
       res.setHeader("Content-Type", "text/html");
-      res.status(200).send(cachedIndexHtml);
-    } else {
-      res.status(500).send("Application not ready");
+      return res.status(200).send(cachedIndexHtml);
     }
+
+    return res.status(500).send("Application not ready");
   });
 }
 
